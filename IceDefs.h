@@ -24,6 +24,11 @@ class IceConstant;
 class IceRegManager;
 
 // typedefs of containers
+
+// TODO: Switch over to LLVM's ADT container classes.  Also, make use
+// of LLVM's isa<>, cast<>, and dyn_cast<> templates.
+// http://llvm.org/docs/ProgrammersManual.html#picking-the-right-data-structure-for-a-task
+// http://llvm.org/docs/ProgrammersManual.html#isa
 typedef std::string IceString;
 typedef std::list<IceInst *> IceInstList;
 typedef std::vector<IceOperand *> IceOpList;
