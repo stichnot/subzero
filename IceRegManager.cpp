@@ -8,25 +8,30 @@
 
 #include "IceCfg.h"
 #include "IceCfgNode.h"
+#include "IceInst.h"
 #include "IceOperand.h"
 #include "IceRegManager.h"
 #include "IceTypes.h"
 
 IceRegManagerEntry::IceRegManagerEntry(IceVariable *Var) :
-  Var(Var), FirstLoad(NULL), IsFirstLoadValid(false) {}
+  Var(Var), FirstLoadInst(NULL), IsFirstLoadValid(false) {}
 
 IceRegManagerEntry::IceRegManagerEntry(const IceRegManagerEntry &Other) :
   Var(Other.Var), Available(Other.Available),
-  FirstLoad(Other.FirstLoad), IsFirstLoadValid(Other.IsFirstLoadValid) {}
+  FirstLoadInst(Other.FirstLoadInst),
+  IsFirstLoadValid(Other.IsFirstLoadValid) {}
 
 // An Operand is loaded into this virtual register.  Its Available set
 // is cleared and then set to contain the Operand.
-void IceRegManagerEntry::load(IceOperand *Operand) {
+void IceRegManagerEntry::load(IceInst *Inst) {
   Available.clear();
+  IceOperand *Operand = NULL;
+  if (Inst)
+    Operand = Inst->getSrc(0);
   if (Operand)
     Available.push_back(Operand);
   if (!IsFirstLoadValid) {
-    FirstLoad = Operand;
+    FirstLoadInst = Inst;
     IsFirstLoadValid = true;
   }
 }
@@ -131,7 +136,8 @@ bool IceRegManager::registerContains(const IceVariable *Reg,
   return false;
 }
 
-void IceRegManager::notifyLoad(IceVariable *Reg, IceOperand *Operand) {
+void IceRegManager::notifyLoad(IceInst *Inst, bool IsAssign) {
+  IceVariable *Reg = Inst->getDest(0);
   IceRegManagerEntry *Entry = NULL;
   for (QueueType::iterator I = Queue.begin(), E = Queue.end();
        I != E; ++I) {
@@ -143,7 +149,7 @@ void IceRegManager::notifyLoad(IceVariable *Reg, IceOperand *Operand) {
   }
   assert(Entry);
   Queue.push_back(Entry);
-  Entry->load(Operand);
+  Entry->load(IsAssign ? Inst : NULL);
 }
 
 void IceRegManager::notifyStore(IceVariable *Reg, IceVariable *Variable) {
@@ -178,7 +184,8 @@ void IceRegManager::dumpFirstLoads(IceOstream &Str) const {
   bool First = true;
   for (QueueType::const_iterator I = Queue.begin(), E = Queue.end();
        I != E; ++I) {
-    IceOperand *Operand = (*I)->getFirstLoad();
+    IceInst *LoadInst = (*I)->getFirstLoadInst();
+    IceOperand *Operand = LoadInst ? LoadInst->getSrc(0) : NULL;
     if (Operand == NULL)
       continue;
     IceVariable *Var = (*I)->getVar();

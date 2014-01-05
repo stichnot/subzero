@@ -55,18 +55,18 @@ class IceRegManagerEntry {
 public:
   IceRegManagerEntry(IceVariable *Var);
   IceRegManagerEntry(const IceRegManagerEntry &Other);
-  void load(IceOperand *Operand);
+  void load(IceInst *Inst);
   void store(IceVariable *Variable);
   bool contains(const IceOperand *Operand) const;
   IceVariable *getVar(void) const { return Var; }
-  IceOperand *getFirstLoad(void) const {
-    return IsFirstLoadValid ? FirstLoad : NULL;
+  IceInst *getFirstLoadInst(void) const {
+    return IsFirstLoadValid ? FirstLoadInst : NULL;
   }
   void dump(IceOstream &Str) const;
 private:
   IceVariable *const Var;
   IceOpList Available;
-  IceOperand *FirstLoad;
+  IceInst *FirstLoadInst;
   bool IsFirstLoadValid;
   // TODO: physical register assignment
 };
@@ -87,7 +87,7 @@ public:
                            const IceOpList &Prefer,
                            const IceVarList &Avoid) const;
   bool registerContains(const IceVariable *Reg, const IceOperand *Op) const;
-  void notifyLoad(IceVariable *Reg, IceOperand *Operand);
+  void notifyLoad(IceInst *Inst, bool IsAssign = true);
   void notifyStore(IceVariable *Reg, IceVariable *Variable);
   void dump(IceOstream &Str) const;
   void dumpFirstLoads(IceOstream &Str) const;

@@ -33,7 +33,7 @@ namespace IceX8632 {
       if (!RegManager->registerContains(Reg, Src0)) {
         NewInst = new IceInstX8632Mov(Dest->getType(), Reg, Src0);
         Expansion.push_back(NewInst);
-        RegManager->notifyLoad(Reg, Src0);
+        RegManager->notifyLoad(NewInst);
         NewInst->setRegState(RegManager);
       }
       NewInst = new IceInstX8632Mov(Dest->getType(), Dest, Reg);
@@ -64,14 +64,14 @@ namespace IceX8632 {
       if (!RegManager->registerContains(Reg, Src0)) {
         NewInst = new IceInstX8632Mov(Dest->getType(), Reg, Src0);
         Expansion.push_back(NewInst);
-        RegManager->notifyLoad(Reg, Src0);
+        RegManager->notifyLoad(NewInst);
         NewInst->setRegState(RegManager);
       }
       // TODO: Use a virtual register instead of Src1 if Src1 is
       // available in a virtual register.
       NewInst = new IceInstX8632Arithmetic((IceInstX8632Arithmetic::IceX8632Arithmetic)static_cast<const IceInstArithmetic *>(Inst)->getOp(), Dest->getType(), Reg, Src1);
       Expansion.push_back(NewInst);
-      RegManager->notifyLoad(Reg, NULL);
+      RegManager->notifyLoad(NewInst, false);
       NewInst->setRegState(RegManager);
       NewInst = new IceInstX8632Mov(Dest->getType(), Dest, Reg);
       Expansion.push_back(NewInst);
@@ -96,7 +96,7 @@ namespace IceX8632 {
         if (!RegManager->registerContains(Reg, Src0)) {
           NewInst = new IceInstX8632Mov(Src0->getType(), Reg, Src0);
           Expansion.push_back(NewInst);
-          RegManager->notifyLoad(Reg, Src0);
+          RegManager->notifyLoad(NewInst);
           NewInst->setRegState(RegManager);
         }
         NewInst = new IceInstX8632Icmp(Reg, Src1);
@@ -128,7 +128,7 @@ namespace IceX8632 {
       if (!RegManager->registerContains(Reg1, Src0)) {
         NewInst = new IceInstX8632Mov(Dest->getType(), Reg1, Src0);
         Expansion.push_back(NewInst);
-        RegManager->notifyLoad(Reg1, Src0);
+        RegManager->notifyLoad(NewInst);
         NewInst->setRegState(RegManager);
       }
       Reg2 = NULL;
@@ -141,7 +141,7 @@ namespace IceX8632 {
         if (!RegManager->registerContains(Reg2, Src1)) {
           NewInst = new IceInstX8632Mov(Dest->getType(), Reg2, Src1);
           Expansion.push_back(NewInst);
-          RegManager->notifyLoad(Reg2, Src1);
+          RegManager->notifyLoad(NewInst);
           NewInst->setRegState(RegManager);
         }
       }
@@ -153,7 +153,7 @@ namespace IceX8632 {
       NewInst = new IceInstX8632Load(Dest->getType(), Reg,
                                      Reg1, Reg2, Src2, Src3);
       Expansion.push_back(NewInst);
-      RegManager->notifyLoad(Reg, NULL);
+      RegManager->notifyLoad(NewInst, false);
       NewInst->setRegState(RegManager);
       NewInst = new IceInstX8632Mov(Dest->getType(), Dest, Reg);
       Expansion.push_back(NewInst);
@@ -167,7 +167,7 @@ namespace IceX8632 {
       if (!RegManager->registerContains(Reg, Src0)) {
         NewInst = new IceInstX8632Mov(Src0->getType(), Reg, Src0);
         Expansion.push_back(NewInst);
-        RegManager->notifyLoad(Reg, Src0);
+        RegManager->notifyLoad(NewInst);
         NewInst->setRegState(RegManager);
       }
       NewInst = new IceInstX8632Ret(Src0->getType(), Reg);
