@@ -1,4 +1,5 @@
 CC=g++
+# TODO: INCLUDEPATH is meant to point into LLVM ADT, Support, etc.
 INCLUDEPATH=.
 CFLAGS=-g -Wall -I$(INCLUDEPATH)
 LDFLAGS=

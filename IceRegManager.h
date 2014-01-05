@@ -59,10 +59,15 @@ public:
   void store(IceVariable *Variable);
   bool contains(const IceOperand *Operand) const;
   IceVariable *getVar(void) const { return Var; }
+  IceOperand *getFirstLoad(void) const {
+    return IsFirstLoadValid ? FirstLoad : NULL;
+  }
   void dump(IceOstream &Str) const;
 private:
   IceVariable *const Var;
   IceOpList Available;
+  IceOperand *FirstLoad;
+  bool IsFirstLoadValid;
   // TODO: physical register assignment
 };
 
@@ -85,13 +90,11 @@ public:
   void notifyLoad(IceVariable *Reg, IceOperand *Operand);
   void notifyStore(IceVariable *Reg, IceVariable *Variable);
   void dump(IceOstream &Str) const;
+  void dumpFirstLoads(IceOstream &Str) const;
 private:
-  // This is the LRU register queue.  The elements are numbered 0
-  // through NumReg-1, and no element is repeated.  The front element
-  // is the least recently used and the next to be assigned.
-  //std::list<unsigned> Queue;
+  // The LRU register queue.  The front element is the least recently
+  // used and the next to be assigned.
   // TODO: Multiple queues by type.
-  //IceVarList Queue;
   QueueType Queue;
 };
 

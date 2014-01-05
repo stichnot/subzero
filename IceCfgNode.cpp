@@ -193,6 +193,11 @@ void IceCfgNode::dump(IceOstream &Str) const {
       Str << "%" << Str.Cfg->labelName(*I);
     }
     Str << "\n";
+    if (RegManager) {
+      Str << "// FirstLoads={";
+      RegManager->dumpFirstLoads(Str);
+      Str << "}\n";
+    }
   }
   for (unsigned i = 0; i < Phis.size(); ++i) {
     Str << Phis[i];

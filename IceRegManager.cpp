@@ -12,10 +12,12 @@
 #include "IceRegManager.h"
 #include "IceTypes.h"
 
-IceRegManagerEntry::IceRegManagerEntry(IceVariable *Var) : Var(Var) {}
+IceRegManagerEntry::IceRegManagerEntry(IceVariable *Var) :
+  Var(Var), FirstLoad(NULL), IsFirstLoadValid(false) {}
 
 IceRegManagerEntry::IceRegManagerEntry(const IceRegManagerEntry &Other) :
-  Var(Other.Var), Available(Other.Available) {}
+  Var(Other.Var), Available(Other.Available),
+  FirstLoad(Other.FirstLoad), IsFirstLoadValid(Other.IsFirstLoadValid) {}
 
 // An Operand is loaded into this virtual register.  Its Available set
 // is cleared and then set to contain the Operand.
@@ -23,6 +25,10 @@ void IceRegManagerEntry::load(IceOperand *Operand) {
   Available.clear();
   if (Operand)
     Available.push_back(Operand);
+  if (!IsFirstLoadValid) {
+    FirstLoad = Operand;
+    IsFirstLoadValid = true;
+  }
 }
 
 // This virtual register is stored into a Variable, and the Variable
@@ -165,6 +171,21 @@ void IceRegManager::dump(IceOstream &Str) const {
   for (QueueType::const_iterator I = Queue.begin(), E = Queue.end();
        I != E; ++I) {
     (*I)->dump(Str);
+  }
+}
+
+void IceRegManager::dumpFirstLoads(IceOstream &Str) const {
+  bool First = true;
+  for (QueueType::const_iterator I = Queue.begin(), E = Queue.end();
+       I != E; ++I) {
+    IceOperand *Operand = (*I)->getFirstLoad();
+    if (Operand == NULL)
+      continue;
+    IceVariable *Var = (*I)->getVar();
+    if (!First)
+      Str << " ";
+    Str << Var << ":" << Operand;
+    First = false;
   }
 }
 
