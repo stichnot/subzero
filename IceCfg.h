@@ -69,6 +69,7 @@ private:
   void deletePhis(void);
   void genCodeX8632(void);
   void simpleDCE(void);
+  void multiblockRegAlloc(void);
 };
 
 #endif // _IceCfg_h

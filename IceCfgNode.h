@@ -27,6 +27,7 @@ public:
   void placePhiStores(IceCfg *Cfg);
   void deletePhis(IceCfg *Cfg);
   void genCodeX8632(IceCfg *Cfg);
+  void multiblockRegAlloc(IceCfg *Cfg);
   void dump(IceOstream &Str) const;
 private:
   const uint32_t NameIndex; // label

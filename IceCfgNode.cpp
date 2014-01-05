@@ -167,6 +167,9 @@ void IceCfgNode::genCodeX8632(IceCfg *Cfg) {
   }
 }
 
+void IceCfgNode::multiblockRegAlloc(IceCfg *Cfg) {
+}
+
 void IceCfgNode::insertInsts(IceInstList::iterator Location,
                              const IceInstList &NewInsts) {
   Insts.insert(Location, NewInsts.begin(), NewInsts.end());

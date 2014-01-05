@@ -208,6 +208,15 @@ void IceCfg::simpleDCE(void) {
   }
 }
 
+void IceCfg::multiblockRegAlloc(void) {
+  for (unsigned i = 0; i < Nodes.size(); ++i) {
+    IceCfgNode *Node = Nodes[i];
+    if (Node) {
+      Node->multiblockRegAlloc(this);
+    }
+  }
+}
+
 bool IceCfg::isLastUse(const IceInst *Inst, IceOperand *Operand) const {
   IceVariable *Variable = Operand->getVariable();
   if (Variable == NULL)
@@ -243,6 +252,10 @@ void IceCfg::translate(void) {
 
   simpleDCE();
   Str << "================ After simple DCE ================\n";
+  dump();
+
+  multiblockRegAlloc();
+  Str << "================ After multi-block regalloc ================\n";
   dump();
 
   Str.setVerbose(false);
