@@ -149,6 +149,9 @@ void IceRegManager::notifyStore(IceVariable *Reg, IceVariable *Variable) {
   assert(Entry);
   Queue.push_back(Entry);
   Entry->store(Variable);
+  // TODO: See the TODO in IceRegManagerEntry::store().  For the
+  // instruction "a=reg", "a" must be removed from all other Available
+  // sets.  But is this actually possible with SSA form?
 }
 
 // ======================== Dump routines ======================== //
