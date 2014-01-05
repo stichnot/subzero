@@ -295,7 +295,7 @@ public:
   virtual void dumpExtras(IceOstream &Str) const;
 protected:
   IceInstTarget(IceType Type) : IceInst(Target, Type), RegState(NULL) {}
-  IceRegManager *RegState;
+  const IceRegManager *RegState; // used only for debugging/dumping
 private:
 };
 
