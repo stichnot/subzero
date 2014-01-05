@@ -50,10 +50,10 @@ private:
   IceString Name; // function name
   IceType Type; // return type
   IceCfgNode *Entry; // entry basic block
-  std::vector<IceCfgNode *> Nodes; // linearization; Entry must be first
-  std::vector<IceVariable *> Variables;
+  IceNodeList Nodes; // linearization; Entry must be first
+  IceVarList Variables;
   std::vector<const IceInst *> LastUses; // instruction ending each variable's live range
-  std::vector<IceVariable *> Args; // densely packed vector, subset of Variables
+  IceVarList  Args; // densely packed vector, subset of Variables
 
   class NameTranslation *VariableTranslation;
   class NameTranslation *LabelTranslation;

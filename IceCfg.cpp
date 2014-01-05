@@ -117,8 +117,9 @@ IceString IceCfg::labelName(uint32_t LabelIndex) const {
 }
 
 void IceCfg::registerInEdges(void) {
-  for (unsigned i = 0; i < Nodes.size(); ++i) {
-    IceCfgNode *Node = Nodes[i];
+  for (IceNodeList::iterator I = Nodes.begin(), E = Nodes.end();
+       I != E; ++I) {
+    IceCfgNode *Node = *I;
     if (Node) {
       Node->registerInEdges(this);
     }
@@ -126,8 +127,9 @@ void IceCfg::registerInEdges(void) {
 }
 
 void IceCfg::findAddressOpt(void) {
-  for (unsigned i = 0; i < Nodes.size(); ++i) {
-    IceCfgNode *Node = Nodes[i];
+  for (IceNodeList::iterator I = Nodes.begin(), E = Nodes.end();
+       I != E; ++I) {
+    IceCfgNode *Node = *I;
     if (Node) {
       Node->findAddressOpt(this);
     }
@@ -137,8 +139,9 @@ void IceCfg::findAddressOpt(void) {
 void IceCfg::markLastUses(void) {
   LastUses.clear();
   LastUses.resize(Variables.size(), NULL);
-  for (unsigned i = 0; i < Nodes.size(); ++i) {
-    IceCfgNode *Node = Nodes[i];
+  for (IceNodeList::iterator I = Nodes.begin(), E = Nodes.end();
+       I != E; ++I) {
+    IceCfgNode *Node = *I;
     if (Node) {
       Node->markLastUses(this);
     }
@@ -158,8 +161,9 @@ void IceCfg::markLastUse(IceOperand *Operand, const IceInst *Inst) {
 }
 
 void IceCfg::placePhiLoads(void) {
-  for (unsigned i = 0; i < Nodes.size(); ++i) {
-    IceCfgNode *Node = Nodes[i];
+  for (IceNodeList::iterator I = Nodes.begin(), E = Nodes.end();
+       I != E; ++I) {
+    IceCfgNode *Node = *I;
     if (Node) {
       Node->placePhiLoads(this);
     }
@@ -167,8 +171,9 @@ void IceCfg::placePhiLoads(void) {
 }
 
 void IceCfg::placePhiStores(void) {
-  for (unsigned i = 0; i < Nodes.size(); ++i) {
-    IceCfgNode *Node = Nodes[i];
+  for (IceNodeList::iterator I = Nodes.begin(), E = Nodes.end();
+       I != E; ++I) {
+    IceCfgNode *Node = *I;
     if (Node) {
       Node->placePhiStores(this);
     }
@@ -176,8 +181,9 @@ void IceCfg::placePhiStores(void) {
 }
 
 void IceCfg::deletePhis(void) {
-  for (unsigned i = 0; i < Nodes.size(); ++i) {
-    IceCfgNode *Node = Nodes[i];
+  for (IceNodeList::iterator I = Nodes.begin(), E = Nodes.end();
+       I != E; ++I) {
+    IceCfgNode *Node = *I;
     if (Node) {
       Node->deletePhis(this);
     }
@@ -185,8 +191,9 @@ void IceCfg::deletePhis(void) {
 }
 
 void IceCfg::genCodeX8632(void) {
-  for (unsigned i = 0; i < Nodes.size(); ++i) {
-    IceCfgNode *Node = Nodes[i];
+  for (IceNodeList::iterator I = Nodes.begin(), E = Nodes.end();
+       I != E; ++I) {
+    IceCfgNode *Node = *I;
     if (Node) {
       Node->genCodeX8632(this);
     }
@@ -194,8 +201,8 @@ void IceCfg::genCodeX8632(void) {
 }
 
 void IceCfg::simpleDCE(void) {
-  for (std::vector<IceVariable *>::const_iterator I = Variables.begin(),
-         E = Variables.end(); I != E; ++I) {
+  for (IceVarList::const_iterator I = Variables.begin(), E = Variables.end();
+       I != E; ++I) {
     IceVariable *Var = *I;
     if (Var == NULL)
       continue;
@@ -276,8 +283,9 @@ void IceCfg::dump(void) const {
   Str << ") {\n";
   if (Str.isVerbose()) {
     // Print summary info about variables
-    for (unsigned i = 0; i < Variables.size(); ++i) {
-      IceVariable *Var = Variables[i];
+    for (IceVarList::const_iterator I = Variables.begin(), E = Variables.end();
+         I != E; ++I) {
+      IceVariable *Var = *I;
       if (!Var)
         continue;
       Str << "//"

@@ -34,6 +34,7 @@ typedef std::list<IceInst *> IceInstList;
 typedef std::vector<IceOperand *> IceOpList;
 typedef std::vector<IceVariable *> IceVarList;
 typedef std::vector<uint32_t> IceEdgeList;
+typedef std::vector<IceCfgNode *> IceNodeList;
 
 // The IceOstream class wraps a std::ostream and an IceCfg pointer, so
 // that dump routines have access to the IceCfg object and can print
