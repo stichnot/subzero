@@ -355,11 +355,14 @@ void IceInstTarget::setRegState(const IceRegManager *State) {
 // ======================== Dump routines ======================== //
 
 IceOstream& operator<<(IceOstream &Str, const IceInst *I) {
+  if (I->isDeleted() && !Str.isVerbose())
+    return Str;
   Str << "  ";
   if (I->isDeleted())
     Str << "//";
   I->dump(Str);
-  I->dumpExtras(Str);
+  if (Str.isVerbose())
+    I->dumpExtras(Str);
   Str << "\n";
   return Str;
 }

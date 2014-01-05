@@ -244,6 +244,10 @@ void IceCfg::translate(void) {
   simpleDCE();
   Str << "================ After simple DCE ================\n";
   dump();
+
+  Str.setVerbose(false);
+  Str << "================ Final output ================\n";
+  dump();
 }
 
 // ======================== Dump routines ======================== //
@@ -257,15 +261,17 @@ void IceCfg::dump(void) const {
     Str << Args[i]->getType() << " " << Args[i];
   }
   Str << ") {\n";
-  // Print summary info about variables
-  for (unsigned i = 0; i < Variables.size(); ++i) {
-    IceVariable *Var = Variables[i];
-    if (!Var)
-      continue;
-    Str << "//"
-        << " uses=" << Var->getUseCount()
-        << " multiblock=" << Var->isMultiblockLife()
-        << " " << Var << "\n";
+  if (Str.isVerbose()) {
+    // Print summary info about variables
+    for (unsigned i = 0; i < Variables.size(); ++i) {
+      IceVariable *Var = Variables[i];
+      if (!Var)
+        continue;
+      Str << "//"
+          << " uses=" << Var->getUseCount()
+          << " multiblock=" << Var->isMultiblockLife()
+          << " " << Var << "\n";
+    }
   }
   // Print each basic block
   for (unsigned i = 0; i < Nodes.size(); ++i) {

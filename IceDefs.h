@@ -40,11 +40,16 @@ typedef std::vector<uint32_t> IceEdgeList;
 // labels and variable names.
 class IceOstream {
 public:
-  IceOstream(std::ostream &Stream, IceCfg *Cfg) : Stream(Stream), Cfg(Cfg) {}
+  IceOstream(std::ostream &Stream, IceCfg *Cfg) : Stream(Stream), Cfg(Cfg),
+                                                  Verbose(true) {}
+  bool isVerbose(void) const { return Verbose; }
+  void setVerbose(bool NewValue) { Verbose = NewValue; }
   // TODO: Use LLVM's raw_ostream instead.
   // http://llvm.org/docs/CodingStandards.html#use-raw-ostream
   std::ostream &Stream;
   IceCfg *const Cfg;
+private:
+  bool Verbose;
 };
 
 inline IceOstream& operator<<(IceOstream &Str, const char *S) {

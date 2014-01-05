@@ -187,14 +187,16 @@ void IceCfgNode::insertInsts(IceInstList::iterator Location,
 void IceCfgNode::dump(IceOstream &Str) const {
   IceString Name = Str.Cfg->labelName(getIndex());
   Str << Name << ":\n";
-  Str << "// preds = ";
-  for (IceEdgeList::const_iterator I = InEdges.begin(), E = InEdges.end();
-       I != E; ++I) {
-    if (I != InEdges.begin())
-      Str << ", ";
-    Str << "%" << Str.Cfg->labelName(*I);
+  if (Str.isVerbose()) {
+    Str << "// preds = ";
+    for (IceEdgeList::const_iterator I = InEdges.begin(), E = InEdges.end();
+         I != E; ++I) {
+      if (I != InEdges.begin())
+        Str << ", ";
+      Str << "%" << Str.Cfg->labelName(*I);
+    }
+    Str << "\n";
   }
-  Str << "\n";
   for (unsigned i = 0; i < Phis.size(); ++i) {
     Str << Phis[i];
   }
