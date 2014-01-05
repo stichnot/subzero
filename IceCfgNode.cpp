@@ -94,7 +94,6 @@ void IceCfgNode::placePhiLoads(IceCfg *Cfg) {
   // the block, but before any instruction with an implicit use of the
   // destination such as a call or integer divide instruction when the
   // function uses setjmp().
-  //Insts.insert(Insts.begin(), NewPhiLoads.begin(), NewPhiLoads.end());
   insertInsts(Insts.begin(), NewPhiLoads);
 }
 
@@ -137,7 +136,6 @@ void IceCfgNode::placePhiStores(IceCfg *Cfg) {
       }
     }
   }
-  //Insts.insert(InsertionPoint, NewPhiStores.begin(), NewPhiStores.end());
   insertInsts(InsertionPoint, NewPhiStores);
 }
 
@@ -161,7 +159,6 @@ void IceCfgNode::genCodeX8632(IceCfg *Cfg) {
     bool DeleteCurInst = false, DeleteNextInst = false;
     IceInstList NewInsts = Inst->genCodeX8632(Cfg, RegManager, Next,
                                               DeleteCurInst, DeleteNextInst);
-    //Insts.insert(I, NewInsts.begin(), NewInsts.end());
     insertInsts(I, NewInsts);
     if (DeleteCurInst)
       Inst->setDeleted();
