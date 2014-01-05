@@ -56,7 +56,7 @@ public:
   IceRegManagerEntry(IceVariable *Var);
   IceRegManagerEntry(const IceRegManagerEntry &Other);
   void load(IceInst *Inst);
-  void store(IceVariable *Variable);
+  void store(IceInst *Inst);
   bool contains(const IceOperand *Operand) const;
   IceVariable *getVar(void) const { return Var; }
   IceInst *getFirstLoadInst(void) const {
@@ -88,7 +88,7 @@ public:
                            const IceVarList &Avoid) const;
   bool registerContains(const IceVariable *Reg, const IceOperand *Op) const;
   void notifyLoad(IceInst *Inst, bool IsAssign = true);
-  void notifyStore(IceVariable *Reg, IceVariable *Variable);
+  void notifyStore(IceInst *Inst);
   void dump(IceOstream &Str) const;
   void dumpFirstLoads(IceOstream &Str) const;
 private:

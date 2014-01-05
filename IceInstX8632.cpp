@@ -38,7 +38,7 @@ namespace IceX8632 {
       }
       NewInst = new IceInstX8632Mov(Dest->getType(), Dest, Reg);
       Expansion.push_back(NewInst);
-      RegManager->notifyStore(Reg, Dest);
+      RegManager->notifyStore(NewInst);
       NewInst->setRegState(RegManager);
       break;
     case IceInst::Arithmetic:
@@ -75,7 +75,7 @@ namespace IceX8632 {
       NewInst->setRegState(RegManager);
       NewInst = new IceInstX8632Mov(Dest->getType(), Dest, Reg);
       Expansion.push_back(NewInst);
-      RegManager->notifyStore(Reg, Dest);
+      RegManager->notifyStore(NewInst);
       NewInst->setRegState(RegManager);
       break;
     case IceInst::Icmp:
@@ -157,7 +157,7 @@ namespace IceX8632 {
       NewInst->setRegState(RegManager);
       NewInst = new IceInstX8632Mov(Dest->getType(), Dest, Reg);
       Expansion.push_back(NewInst);
-      RegManager->notifyStore(Reg, Dest);
+      RegManager->notifyStore(NewInst);
       NewInst->setRegState(RegManager);
       break;
     case IceInst::Ret:

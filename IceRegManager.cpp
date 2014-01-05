@@ -41,8 +41,10 @@ void IceRegManagerEntry::load(IceInst *Inst) {
 // is a physical register managed by this RegManager (e.g., specific
 // register requirements for instructions like x86 idiv), then all
 // Available sets must be killed.
-void IceRegManagerEntry::store(IceVariable *Variable) {
+void IceRegManagerEntry::store(IceInst *Inst) {
   // TODO: Kill all Available sets when necessary.
+  IceVariable *Variable = Inst->getDest(0);
+  assert(Variable);
   Available.push_back(Variable);
 }
 
@@ -152,7 +154,10 @@ void IceRegManager::notifyLoad(IceInst *Inst, bool IsAssign) {
   Entry->load(IsAssign ? Inst : NULL);
 }
 
-void IceRegManager::notifyStore(IceVariable *Reg, IceVariable *Variable) {
+void IceRegManager::notifyStore(IceInst *Inst) {
+  IceVariable *Reg = Inst->getSrc(0)->getVariable();
+  assert(Reg);
+  IceVariable *Variable = Inst->getDest(0);
   assert(Variable);
   IceRegManagerEntry *Entry = NULL;
   for (QueueType::iterator I = Queue.begin(), E = Queue.end();
@@ -165,7 +170,7 @@ void IceRegManager::notifyStore(IceVariable *Reg, IceVariable *Variable) {
   }
   assert(Entry);
   Queue.push_back(Entry);
-  Entry->store(Variable);
+  Entry->store(Inst);
   // TODO: See the TODO in IceRegManagerEntry::store().  For the
   // instruction "a=reg", "a" must be removed from all other Available
   // sets.  But is this actually possible with SSA form?
