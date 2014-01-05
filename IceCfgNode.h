@@ -39,6 +39,18 @@ private:
   // arena allocator for the function?
   // edge-split list for successors
   // node-specific local register manager
+
+  // TODO: Allow the block to have a list of RegManager objects.  A
+  // mid-block call instruction kills all scratch registers at once
+  // and there is no relationship between pre-and post-call
+  // availability.  This has two advantages.  First, physical register
+  // assignment can depend on either incoming or outgoing edges but
+  // not both, leading to less compensation code.  Second, especially
+  // for blocks containing multiple call instructions, it increases
+  // the amount of randomness possible without affecting code quality.
+  // The multi-block register allocation would need access to the
+  // first and last RegManager objects on the list for computing
+  // preferences.
   IceRegManager *RegManager;
   // list of live operands on entry (unsure if this will be necessary)
   // virtual<-->physical register mappings (REG)
