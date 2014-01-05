@@ -41,6 +41,8 @@ typedef std::vector<uint32_t> IceEdgeList;
 class IceOstream {
 public:
   IceOstream(std::ostream &Stream, IceCfg *Cfg) : Stream(Stream), Cfg(Cfg) {}
+  // TODO: Use LLVM's raw_ostream instead.
+  // http://llvm.org/docs/CodingStandards.html#use-raw-ostream
   std::ostream &Stream;
   IceCfg *const Cfg;
 };
