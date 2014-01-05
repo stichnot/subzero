@@ -1,5 +1,7 @@
 CC=g++
-CFLAGS=-c -g -Wall
+INCLUDEPATH=.
+CFLAGS=-g -Wall -I$(INCLUDEPATH)
+LDFLAGS=
 
 OBJS= \
 	IceCfg.o \
@@ -12,7 +14,10 @@ OBJS= \
 	IceTest.o
 
 subzerotest: $(OBJS)
-	$(CC) -o subzerotest $(OBJS)
+	$(CC) $(LDFLAGS) -o subzerotest $(OBJS)
+
+$(OBJS): %.o: %.cpp *.h
+	$(CC) -c $(CFLAGS) $< -o $@
 
 clean:
 	rm -f subzerotest *.o
