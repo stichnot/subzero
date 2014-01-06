@@ -62,33 +62,44 @@ public:
   IceInst *getFirstLoadInst(void) const {
     return IsFirstLoadValid ? FirstLoadInst : NULL;
   }
+  void updateCandidateWeight(int Incr=1) { MultiblockCandidateWeight += Incr; }
+  int getCandidateWeight(void) const { return MultiblockCandidateWeight; }
   void dump(IceOstream &Str) const;
 private:
   // Virtual register.
   IceVariable *const Var;
+
   // Set of operands currently available in the virtual register.
   IceOpList Available;
+
   // Instruction that loads the first operand into the virtual
   // register.  Used for multiblock register allocation.  Can be NULL
   // if the first load into the virtual register is not a valid
   // candidate for multiblock register allocation, e.g. the Load
   // bitcode.
   IceInst *FirstLoadInst;
+
   // Whether the first load into the virtual register has been
   // encountered.  TODO: consider saving memory by initializing
   // FirstLoadInst to point to a sentinel instruction.
   bool IsFirstLoadValid;
+
   // Number of predecessors that have the FirstLoadInst operand in the
   // Available set.  Must be greater than zero to be a candidation for
   // multiblock register allocation.
   unsigned MultiblockCandidateWeight;
+
   // This is an array indexed by (small) physical register number,
-  // giving the number of "votes" for each physical register.
+  // giving the number of "votes" for each physical register.  Initial
+  // votes are given during initial instruction selection as a result
+  // of target instruction constraints.
   int *PhysicalRegisterVotes;
+
   // The sum of PhysicalRegisterVotes, for convenience.  The virtual
   // register with the highest TotalVotes gets the first pick of
   // physical registers.
   int TotalVotes;
+
   // If nonnegative, this is the (small) register number of the
   // assigned physical register.  TODO: consider moving this into
   // IceVariable for global register allocation.
@@ -103,7 +114,6 @@ public:
   IceRegManager(IceCfg *Cfg, IceCfgNode *Node, unsigned NumReg);
   // Capture the predecessor's end-of-block state for an extended
   // basic block.
-  IceRegManager(IceCfg *Cfg, IceCfgNode *Node, const IceRegManager &Other);
   IceRegManager(const IceRegManager &Other);
   // TODO: Are these IceVariable instances duplicated across
   // IceRegManager objects?
@@ -113,6 +123,8 @@ public:
   bool registerContains(const IceVariable *Reg, const IceOperand *Op) const;
   void notifyLoad(IceInst *Inst, bool IsAssign = true);
   void notifyStore(IceInst *Inst);
+  void updateCandidates(const IceRegManager *Pred);
+  bool isAvailable(const IceOperand *Operand) const;
   void dump(IceOstream &Str) const;
   void dumpFirstLoads(IceOstream &Str) const;
 private:

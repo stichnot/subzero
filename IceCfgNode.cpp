@@ -147,8 +147,14 @@ void IceCfgNode::deletePhis(IceCfg *Cfg) {
 
 void IceCfgNode::genCodeX8632(IceCfg *Cfg) {
   const unsigned NumScratchReg = 3; // eax, ecx, edx
-  // TODO: Copy predecessor RegManager for extended basic block.
-  RegManager = new IceRegManager(Cfg, this, NumScratchReg);
+  if (InEdges.size() == 1) {
+    IceCfgNode *Pred = Cfg->getNode(InEdges[0]);
+    assert(Pred);
+    // TODO: Use the final RegManager in Pred.
+    RegManager = new IceRegManager(*Pred->RegManager);
+  } else {
+    RegManager = new IceRegManager(Cfg, this, NumScratchReg);
+  }
   // Defer the Phi instructions.
   IceInstList::iterator I = Insts.begin(), E = Insts.end();
   while (I != E) {
@@ -192,6 +198,16 @@ void IceCfgNode::multiblockRegAlloc(IceCfg *Cfg) {
   // complete.  multiblockCompensation() then passes over the blocks
   // adds the compensation code, and removes the candidate assignment
   // instructions.
+
+  // Consider each predecessor and update the
+  // MultiblockCandidateWeight values.
+  for (IceEdgeList::const_iterator I = InEdges.begin(), E = InEdges.end();
+       I != E; ++I) {
+    IceCfgNode *Pred = Cfg->getNode(*I);
+    assert(Pred);
+    // TODO: use the final RegManager in Pred.
+    RegManager->updateCandidates(Pred->RegManager);
+  }
 }
 
 void IceCfgNode::multiblockCompensation(IceCfg *Cfg) {

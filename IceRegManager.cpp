@@ -23,8 +23,9 @@ IceRegManagerEntry::IceRegManagerEntry(IceVariable *Var) : Var(Var) {
   PhysicalRegister = -1;
 }
 
-IceRegManagerEntry::IceRegManagerEntry(const IceRegManagerEntry &Other, unsigned NumReg) :
-  Var(Other.Var) {
+IceRegManagerEntry::IceRegManagerEntry(const IceRegManagerEntry &Other,
+                                       unsigned NumReg) : Var(Other.Var) {
+  Available = Other.Available;
   FirstLoadInst = Other.FirstLoadInst;
   IsFirstLoadValid = Other.IsFirstLoadValid;
   MultiblockCandidateWeight = Other.MultiblockCandidateWeight;
@@ -86,10 +87,6 @@ IceRegManager::IceRegManager(IceCfg *Cfg, IceCfgNode *Node, unsigned NumReg) :
     Queue.push_back(new IceRegManagerEntry(Reg));
   }
 }
-
-IceRegManager::IceRegManager(IceCfg *Cfg, IceCfgNode *Node,
-                             const IceRegManager &Other) :
-  NumReg(Other.NumReg), Queue(Other.Queue) {}
 
 IceRegManager::IceRegManager(const IceRegManager &Other) :
   NumReg(Other.NumReg) {
@@ -194,6 +191,29 @@ void IceRegManager::notifyStore(IceInst *Inst) {
   // sets.  But is this actually possible with SSA form?
 }
 
+void IceRegManager::updateCandidates(const IceRegManager *Pred) {
+  for (QueueType::const_iterator I = Queue.begin(), E = Queue.end();
+       I != E; ++I) {
+    IceInst *LoadInst = (*I)->getFirstLoadInst();
+    if (LoadInst == NULL)
+      continue;
+    assert(LoadInst->getDest(0));
+    assert(LoadInst->getDest(0)->getVariable() == (*I)->getVar());
+    IceOperand *Operand = LoadInst->getSrc(0);
+    if (Pred->isAvailable(Operand))
+      (*I)->updateCandidateWeight();
+  }
+}
+
+bool IceRegManager::isAvailable(const IceOperand *Operand) const {
+  for (QueueType::const_iterator I = Queue.begin(), E = Queue.end();
+       I != E; ++I) {
+    if ((*I)->contains(Operand))
+      return true;
+  }
+  return false;
+}
+
 // ======================== Dump routines ======================== //
 
 void IceRegManager::dump(IceOstream &Str) const {
@@ -212,9 +232,10 @@ void IceRegManager::dumpFirstLoads(IceOstream &Str) const {
     if (Operand == NULL)
       continue;
     IceVariable *Var = (*I)->getVar();
+    int Weight = (*I)->getCandidateWeight();
     if (!First)
       Str << " ";
-    Str << Var << ":" << Operand;
+    Str << Var << ":" << Operand << ":" << Weight;
     First = false;
   }
 }
