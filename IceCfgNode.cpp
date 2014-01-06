@@ -189,7 +189,9 @@ void IceCfgNode::multiblockRegAlloc(IceCfg *Cfg) {
   // same physical register.
   //
   // After this runs on all blocks, physical register assignment is
-  // complete, and pass over the blocks adds the compensation code.
+  // complete.  multiblockCompensation() then passes over the blocks
+  // adds the compensation code, and removes the candidate assignment
+  // instructions.
 }
 
 void IceCfgNode::multiblockCompensation(IceCfg *Cfg) {

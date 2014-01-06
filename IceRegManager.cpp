@@ -5,6 +5,7 @@
 
 #include <assert.h>
 #include <stdio.h>
+#include <string.h>
 
 #include "IceCfg.h"
 #include "IceCfgNode.h"
@@ -13,13 +14,28 @@
 #include "IceRegManager.h"
 #include "IceTypes.h"
 
-IceRegManagerEntry::IceRegManagerEntry(IceVariable *Var) :
-  Var(Var), FirstLoadInst(NULL), IsFirstLoadValid(false) {}
+IceRegManagerEntry::IceRegManagerEntry(IceVariable *Var) : Var(Var) {
+  FirstLoadInst = NULL;
+  IsFirstLoadValid = false;
+  MultiblockCandidateWeight = 0;
+  PhysicalRegisterVotes = NULL;
+  TotalVotes = 0;
+  PhysicalRegister = -1;
+}
 
-IceRegManagerEntry::IceRegManagerEntry(const IceRegManagerEntry &Other) :
-  Var(Other.Var), Available(Other.Available),
-  FirstLoadInst(Other.FirstLoadInst),
-  IsFirstLoadValid(Other.IsFirstLoadValid) {}
+IceRegManagerEntry::IceRegManagerEntry(const IceRegManagerEntry &Other, unsigned NumReg) :
+  Var(Other.Var) {
+  FirstLoadInst = Other.FirstLoadInst;
+  IsFirstLoadValid = Other.IsFirstLoadValid;
+  MultiblockCandidateWeight = Other.MultiblockCandidateWeight;
+  if (Other.PhysicalRegisterVotes) {
+    PhysicalRegisterVotes = new int[NumReg];
+    memcpy(PhysicalRegisterVotes, Other.PhysicalRegisterVotes, NumReg * sizeof(*PhysicalRegisterVotes));
+  } else
+    PhysicalRegisterVotes = NULL;
+  TotalVotes = Other.TotalVotes;
+  PhysicalRegister = Other.PhysicalRegister;
+}
 
 // An Operand is loaded into this virtual register.  Its Available set
 // is cleared and then set to contain the Operand.
@@ -60,7 +76,8 @@ bool IceRegManagerEntry::contains(const IceOperand *Operand) const {
   return false;
 }
 
-IceRegManager::IceRegManager(IceCfg *Cfg, IceCfgNode *Node, unsigned NumReg) {
+IceRegManager::IceRegManager(IceCfg *Cfg, IceCfgNode *Node, unsigned NumReg) :
+  NumReg(NumReg) {
   // TODO: Config flag to use physical registers directly.
   for (unsigned i = 0; i < NumReg; ++i) {
     char Buf[100];
@@ -72,12 +89,13 @@ IceRegManager::IceRegManager(IceCfg *Cfg, IceCfgNode *Node, unsigned NumReg) {
 
 IceRegManager::IceRegManager(IceCfg *Cfg, IceCfgNode *Node,
                              const IceRegManager &Other) :
-  Queue(Other.Queue) {}
+  NumReg(Other.NumReg), Queue(Other.Queue) {}
 
-IceRegManager::IceRegManager(const IceRegManager &Other) {
+IceRegManager::IceRegManager(const IceRegManager &Other) :
+  NumReg(Other.NumReg) {
   for (QueueType::const_iterator I = Other.Queue.begin(), E = Other.Queue.end();
        I != E; ++I) {
-    Queue.push_back(new IceRegManagerEntry(**I));
+    Queue.push_back(new IceRegManagerEntry(**I, NumReg));
   }
 }
 

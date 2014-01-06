@@ -54,7 +54,7 @@
 class IceRegManagerEntry {
 public:
   IceRegManagerEntry(IceVariable *Var);
-  IceRegManagerEntry(const IceRegManagerEntry &Other);
+  IceRegManagerEntry(const IceRegManagerEntry &Other, unsigned NumReg);
   void load(IceInst *Inst);
   void store(IceInst *Inst);
   bool contains(const IceOperand *Operand) const;
@@ -64,11 +64,35 @@ public:
   }
   void dump(IceOstream &Str) const;
 private:
+  // Virtual register.
   IceVariable *const Var;
+  // Set of operands currently available in the virtual register.
   IceOpList Available;
+  // Instruction that loads the first operand into the virtual
+  // register.  Used for multiblock register allocation.  Can be NULL
+  // if the first load into the virtual register is not a valid
+  // candidate for multiblock register allocation, e.g. the Load
+  // bitcode.
   IceInst *FirstLoadInst;
+  // Whether the first load into the virtual register has been
+  // encountered.  TODO: consider saving memory by initializing
+  // FirstLoadInst to point to a sentinel instruction.
   bool IsFirstLoadValid;
-  // TODO: physical register assignment
+  // Number of predecessors that have the FirstLoadInst operand in the
+  // Available set.  Must be greater than zero to be a candidation for
+  // multiblock register allocation.
+  unsigned MultiblockCandidateWeight;
+  // This is an array indexed by (small) physical register number,
+  // giving the number of "votes" for each physical register.
+  int *PhysicalRegisterVotes;
+  // The sum of PhysicalRegisterVotes, for convenience.  The virtual
+  // register with the highest TotalVotes gets the first pick of
+  // physical registers.
+  int TotalVotes;
+  // If nonnegative, this is the (small) register number of the
+  // assigned physical register.  TODO: consider moving this into
+  // IceVariable for global register allocation.
+  int PhysicalRegister;
 };
 
 // TODO: Use some "virtual register" subclass of IceVariable.
@@ -92,6 +116,7 @@ public:
   void dump(IceOstream &Str) const;
   void dumpFirstLoads(IceOstream &Str) const;
 private:
+  const unsigned NumReg;
   // The LRU register queue.  The front element is the least recently
   // used and the next to be assigned.
   // TODO: Multiple queues by type.

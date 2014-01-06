@@ -58,6 +58,9 @@ IceCfg::IceCfg(void) : Str(std::cout, this),
 IceCfg::~IceCfg() {
   delete VariableTranslation;
   delete LabelTranslation;
+  // TODO: All ICE data destructors should have proper destructors.
+  // However, be careful with delete statements since we'll likely be
+  // using arena-based allocation.
 }
 
 void IceCfg::setName(const IceString &FunctionName) {
