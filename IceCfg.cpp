@@ -194,6 +194,12 @@ void IceCfg::deletePhis(void) {
 }
 
 void IceCfg::genCodeX8632(void) {
+  static const char *RegNames[] = {
+    "eax",
+    "ecx",
+    "edx",
+  };
+  RegisterNames = RegNames;
   for (IceNodeList::iterator I = Nodes.begin(), E = Nodes.end();
        I != E; ++I) {
     IceCfgNode *Node = *I;

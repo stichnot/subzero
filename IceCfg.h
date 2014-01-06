@@ -40,6 +40,7 @@ public:
   uint32_t translateLabel(const IceString &Name);
   IceString variableName(uint32_t VariableIndex) const;
   IceString labelName(uint32_t LabelIndex) const;
+  const char *PhysicalRegName(int Reg) const { return RegisterNames[Reg]; }
   void translate(void);
   void dump(void) const;
   void markLastUse(IceOperand *Operand, const IceInst *Inst);
@@ -57,6 +58,7 @@ private:
 
   class NameTranslation *VariableTranslation;
   class NameTranslation *LabelTranslation;
+  const char **RegisterNames;
   // arena allocator for the function
   // list of exit IceCfgNode* for liveness analysis
   // operand pool - set of IceOperand

@@ -57,9 +57,12 @@ IceOstream& operator<<(IceOstream &Str, const IceOperand *O) {
 }
 
 void IceVariable::dump(IceOstream &Str) const {
-  Str << "%" << Str.Cfg->variableName(VarIndex);
+  if (Str.isVerbose() || RegNum < 0)
+    Str << "%" << Str.Cfg->variableName(VarIndex);
   if (RegNum >= 0) {
-    Str << ":R" << RegNum;
+    if (Str.isVerbose())
+      Str << ":";
+    Str << Str.Cfg->PhysicalRegName(RegNum);
   }
 }
 
