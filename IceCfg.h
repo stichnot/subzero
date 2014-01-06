@@ -70,6 +70,7 @@ private:
   void genCodeX8632(void);
   void simpleDCE(void);
   void multiblockRegAlloc(void);
+  void multiblockCompensation(void);
 };
 
 #endif // _IceCfg_h

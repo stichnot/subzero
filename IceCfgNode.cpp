@@ -168,6 +168,31 @@ void IceCfgNode::genCodeX8632(IceCfg *Cfg) {
 }
 
 void IceCfgNode::multiblockRegAlloc(IceCfg *Cfg) {
+  // Candidates are the operands for which the operand is in the set
+  // of FirstLoad operands, and the operand is in the Available set of
+  // at least one predecessor RegManager.
+  //
+  // Construct the candidate list by checking each predecessor for
+  // each FirstLoad operand.
+  //
+  // Vote on physical register assignment.  For each virtual register,
+  // keep a tally of the number of votes for each physical register.
+  // A physical register assignment for a candidate in a predecessor
+  // block gets one vote.  Same for a successor block.  There is also
+  // a vote for preferences in the current block arising from
+  // instruction constraints.
+  //
+  // Add a compensation entry for each in-edge as necessary.  A
+  // compensation is either a load of an unavailable operand, or a
+  // register move.  A compensation is unnecessary when it is a
+  // register move with both the source and dest known to map to the
+  // same physical register.
+  //
+  // After this runs on all blocks, physical register assignment is
+  // complete, and pass over the blocks adds the compensation code.
+}
+
+void IceCfgNode::multiblockCompensation(IceCfg *Cfg) {
 }
 
 void IceCfgNode::insertInsts(IceInstList::iterator Location,

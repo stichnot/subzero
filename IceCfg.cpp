@@ -216,10 +216,23 @@ void IceCfg::simpleDCE(void) {
 }
 
 void IceCfg::multiblockRegAlloc(void) {
-  for (unsigned i = 0; i < Nodes.size(); ++i) {
-    IceCfgNode *Node = Nodes[i];
+  for (IceNodeList::iterator I = Nodes.begin(), E = Nodes.end();
+       I != E; ++I) {
+    IceCfgNode *Node = *I;
     if (Node) {
       Node->multiblockRegAlloc(this);
+    }
+  }
+}
+
+void IceCfg::multiblockCompensation(void) {
+  // TODO: Make sure the Node iterator plays nicely with the
+  // possibility of adding new blocks from edge splitting.
+  for (IceNodeList::iterator I = Nodes.begin(), E = Nodes.end();
+       I != E; ++I) {
+    IceCfgNode *Node = *I;
+    if (Node) {
+      Node->multiblockCompensation(this);
     }
   }
 }
@@ -262,6 +275,7 @@ void IceCfg::translate(void) {
   dump();
 
   multiblockRegAlloc();
+  multiblockCompensation();
   Str << "================ After multi-block regalloc ================\n";
   dump();
 
