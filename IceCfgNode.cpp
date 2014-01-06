@@ -208,6 +208,28 @@ void IceCfgNode::multiblockRegAlloc(IceCfg *Cfg) {
     // TODO: use the final RegManager in Pred.
     RegManager->updateCandidates(Pred->RegManager);
   }
+
+  // Consider each predecessor and update the PhysicalRegisterVotes
+  // values.
+  for (IceEdgeList::const_iterator I = InEdges.begin(), E = InEdges.end();
+       I != E; ++I) {
+    IceCfgNode *Pred = Cfg->getNode(*I);
+    assert(Pred);
+    RegManager->updateVotes(Pred->RegManager);
+  }
+
+  // Consider each successor and update the PhysicalRegisterVotes
+  // values.
+  for (IceEdgeList::const_iterator I = OutEdges.begin(), E = OutEdges.end();
+       I != E; ++I) {
+    IceCfgNode *Succ = Cfg->getNode(*I);
+    assert(Succ);
+    // TODO: Implement voting by successors.
+    //RegManager->updateVotes(Pred->RegManager);
+  }
+
+  // Tally up the votes and assign physical registers.
+  RegManager->makeAssignments();
 }
 
 void IceCfgNode::multiblockCompensation(IceCfg *Cfg) {

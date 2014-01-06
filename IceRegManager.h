@@ -1,9 +1,9 @@
+// -*- Mode: c++ -*-
 /* Copyright 2014 The Native Client Authors. All rights reserved.
  * Use of this source code is governed by a BSD-style license that can
  * be found in the LICENSE file.
  */
 
-// -*- Mode: c++ -*-
 #ifndef _IceRegManager_h
 #define _IceRegManager_h
 
@@ -53,7 +53,7 @@
 
 class IceRegManagerEntry {
 public:
-  IceRegManagerEntry(IceVariable *Var);
+  IceRegManagerEntry(IceVariable *Var, unsigned NumReg);
   IceRegManagerEntry(const IceRegManagerEntry &Other, unsigned NumReg);
   void load(IceInst *Inst);
   void store(IceInst *Inst);
@@ -64,6 +64,13 @@ public:
   }
   void updateCandidateWeight(int Incr=1) { MultiblockCandidateWeight += Incr; }
   int getCandidateWeight(void) const { return MultiblockCandidateWeight; }
+  void voteFor(int Reg) {
+    assert(PhysicalRegisterVotes);
+    ++PhysicalRegisterVotes[Reg];
+    ++TotalVotes;
+  }
+  int getTotalVotes(void) const { return TotalVotes; }
+  int getVotes(int Reg) const { return PhysicalRegisterVotes[Reg]; }
   void dump(IceOstream &Str) const;
 private:
   // Virtual register.
@@ -124,7 +131,9 @@ public:
   void notifyLoad(IceInst *Inst, bool IsAssign = true);
   void notifyStore(IceInst *Inst);
   void updateCandidates(const IceRegManager *Pred);
-  bool isAvailable(const IceOperand *Operand) const;
+  void updateVotes(const IceRegManager *Pred);
+  IceRegManagerEntry *getEntryContaining(const IceOperand *Operand) const;
+  void makeAssignments(void);
   void dump(IceOstream &Str) const;
   void dumpFirstLoads(IceOstream &Str) const;
 private:

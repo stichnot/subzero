@@ -1,9 +1,9 @@
+// -*- Mode: c++ -*-
 /* Copyright 2014 The Native Client Authors. All rights reserved.
  * Use of this source code is governed by a BSD-style license that can
  * be found in the LICENSE file.
  */
 
-// -*- Mode: c++ -*-
 #ifndef _IceOperand_h
 #define _IceOperand_h
 
@@ -75,9 +75,9 @@ private:
 class IceVariable : public IceOperand {
 public:
   IceVariable(IceType Type, uint32_t Index) :
-    IceOperand(Type), VarIndex(Index), UseCount(0),
-    DefInst(NULL), DefOrUseNode(NULL),
-    IsMultiDef(false), IsArgument(false), IsMultiblockLife(false) {}
+    IceOperand(Type), VarIndex(Index), UseCount(0), DefInst(NULL),
+    DefOrUseNode(NULL), IsMultiDef(false), IsArgument(false),
+    IsMultiblockLife(false), RegNum(-1) {}
   virtual void setUse(const IceInst *Inst, const IceCfgNode *Node);
   virtual void removeUse(void);
   virtual uint32_t getUseCount(void) const { return UseCount; }
@@ -94,6 +94,11 @@ public:
     // are no back-edges to the entry node, then it doesn't have a
     // multi-block lifetime.
   }
+  void setRegNum(int NewRegNum) {
+    assert(RegNum < 0); // shouldn't set it more than once
+    RegNum = NewRegNum;
+  }
+  int getRegNum(void) const { return RegNum; }
   virtual void dump(IceOstream &Str) const;
 private:
   // operand name for pretty-printing
@@ -105,7 +110,8 @@ private:
   bool IsMultiDef;
   bool IsArgument;
   bool IsMultiblockLife;
-  // global register allocated register
+  // Allocated register; -1 for no allocation
+  int RegNum;
 };
 
 #endif // _IceOperand_h

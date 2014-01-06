@@ -14,11 +14,12 @@
 #include "IceRegManager.h"
 #include "IceTypes.h"
 
-IceRegManagerEntry::IceRegManagerEntry(IceVariable *Var) : Var(Var) {
+IceRegManagerEntry::IceRegManagerEntry(IceVariable *Var, unsigned NumReg) : Var(Var) {
   FirstLoadInst = NULL;
   IsFirstLoadValid = false;
   MultiblockCandidateWeight = 0;
-  PhysicalRegisterVotes = NULL;
+  PhysicalRegisterVotes = new int[NumReg];
+  memset(PhysicalRegisterVotes, 0, NumReg * sizeof(*PhysicalRegisterVotes));
   TotalVotes = 0;
   PhysicalRegister = -1;
 }
@@ -29,11 +30,8 @@ IceRegManagerEntry::IceRegManagerEntry(const IceRegManagerEntry &Other,
   FirstLoadInst = Other.FirstLoadInst;
   IsFirstLoadValid = Other.IsFirstLoadValid;
   MultiblockCandidateWeight = Other.MultiblockCandidateWeight;
-  if (Other.PhysicalRegisterVotes) {
-    PhysicalRegisterVotes = new int[NumReg];
-    memcpy(PhysicalRegisterVotes, Other.PhysicalRegisterVotes, NumReg * sizeof(*PhysicalRegisterVotes));
-  } else
-    PhysicalRegisterVotes = NULL;
+  PhysicalRegisterVotes = new int[NumReg];
+  memcpy(PhysicalRegisterVotes, Other.PhysicalRegisterVotes, NumReg * sizeof(*PhysicalRegisterVotes));
   TotalVotes = Other.TotalVotes;
   PhysicalRegister = Other.PhysicalRegister;
 }
@@ -84,7 +82,8 @@ IceRegManager::IceRegManager(IceCfg *Cfg, IceCfgNode *Node, unsigned NumReg) :
     char Buf[100];
     sprintf(Buf, "r%u_%u", i + 1, Node->getIndex());
     IceVariable *Reg = Cfg->getVariable(IceType_i32, Buf);
-    Queue.push_back(new IceRegManagerEntry(Reg));
+    //Reg->setRegNum(i); // TODO: testing
+    Queue.push_back(new IceRegManagerEntry(Reg, NumReg));
   }
 }
 
@@ -200,18 +199,72 @@ void IceRegManager::updateCandidates(const IceRegManager *Pred) {
     assert(LoadInst->getDest(0));
     assert(LoadInst->getDest(0)->getVariable() == (*I)->getVar());
     IceOperand *Operand = LoadInst->getSrc(0);
-    if (Pred->isAvailable(Operand))
+    if (Pred->getEntryContaining(Operand))
       (*I)->updateCandidateWeight();
   }
 }
 
-bool IceRegManager::isAvailable(const IceOperand *Operand) const {
+void IceRegManager::updateVotes(const IceRegManager *Pred) {
+  for (QueueType::const_iterator I = Queue.begin(), E = Queue.end();
+       I != E; ++I) {
+    if ((*I)->getCandidateWeight() == 0)
+      continue;
+    IceInst *LoadInst = (*I)->getFirstLoadInst();
+    if (LoadInst == NULL)
+      continue;
+    assert(LoadInst->getDest(0));
+    assert(LoadInst->getDest(0)->getVariable() == (*I)->getVar());
+    IceOperand *Operand = LoadInst->getSrc(0);
+    IceRegManagerEntry *PredEntry = Pred->getEntryContaining(Operand);
+    if (PredEntry == NULL)
+      continue;
+    int Reg = PredEntry->getVar()->getRegNum();
+    if (Reg < 0)
+      continue;
+    assert((unsigned)Reg < NumReg);
+    (*I)->voteFor(Reg);
+  }
+}
+
+IceRegManagerEntry *IceRegManager::getEntryContaining(const IceOperand *Operand)
+  const {
   for (QueueType::const_iterator I = Queue.begin(), E = Queue.end();
        I != E; ++I) {
     if ((*I)->contains(Operand))
-      return true;
+      return *I;
   }
-  return false;
+  return NULL;
+}
+
+void IceRegManager::makeAssignments(void) {
+  // For each entry, ordered by TotalVotes, assign the register
+  // corresponding to the largest PhysicalRegisterVotes entry that
+  // hasn't already been assigned.
+  bool Assigned[NumReg];
+  memset(Assigned, 0, NumReg * sizeof(*Assigned));
+  while (true) {
+    IceRegManagerEntry *BestEntry = NULL;
+    for (QueueType::const_iterator I = Queue.begin(), E = Queue.end();
+         I != E; ++I) {
+      if ((*I)->getVar()->getRegNum() >= 0)
+        continue;
+      if (BestEntry == NULL ||
+          (*I)->getTotalVotes() > BestEntry->getTotalVotes())
+        BestEntry = *I;
+    }
+    if (BestEntry == NULL)
+      break;
+    int BestReg = -1;
+    for (unsigned i = 0; i < NumReg; i++) {
+      if (Assigned[i])
+        continue;
+      if (BestReg < 0 || BestEntry->getVotes(i) > BestEntry->getVotes(BestReg))
+        BestReg = i;
+    }
+    assert(BestReg >= 0);
+    BestEntry->getVar()->setRegNum(BestReg);
+    Assigned[BestReg] = true;
+  }
 }
 
 // ======================== Dump routines ======================== //

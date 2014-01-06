@@ -58,6 +58,9 @@ IceOstream& operator<<(IceOstream &Str, const IceOperand *O) {
 
 void IceVariable::dump(IceOstream &Str) const {
   Str << "%" << Str.Cfg->variableName(VarIndex);
+  if (RegNum >= 0) {
+    Str << ":R" << RegNum;
+  }
 }
 
 void IceOperand::dump(IceOstream &Str) const {
