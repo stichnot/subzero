@@ -135,6 +135,7 @@ public:
   IceRegManagerEntry *getEntryContaining(const IceOperand *Operand) const;
   void makeAssignments(void);
   IceInstList addCompensations(const IceRegManager *Pred);
+  void deleteHoists(void);
   void dump(IceOstream &Str) const;
   void dumpFirstLoads(IceOstream &Str) const;
 private:

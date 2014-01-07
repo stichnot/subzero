@@ -69,4 +69,9 @@ inline IceOstream& operator<<(IceOstream &Str, uint32_t U) {
   return Str;
 }
 
+// GlobalStr is just for debugging, in situations where the
+// IceCfg/IceOstream objects aren't otherwise available.  Not
+// thread-safe.
+extern IceOstream *GlobalStr;
+
 #endif // _IceDefs_h

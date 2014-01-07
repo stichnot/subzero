@@ -17,6 +17,8 @@
 #include "IceInst.h"
 #include "IceOperand.h"
 
+IceOstream *GlobalStr;
+
 // Provides a mapping between strings and small unsigned integers.
 // The small integers can be used for vector indices.
 class NameTranslation {
@@ -53,6 +55,7 @@ IceCfg::IceCfg(void) : Str(std::cout, this),
                        Type(IceType_void), Entry(NULL),
                        VariableTranslation(new NameTranslation),
                        LabelTranslation(new NameTranslation) {
+  GlobalStr = &Str;
 }
 
 IceCfg::~IceCfg() {
@@ -237,9 +240,8 @@ void IceCfg::multiblockRegAlloc(void) {
 void IceCfg::multiblockCompensation(void) {
   // TODO: Make sure the Node iterator plays nicely with the
   // possibility of adding new blocks from edge splitting.
-  for (IceNodeList::iterator I = Nodes.begin(), E = Nodes.end();
-       I != E; ++I) {
-    IceCfgNode *Node = *I;
+  for (unsigned i = 0, e = Nodes.size(); i < e; ++i) {
+    IceCfgNode *Node = Nodes[i];
     if (Node) {
       Node->multiblockCompensation(this);
     }

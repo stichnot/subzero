@@ -147,7 +147,8 @@ void IceCfgNode::deletePhis(IceCfg *Cfg) {
 
 void IceCfgNode::genCodeX8632(IceCfg *Cfg) {
   const unsigned NumScratchReg = 3; // eax, ecx, edx
-  if (InEdges.size() == 1) {
+  // TODO: Disabling extended basic block handling for now.
+  if (false && InEdges.size() == 1) {
     IceCfgNode *Pred = Cfg->getNode(InEdges[0]);
     assert(Pred);
     // TODO: Use the final RegManager in Pred.
@@ -242,7 +243,6 @@ void IceCfgNode::multiblockRegAlloc(IceCfg *Cfg) {
 }
 
 void IceCfgNode::multiblockCompensation(IceCfg *Cfg) {
-#if 0
   std::vector<IceInstList>::const_iterator I1 = Compensations.begin();
   for (IceEdgeList::const_iterator I = InEdges.begin(), E = InEdges.end();
        I != E; ++I, ++I1) {
@@ -257,7 +257,7 @@ void IceCfgNode::multiblockCompensation(IceCfg *Cfg) {
     Split->insertInsts(Split->Insts.end(), Insts);
     Split->genCodeX8632(Cfg);
   }
-#endif
+  RegManager->deleteHoists();
 }
 
 void IceCfgNode::insertInsts(IceInstList::iterator Location,

@@ -286,6 +286,18 @@ IceInstList IceRegManager::addCompensations(const IceRegManager *Pred) {
   return Compensations;
 }
 
+void IceRegManager::deleteHoists(void) {
+  for (QueueType::const_iterator I = Queue.begin(), E = Queue.end();
+       I != E; ++I) {
+    if ((*I)->getCandidateWeight() == 0)
+      continue;
+    IceInst *LoadInst = (*I)->getFirstLoadInst();
+    if (LoadInst == NULL)
+      continue;
+    LoadInst->setDeleted();
+  }
+}
+
 // ======================== Dump routines ======================== //
 
 void IceRegManager::dump(IceOstream &Str) const {

@@ -30,16 +30,31 @@ namespace IceX8632 {
       Src0 = Inst->getSrc(0);
       Prefer.push_back(Src0);
       Reg = RegManager->getRegister(Dest->getType(), Prefer, Avoid);
-      if (!RegManager->registerContains(Reg, Src0)) {
-        NewInst = new IceInstX8632Mov(Dest->getType(), Reg, Src0);
+      if (Dest->getRegNum() >= 0) {
+        if (RegManager->registerContains(Reg, Src0)) {
+          Src0 = Reg;
+        }
+        NewInst = new IceInstX8632Mov(Dest->getType(), Dest, Src0);
         Expansion.push_back(NewInst);
-        RegManager->notifyLoad(NewInst);
+        // TODO: commenting out the notifyLoad() call because Dest
+        // doesn't actually belong to the current RegManager and
+        // therefore it asserts.  Maybe this is the right thing to do,
+        // but we also have to consider the code selection for
+        // globally register allocated variables.
+        //RegManager->notifyLoad(NewInst);
+        NewInst->setRegState(RegManager);
+      } else {
+        if (!RegManager->registerContains(Reg, Src0)) {
+          NewInst = new IceInstX8632Mov(Dest->getType(), Reg, Src0);
+          Expansion.push_back(NewInst);
+          RegManager->notifyLoad(NewInst);
+          NewInst->setRegState(RegManager);
+        }
+        NewInst = new IceInstX8632Mov(Dest->getType(), Dest, Reg);
+        Expansion.push_back(NewInst);
+        RegManager->notifyStore(NewInst);
         NewInst->setRegState(RegManager);
       }
-      NewInst = new IceInstX8632Mov(Dest->getType(), Dest, Reg);
-      Expansion.push_back(NewInst);
-      RegManager->notifyStore(NewInst);
-      NewInst->setRegState(RegManager);
       break;
     case IceInst::Arithmetic:
       // TODO: Several instructions require specific physical
