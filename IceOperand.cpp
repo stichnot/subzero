@@ -3,8 +3,6 @@
  * be found in the LICENSE file.
  */
 
-#include <ostream>
-
 #include "IceCfg.h"
 #include "IceInst.h"
 #include "IceOperand.h"

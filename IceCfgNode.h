@@ -7,9 +7,6 @@
 #ifndef _IceCfgNode_h
 #define _IceCfgNode_h
 
-#include <list>
-#include <vector>
-
 #include "IceDefs.h"
 
 class IceCfgNode {

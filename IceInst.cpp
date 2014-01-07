@@ -3,9 +3,6 @@
  * be found in the LICENSE file.
  */
 
-#include <assert.h>
-#include <iostream>
-
 #include "IceCfg.h"
 #include "IceCfgNode.h"
 #include "IceInst.h"

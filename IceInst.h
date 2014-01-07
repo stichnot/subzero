@@ -7,8 +7,6 @@
 #ifndef _IceInst_h
 #define _IceInst_h
 
-#include <vector>
-
 #include "IceDefs.h"
 #include "IceTypes.h"
 

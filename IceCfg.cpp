@@ -3,13 +3,9 @@
  * be found in the LICENSE file.
  */
 
-#include <assert.h>
-#include <stdint.h>
 #include <stdio.h> // TODO: only for debugging sprintf
 
-#include <ostream>
 #include <iostream>
-#include <vector>
 
 #include "IceCfg.h"
 #include "IceCfgNode.h"
