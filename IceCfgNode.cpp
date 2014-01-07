@@ -25,6 +25,7 @@ void IceCfgNode::appendInst(IceInst *Inst) {
 void IceCfgNode::addPhi(IceInstPhi *Inst) {
   assert(!ArePhiLoadsPlaced);
   assert(!ArePhiStoresPlaced);
+  assert(Insts.empty());
   Phis.push_back(Inst);
   Inst->updateVars(this);
 }
