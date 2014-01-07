@@ -267,6 +267,25 @@ void IceRegManager::makeAssignments(void) {
   }
 }
 
+IceInstList IceRegManager::addCompensations(const IceRegManager *Pred) {
+  IceInstList Compensations;
+  for (QueueType::const_iterator I = Queue.begin(), E = Queue.end();
+       I != E; ++I) {
+    if ((*I)->getCandidateWeight() == 0)
+      continue;
+    IceInst *LoadInst = (*I)->getFirstLoadInst();
+    if (LoadInst == NULL)
+      continue;
+    assert(LoadInst->getDest(0));
+    assert(LoadInst->getDest(0)->getVariable() == (*I)->getVar());
+    IceVariable *Dest = LoadInst->getDest(0);
+    IceOperand *Src = LoadInst->getSrc(0);
+    IceInst *NewInst = new IceInstAssign(Dest->getType(), Dest, Src);
+    Compensations.push_back(NewInst);
+  }
+  return Compensations;
+}
+
 // ======================== Dump routines ======================== //
 
 void IceRegManager::dump(IceOstream &Str) const {

@@ -230,9 +230,34 @@ void IceCfgNode::multiblockRegAlloc(IceCfg *Cfg) {
 
   // Tally up the votes and assign physical registers.
   RegManager->makeAssignments();
+
+  // Add compensation entries as necessary.
+  for (IceEdgeList::const_iterator I = InEdges.begin(), E = InEdges.end();
+       I != E; ++I) {
+    IceCfgNode *Pred = Cfg->getNode(*I);
+    assert(Pred);
+    // TODO: use the final RegManager in Pred.
+    Compensations.push_back(RegManager->addCompensations(Pred->RegManager));
+  }
 }
 
 void IceCfgNode::multiblockCompensation(IceCfg *Cfg) {
+#if 0
+  std::vector<IceInstList>::const_iterator I1 = Compensations.begin();
+  for (IceEdgeList::const_iterator I = InEdges.begin(), E = InEdges.end();
+       I != E; ++I, ++I1) {
+    IceCfgNode *Pred = Cfg->getNode(*I);
+    assert(Pred);
+    IceString NodeName =
+      "s__" + Cfg->labelName(*I) + "_" + Cfg->labelName(NameIndex);
+    IceCfgNode *Split = new IceCfgNode(Cfg, Cfg->translateLabel(NodeName));
+    IceInstList Insts = *I1;
+    Insts.push_back(new IceInstBr(Split, NameIndex));
+    Split->InEdges.push_back(*I);
+    Split->insertInsts(Split->Insts.end(), Insts);
+    Split->genCodeX8632(Cfg);
+  }
+#endif
 }
 
 void IceCfgNode::insertInsts(IceInstList::iterator Location,
