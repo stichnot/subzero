@@ -105,8 +105,7 @@ namespace IceX8632 {
         Prefer.push_back(Src0);
         if (Src1->getVariable())
           Avoid.push_back(Src1->getVariable());
-        assert(Dest);
-        Reg = RegManager->getRegister(Dest->getType(), Prefer, Avoid);
+        Reg = RegManager->getRegister(Src0->getType(), Prefer, Avoid);
         // Create "reg=Src0" if needed.
         if (!RegManager->registerContains(Reg, Src0)) {
           NewInst = new IceInstX8632Mov(Src0->getType(), Reg, Src0);
