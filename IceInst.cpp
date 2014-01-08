@@ -108,7 +108,7 @@ void IceInst::doAddressOpt(IceVariable *&Base, IceVariable *&Index,
       llvm::dyn_cast_or_null<IceVariable>(BaseOperand1);
     if (Index == NULL &&
         llvm::isa<IceInstArithmetic>(BaseInst) &&
-        (llvm::dyn_cast<IceInstArithmetic>(BaseInst)->getOp() ==
+        (llvm::cast<IceInstArithmetic>(BaseInst)->getOp() ==
          IceInstArithmetic::Add) &&
         BaseVariable0 && BaseVariable1 &&
         // TODO: ensure BaseVariable0 and BaseVariable1 stay single-BB
@@ -130,7 +130,7 @@ void IceInst::doAddressOpt(IceVariable *&Base, IceVariable *&Index,
       llvm::dyn_cast_or_null<IceConstant>(IndexOperand1);
     if (IndexInst &&
         llvm::isa<IceInstArithmetic>(IndexInst) &&
-        (llvm::dyn_cast<IceInstArithmetic>(IndexInst)->getOp() ==
+        (llvm::cast<IceInstArithmetic>(IndexInst)->getOp() ==
          IceInstArithmetic::Mul) &&
         IndexVariable0 &&
         IndexOperand1->getType() == IceType_i32 &&
