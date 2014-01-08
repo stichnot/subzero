@@ -81,9 +81,10 @@ void IceCfgNode::placePhiLoads(IceCfg *Cfg) {
   // Create the phi version of each destination and add it to the phi
   // instruction's Srcs list.
   IceInstList NewPhiLoads;
-  for (unsigned i = 0; i < Phis.size(); ++i) {
+  for (IcePhiList::iterator I = Phis.begin(), E = Phis.end();
+       I != E; ++I) {
     // Change "a=phi(...)" to "a_phi=phi(...); a=a_phi".
-    IceInstPhi *Phi = Phis[i];
+    IceInstPhi *Phi = *I;
     IceInst *NewPhi = Phi->lower(Cfg, this);
     NewPhiLoads.push_back(NewPhi);
   }
@@ -108,8 +109,8 @@ void IceCfgNode::placePhiStores(IceCfg *Cfg) {
     assert(Target);
     if (Target == NULL)
       continue;
-    for (std::vector<IceInstPhi *>::const_iterator I2 = Target->Phis.begin(), E2 = Target->Phis.end();
-         I2 != E2; ++I2) {
+    for (IcePhiList::const_iterator I2 = Target->Phis.begin(),
+           E2 = Target->Phis.end(); I2 != E2; ++I2) {
       IceOperand *Operand = (*I2)->getOperandForTarget(NameIndex);
       assert(Operand);
       if (Operand == NULL)
@@ -139,8 +140,9 @@ void IceCfgNode::placePhiStores(IceCfg *Cfg) {
 }
 
 void IceCfgNode::deletePhis(IceCfg *Cfg) {
-  for (unsigned i = 0; i < Phis.size(); ++i) {
-    Phis[i]->setDeleted();
+  for (IcePhiList::iterator I = Phis.begin(), E = Phis.end();
+       I != E; ++I) {
+    (*I)->setDeleted();
   }
 }
 
@@ -291,8 +293,9 @@ void IceCfgNode::dump(IceOstream &Str) const {
       Str << "}\n";
     }
   }
-  for (unsigned i = 0; i < Phis.size(); ++i) {
-    Str << Phis[i];
+  for (IcePhiList::const_iterator I = Phis.begin(), E = Phis.end();
+       I != E; ++I) {
+    Str << (*I);
   }
   IceInstList::const_iterator I = Insts.begin(), E = Insts.end();
   while (I != E) {

@@ -32,6 +32,7 @@ class IceRegManager;
 // http://llvm.org/docs/ProgrammersManual.html#isa
 typedef std::string IceString;
 typedef std::list<IceInst *> IceInstList;
+typedef std::list<IceInstPhi *> IcePhiList;
 typedef std::vector<IceOperand *> IceOpList;
 typedef std::vector<IceVariable *> IceVarList;
 typedef std::vector<uint32_t> IceEdgeList;

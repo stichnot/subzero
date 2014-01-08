@@ -32,7 +32,7 @@ private:
   IceEdgeList OutEdges; // first is default/fallthrough
   IceEdgeList InEdges; // in no particular order
   std::vector<IceInstList> Compensations; // ordered by InEdges
-  std::vector<IceInstPhi *> Phis; // unordered set of phi instructions
+  IcePhiList Phis; // unordered set of phi instructions
   IceInstList Insts; // ordered list of non-phi instructions
   bool ArePhiLoadsPlaced;
   bool ArePhiStoresPlaced;

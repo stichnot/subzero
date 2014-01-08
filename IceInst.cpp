@@ -61,7 +61,7 @@ void IceInst::findAddressOpt(IceCfg *Cfg, const IceCfgNode *Node) {
 
   // Replace Srcs.back() with Base+Index+Shift+Offset, updating
   // reference counts and deleting resulting dead instructions.
-  std::vector<IceOperand*> NewOperands;
+  IceOpList NewOperands;
   NewOperands.push_back(Base);
   NewOperands.push_back(Index);
   NewOperands.push_back(new IceConstant(Shift));
