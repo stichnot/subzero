@@ -86,6 +86,9 @@ public:
   IceInstAlloca(uint32_t Size, uint32_t Align) :
     IceInst(Alloca, IceType_i8), Size(Size), Align(Align) {}
   virtual void dump(IceOstream &Str) const;
+  static bool classof(const IceInst *Inst) {
+    return Inst->getKind() == Alloca;
+  }
 private:
   const uint32_t Size;
   const uint32_t Align;
@@ -121,6 +124,9 @@ public:
   IceArithmetic getOp(void) const { return Op; }
   bool isCommutative(void) const;
   virtual void dump(IceOstream &Str) const;
+  static bool classof(const IceInst *Inst) {
+    return Inst->getKind() == Arithmetic;
+  }
 
 private:
   const IceArithmetic Op;
@@ -130,6 +136,9 @@ class IceInstAssign : public IceInst {
 public:
   IceInstAssign(IceType Type, IceVariable *Dest, IceOperand *Source);
   virtual void dump(IceOstream &Str) const;
+  static bool classof(const IceInst *Inst) {
+    return Inst->getKind() == Assign;
+  }
 private:
 };
 
@@ -145,6 +154,9 @@ public:
   uint32_t getLabelFalse(void) const;
   const IceCfgNode *getNode(void) const { return Node; }
   virtual void dump(IceOstream &Str) const;
+  static bool classof(const IceInst *Inst) {
+    return Inst->getKind() == Br;
+  }
 private:
   const bool IsConditional;
   const IceCfgNode *Node; // Out-edge target list is kept here.
@@ -157,6 +169,9 @@ public:
     IceInst(Call, Type), Tail(Tail) {}
   virtual void removeUse(IceVariable *Variable) {}
   virtual void dump(IceOstream &Str) const;
+  static bool classof(const IceInst *Inst) {
+    return Inst->getKind() == Call;
+  }
 private:
   const bool Tail;
 };
@@ -181,6 +196,9 @@ public:
   };
   IceInstConversion(IceConvert Conversion, IceType Type,
                     IceOperand *Dest, IceOperand *Source);
+  static bool classof(const IceInst *Inst) {
+    return Inst->getKind() == Conversion;
+  }
 private:
 };
 
@@ -208,6 +226,9 @@ public:
   };
   IceInstFcmp(IceFCond Condition, IceType Type, IceOperand *Dest,
               IceOperand *Source1, IceOperand *Source2);
+  static bool classof(const IceInst *Inst) {
+    return Inst->getKind() == Fcmp;
+  }
 private:
   IceFCond Condition;
 };
@@ -231,6 +252,9 @@ public:
               IceOperand *Source1, IceOperand *Source2);
   IceICond getCondition(void) const { return Condition; }
   virtual void dump(IceOstream &Str) const;
+  static bool classof(const IceInst *Inst) {
+    return Inst->getKind() == Icmp;
+  }
 private:
   IceICond Condition;
 };
@@ -239,6 +263,9 @@ class IceInstLoad : public IceInst {
 public:
   IceInstLoad(IceType Type, IceVariable *Dest, IceOperand *SourceAddr);
   virtual void dump(IceOstream &Str) const;
+  static bool classof(const IceInst *Inst) {
+    return Inst->getKind() == Load;
+  }
 private:
 };
 
@@ -249,6 +276,9 @@ public:
   IceInst *lower(IceCfg *Cfg, IceCfgNode *Node);
   IceOperand *getOperandForTarget(uint32_t Target) const;
   virtual void dump(IceOstream &Str) const;
+  static bool classof(const IceInst *Inst) {
+    return Inst->getKind() == Phi;
+  }
 private:
   IceEdgeList Labels; // corresponding to Srcs
 };
@@ -257,6 +287,9 @@ class IceInstRet : public IceInst {
 public:
   IceInstRet(IceType Type, IceOperand *Source = NULL);
   virtual void dump(IceOstream &Str) const;
+  static bool classof(const IceInst *Inst) {
+    return Inst->getKind() == Ret;
+  }
 private:
 };
 
@@ -265,6 +298,9 @@ class IceInstSelect : public IceInst {
 public:
   IceInstSelect(IceType Type, IceOperand *Dest, IceOperand *Condition,
                 IceOperand *Source1, IceOperand *Source2);
+  static bool classof(const IceInst *Inst) {
+    return Inst->getKind() == Select;
+  }
 private:
 };
 
@@ -273,6 +309,9 @@ private:
 class IceInstStore : public IceInst {
 public:
   IceInstStore(IceType Type, IceOperand *SourceAddr, IceOperand *SourceData);
+  static bool classof(const IceInst *Inst) {
+    return Inst->getKind() == Store;
+  }
 private:
 };
 
@@ -282,6 +321,9 @@ public:
   IceInstSwitch(IceType Type, IceOperand *Source,
                 int32_t LabelDefault);
   void addBranch(IceType Type, IceOperand *Source, int32_t Label);
+  static bool classof(const IceInst *Inst) {
+    return Inst->getKind() == Switch;
+  }
 private:
 };
 
@@ -290,6 +332,9 @@ public:
   void setRegState(const IceRegManager *State);
   virtual void dump(IceOstream &Str) const;
   virtual void dumpExtras(IceOstream &Str) const;
+  static bool classof(const IceInst *Inst) {
+    return Inst->getKind() == Target;
+  }
 protected:
   IceInstTarget(IceType Type) : IceInst(Target, Type), RegState(NULL) {}
   const IceRegManager *RegState; // used only for debugging/dumping

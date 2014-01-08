@@ -83,7 +83,8 @@ namespace IceX8632 {
       }
       // TODO: Use a virtual register instead of Src1 if Src1 is
       // available in a virtual register.
-      NewInst = new IceInstX8632Arithmetic((IceInstX8632Arithmetic::IceX8632Arithmetic)static_cast<const IceInstArithmetic *>(Inst)->getOp(), Dest->getType(), Reg, Src1);
+      // TODO: De-uglify this.
+      NewInst = new IceInstX8632Arithmetic((IceInstX8632Arithmetic::IceX8632Arithmetic)llvm::dyn_cast<IceInstArithmetic>(Inst)->getOp(), Dest->getType(), Reg, Src1);
       Expansion.push_back(NewInst);
       RegManager->notifyLoad(NewInst, false);
       NewInst->setRegState(RegManager);
@@ -96,8 +97,10 @@ namespace IceX8632 {
       // For now, require that the following instruction is a branch
       // based on the last use of this instruction's Dest operand.
       // TODO: Fix this.
-      if (Next->getKind() == IceInst::Br &&
+      if (llvm::isa<IceInstBr>(Next) &&
           Inst->getDest(0) == Next->getSrc(0)) {
+        const IceInstIcmp *InstIcmp = llvm::dyn_cast<IceInstIcmp>(Inst);
+        const IceInstBr *NextBr = llvm::dyn_cast<IceInstBr>(Next);
         // This is basically identical to an Arithmetic instruction,
         // except there is no Dest variable to store.
         Src0 = Inst->getSrc(0);
@@ -116,8 +119,6 @@ namespace IceX8632 {
         NewInst = new IceInstX8632Icmp(Reg, Src1);
         Expansion.push_back(NewInst);
         NewInst->setRegState(RegManager);
-        const IceInstIcmp *InstIcmp = static_cast<const IceInstIcmp*>(Inst);
-        IceInstBr *NextBr = static_cast<IceInstBr*>(Next);
         NewInst = new IceInstX8632Br(NextBr->getNode(),
                                      InstIcmp->getCondition());
         Expansion.push_back(NewInst);
