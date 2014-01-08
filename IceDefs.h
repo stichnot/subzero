@@ -17,6 +17,7 @@
 
 #define __STDC_LIMIT_MACROS
 #define __STDC_CONSTANT_MACROS
+// See http://llvm.org/docs/ProgrammersManual.html#isa
 #include "llvm/Support/Casting.h"
 
 class IceCfg;
@@ -30,10 +31,8 @@ class IceRegManager;
 
 // typedefs of containers
 
-// TODO: Switch over to LLVM's ADT container classes.  Also, make use
-// of LLVM's isa<>, cast<>, and dyn_cast<> templates.
+// TODO: Switch over to LLVM's ADT container classes.
 // http://llvm.org/docs/ProgrammersManual.html#picking-the-right-data-structure-for-a-task
-// http://llvm.org/docs/ProgrammersManual.html#isa
 typedef std::string IceString;
 typedef std::list<IceInst *> IceInstList;
 typedef std::list<IceInstPhi *> IcePhiList;
