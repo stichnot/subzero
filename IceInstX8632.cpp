@@ -17,7 +17,7 @@ namespace IceX8632 {
     IceInstList Expansion;
     IceOpList Prefer;
     IceVarList Avoid;
-    IceVariable *Dest;
+    IceVariable *Dest = NULL;
     IceOperand *Src0, *Src1, *Src2, *Src3;
     IceVariable *Reg, *Reg1, *Reg2;
     bool LRend0, LRend1;
@@ -105,6 +105,7 @@ namespace IceX8632 {
         Prefer.push_back(Src0);
         if (Src1->getVariable())
           Avoid.push_back(Src1->getVariable());
+        assert(Dest);
         Reg = RegManager->getRegister(Dest->getType(), Prefer, Avoid);
         // Create "reg=Src0" if needed.
         if (!RegManager->registerContains(Reg, Src0)) {

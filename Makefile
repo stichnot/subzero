@@ -32,7 +32,7 @@ INCLUDEPATH := .
 
 # It's recommended that CXX matches the compiler you used to build LLVM itself.
 CXX := g++
-CXXFLAGS := -Wall -fno-rtti -O0 -g -I$(INCLUDEPATH)
+CXXFLAGS := -Wall -Werror -fno-rtti -O0 -g -I$(INCLUDEPATH)
 LDFLAGS :=
 
 LLVM_CXXFLAGS := `$(LLVM_BIN_PATH)/llvm-config --cxxflags`
