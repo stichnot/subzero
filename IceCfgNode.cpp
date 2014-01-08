@@ -244,6 +244,7 @@ void IceCfgNode::multiblockRegAlloc(IceCfg *Cfg) {
 }
 
 void IceCfgNode::multiblockCompensation(IceCfg *Cfg) {
+  return; // TODO: This is broken so disable it for now.
   std::vector<IceInstList>::const_iterator I1 = Compensations.begin();
   for (IceEdgeList::const_iterator I = InEdges.begin(), E = InEdges.end();
        I != E; ++I, ++I1) {
