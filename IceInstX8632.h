@@ -61,8 +61,6 @@ public:
 private:
   IceInstIcmp::IceICond Condition;
   const IceCfgNode *Node; // Out-edge target list is kept here.
-  //uint32_t LabelIndexFalse; // fall-through
-  //uint32_t LabelIndexTrue;
 };
 
 class IceInstX8632Icmp : public IceInstTarget {

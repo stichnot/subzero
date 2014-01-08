@@ -281,12 +281,16 @@ IceInstBr::IceInstBr(IceCfgNode *Node, IceOperand *Source,
                      uint32_t LabelTrue, uint32_t LabelFalse) :
   IceInst(IceInst::Br, IceType_i1), IsConditional(true), Node(Node) {
   addSource(Source);
+  // TODO: It would be better to add CFG edges in
+  // IceCfgNode::appendInst() instead of here.
   Node->addFallthrough(LabelFalse);
   Node->addNonFallthrough(LabelTrue);
 }
 
 IceInstBr::IceInstBr(IceCfgNode *Node, uint32_t Label) :
   IceInst(IceInst::Br, IceType_i1), IsConditional(false), Node(Node) {
+  // TODO: It would be better to add CFG edges in
+  // IceCfgNode::appendInst() instead of here.
   Node->addFallthrough(Label);
 }
 
