@@ -4,6 +4,7 @@
  */
 
 #include "IceCfg.h"
+#include "IceCfgNode.h"
 #include "IceInst.h"
 #include "IceInstX8632.h"
 #include "IceOperand.h"
@@ -117,9 +118,9 @@ namespace IceX8632 {
         NewInst->setRegState(RegManager);
         const IceInstIcmp *InstIcmp = static_cast<const IceInstIcmp*>(Inst);
         IceInstBr *NextBr = static_cast<IceInstBr*>(Next);
-        NewInst = new IceInstX8632Br(InstIcmp->getCondition(), NextBr->getLabelTrue(), NextBr->getLabelFalse());
+        NewInst = new IceInstX8632Br(NextBr->getNode(),
+                                     InstIcmp->getCondition());
         Expansion.push_back(NewInst);
-        //Next->setDeleted();
         DeleteNextInst = true;
       } else {
         assert(0);
@@ -204,10 +205,17 @@ IceInstX8632Arithmetic::IceInstX8632Arithmetic(IceX8632Arithmetic Op,
   addSource(Source);
 }
 
-IceInstX8632Br::IceInstX8632Br(IceInstIcmp::IceICond Condition,
-                               uint32_t LabelTrue, uint32_t LabelFalse) :
-  IceInstTarget(IceType_void), Condition(Condition),
-  LabelIndexFalse(LabelFalse), LabelIndexTrue(LabelTrue) {
+IceInstX8632Br::IceInstX8632Br(const IceCfgNode *Node,
+                               IceInstIcmp::IceICond Condition) :
+  IceInstTarget(IceType_void), Condition(Condition), Node(Node) {
+}
+
+uint32_t IceInstX8632Br::getLabelTrue(void) const {
+  return Node->getNonFallthrough();
+}
+
+uint32_t IceInstX8632Br::getLabelFalse(void) const {
+  return Node->getFallthrough();
 }
 
 IceInstX8632Icmp::IceInstX8632Icmp(IceOperand *Src0, IceOperand *Src1) :
@@ -339,8 +347,8 @@ void IceInstX8632Br::dump(IceOstream &Str) const {
     Str << "sle";
     break;
   }
-  Str << ", label %" << Str.Cfg->labelName(LabelIndexTrue)
-      << ", label %" << Str.Cfg->labelName(LabelIndexFalse);
+  Str << ", label %" << Str.Cfg->labelName(getLabelTrue())
+      << ", label %" << Str.Cfg->labelName(getLabelFalse());
 }
 
 void IceInstX8632Icmp::dump(IceOstream &Str) const {
