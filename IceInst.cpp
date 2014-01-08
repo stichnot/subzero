@@ -276,17 +276,23 @@ IceInstAssign::IceInstAssign(IceType Type,
 
 IceInstBr::IceInstBr(IceCfgNode *Node, IceOperand *Source,
                      uint32_t LabelTrue, uint32_t LabelFalse) :
-  IceInst(IceInst::Br, IceType_i1), IsConditional(true),
-  LabelIndexFalse(LabelFalse), LabelIndexTrue(LabelTrue) {
+  IceInst(IceInst::Br, IceType_i1), IsConditional(true), Node(Node) {
   addSource(Source);
-  Node->addNonFallthrough(LabelFalse);
-  Node->addFallthrough(LabelTrue);
+  Node->addFallthrough(LabelFalse);
+  Node->addNonFallthrough(LabelTrue);
 }
 
 IceInstBr::IceInstBr(IceCfgNode *Node, uint32_t Label) :
-  IceInst(IceInst::Br, IceType_i1), IsConditional(false),
-  LabelIndexFalse(Label), LabelIndexTrue(-1) {
+  IceInst(IceInst::Br, IceType_i1), IsConditional(false), Node(Node) {
   Node->addFallthrough(Label);
+}
+
+uint32_t IceInstBr::getLabelTrue(void) const {
+  return Node->getNonFallthrough();
+}
+
+uint32_t IceInstBr::getLabelFalse(void) const {
+  return Node->getFallthrough();
 }
 
 IceInstIcmp::IceInstIcmp(IceICond Condition, IceType Type, IceVariable *Dest,
@@ -495,10 +501,10 @@ void IceInstBr::dump(IceOstream &Str) const {
   Str << "br ";
   if (IsConditional) {
     Str << "i1 " << Srcs[0]
-        << ", label %" << Str.Cfg->labelName(LabelIndexTrue)
+        << ", label %" << Str.Cfg->labelName(getLabelTrue())
         << ", ";
   }
-  Str << "label %" << Str.Cfg->labelName(LabelIndexFalse);
+  Str << "label %" << Str.Cfg->labelName(getLabelFalse());
 }
 
 void IceInstIcmp::dump(IceOstream &Str) const {

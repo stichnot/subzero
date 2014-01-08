@@ -17,6 +17,10 @@ public:
   uint32_t getIndex(void) const { return NameIndex; }
   void addFallthrough(uint32_t TargetLabel);
   void addNonFallthrough(uint32_t TargetLabel);
+  uint32_t getFallthrough(void) const { return OutEdges[0]; }
+  uint32_t getNonFallthrough(unsigned Which = 0) const {
+    return OutEdges[1 + Which];
+  }
   void registerInEdges(IceCfg *Cfg);
   void findAddressOpt(IceCfg *Cfg);
   void markLastUses(IceCfg *Cfg);
