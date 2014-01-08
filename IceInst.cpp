@@ -40,7 +40,7 @@ void IceInst::addSource(IceOperand *Source) {
 }
 
 void IceInst::findAddressOpt(IceCfg *Cfg, const IceCfgNode *Node) {
-  if (getKind() != Load && getKind() != Store)
+  if (!llvm::isa<IceInstLoad>(this) && !llvm::isa<IceInstStore>(this))
     return;
   IceVariable *Base = llvm::dyn_cast<IceVariable>(Srcs.back());
   IceVariable *BaseOrig = Base;
@@ -90,7 +90,7 @@ void IceInst::doAddressOpt(IceVariable *&Base, IceVariable *&Index,
     IceVariable *BaseVariable0 =
       llvm::dyn_cast_or_null<IceVariable>(BaseOperand0);
     if (BaseInst &&
-        BaseInst->getKind() == IceInst::Assign &&
+        llvm::isa<IceInstAssign>(BaseInst) &&
         BaseVariable0 &&
         // TODO: ensure BaseVariable0 stays single-BB
         true) {

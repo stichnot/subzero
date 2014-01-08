@@ -126,11 +126,11 @@ void IceCfgNode::placePhiStores(IceCfg *Cfg) {
   IceInstList::iterator InsertionPoint = Insts.end();
   if (InsertionPoint != Insts.begin()) {
     --InsertionPoint;
-    if ((*InsertionPoint)->getKind() == IceInst::Br) {
+    if (llvm::isa<IceInstBr>(*InsertionPoint)) {
       if (InsertionPoint != Insts.begin()) {
         --InsertionPoint;
-        if ((*InsertionPoint)->getKind() != IceInst::Icmp &&
-            (*InsertionPoint)->getKind() != IceInst::Fcmp) {
+        if (!llvm::isa<IceInstIcmp>(*InsertionPoint) &&
+            !llvm::isa<IceInstFcmp>(*InsertionPoint)) {
           ++InsertionPoint;
         }
       }

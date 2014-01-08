@@ -9,7 +9,7 @@
 
 void IceVariable::setUse(const IceInst *Inst, const IceCfgNode *Node) {
   ++UseCount;
-  if (Inst->getKind() == IceInst::Phi ||
+  if (llvm::isa<IceInstPhi>(Inst) ||
       (DefOrUseNode != NULL && DefOrUseNode != Node)) {
     IsMultiblockLife = true;
   }
