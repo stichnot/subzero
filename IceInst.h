@@ -143,6 +143,7 @@ public:
   uint32_t getLabelTrue(void) const;
   // Fall-through
   uint32_t getLabelFalse(void) const;
+  const IceCfgNode *getNode(void) const { return Node; }
   virtual void dump(IceOstream &Str) const;
 private:
   const bool IsConditional;
