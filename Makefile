@@ -50,8 +50,11 @@ OBJS= \
 subzerotest: $(OBJS) IceTest.o
 	$(CXX) $(LDFLAGS) -o $@ $^
 
-llvm2ice: $(OBJS) llvm2ice.o
+llvm2ice: $(OBJS) PNaClABITypeChecker.o llvm2ice.o
 	$(CXX) $(LDFLAGS) -o $@ $^ $(LLVM_LDFLAGS)
+
+PNaClABITypeChecker.o: PNaClABITypeChecker.cpp PNaClABITypeChecker.h
+	$(CXX) -c $(CXXFLAGS) $(LLVM_CXXFLAGS) $< -o $@
 
 # Compiling driver files (with a 'main' function) separately, so they don't
 # get included in OBJS.
