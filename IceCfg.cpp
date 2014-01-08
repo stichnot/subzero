@@ -316,8 +316,9 @@ void IceCfg::dump(void) const {
     }
   }
   // Print each basic block
-  for (unsigned i = 0; i < Nodes.size(); ++i) {
-    IceCfgNode *Node = Nodes[i];
+  for (IceNodeList::const_iterator I = Nodes.begin(), E = Nodes.end();
+       I != E; ++I) {
+    IceCfgNode *Node = *I;
     if (Node) {
       Node->dump(Str);
     }
