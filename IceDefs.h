@@ -15,6 +15,10 @@
 #include <string>
 #include <vector>
 
+#define __STDC_LIMIT_MACROS
+#define __STDC_CONSTANT_MACROS
+#include "llvm/Support/Casting.h"
+
 class IceCfg;
 class IceCfgNode;
 class IceInst;

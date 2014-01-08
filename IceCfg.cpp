@@ -151,7 +151,7 @@ void IceCfg::markLastUses(void) {
 }
 
 void IceCfg::markLastUse(IceOperand *Operand, const IceInst *Inst) {
-  IceVariable *Variable = Operand->getVariable();
+  IceVariable *Variable = llvm::dyn_cast<IceVariable>(Operand);
   if (Variable == NULL)
     return;
   if (Variable->isMultiblockLife())
@@ -245,7 +245,7 @@ void IceCfg::multiblockCompensation(void) {
 }
 
 bool IceCfg::isLastUse(const IceInst *Inst, IceOperand *Operand) const {
-  IceVariable *Variable = Operand->getVariable();
+  IceVariable *Variable = llvm::dyn_cast<IceVariable>(Operand);
   if (Variable == NULL)
     return false;
   uint32_t Index = Variable->getIndex();

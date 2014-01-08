@@ -42,7 +42,7 @@ void IceInst::addSource(IceOperand *Source) {
 void IceInst::findAddressOpt(IceCfg *Cfg, const IceCfgNode *Node) {
   if (getKind() != Load && getKind() != Store)
     return;
-  IceVariable *Base = Srcs.back()->getVariable();
+  IceVariable *Base = llvm::dyn_cast<IceVariable>(Srcs.back());
   IceVariable *BaseOrig = Base;
   if (Base == NULL)
     return;
@@ -88,7 +88,7 @@ void IceInst::doAddressOpt(IceVariable *&Base, IceVariable *&Index,
     const IceInst *BaseInst = Base->getDefinition();
     IceOperand *BaseOperand0 = BaseInst ? BaseInst->getSrc(0) : NULL;
     IceVariable *BaseVariable0 =
-      (BaseOperand0 ? BaseOperand0->getVariable() : NULL);
+      llvm::dyn_cast_or_null<IceVariable>(BaseOperand0);
     if (BaseInst &&
         BaseInst->getKind() == IceInst::Assign &&
         BaseVariable0 &&
@@ -105,7 +105,7 @@ void IceInst::doAddressOpt(IceVariable *&Base, IceVariable *&Index,
     //   set Base=Var1, Index=Var2, Shift=0
     IceOperand *BaseOperand1 = BaseInst ? BaseInst->getSrc(1) : NULL;
     IceVariable *BaseVariable1 =
-      (BaseOperand1 ? BaseOperand1->getVariable() : NULL);
+      llvm::dyn_cast_or_null<IceVariable>(BaseOperand1);
     if (Index == NULL &&
         BaseInst->getKind() == IceInst::Arithmetic &&
         static_cast<const IceInstArithmetic*>(BaseInst)->getOp() == IceInstArithmetic::Add &&
@@ -123,9 +123,10 @@ void IceInst::doAddressOpt(IceVariable *&Base, IceVariable *&Index,
     const IceInst *IndexInst = Index ? Index->getDefinition() : NULL;
     IceOperand *IndexOperand0 = IndexInst ? IndexInst->getSrc(0) : NULL;
     IceVariable *IndexVariable0 =
-      (IndexOperand0 ? IndexOperand0->getVariable() : NULL);
+      llvm::dyn_cast_or_null<IceVariable>(IndexOperand0);
     IceOperand *IndexOperand1 = IndexInst ? IndexInst->getSrc(1) : NULL;
-    IceConstant *IndexConstant1 = IndexOperand1 ? IndexOperand1->getConstant() : NULL;
+    IceConstant *IndexConstant1 =
+      llvm::dyn_cast_or_null<IceConstant>(IndexOperand1);
     if (IndexInst &&
         IndexInst->getKind() == IceInst::Arithmetic &&
         static_cast<const IceInstArithmetic*>(IndexInst)->getOp() == IceInstArithmetic::Mul &&

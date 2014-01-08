@@ -168,7 +168,7 @@ void IceRegManager::notifyLoad(IceInst *Inst, bool IsAssign) {
 }
 
 void IceRegManager::notifyStore(IceInst *Inst) {
-  IceVariable *Reg = Inst->getSrc(0)->getVariable();
+  IceVariable *Reg = llvm::dyn_cast<IceVariable>(Inst->getSrc(0));
   assert(Reg);
   IceVariable *Variable = Inst->getDest(0);
   assert(Variable);
@@ -196,7 +196,7 @@ void IceRegManager::updateCandidates(const IceRegManager *Pred) {
     if (LoadInst == NULL)
       continue;
     assert(LoadInst->getDest(0));
-    assert(LoadInst->getDest(0)->getVariable() == (*I)->getVar());
+    assert(llvm::dyn_cast<IceVariable>(LoadInst->getDest(0)) == (*I)->getVar());
     IceOperand *Operand = LoadInst->getSrc(0);
     if (Pred->getEntryContaining(Operand))
       (*I)->updateCandidateWeight();
@@ -212,7 +212,7 @@ void IceRegManager::updateVotes(const IceRegManager *Pred) {
     if (LoadInst == NULL)
       continue;
     assert(LoadInst->getDest(0));
-    assert(LoadInst->getDest(0)->getVariable() == (*I)->getVar());
+    assert(llvm::dyn_cast<IceVariable>(LoadInst->getDest(0)) == (*I)->getVar());
     IceOperand *Operand = LoadInst->getSrc(0);
     IceRegManagerEntry *PredEntry = Pred->getEntryContaining(Operand);
     if (PredEntry == NULL)
@@ -276,7 +276,7 @@ IceInstList IceRegManager::addCompensations(const IceRegManager *Pred) {
     if (LoadInst == NULL)
       continue;
     assert(LoadInst->getDest(0));
-    assert(LoadInst->getDest(0)->getVariable() == (*I)->getVar());
+    assert(llvm::dyn_cast<IceVariable>(LoadInst->getDest(0)) == (*I)->getVar());
     IceVariable *Dest = LoadInst->getDest(0);
     IceOperand *Src = LoadInst->getSrc(0);
     IceInst *NewInst = new IceInstAssign(Dest->getType(), Dest, Src);

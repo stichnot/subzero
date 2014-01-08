@@ -27,12 +27,11 @@ $(info Using LLVM_BUILD_PATH = $(LLVM_BUILD_PATH))
 $(info Using LLVM_BIN_PATH = $(LLVM_BIN_PATH))
 $(info -----------------------------------------------)
 
-# TODO: INCLUDEPATH is meant to point into LLVM ADT, Support, etc.
-INCLUDEPATH := .
+INCLUDEPATH := -I$(LLVM_SRC_PATH)/include -I$(LLVM_BUILD_PATH)/include
 
 # It's recommended that CXX matches the compiler you used to build LLVM itself.
 CXX := g++
-CXXFLAGS := -Wall -Werror -fno-rtti -O0 -g -I$(INCLUDEPATH)
+CXXFLAGS := -Wall -Werror -fno-rtti -O0 -g $(INCLUDEPATH)
 LDFLAGS :=
 
 LLVM_CXXFLAGS := `$(LLVM_BIN_PATH)/llvm-config --cxxflags`

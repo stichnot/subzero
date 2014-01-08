@@ -29,18 +29,27 @@ class IceConstant;
 
 class IceOperand {
 public:
+  enum OperandKind {
+    Constant,
+    ConstantInteger,
+    ConstantFloat,
+    Constant_Num,
+    Variable,
+    VariableVirtualRegister,
+    VariablePhysicalRegister,
+    Variable_Num,
+  };
   IceType getType(void) const { return Type; }
+  OperandKind getKind(void) const { return Kind; }
   virtual void setUse(const IceInst *Inst, const IceCfgNode *Node) {}
   virtual void removeUse(void) {}
   virtual uint32_t getUseCount(void) const { return 0; }
-  // TODO: can we make getVariable() all const?
-  virtual IceVariable *getVariable(void) { return NULL; }
-  virtual IceConstant *getConstant(void) { return NULL; }
   virtual void dump(IceOstream &Str) const;
 protected:
-  IceOperand(IceType Type) : Type(Type) {}
+  IceOperand(OperandKind Kind, IceType Type) : Type(Type), Kind(Kind) {}
   const IceType Type;
 private:
+  const OperandKind Kind;
 };
 
 IceOstream& operator<<(IceOstream &Str, const IceOperand *O);
@@ -50,12 +59,16 @@ IceOstream& operator<<(IceOstream &Str, const IceOperand *O);
 // TODO: handle symbolic constants.
 class IceConstant : public IceOperand {
 public:
-  IceConstant(int32_t IntValue) : IceOperand(IceType_i32) {
+  IceConstant(int32_t IntValue) : IceOperand(Constant, IceType_i32) {
     Value.I32 = IntValue;
   }
-  virtual IceConstant *getConstant(void) { return this; }
   uint32_t getIntValue(void) const { return Value.I32; }
   virtual void dump(IceOstream &Str) const;
+
+  static bool classof(const IceOperand *Operand) {
+    OperandKind Kind = Operand->getKind();
+    return Kind >= Constant && Kind <= Constant_Num;
+  }
 private:
   union {
     uint8_t I1;
@@ -73,13 +86,12 @@ private:
 class IceVariable : public IceOperand {
 public:
   IceVariable(IceType Type, uint32_t Index) :
-    IceOperand(Type), VarIndex(Index), UseCount(0), DefInst(NULL),
+    IceOperand(Variable, Type), VarIndex(Index), UseCount(0), DefInst(NULL),
     DefOrUseNode(NULL), IsMultiDef(false), IsArgument(false),
     IsMultiblockLife(false), RegNum(-1) {}
   virtual void setUse(const IceInst *Inst, const IceCfgNode *Node);
   virtual void removeUse(void);
   virtual uint32_t getUseCount(void) const { return UseCount; }
-  virtual IceVariable *getVariable(void) { return this; }
   uint32_t getIndex(void) const { return VarIndex; }
   IceInst *getDefinition(void) const { return DefInst; }
   void setDefinition(IceInst *Inst, const IceCfgNode *Node);
@@ -98,6 +110,11 @@ public:
   }
   int getRegNum(void) const { return RegNum; }
   virtual void dump(IceOstream &Str) const;
+
+  static bool classof(const IceOperand *Operand) {
+    OperandKind Kind = Operand->getKind();
+    return Kind >= Variable && Kind <= Variable_Num;
+  }
 private:
   // operand name for pretty-printing
   const uint32_t VarIndex;

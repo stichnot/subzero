@@ -71,8 +71,8 @@ namespace IceX8632 {
       if (LRend0) {
         Prefer.push_back(Src0);
       }
-      if (Src1->getVariable())
-        Avoid.push_back(Src1->getVariable());
+      if (IceVariable *Variable = llvm::dyn_cast<IceVariable>(Src1))
+        Avoid.push_back(Variable);
       Reg = RegManager->getRegister(Dest->getType(), Prefer, Avoid);
       // Create "reg=Src0" if needed.
       if (!RegManager->registerContains(Reg, Src0)) {
@@ -103,8 +103,8 @@ namespace IceX8632 {
         Src0 = Inst->getSrc(0);
         Src1 = Inst->getSrc(1);
         Prefer.push_back(Src0);
-        if (Src1->getVariable())
-          Avoid.push_back(Src1->getVariable());
+        if (IceVariable *Variable = llvm::dyn_cast<IceVariable>(Src1))
+          Avoid.push_back(Variable);
         Reg = RegManager->getRegister(Src0->getType(), Prefer, Avoid);
         // Create "reg=Src0" if needed.
         if (!RegManager->registerContains(Reg, Src0)) {
@@ -136,8 +136,8 @@ namespace IceX8632 {
       LRend1 = Src1 ? Cfg->isLastUse(Inst, Src1) : false;
       (void)LRend1;
       Prefer.push_back(Src0);
-      if (Src1 && Src1->getVariable())
-        Avoid.push_back(Src1->getVariable());
+      if (IceVariable *Variable = llvm::dyn_cast_or_null<IceVariable>(Src1))
+        Avoid.push_back(Variable);
       Reg1 = RegManager->getRegister(Dest->getType(), Prefer, Avoid);
       if (!RegManager->registerContains(Reg1, Src0)) {
         NewInst = new IceInstX8632Mov(Dest->getType(), Reg1, Src0);
