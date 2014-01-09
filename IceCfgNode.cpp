@@ -36,6 +36,35 @@ void IceCfgNode::addNonFallthrough(uint32_t TargetLabel) {
   OutEdges.push_back(TargetLabel);
 }
 
+// Inserts this node between the From and To nodes.  Just updates the
+// in-edge/out-edge structure without doing anything to the CFG
+// linearization.
+void IceCfgNode::splitEdge(IceCfgNode *From, IceCfgNode *To) {
+  // Find the out-edge position.
+  IceEdgeList::iterator Iout = From->OutEdges.begin();
+  IceEdgeList::iterator Eout = From->OutEdges.end();
+  for (; Iout != Eout; ++Iout) {
+    if (*Iout == To->getIndex())
+      break;
+  }
+  assert(Iout != Eout);
+
+  // Find the in-edge position.
+  IceEdgeList::iterator Iin = To->InEdges.begin();
+  IceEdgeList::iterator Ein = To->InEdges.end();
+  for (; Iin != Ein; ++Iin) {
+    if (*Iin == From->getIndex())
+      break;
+  }
+  assert(Iin != Ein);
+
+  // Update all edges.
+  this->addFallthrough(*Iout);
+  *Iout = this->getIndex();
+  this->InEdges.push_back(*Iin);
+  *Iin = this->getIndex();
+}
+
 void IceCfgNode::registerInEdges(IceCfg *Cfg) {
   for (IceEdgeList::const_iterator I = OutEdges.begin(), E = OutEdges.end();
        I != E; ++I) {
@@ -250,9 +279,7 @@ void IceCfgNode::multiblockCompensation(IceCfg *Cfg) {
        I != E; ++I, ++I1) {
     IceCfgNode *Pred = Cfg->getNode(*I);
     assert(Pred);
-    IceString NodeName =
-      "s__" + Cfg->labelName(*I) + "_" + Cfg->labelName(NameIndex);
-    IceCfgNode *Split = new IceCfgNode(Cfg, Cfg->translateLabel(NodeName));
+    IceCfgNode *Split = Cfg->splitEdge(*I, NameIndex);
     IceInstList Insts = *I1;
     Insts.push_back(new IceInstBr(Split, NameIndex));
     Split->InEdges.push_back(*I);
@@ -302,5 +329,15 @@ void IceCfgNode::dump(IceOstream &Str) const {
   while (I != E) {
     IceInst *Inst = *I++;
     Str << Inst;
+  }
+  if (Str.isVerbose()) {
+    Str << "// succs = ";
+    for (IceEdgeList::const_iterator I = OutEdges.begin(), E = OutEdges.end();
+         I != E; ++I) {
+      if (I != OutEdges.begin())
+        Str << ", ";
+      Str << "%" << Str.Cfg->labelName(*I);
+    }
+    Str << "\n";
   }
 }

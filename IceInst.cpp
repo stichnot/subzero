@@ -277,14 +277,19 @@ IceInstAssign::IceInstAssign(IceType Type,
   addSource(Source);
 }
 
+// If LabelTrue==LabelFalse, we turn it into an unconditional branch.
+// This ensures that, along with the 'switch' instruction semantics,
+// there is at most one edge from one node to another.
 IceInstBr::IceInstBr(IceCfgNode *Node, IceOperand *Source,
                      uint32_t LabelTrue, uint32_t LabelFalse) :
   IceInst(IceInst::Br, IceType_i1), IsConditional(true), Node(Node) {
-  addSource(Source);
   // TODO: It would be better to add CFG edges in
   // IceCfgNode::appendInst() instead of here.
   Node->addFallthrough(LabelFalse);
-  Node->addNonFallthrough(LabelTrue);
+  if (LabelTrue != LabelFalse) {
+    Node->addNonFallthrough(LabelTrue);
+    addSource(Source);
+  }
 }
 
 IceInstBr::IceInstBr(IceCfgNode *Node, uint32_t Label) :

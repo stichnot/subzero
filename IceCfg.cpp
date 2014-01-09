@@ -79,14 +79,47 @@ void IceCfg::setEntryNode(IceCfgNode *EntryNode) {
   Entry = EntryNode;
 }
 
+// We assume that the initial CFG construction calls addNode() in the
+// desired topological/linearization order.
 void IceCfg::addNode(IceCfgNode *Node, uint32_t LabelIndex) {
   if (Nodes.size() <= LabelIndex)
     Nodes.resize(LabelIndex + 1);
   assert(Nodes[LabelIndex] == NULL);
   Nodes[LabelIndex] = Node;
+  LNodes.push_back(Node);
+}
+
+IceCfgNode *IceCfg::splitEdge(uint32_t FromNodeIndex, uint32_t ToNodeIndex) {
+  IceCfgNode *From = getNode(FromNodeIndex);
+  IceCfgNode *To = getNode(ToNodeIndex);
+  // Create the new node.
+  IceString NewNodeName =
+    "s__" + labelName(FromNodeIndex) + "__" + labelName(ToNodeIndex);
+  uint32_t NewNodeIndex = translateLabel(NewNodeName);
+  IceCfgNode *NewNode = new IceCfgNode(this, NewNodeIndex);
+  // TODO: It's ugly that LNodes has to be manipulated this way.
+  assert(NewNode == LNodes.back());
+  LNodes.pop_back();
+
+  // Decide where "this" should go in the linearization.  The two
+  // obvious choices are right after the From node, and right before
+  // the To node.  For now, let's do the latter.
+  for (IceNodeList::iterator I = LNodes.begin(), E = LNodes.end();
+       I != E; ++I) {
+    IceCfgNode *Node = *I;
+    if (Node == To) {
+      LNodes.insert(I, NewNode);
+      break;
+    }
+  }
+
+  // Update edges.
+  NewNode->splitEdge(From, To);
+  return NewNode;
 }
 
 IceCfgNode *IceCfg::getNode(uint32_t LabelIndex) const {
+  assert(LabelIndex < Nodes.size());
   return Nodes[LabelIndex];
 }
 
@@ -119,34 +152,25 @@ IceString IceCfg::labelName(uint32_t LabelIndex) const {
 }
 
 void IceCfg::registerInEdges(void) {
-  for (IceNodeList::iterator I = Nodes.begin(), E = Nodes.end();
+  for (IceNodeList::iterator I = LNodes.begin(), E = LNodes.end();
        I != E; ++I) {
-    IceCfgNode *Node = *I;
-    if (Node) {
-      Node->registerInEdges(this);
-    }
+    (*I)->registerInEdges(this);
   }
 }
 
 void IceCfg::findAddressOpt(void) {
-  for (IceNodeList::iterator I = Nodes.begin(), E = Nodes.end();
+  for (IceNodeList::iterator I = LNodes.begin(), E = LNodes.end();
        I != E; ++I) {
-    IceCfgNode *Node = *I;
-    if (Node) {
-      Node->findAddressOpt(this);
-    }
+    (*I)->findAddressOpt(this);
   }
 }
 
 void IceCfg::markLastUses(void) {
   LastUses.clear();
   LastUses.resize(Variables.size(), NULL);
-  for (IceNodeList::iterator I = Nodes.begin(), E = Nodes.end();
+  for (IceNodeList::iterator I = LNodes.begin(), E = LNodes.end();
        I != E; ++I) {
-    IceCfgNode *Node = *I;
-    if (Node) {
-      Node->markLastUses(this);
-    }
+    (*I)->markLastUses(this);
   }
 }
 
@@ -163,32 +187,23 @@ void IceCfg::markLastUse(IceOperand *Operand, const IceInst *Inst) {
 }
 
 void IceCfg::placePhiLoads(void) {
-  for (IceNodeList::iterator I = Nodes.begin(), E = Nodes.end();
+  for (IceNodeList::iterator I = LNodes.begin(), E = LNodes.end();
        I != E; ++I) {
-    IceCfgNode *Node = *I;
-    if (Node) {
-      Node->placePhiLoads(this);
-    }
+    (*I)->placePhiLoads(this);
   }
 }
 
 void IceCfg::placePhiStores(void) {
-  for (IceNodeList::iterator I = Nodes.begin(), E = Nodes.end();
+  for (IceNodeList::iterator I = LNodes.begin(), E = LNodes.end();
        I != E; ++I) {
-    IceCfgNode *Node = *I;
-    if (Node) {
-      Node->placePhiStores(this);
-    }
+    (*I)->placePhiStores(this);
   }
 }
 
 void IceCfg::deletePhis(void) {
-  for (IceNodeList::iterator I = Nodes.begin(), E = Nodes.end();
+  for (IceNodeList::iterator I = LNodes.begin(), E = LNodes.end();
        I != E; ++I) {
-    IceCfgNode *Node = *I;
-    if (Node) {
-      Node->deletePhis(this);
-    }
+    (*I)->deletePhis(this);
   }
 }
 
@@ -199,12 +214,9 @@ void IceCfg::genCodeX8632(void) {
     "edx",
   };
   RegisterNames = RegNames;
-  for (IceNodeList::iterator I = Nodes.begin(), E = Nodes.end();
+  for (IceNodeList::iterator I = LNodes.begin(), E = LNodes.end();
        I != E; ++I) {
-    IceCfgNode *Node = *I;
-    if (Node) {
-      Node->genCodeX8632(this);
-    }
+    (*I)->genCodeX8632(this);
   }
 }
 
@@ -224,12 +236,9 @@ void IceCfg::simpleDCE(void) {
 }
 
 void IceCfg::multiblockRegAlloc(void) {
-  for (IceNodeList::iterator I = Nodes.begin(), E = Nodes.end();
+  for (IceNodeList::iterator I = LNodes.begin(), E = LNodes.end();
        I != E; ++I) {
-    IceCfgNode *Node = *I;
-    if (Node) {
-      Node->multiblockRegAlloc(this);
-    }
+    (*I)->multiblockRegAlloc(this);
   }
 }
 
@@ -316,12 +325,9 @@ void IceCfg::dump(void) const {
     }
   }
   // Print each basic block
-  for (IceNodeList::const_iterator I = Nodes.begin(), E = Nodes.end();
+  for (IceNodeList::const_iterator I = LNodes.begin(), E = LNodes.end();
        I != E; ++I) {
-    IceCfgNode *Node = *I;
-    if (Node) {
-      Node->dump(Str);
-    }
+    (*I)->dump(Str);
   }
   Str << "}\n";
 }

@@ -19,6 +19,7 @@ public:
   void addArg(IceVariable *Arg);
   void setEntryNode(IceCfgNode *EntryNode);
   void addNode(IceCfgNode *Node, uint32_t LabelIndex);
+  IceCfgNode *splitEdge(uint32_t FromNodeIndex, uint32_t ToNodeIndex);
   IceCfgNode *getNode(uint32_t LabelIndex) const;
   // getConstant() is not const because it might add something to the
   // constant pool.
@@ -48,7 +49,14 @@ private:
   IceString Name; // function name
   IceType Type; // return type
   IceCfgNode *Entry; // entry basic block
-  IceNodeList Nodes; // linearization; Entry must be first
+  // Difference between Nodes and LNodes.  Nodes is the master list;
+  // IceCfgNode::NameIndex is a permanent index into Nodes[]; some
+  // entries of Nodes may be NULL; Nodes is ideally a vector
+  // container.  LNodes is the linearization; does not contain NULL
+  // entries; is a permutation of the non-NULL Nodes entries; is
+  // ideally a list container.
+  IceNodeList Nodes; // node list
+  IceNodeList LNodes; // linearized node list; Entry should be first
   IceVarList Variables;
   std::vector<const IceInst *> LastUses; // instruction ending each variable's live range
   IceVarList  Args; // densely packed vector, subset of Variables
