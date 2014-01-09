@@ -60,7 +60,7 @@ void IceVariable::dump(IceOstream &Str) const {
   if (RegNum >= 0) {
     if (Str.isVerbose())
       Str << ":";
-    Str << Str.Cfg->PhysicalRegName(RegNum);
+    Str << Str.Cfg->physicalRegName(RegNum);
   }
 }
 

@@ -8,6 +8,7 @@
 #include "IceInst.h"
 #include "IceOperand.h"
 #include "IceRegManager.h"
+#include "IceTargetLowering.h"
 
 IceCfgNode::IceCfgNode(IceCfg *Cfg, uint32_t LabelIndex) :
   NameIndex(LabelIndex), ArePhiLoadsPlaced(false), ArePhiStoresPlaced(false),
@@ -175,7 +176,7 @@ void IceCfgNode::deletePhis(IceCfg *Cfg) {
   }
 }
 
-void IceCfgNode::genCodeX8632(IceCfg *Cfg) {
+void IceCfgNode::genCode(IceTargetLowering *Target, IceCfg *Cfg) {
   const unsigned NumScratchReg = 3; // eax, ecx, edx
   // TODO: Disabling extended basic block handling for now.
   if (false && InEdges.size() == 1) {
@@ -186,6 +187,7 @@ void IceCfgNode::genCodeX8632(IceCfg *Cfg) {
   } else {
     RegManager = new IceRegManager(Cfg, this, NumScratchReg);
   }
+  Target->setRegManager(RegManager);
   // Defer the Phi instructions.
   IceInstList::iterator I = Insts.begin(), E = Insts.end();
   while (I != E) {
@@ -193,12 +195,10 @@ void IceCfgNode::genCodeX8632(IceCfg *Cfg) {
     IceInst *Next = getNextInst(I, E);
     if (Inst->isDeleted())
       continue;
-    bool DeleteCurInst = false, DeleteNextInst = false;
-    IceInstList NewInsts = Inst->genCodeX8632(Cfg, RegManager, Next,
-                                              DeleteCurInst, DeleteNextInst);
+    bool DeleteNextInst = false;
+    IceInstList NewInsts = Target->lower(Inst, Next, DeleteNextInst);
     insertInsts(I, NewInsts);
-    if (DeleteCurInst)
-      Inst->setDeleted();
+    Inst->setDeleted();
     if (DeleteNextInst)
       Next->setDeleted();
   }
@@ -284,7 +284,8 @@ void IceCfgNode::multiblockCompensation(IceCfg *Cfg) {
     Insts.push_back(new IceInstBr(Split, NameIndex));
     Split->InEdges.push_back(*I);
     Split->insertInsts(Split->Insts.end(), Insts);
-    Split->genCodeX8632(Cfg);
+    // TODO: call genCode() with some Target arg
+    //Split->genCodeX8632(Cfg);
   }
   RegManager->deleteHoists();
 }

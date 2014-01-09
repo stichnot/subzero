@@ -10,190 +10,270 @@
 #include "IceOperand.h"
 #include "IceRegManager.h"
 
-namespace IceX8632 {
-  IceInstList genCode(IceCfg *Cfg, IceRegManager *RegManager,
-                      const IceInst *Inst, IceInst *Next,
-                      bool &DeleteCurInst, bool &DeleteNextInst) {
-    IceInstList Expansion;
-    IceOpList Prefer;
-    IceVarList Avoid;
-    IceVariable *Dest = NULL;
-    IceOperand *Src0, *Src1, *Src2, *Src3;
-    IceVariable *Reg, *Reg1, *Reg2;
-    bool LRend0, LRend1;
-    IceInstTarget *NewInst;
-    DeleteCurInst = true;
-    switch (Inst->getKind()) {
-    case IceInst::Assign:
-      Dest = Inst->getDest(0);
-      Src0 = Inst->getSrc(0);
-      Prefer.push_back(Src0);
-      Reg = RegManager->getRegister(Dest->getType(), Prefer, Avoid);
-      if (Dest->getRegNum() >= 0) {
-        if (RegManager->registerContains(Reg, Src0)) {
-          Src0 = Reg;
-        }
-        NewInst = new IceInstX8632Mov(Dest->getType(), Dest, Src0);
-        Expansion.push_back(NewInst);
-        // TODO: commenting out the notifyLoad() call because Dest
-        // doesn't actually belong to the current RegManager and
-        // therefore it asserts.  Maybe this is the right thing to do,
-        // but we also have to consider the code selection for
-        // globally register allocated variables.
-        //RegManager->notifyLoad(NewInst);
-        NewInst->setRegState(RegManager);
-      } else {
-        if (!RegManager->registerContains(Reg, Src0)) {
-          NewInst = new IceInstX8632Mov(Dest->getType(), Reg, Src0);
-          Expansion.push_back(NewInst);
-          RegManager->notifyLoad(NewInst);
-          NewInst->setRegState(RegManager);
-        }
-        NewInst = new IceInstX8632Mov(Dest->getType(), Dest, Reg);
-        Expansion.push_back(NewInst);
-        RegManager->notifyStore(NewInst);
-        NewInst->setRegState(RegManager);
-      }
-      break;
-    case IceInst::Arithmetic:
-      // TODO: Several instructions require specific physical
-      // registers, namely div, rem, shift.  Loading into a physical
-      // register requires killing all operands available in all
-      // virtual registers, except that "ecx=r1" doesn't need to kill
-      // operands available in r1.
-      Dest = Inst->getDest(0);
-      Src0 = Inst->getSrc(0);
-      Src1 = Inst->getSrc(1);
-      LRend0 = Cfg->isLastUse(Inst, Src0);
-      LRend1 = Cfg->isLastUse(Inst, Src1);
-      (void)LRend1;
-      // Prefer Src0 if its live range is ending.
-      if (LRend0) {
-        Prefer.push_back(Src0);
-      }
-      if (IceVariable *Variable = llvm::dyn_cast<IceVariable>(Src1))
-        Avoid.push_back(Variable);
-      Reg = RegManager->getRegister(Dest->getType(), Prefer, Avoid);
-      // Create "reg=Src0" if needed.
-      if (!RegManager->registerContains(Reg, Src0)) {
-        NewInst = new IceInstX8632Mov(Dest->getType(), Reg, Src0);
-        Expansion.push_back(NewInst);
-        RegManager->notifyLoad(NewInst);
-        NewInst->setRegState(RegManager);
-      }
-      // TODO: Use a virtual register instead of Src1 if Src1 is
-      // available in a virtual register.
-      // TODO: De-uglify this.
-      NewInst = new IceInstX8632Arithmetic((IceInstX8632Arithmetic::IceX8632Arithmetic)llvm::cast<IceInstArithmetic>(Inst)->getOp(), Dest->getType(), Reg, Src1);
-      Expansion.push_back(NewInst);
-      RegManager->notifyLoad(NewInst, false);
-      NewInst->setRegState(RegManager);
-      NewInst = new IceInstX8632Mov(Dest->getType(), Dest, Reg);
-      Expansion.push_back(NewInst);
-      RegManager->notifyStore(NewInst);
-      NewInst->setRegState(RegManager);
-      break;
-    case IceInst::Icmp:
-      // For now, require that the following instruction is a branch
-      // based on the last use of this instruction's Dest operand.
-      // TODO: Fix this.
-      if (llvm::isa<IceInstBr>(Next) &&
-          Inst->getDest(0) == Next->getSrc(0)) {
-        const IceInstIcmp *InstIcmp = llvm::cast<IceInstIcmp>(Inst);
-        const IceInstBr *NextBr = llvm::cast<IceInstBr>(Next);
-        // This is basically identical to an Arithmetic instruction,
-        // except there is no Dest variable to store.
-        Src0 = Inst->getSrc(0);
-        Src1 = Inst->getSrc(1);
-        Prefer.push_back(Src0);
-        if (IceVariable *Variable = llvm::dyn_cast<IceVariable>(Src1))
-          Avoid.push_back(Variable);
-        Reg = RegManager->getRegister(Src0->getType(), Prefer, Avoid);
-        // Create "reg=Src0" if needed.
-        if (!RegManager->registerContains(Reg, Src0)) {
-          NewInst = new IceInstX8632Mov(Src0->getType(), Reg, Src0);
-          Expansion.push_back(NewInst);
-          RegManager->notifyLoad(NewInst);
-          NewInst->setRegState(RegManager);
-        }
-        NewInst = new IceInstX8632Icmp(Reg, Src1);
-        Expansion.push_back(NewInst);
-        NewInst->setRegState(RegManager);
-        NewInst = new IceInstX8632Br(NextBr->getNode(),
-                                     InstIcmp->getCondition());
-        Expansion.push_back(NewInst);
-        DeleteNextInst = true;
-      } else {
-        assert(0);
-      }
-      break;
-    case IceInst::Load:
-      Dest = Inst->getDest(0);
-      Src0 = Inst->getSrc(0); // Base
-      Src1 = Inst->getSrc(1); // Index - could be NULL
-      Src2 = Inst->getSrc(2); // Shift - constant
-      Src3 = Inst->getSrc(3); // Offset - constant
-      LRend0 = Cfg->isLastUse(Inst, Src0);
-      LRend1 = Src1 ? Cfg->isLastUse(Inst, Src1) : false;
-      (void)LRend1;
-      Prefer.push_back(Src0);
-      if (IceVariable *Variable = llvm::dyn_cast_or_null<IceVariable>(Src1))
-        Avoid.push_back(Variable);
-      Reg1 = RegManager->getRegister(Dest->getType(), Prefer, Avoid);
-      if (!RegManager->registerContains(Reg1, Src0)) {
-        NewInst = new IceInstX8632Mov(Dest->getType(), Reg1, Src0);
-        Expansion.push_back(NewInst);
-        RegManager->notifyLoad(NewInst);
-        NewInst->setRegState(RegManager);
-      }
-      Reg2 = NULL;
-      if (Src1) {
-        Prefer.clear();
-        Avoid.clear();
-        Prefer.push_back(Src1);
-        Avoid.push_back(Reg1);
-        Reg2 = RegManager->getRegister(Dest->getType(), Prefer, Avoid);
-        if (!RegManager->registerContains(Reg2, Src1)) {
-          NewInst = new IceInstX8632Mov(Dest->getType(), Reg2, Src1);
-          Expansion.push_back(NewInst);
-          RegManager->notifyLoad(NewInst);
-          NewInst->setRegState(RegManager);
-        }
-      }
-      Prefer.clear();
-      Avoid.clear();
-      Avoid.push_back(Reg1);
-      Avoid.push_back(Reg2);
-      Reg = RegManager->getRegister(Dest->getType(), Prefer, Avoid);
-      NewInst = new IceInstX8632Load(Dest->getType(), Reg,
-                                     Reg1, Reg2, Src2, Src3);
-      Expansion.push_back(NewInst);
-      RegManager->notifyLoad(NewInst, false);
-      NewInst->setRegState(RegManager);
-      NewInst = new IceInstX8632Mov(Dest->getType(), Dest, Reg);
-      Expansion.push_back(NewInst);
-      RegManager->notifyStore(NewInst);
-      NewInst->setRegState(RegManager);
-      break;
-    case IceInst::Ret:
-      Src0 = Inst->getSrc(0);
-      Prefer.push_back(Src0);
-      Reg = RegManager->getRegister(Src0->getType(), Prefer, Avoid);
-      if (!RegManager->registerContains(Reg, Src0)) {
-        NewInst = new IceInstX8632Mov(Src0->getType(), Reg, Src0);
-        Expansion.push_back(NewInst);
-        RegManager->notifyLoad(NewInst);
-        NewInst->setRegState(RegManager);
-      }
-      NewInst = new IceInstX8632Ret(Src0->getType(), Reg);
-      Expansion.push_back(NewInst);
-      break;
-    default:
-      DeleteCurInst = false;
-      break;
-    }
-    return Expansion;
+IceString IceTargetX8632::RegNames[] = {
+  "eax",
+  "ecx",
+  "edx",
+};
+
+IceInstList IceTargetX8632::lowerAlloca(const IceInst *Inst, const IceInst *Next,
+                                        bool &DeleteNextInst) {
+  IceInstList Expansion;
+  assert(0); // TODO: implement
+  return Expansion;
+}
+
+IceInstList IceTargetX8632::lowerArithmetic(const IceInst *Inst, const IceInst *Next,
+                                            bool &DeleteNextInst) {
+  IceInstList Expansion;
+  IceOpList Prefer;
+  IceVarList Avoid;
+  // TODO: Several instructions require specific physical
+  // registers, namely div, rem, shift.  Loading into a physical
+  // register requires killing all operands available in all
+  // virtual registers, except that "ecx=r1" doesn't need to kill
+  // operands available in r1.
+  IceVariable *Dest = Inst->getDest(0);
+  IceOperand *Src0 = Inst->getSrc(0);
+  IceOperand *Src1 = Inst->getSrc(1);
+  IceVariable *Reg;
+  IceInstTarget *NewInst;
+  bool LRend0 = Cfg->isLastUse(Inst, Src0);
+  // Prefer Src0 if its live range is ending.
+  if (LRend0) {
+    Prefer.push_back(Src0);
   }
+  if (IceVariable *Variable = llvm::dyn_cast<IceVariable>(Src1))
+    Avoid.push_back(Variable);
+  Reg = RegManager->getRegister(Dest->getType(), Prefer, Avoid);
+  // Create "reg=Src0" if needed.
+  if (!RegManager->registerContains(Reg, Src0)) {
+    NewInst = new IceInstX8632Mov(Dest->getType(), Reg, Src0);
+    Expansion.push_back(NewInst);
+    RegManager->notifyLoad(NewInst);
+    NewInst->setRegState(RegManager);
+  }
+  // TODO: Use a virtual register instead of Src1 if Src1 is
+  // available in a virtual register.
+  // TODO: De-uglify this.
+  NewInst = new IceInstX8632Arithmetic((IceInstX8632Arithmetic::IceX8632Arithmetic)llvm::cast<IceInstArithmetic>(Inst)->getOp(), Dest->getType(), Reg, Src1);
+  Expansion.push_back(NewInst);
+  RegManager->notifyLoad(NewInst, false);
+  NewInst->setRegState(RegManager);
+  NewInst = new IceInstX8632Mov(Dest->getType(), Dest, Reg);
+  Expansion.push_back(NewInst);
+  RegManager->notifyStore(NewInst);
+  NewInst->setRegState(RegManager);
+  return Expansion;
+}
+
+IceInstList IceTargetX8632::lowerAssign(const IceInst *Inst, const IceInst *Next,
+                                        bool &DeleteNextInst) {
+  IceInstList Expansion;
+  IceOpList Prefer;
+  IceVarList Avoid;
+  IceVariable *Dest = Inst->getDest(0);
+  IceOperand *Src0 = Inst->getSrc(0);
+  IceVariable *Reg;
+  IceInstTarget *NewInst;
+  Prefer.push_back(Src0);
+  Reg = RegManager->getRegister(Dest->getType(), Prefer, Avoid);
+  if (Dest->getRegNum() >= 0) {
+    if (RegManager->registerContains(Reg, Src0)) {
+      Src0 = Reg;
+    }
+    NewInst = new IceInstX8632Mov(Dest->getType(), Dest, Src0);
+    Expansion.push_back(NewInst);
+    // TODO: commenting out the notifyLoad() call because Dest
+    // doesn't actually belong to the current RegManager and
+    // therefore it asserts.  Maybe this is the right thing to do,
+    // but we also have to consider the code selection for
+    // globally register allocated variables.
+    //RegManager->notifyLoad(NewInst);
+    NewInst->setRegState(RegManager);
+  } else {
+    if (!RegManager->registerContains(Reg, Src0)) {
+      NewInst = new IceInstX8632Mov(Dest->getType(), Reg, Src0);
+      Expansion.push_back(NewInst);
+      RegManager->notifyLoad(NewInst);
+      NewInst->setRegState(RegManager);
+    }
+    NewInst = new IceInstX8632Mov(Dest->getType(), Dest, Reg);
+    Expansion.push_back(NewInst);
+    RegManager->notifyStore(NewInst);
+    NewInst->setRegState(RegManager);
+  }
+  return Expansion;
+}
+
+IceInstList IceTargetX8632::lowerBr(const IceInst *Inst, const IceInst *Next,
+                                    bool &DeleteNextInst) {
+  IceInstList Expansion;
+  //assert(0); // TODO: implement
+  return Expansion;
+}
+
+IceInstList IceTargetX8632::lowerCall(const IceInst *Inst, const IceInst *Next,
+                                      bool &DeleteNextInst) {
+  IceInstList Expansion;
+  assert(0); // TODO: implement
+  return Expansion;
+}
+
+IceInstList IceTargetX8632::lowerConversion(const IceInst *Inst, const IceInst *Next,
+                                            bool &DeleteNextInst) {
+  IceInstList Expansion;
+  assert(0); // TODO: implement
+  return Expansion;
+}
+
+IceInstList IceTargetX8632::lowerFcmp(const IceInst *Inst, const IceInst *Next,
+                                      bool &DeleteNextInst) {
+  IceInstList Expansion;
+  assert(0); // TODO: implement
+  return Expansion;
+}
+
+IceInstList IceTargetX8632::lowerIcmp(const IceInst *Inst, const IceInst *Next,
+                                      bool &DeleteNextInst) {
+  IceInstList Expansion;
+  IceInstTarget *NewInst;
+  IceOpList Prefer;
+  IceVarList Avoid;
+  // For now, require that the following instruction is a branch
+  // based on the last use of this instruction's Dest operand.
+  // TODO: Fix this.
+  if (llvm::isa<IceInstBr>(Next) &&
+      Inst->getDest(0) == Next->getSrc(0)) {
+    const IceInstIcmp *InstIcmp = llvm::cast<IceInstIcmp>(Inst);
+    const IceInstBr *NextBr = llvm::cast<IceInstBr>(Next);
+    // This is basically identical to an Arithmetic instruction,
+    // except there is no Dest variable to store.
+    IceOperand *Src0 = Inst->getSrc(0);
+    IceOperand *Src1 = Inst->getSrc(1);
+    Prefer.push_back(Src0);
+    if (IceVariable *Variable = llvm::dyn_cast<IceVariable>(Src1))
+      Avoid.push_back(Variable);
+    IceVariable *Reg = RegManager->getRegister(Src0->getType(), Prefer, Avoid);
+    // Create "reg=Src0" if needed.
+    if (!RegManager->registerContains(Reg, Src0)) {
+      NewInst = new IceInstX8632Mov(Src0->getType(), Reg, Src0);
+      Expansion.push_back(NewInst);
+      RegManager->notifyLoad(NewInst);
+      NewInst->setRegState(RegManager);
+    }
+    NewInst = new IceInstX8632Icmp(Reg, Src1);
+    Expansion.push_back(NewInst);
+    NewInst->setRegState(RegManager);
+    NewInst = new IceInstX8632Br(NextBr->getNode(),
+                                 InstIcmp->getCondition());
+    Expansion.push_back(NewInst);
+    DeleteNextInst = true;
+  } else {
+    assert(0);
+  }
+  return Expansion;
+}
+
+IceInstList IceTargetX8632::lowerLoad(const IceInst *Inst, const IceInst *Next,
+                                      bool &DeleteNextInst) {
+  IceInstList Expansion;
+  IceInstTarget *NewInst;
+  IceVariable *Dest = Inst->getDest(0);
+  IceOperand *Src0 = Inst->getSrc(0); // Base
+  IceOperand *Src1 = Inst->getSrc(1); // Index - could be NULL
+  IceOperand *Src2 = Inst->getSrc(2); // Shift - constant
+  IceOperand *Src3 = Inst->getSrc(3); // Offset - constant
+  IceOpList Prefer;
+  IceVarList Avoid;
+  Prefer.push_back(Src0);
+  if (IceVariable *Variable = llvm::dyn_cast_or_null<IceVariable>(Src1))
+    Avoid.push_back(Variable);
+  IceVariable *Reg1 = RegManager->getRegister(Dest->getType(), Prefer, Avoid);
+  if (!RegManager->registerContains(Reg1, Src0)) {
+    NewInst = new IceInstX8632Mov(Dest->getType(), Reg1, Src0);
+    Expansion.push_back(NewInst);
+    RegManager->notifyLoad(NewInst);
+    NewInst->setRegState(RegManager);
+  }
+  IceVariable *Reg2 = NULL;
+  if (Src1) {
+    Prefer.clear();
+    Avoid.clear();
+    Prefer.push_back(Src1);
+    Avoid.push_back(Reg1);
+    Reg2 = RegManager->getRegister(Dest->getType(), Prefer, Avoid);
+    if (!RegManager->registerContains(Reg2, Src1)) {
+      NewInst = new IceInstX8632Mov(Dest->getType(), Reg2, Src1);
+      Expansion.push_back(NewInst);
+      RegManager->notifyLoad(NewInst);
+      NewInst->setRegState(RegManager);
+    }
+  }
+  Prefer.clear();
+  Avoid.clear();
+  Avoid.push_back(Reg1);
+  Avoid.push_back(Reg2);
+  IceVariable *Reg = RegManager->getRegister(Dest->getType(), Prefer, Avoid);
+  NewInst = new IceInstX8632Load(Dest->getType(), Reg,
+                                 Reg1, Reg2, Src2, Src3);
+  Expansion.push_back(NewInst);
+  RegManager->notifyLoad(NewInst, false);
+  NewInst->setRegState(RegManager);
+  NewInst = new IceInstX8632Mov(Dest->getType(), Dest, Reg);
+  Expansion.push_back(NewInst);
+  RegManager->notifyStore(NewInst);
+  NewInst->setRegState(RegManager);
+  return Expansion;
+}
+
+IceInstList IceTargetX8632::lowerPhi(const IceInst *Inst, const IceInst *Next,
+                                     bool &DeleteNextInst) {
+  IceInstList Expansion;
+  assert(0); // TODO: implement if necessary
+  return Expansion;
+}
+
+IceInstList IceTargetX8632::lowerRet(const IceInst *Inst, const IceInst *Next,
+                                     bool &DeleteNextInst) {
+  IceInstList Expansion;
+  IceInstTarget *NewInst;
+  IceOperand *Src0 = Inst->getSrc(0);
+  IceVariable *Reg;
+  IceOpList Prefer;
+  IceVarList Avoid;
+  Prefer.push_back(Src0);
+  Reg = RegManager->getRegister(Src0->getType(), Prefer, Avoid);
+  if (!RegManager->registerContains(Reg, Src0)) {
+    NewInst = new IceInstX8632Mov(Src0->getType(), Reg, Src0);
+    Expansion.push_back(NewInst);
+    RegManager->notifyLoad(NewInst);
+    NewInst->setRegState(RegManager);
+  }
+  NewInst = new IceInstX8632Ret(Src0->getType(), Reg);
+  Expansion.push_back(NewInst);
+  return Expansion;
+}
+
+IceInstList IceTargetX8632::lowerSelect(const IceInst *Inst, const IceInst *Next,
+                                        bool &DeleteNextInst) {
+  IceInstList Expansion;
+  assert(0); // TODO: implement
+  return Expansion;
+}
+
+IceInstList IceTargetX8632::lowerStore(const IceInst *Inst, const IceInst *Next,
+                                       bool &DeleteNextInst) {
+  IceInstList Expansion;
+  assert(0); // TODO: implement
+  return Expansion;
+}
+
+IceInstList IceTargetX8632::lowerSwitch(const IceInst *Inst, const IceInst *Next,
+                                        bool &DeleteNextInst) {
+  IceInstList Expansion;
+  assert(0); // TODO: implement
+  return Expansion;
 }
 
 IceInstX8632Arithmetic::IceInstX8632Arithmetic(IceX8632Arithmetic Op,

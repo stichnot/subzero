@@ -44,6 +44,7 @@ OBJS= \
 	IceInstX8632.o \
 	IceOperand.o \
 	IceRegManager.o \
+	IceTargetLowering.o \
 	IceTypes.o
 
 subzerotest: $(OBJS) IceTest.o

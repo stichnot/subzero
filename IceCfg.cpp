@@ -12,6 +12,7 @@
 #include "IceDefs.h"
 #include "IceInst.h"
 #include "IceOperand.h"
+#include "IceTargetLowering.h"
 
 IceOstream *GlobalStr;
 
@@ -207,16 +208,12 @@ void IceCfg::deletePhis(void) {
   }
 }
 
-void IceCfg::genCodeX8632(void) {
-  static const char *RegNames[] = {
-    "eax",
-    "ecx",
-    "edx",
-  };
-  RegisterNames = RegNames;
+void IceCfg::genCode(IceTargetArch Arch) {
+  IceTargetLowering *Target = IceTargetLowering::createLowering(Arch, this);
+  RegisterNames = Target->getRegNames();
   for (IceNodeList::iterator I = LNodes.begin(), E = LNodes.end();
        I != E; ++I) {
-    (*I)->genCodeX8632(this);
+    (*I)->genCode(Target, this);
   }
 }
 
@@ -282,7 +279,7 @@ void IceCfg::translate(void) {
   Str << "================ After Phi load placement ================\n";
   dump();
 
-  genCodeX8632();
+  genCode(IceTarget_X8632);
   Str << "================ After initial x8632 codegen ================\n";
   dump();
 

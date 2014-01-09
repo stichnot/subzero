@@ -38,7 +38,7 @@ public:
   uint32_t translateLabel(const IceString &Name);
   IceString variableName(uint32_t VariableIndex) const;
   IceString labelName(uint32_t LabelIndex) const;
-  const char *PhysicalRegName(int Reg) const { return RegisterNames[Reg]; }
+  IceString physicalRegName(int Reg) const { return RegisterNames[Reg]; }
   void translate(void);
   void dump(void) const;
   void markLastUse(IceOperand *Operand, const IceInst *Inst);
@@ -59,11 +59,13 @@ private:
   IceNodeList LNodes; // linearized node list; Entry should be first
   IceVarList Variables;
   std::vector<const IceInst *> LastUses; // instruction ending each variable's live range
-  IceVarList  Args; // densely packed vector, subset of Variables
+  IceVarList Args; // densely packed vector, subset of Variables
 
   class NameTranslation *VariableTranslation;
   class NameTranslation *LabelTranslation;
-  const char **RegisterNames;
+  // TODO: This goes away when we get target-specific operands with
+  // their own dump() methods.
+  IceString *RegisterNames;
   // arena allocator for the function
   // list of exit IceCfgNode* for liveness analysis
   // operand pool - set of IceOperand
@@ -74,7 +76,7 @@ private:
   void placePhiLoads(void);
   void placePhiStores(void);
   void deletePhis(void);
-  void genCodeX8632(void);
+  void genCode(IceTargetArch Arch);
   void simpleDCE(void);
   void multiblockRegAlloc(void);
   void multiblockCompensation(void);

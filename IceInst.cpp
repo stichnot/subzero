@@ -236,15 +236,6 @@ void IceInst::markLastUses(IceCfg *Cfg) {
   }
 }
 
-IceInstList IceInst::genCodeX8632(IceCfg *Cfg,
-                                  IceRegManager *RegManager,
-                                  IceInst *Next,
-                                  bool &DeleteCurInst,
-                                  bool &DeleteNextInst) {
-  return IceX8632::genCode(Cfg, RegManager, this, Next,
-                           DeleteCurInst, DeleteNextInst);
-}
-
 IceInstArithmetic::IceInstArithmetic(IceArithmetic Op, IceType Type,
                                      IceVariable *Dest,
                                      IceOperand *Source1,

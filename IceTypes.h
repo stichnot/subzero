@@ -20,6 +20,13 @@ enum IceType {
   IceType_f64,
 };
 
+enum IceTargetArch {
+  IceTarget_X8632,
+  IceTarget_X8664,
+  IceTarget_ARM32,
+  IceTarget_ARM64,
+};
+
 IceOstream& operator<<(IceOstream &Str, IceType T);
 
 #endif // _IceTypes_h

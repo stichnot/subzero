@@ -53,9 +53,6 @@ public:
                        const IceOpList &NewOperands);
   virtual void removeUse(IceVariable *Variable);
   void markLastUses(IceCfg *Cfg);
-  virtual IceInstList genCodeX8632(IceCfg *Cfg, IceRegManager *RegManager,
-                                   IceInst *Next, bool &DeleteCurInst,
-                                   bool &DeleteNextInst);
   virtual void dump(IceOstream &Str) const;
   virtual void dumpExtras(IceOstream &Str) const;
   void dumpSources(IceOstream &Str) const;

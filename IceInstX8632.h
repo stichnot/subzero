@@ -10,11 +10,43 @@
 #include "IceDefs.h"
 #include "IceInst.h"
 
-namespace IceX8632 {
-  IceInstList genCode(IceCfg *Cfg, IceRegManager *RegManager,
-                      const IceInst *Inst, IceInst *Next,
-                      bool &DeleteCurInst, bool &DeleteNextInst);
-}
+#include "IceTargetLowering.h"
+
+class IceTargetX8632 : public IceTargetLowering {
+public:
+  IceTargetX8632(IceCfg *Cfg) : IceTargetLowering(Cfg) {}
+  virtual IceString *getRegNames(void) const { return RegNames; }
+  virtual IceInstList lowerAlloca(const IceInst *Inst, const IceInst *Next,
+                                  bool &DeleteNextInst);
+  virtual IceInstList lowerArithmetic(const IceInst *Inst, const IceInst *Next,
+                                      bool &DeleteNextInst);
+  virtual IceInstList lowerAssign(const IceInst *Inst, const IceInst *Next,
+                                  bool &DeleteNextInst);
+  virtual IceInstList lowerBr(const IceInst *Inst, const IceInst *Next,
+                              bool &DeleteNextInst);
+  virtual IceInstList lowerCall(const IceInst *Inst, const IceInst *Next,
+                                bool &DeleteNextInst);
+  virtual IceInstList lowerConversion(const IceInst *Inst, const IceInst *Next,
+                                      bool &DeleteNextInst);
+  virtual IceInstList lowerFcmp(const IceInst *Inst, const IceInst *Next,
+                                bool &DeleteNextInst);
+  virtual IceInstList lowerIcmp(const IceInst *Inst, const IceInst *Next,
+                                bool &DeleteNextInst);
+  virtual IceInstList lowerLoad(const IceInst *Inst, const IceInst *Next,
+                                bool &DeleteNextInst);
+  virtual IceInstList lowerPhi(const IceInst *Inst, const IceInst *Next,
+                               bool &DeleteNextInst);
+  virtual IceInstList lowerRet(const IceInst *Inst, const IceInst *Next,
+                               bool &DeleteNextInst);
+  virtual IceInstList lowerSelect(const IceInst *Inst, const IceInst *Next,
+                                  bool &DeleteNextInst);
+  virtual IceInstList lowerStore(const IceInst *Inst, const IceInst *Next,
+                                 bool &DeleteNextInst);
+  virtual IceInstList lowerSwitch(const IceInst *Inst, const IceInst *Next,
+                                  bool &DeleteNextInst);
+private:
+  static IceString RegNames[];
+};
 
 // Two-address arithmetic instructions.
 class IceInstX8632Arithmetic : public IceInstTarget {

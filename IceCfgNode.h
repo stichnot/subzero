@@ -28,7 +28,7 @@ public:
   void placePhiLoads(IceCfg *Cfg);
   void placePhiStores(IceCfg *Cfg);
   void deletePhis(IceCfg *Cfg);
-  void genCodeX8632(IceCfg *Cfg);
+  void genCode(IceTargetLowering *Target, IceCfg *Cfg);
   void multiblockRegAlloc(IceCfg *Cfg);
   void multiblockCompensation(IceCfg *Cfg);
   void dump(IceOstream &Str) const;
