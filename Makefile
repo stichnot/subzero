@@ -35,7 +35,6 @@ CXX := g++
 CXXFLAGS := -Wall -Werror -fno-rtti -O0 -g $(LLVM_CXXFLAGS)
 LDFLAGS :=
 
-
 OBJS= \
 	IceCfg.o \
 	IceCfgNode.o \

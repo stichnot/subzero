@@ -7,6 +7,7 @@
 #include "IceCfgNode.h"
 #include "IceDefs.h"
 #include "IceInst.h"
+#include "IceOperand.h"
 #include "IceTypes.h"
 
 #include "llvm/IR/DataLayout.h"
@@ -28,15 +29,34 @@ static std::string LLVMTypeAsString(const Type *T) {
   return N.str();
 }
 
+IceType ConvertIntegerType(const IntegerType *IntTy) {
+  switch (IntTy->getBitWidth()) {
+  case 32:
+    return IceType_i32;
+  case 64:
+    return IceType_i64;
+  default:
+    report_fatal_error(std::string("Invalid PNaCl int type: ") +
+                       LLVMTypeAsString(IntTy));
+    return IceType_void;
+  }
+}
+
 IceType ConvertType(const Type *Ty) {
   switch (Ty->getTypeID()) {
   case Type::VoidTyID:
     return IceType_void;
+  case Type::IntegerTyID:
+    return ConvertIntegerType(cast<IntegerType>(Ty));
   default:
     report_fatal_error(std::string("Invalid PNaCl type: ") +
                        LLVMTypeAsString(Ty));
-    return IceType_void;
   }
+
+  // We should not get here, as the switch above either returns or raises a
+  // fatal error.
+  assert(0 && "ConvertType unreachable");
+  return IceType_void;
 }
 
 IceCfgNode *ConvertBasicBlock(const BasicBlock *BB, IceCfg *Cfg) {
@@ -46,8 +66,14 @@ IceCfgNode *ConvertBasicBlock(const BasicBlock *BB, IceCfg *Cfg) {
     switch (II->getOpcode()) {
     case Instruction::Ret:
       const ReturnInst *Ret = cast<ReturnInst>(II);
-      assert(Ret->getReturnValue() == NULL && "Can only translate ret void");
-      Node->appendInst(new IceInstRet(IceType_void));
+      const Value *RetVal = Ret->getReturnValue();
+      if (RetVal) {
+        IceType IceRetTy = ConvertType(RetVal->getType());
+        Node->appendInst(new IceInstRet(
+            IceRetTy, Cfg->getVariable(IceRetTy, RetVal->getName())));
+      } else {
+        Node->appendInst(new IceInstRet(IceType_void));
+      }
       break;
     }
   }
@@ -58,6 +84,12 @@ IceCfg *ConvertFunction(const Function *F) {
   IceCfg *Cfg = new IceCfg;
   Cfg->setName(F->getName());
   Cfg->setReturnType(ConvertType(F->getReturnType()));
+
+  for (Function::const_arg_iterator ArgI = F->arg_begin(), ArgE = F->arg_end();
+       ArgI != ArgE; ++ArgI) {
+    IceType ArgType = ConvertType(ArgI->getType());
+    Cfg->addArg(Cfg->getVariable(ArgType, ArgI->getName()));
+  }
 
   const BasicBlock &EntryBB = F->getEntryBlock();
   IceCfgNode *EntryNode = ConvertBasicBlock(&EntryBB, Cfg);
