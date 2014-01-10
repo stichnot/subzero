@@ -365,7 +365,7 @@ IceOstream& operator<<(IceOstream &Str, const IceInst *I) {
     return Str;
   Str << "  ";
   if (I->isDeleted())
-    Str << "//";
+    Str << "  //";
   I->dump(Str);
   if (Str.isVerbose())
     I->dumpExtras(Str);

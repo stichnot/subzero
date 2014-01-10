@@ -308,7 +308,7 @@ void IceCfgNode::dump(IceOstream &Str) const {
   IceString Name = Str.Cfg->labelName(getIndex());
   Str << Name << ":\n";
   if (Str.isVerbose()) {
-    Str << "// preds = ";
+    Str << "    // preds = ";
     for (IceEdgeList::const_iterator I = InEdges.begin(), E = InEdges.end();
          I != E; ++I) {
       if (I != InEdges.begin())
@@ -317,7 +317,7 @@ void IceCfgNode::dump(IceOstream &Str) const {
     }
     Str << "\n";
     if (RegManager) {
-      Str << "// FirstLoads={";
+      Str << "    // FirstLoads={";
       RegManager->dumpFirstLoads(Str);
       Str << "}\n";
     }
@@ -332,7 +332,7 @@ void IceCfgNode::dump(IceOstream &Str) const {
     Str << Inst;
   }
   if (Str.isVerbose()) {
-    Str << "// succs = ";
+    Str << "    // succs = ";
     for (IceEdgeList::const_iterator I = OutEdges.begin(), E = OutEdges.end();
          I != E; ++I) {
       if (I != OutEdges.begin())
