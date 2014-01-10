@@ -16,6 +16,7 @@ public:
   void setRegManager(IceRegManager *R) { RegManager = R; }
   IceInstList lower(const IceInst *Inst, const IceInst *Next,
                     bool &DeleteNextInst);
+  virtual IceInstTarget *makeAssign(IceVariable *Dest, IceOperand *Src) = 0;
   virtual IceString *getRegNames(void) const = 0;
 
 protected:

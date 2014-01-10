@@ -27,7 +27,6 @@ IceTargetLowering *IceTargetLowering::createLowering(IceTargetArch Target,
 IceInstList IceTargetLowering::lower(const IceInst *Inst, const IceInst *Next,
                                      bool &DeleteNextInst) {
   IceInstList Expansion;
-  //DeleteCurInst = true;
   switch (Inst->getKind()) {
   case IceInst::Alloca:
     Expansion = lowerAlloca(Inst, Next, DeleteNextInst);
