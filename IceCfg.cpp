@@ -276,7 +276,7 @@ void IceCfg::translate(void) {
   placePhiLoads();
   placePhiStores();
   deletePhis();
-  Str << "================ After Phi load placement ================\n";
+  Str << "================ After Phi lowering ================\n";
   dump();
 
   genCode(IceTarget_X8632);
