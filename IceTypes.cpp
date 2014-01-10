@@ -3,6 +3,7 @@
  * be found in the LICENSE file.
  */
 
+#include "IceDefs.h"
 #include "IceTypes.h"
 
 // ======================== Dump routines ======================== //

@@ -111,8 +111,7 @@ void IceCfgNode::placePhiLoads(IceCfg *Cfg) {
   // Create the phi version of each destination and add it to the phi
   // instruction's Srcs list.
   IceInstList NewPhiLoads;
-  for (IcePhiList::iterator I = Phis.begin(), E = Phis.end();
-       I != E; ++I) {
+  for (IcePhiList::iterator I = Phis.begin(), E = Phis.end(); I != E; ++I) {
     // Change "a=phi(...)" to "a_phi=phi(...); a=a_phi".
     IceInstPhi *Phi = *I;
     IceInst *NewPhi = Phi->lower(Cfg, this);
@@ -170,15 +169,16 @@ void IceCfgNode::placePhiStores(IceCfg *Cfg) {
 }
 
 void IceCfgNode::deletePhis(IceCfg *Cfg) {
-  for (IcePhiList::iterator I = Phis.begin(), E = Phis.end();
-       I != E; ++I) {
+  for (IcePhiList::iterator I = Phis.begin(), E = Phis.end(); I != E; ++I) {
     (*I)->setDeleted();
   }
 }
 
 void IceCfgNode::genCode(IceTargetLowering *Target, IceCfg *Cfg) {
   const unsigned NumScratchReg = 3; // eax, ecx, edx
-  // TODO: Disabling extended basic block handling for now.
+  // TODO: Disabling extended basic block handling for now.  IIRC,
+  // there was a problem when adding compensations.  Revisit when
+  // compensations are fixed.
   if (false && InEdges.size() == 1) {
     IceCfgNode *Pred = Cfg->getNode(InEdges[0]);
     assert(Pred);

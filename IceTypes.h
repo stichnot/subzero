@@ -7,8 +7,6 @@
 #ifndef _IceTypes_h
 #define _IceTypes_h
 
-#include "IceDefs.h"
-
 enum IceType {
   IceType_void,
   IceType_i1,
@@ -27,6 +25,7 @@ enum IceTargetArch {
   IceTarget_ARM64,
 };
 
+class IceOstream;
 IceOstream& operator<<(IceOstream &Str, IceType T);
 
 #endif // _IceTypes_h
