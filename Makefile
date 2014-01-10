@@ -27,15 +27,14 @@ $(info Using LLVM_BUILD_PATH = $(LLVM_BUILD_PATH))
 $(info Using LLVM_BIN_PATH = $(LLVM_BIN_PATH))
 $(info -----------------------------------------------)
 
-INCLUDEPATH := -I$(LLVM_SRC_PATH)/include -I$(LLVM_BUILD_PATH)/include
+LLVM_CXXFLAGS := `$(LLVM_BIN_PATH)/llvm-config --cxxflags`
+LLVM_LDFLAGS := `$(LLVM_BIN_PATH)/llvm-config --ldflags --libs --system-libs`
 
 # It's recommended that CXX matches the compiler you used to build LLVM itself.
 CXX := g++
-CXXFLAGS := -Wall -Werror -fno-rtti -O0 -g $(INCLUDEPATH)
+CXXFLAGS := -Wall -Werror -fno-rtti -O0 -g $(LLVM_CXXFLAGS)
 LDFLAGS :=
 
-LLVM_CXXFLAGS := `$(LLVM_BIN_PATH)/llvm-config --cxxflags`
-LLVM_LDFLAGS := `$(LLVM_BIN_PATH)/llvm-config --ldflags --libs --system-libs`
 
 OBJS= \
 	IceCfg.o \
@@ -59,12 +58,12 @@ llvm2ice: $(OBJS) PNaClABITypeChecker.o llvm2ice.o
 	$(CXX) $(LDFLAGS) -o $@ $^ $(LLVM_LDFLAGS)
 
 PNaClABITypeChecker.o: PNaClABITypeChecker.cpp PNaClABITypeChecker.h
-	$(CXX) -c $(CXXFLAGS) $(LLVM_CXXFLAGS) $< -o $@
+	$(CXX) -c $(CXXFLAGS) $< -o $@
 
 # Compiling driver files (with a 'main' function) separately, so they don't
 # get included in OBJS.
 llvm2ice.o: llvm2ice.cpp *.h
-	$(CXX) -c $(CXXFLAGS) $(LLVM_CXXFLAGS) $< -o $@
+	$(CXX) -c $(CXXFLAGS) $< -o $@
 
 IceTest.o: IceTest.cpp *.h
 	$(CXX) -c $(CXXFLAGS) $< -o $@
