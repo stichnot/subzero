@@ -47,6 +47,11 @@ OBJS= \
 	IceTargetLowering.o \
 	IceTypes.o
 
+# Keep all the first target so it's the default.
+all: subzerotest llvm2ice
+
+.PHONY: all
+
 subzerotest: $(OBJS) IceTest.o
 	$(CXX) $(LDFLAGS) -o $@ $^
 
