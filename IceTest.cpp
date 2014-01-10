@@ -94,6 +94,7 @@ static void TestSimpleLoop(void) {
   IceCfg *Cfg = new IceCfg;
   Cfg->setName("@simple_loop");
   Cfg->setReturnType(IceType_i32);
+  Cfg->makeTarget(IceTarget_X8632);
   Cfg->addArg(Cfg->getVariable(IceType_i32, "a"));
   Cfg->addArg(Cfg->getVariable(IceType_i32, "n"));
 
@@ -233,6 +234,7 @@ static void TestSimpleCond(void) {
   IceCfg *Cfg = new IceCfg;
   Cfg->setName("@simple_cond");
   Cfg->setReturnType(IceType_i32);
+  Cfg->makeTarget(IceTarget_X8632);
   Cfg->addArg(Cfg->getVariable(IceType_i32, "a"));
   Cfg->addArg(Cfg->getVariable(IceType_i32, "n"));
 

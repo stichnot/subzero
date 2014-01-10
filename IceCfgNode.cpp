@@ -174,8 +174,9 @@ void IceCfgNode::deletePhis(IceCfg *Cfg) {
   }
 }
 
-void IceCfgNode::genCode(IceTargetLowering *Target, IceCfg *Cfg) {
+void IceCfgNode::genCode(IceCfg *Cfg) {
   const unsigned NumScratchReg = 3; // eax, ecx, edx
+  IceTargetLowering *Target = Cfg->getTarget();
   // TODO: Disabling extended basic block handling for now.  IIRC,
   // there was a problem when adding compensations.  Revisit when
   // compensations are fixed.
