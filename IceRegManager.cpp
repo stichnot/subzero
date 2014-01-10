@@ -205,7 +205,7 @@ void IceRegManager::updateCandidates(const IceRegManager *Pred) {
 void IceRegManager::updateVotes(const IceRegManager *Pred) {
   for (QueueType::const_iterator I = Queue.begin(), E = Queue.end();
        I != E; ++I) {
-    if ((*I)->getCandidateWeight() == 0)
+    if (!(*I)->isCandidate())
       continue;
     IceInst *LoadInst = (*I)->getFirstLoadInst();
     if (LoadInst == NULL)
@@ -269,7 +269,7 @@ IceInstList IceRegManager::addCompensations(const IceRegManager *Pred) {
   IceInstList Compensations;
   for (QueueType::const_iterator I = Queue.begin(), E = Queue.end();
        I != E; ++I) {
-    if ((*I)->getCandidateWeight() == 0)
+    if (!(*I)->isCandidate())
       continue;
     IceInst *LoadInst = (*I)->getFirstLoadInst();
     if (LoadInst == NULL)
@@ -287,7 +287,7 @@ IceInstList IceRegManager::addCompensations(const IceRegManager *Pred) {
 void IceRegManager::deleteHoists(void) {
   for (QueueType::const_iterator I = Queue.begin(), E = Queue.end();
        I != E; ++I) {
-    if ((*I)->getCandidateWeight() == 0)
+    if (!(*I)->isCandidate())
       continue;
     IceInst *LoadInst = (*I)->getFirstLoadInst();
     if (LoadInst == NULL)

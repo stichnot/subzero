@@ -64,6 +64,7 @@ public:
   }
   void updateCandidateWeight(int Incr=1) { MultiblockCandidateWeight += Incr; }
   int getCandidateWeight(void) const { return MultiblockCandidateWeight; }
+  bool isCandidate(void) const { return getCandidateWeight() > 0; }
   void voteFor(int Reg) {
     assert(PhysicalRegisterVotes);
     ++PhysicalRegisterVotes[Reg];
@@ -94,7 +95,7 @@ private:
   // Number of predecessors that have the FirstLoadInst operand in the
   // Available set.  Must be greater than zero to be a candidation for
   // multiblock register allocation.
-  unsigned MultiblockCandidateWeight;
+  int MultiblockCandidateWeight;
 
   // This is an array indexed by (small) physical register number,
   // giving the number of "votes" for each physical register.  Initial
