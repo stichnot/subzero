@@ -15,16 +15,6 @@
 #include <string>
 #include <vector>
 
-// llvm-config --cxxflags defines these on the command line to g++; so, if this
-// header is included in a build that also uses `llvm-config --cxxflags`, we
-// get a redefinition failure.
-// This is a temporary fix... A better solution would be to switch all LLVM
-// dependent targets to use llvm-config properly.
-#if !defined(__STDC_LIMIT_MACROS) && !defined(__STDC_CONSTANT_MACROS)
-#define __STDC_LIMIT_MACROS
-#define __STDC_CONSTANT_MACROS
-#endif
-
 // See http://llvm.org/docs/ProgrammersManual.html#isa
 #include "llvm/Support/Casting.h"
 
