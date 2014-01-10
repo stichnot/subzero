@@ -332,6 +332,11 @@ void IceCfgNode::dump(IceOstream &Str) const {
     Str << Inst;
   }
   if (Str.isVerbose()) {
+    if (RegManager) {
+      Str << "    // AVAIL:";
+      RegManager->dump(Str);
+      Str << "\n";
+    }
     Str << "    // succs = ";
     for (IceEdgeList::const_iterator I = OutEdges.begin(), E = OutEdges.end();
          I != E; ++I) {
