@@ -41,14 +41,14 @@ IceType ConvertType(const Type *Ty) {
 
 IceCfgNode *ConvertBasicBlock(const BasicBlock *BB, IceCfg *Cfg) {
   IceCfgNode *Node = new IceCfgNode(Cfg, Cfg->translateLabel(BB->getName()));
-  for (BasicBlock::const_iterator II = BB->begin(), II_e = BB->end(); II != II_e;
-       ++II) {
+  for (BasicBlock::const_iterator II = BB->begin(), II_e = BB->end();
+       II != II_e; ++II) {
     switch (II->getOpcode()) {
-      case Instruction::Ret:
-        const ReturnInst *Ret = cast<ReturnInst>(II);
-        assert(Ret->getReturnValue() == NULL && "Can only translate ret void");
-        Node->appendInst(new IceInstRet(IceType_void));
-        break;
+    case Instruction::Ret:
+      const ReturnInst *Ret = cast<ReturnInst>(II);
+      assert(Ret->getReturnValue() == NULL && "Can only translate ret void");
+      Node->appendInst(new IceInstRet(IceType_void));
+      break;
     }
   }
   return Node;

@@ -3,3 +3,8 @@ LLVM IR is in .ll files; if an .ll file has a corresponding .c file, then the
 
     clang -cc1 -emit-llvm <file.c>
 
+Or use the provided build-opt-ir.py script that also invokes opt, in order
+to build optimized IR:
+
+    ./build-opt-ir.py <file.c>
+
