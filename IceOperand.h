@@ -120,6 +120,10 @@ private:
   const uint32_t VarIndex;
   // decorations
   uint32_t UseCount;
+  // TODO: A Phi instruction lowers into several assignment
+  // instructions with the same dest.  These should all be tracked
+  // here so that they can all be deleted when this variable's use
+  // count reaches zero.
   IceInst *DefInst;
   const IceCfgNode *DefOrUseNode; // for detecting IsMultiblockLife
   bool IsMultiDef;

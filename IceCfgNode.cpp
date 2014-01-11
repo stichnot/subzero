@@ -269,7 +269,8 @@ void IceCfgNode::multiblockRegAlloc(IceCfg *Cfg) {
     IceCfgNode *Pred = Cfg->getNode(*I);
     assert(Pred);
     // TODO: use the final RegManager in Pred.
-    Compensations.push_back(RegManager->addCompensations(Pred->RegManager));
+    Compensations.push_back(RegManager->addCompensations(Pred->RegManager,
+                                                         Cfg->getTarget()));
   }
 }
 
@@ -278,15 +279,15 @@ void IceCfgNode::multiblockCompensation(IceCfg *Cfg) {
   std::vector<IceInstList>::const_iterator I1 = Compensations.begin();
   for (IceEdgeList::const_iterator I = InEdges.begin(), E = InEdges.end();
        I != E; ++I, ++I1) {
+    IceInstList Insts = *I1;
+    if (Insts.empty())
+      continue;
     IceCfgNode *Pred = Cfg->getNode(*I);
     assert(Pred);
     IceCfgNode *Split = Cfg->splitEdge(*I, NameIndex);
-    IceInstList Insts = *I1;
     Insts.push_back(new IceInstBr(Split, NameIndex));
     Split->InEdges.push_back(*I);
     Split->insertInsts(Split->Insts.end(), Insts);
-    // TODO: call genCode() with some Target arg
-    //Split->genCodeX8632(Cfg);
   }
   RegManager->deleteHoists();
 }

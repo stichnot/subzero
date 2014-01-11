@@ -135,7 +135,8 @@ public:
   void updateVotes(const IceRegManager *Pred);
   IceRegManagerEntry *getEntryContaining(const IceOperand *Operand) const;
   void makeAssignments(void);
-  IceInstList addCompensations(const IceRegManager *Pred);
+  IceInstList addCompensations(const IceRegManager *Pred,
+                               IceTargetLowering *Target);
   void deleteHoists(void);
   void dump(IceOstream &Str) const;
   void dumpFirstLoads(IceOstream &Str) const;
