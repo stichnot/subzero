@@ -22,6 +22,7 @@
 
 using namespace llvm;
 
+// Debugging helper
 static std::string LLVMTypeAsString(const Type *T) {
   std::string TypeName;
   raw_string_ostream N(TypeName);
@@ -29,8 +30,23 @@ static std::string LLVMTypeAsString(const Type *T) {
   return N.str();
 }
 
+// The Convert* functions provide conversion from LLVM IR to Ice. The entry
+// point is ConvertFunction, which creates a new IceCfg from a given
+// llvm::Function.
+//
+// Note: this currently assumes that the given IR was verified to be valid PNaCl
+// bitcode:
+// https://developers.google.com/native-client/dev/reference/pnacl-bitcode-abi
+// If not, all kinds of assertions may fire.
+//
 IceType ConvertIntegerType(const IntegerType *IntTy) {
   switch (IntTy->getBitWidth()) {
+  case 1:
+    return IceType_i1;
+  case 8:
+    return IceType_i8;
+  case 16:
+    return IceType_i16;
   case 32:
     return IceType_i32;
   case 64:
@@ -48,34 +64,65 @@ IceType ConvertType(const Type *Ty) {
     return IceType_void;
   case Type::IntegerTyID:
     return ConvertIntegerType(cast<IntegerType>(Ty));
+  case Type::FloatTyID:
+    return IceType_f32;
+  case Type::DoubleTyID:
+    return IceType_f64;
   default:
     report_fatal_error(std::string("Invalid PNaCl type: ") +
                        LLVMTypeAsString(Ty));
   }
 
-  // We should not get here, as the switch above either returns or raises a
-  // fatal error.
-  assert(0 && "ConvertType unreachable");
+  llvm_unreachable("ConvertType");
   return IceType_void;
+}
+
+// Note: this currently assumes a 1x1 mapping between LLVM IR and Ice
+// instructions.
+IceInst *ConvertInstruction(const Instruction *Inst, IceCfg *Cfg) {
+  // TODO: the reliance on getName here is fishy. LLVM Values are uniquely
+  // identified by their address, not their name (there might be no name!);
+  // think this through and rewrite as needed.
+  switch (Inst->getOpcode()) {
+  case Instruction::Ret: {
+    const ReturnInst *Ret = cast<ReturnInst>(Inst);
+    const Value *RetVal = Ret->getReturnValue();
+    if (RetVal) {
+      IceType IceRetTy = ConvertType(RetVal->getType());
+      return new IceInstRet(IceRetTy,
+                            Cfg->getVariable(IceRetTy, RetVal->getName()));
+    } else {
+      return new IceInstRet(IceType_void);
+    }
+    break;
+  }
+  case Instruction::Add: {
+    const BinaryOperator *BinOp = cast<BinaryOperator>(Inst);
+    IceType IceTy = ConvertType(BinOp->getType());
+    Value *Op0 = BinOp->getOperand(0);
+    Value *Op1 = BinOp->getOperand(1);
+    IceOperand *Src0 = Cfg->getVariable(IceTy, Op0->getName());
+    IceOperand *Src1 = Cfg->getVariable(IceTy, Op1->getName());
+    IceVariable *Dest = Cfg->getVariable(IceTy, BinOp->getName());
+    return new IceInstArithmetic(IceInstArithmetic::Add, IceTy, Dest, Src0,
+                                 Src1);
+    break;
+  }
+  default:
+    // TODO: print instruction
+    report_fatal_error(std::string("Invalid PNaCl instruction: "));
+  }
+
+  llvm_unreachable("ConvertInstruction");
+  return NULL;
 }
 
 IceCfgNode *ConvertBasicBlock(const BasicBlock *BB, IceCfg *Cfg) {
   IceCfgNode *Node = new IceCfgNode(Cfg, Cfg->translateLabel(BB->getName()));
   for (BasicBlock::const_iterator II = BB->begin(), II_e = BB->end();
        II != II_e; ++II) {
-    switch (II->getOpcode()) {
-    case Instruction::Ret:
-      const ReturnInst *Ret = cast<ReturnInst>(II);
-      const Value *RetVal = Ret->getReturnValue();
-      if (RetVal) {
-        IceType IceRetTy = ConvertType(RetVal->getType());
-        Node->appendInst(new IceInstRet(
-            IceRetTy, Cfg->getVariable(IceRetTy, RetVal->getName())));
-      } else {
-        Node->appendInst(new IceInstRet(IceType_void));
-      }
-      break;
-    }
+    IceInst *Inst = ConvertInstruction(II, Cfg);
+    Node->appendInst(Inst);
   }
   return Node;
 }

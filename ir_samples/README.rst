@@ -8,3 +8,8 @@ to build optimized IR:
 
     ./build-opt-ir.py <file.c>
 
+Note: this works for now, but in the longer run we want to run pnacl-clang
+instead, because we're interested in valid PNaCl bitcode, rather than the more
+generic LLVM IR; Subzero is supposed to run the PNaCl ABI verifier, like the
+existing PNaCl translator.
+
