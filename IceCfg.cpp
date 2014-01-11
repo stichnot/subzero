@@ -49,7 +49,7 @@ private:
 
 
 IceCfg::IceCfg(void) : Str(std::cout, this),
-                       Type(IceType_void), Entry(NULL),
+                       Type(IceType_void), Target(NULL), Entry(NULL),
                        VariableTranslation(new NameTranslation),
                        LabelTranslation(new NameTranslation) {
   GlobalStr = &Str;
@@ -63,12 +63,8 @@ IceCfg::~IceCfg() {
   // using arena-based allocation.
 }
 
-void IceCfg::setName(const IceString &FunctionName) {
-  Name = FunctionName;
-}
-
-void IceCfg::setReturnType(IceType ReturnType) {
-  Type = ReturnType;
+void IceCfg::makeTarget(IceTargetArch Arch) {
+  Target = IceTargetLowering::createLowering(Arch, this);
 }
 
 void IceCfg::addArg(IceVariable *Arg) {
@@ -208,12 +204,12 @@ void IceCfg::deletePhis(void) {
   }
 }
 
-void IceCfg::genCode(IceTargetArch Arch) {
-  IceTargetLowering *Target = IceTargetLowering::createLowering(Arch, this);
+void IceCfg::genCode(void) {
+  assert(Target && "IceCfg::makeTarget() wasn't called.");
   RegisterNames = Target->getRegNames();
   for (IceNodeList::iterator I = LNodes.begin(), E = LNodes.end();
        I != E; ++I) {
-    (*I)->genCode(Target, this);
+    (*I)->genCode(this);
   }
 }
 
@@ -279,7 +275,7 @@ void IceCfg::translate(void) {
   Str << "================ After Phi lowering ================\n";
   dump();
 
-  genCode(IceTarget_X8632);
+  genCode();
   Str << "================ After initial x8632 codegen ================\n";
   dump();
 

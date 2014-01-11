@@ -15,7 +15,9 @@
 class IceTargetX8632 : public IceTargetLowering {
 public:
   IceTargetX8632(IceCfg *Cfg) : IceTargetLowering(Cfg) {}
+  virtual IceInstTarget *makeAssign(IceVariable *Dest, IceOperand *Src);
   virtual IceString *getRegNames(void) const { return RegNames; }
+protected:
   virtual IceInstList lowerAlloca(const IceInst *Inst, const IceInst *Next,
                                   bool &DeleteNextInst);
   virtual IceInstList lowerArithmetic(const IceInst *Inst, const IceInst *Next,

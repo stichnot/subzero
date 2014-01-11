@@ -14,8 +14,10 @@ class IceCfg {
 public:
   IceCfg(void);
   ~IceCfg();
-  void setName(const IceString &FunctionName);
-  void setReturnType(IceType ReturnType);
+  void setName(const IceString &FunctionName) { Name = FunctionName; }
+  void setReturnType(IceType ReturnType) { Type = ReturnType; }
+  void makeTarget(IceTargetArch Arch);
+  IceTargetLowering *getTarget(void) const { return Target; }
   void addArg(IceVariable *Arg);
   void setEntryNode(IceCfgNode *EntryNode);
   void addNode(IceCfgNode *Node, uint32_t LabelIndex);
@@ -48,6 +50,7 @@ public:
 private:
   IceString Name; // function name
   IceType Type; // return type
+  IceTargetLowering *Target;
   IceCfgNode *Entry; // entry basic block
   // Difference between Nodes and LNodes.  Nodes is the master list;
   // IceCfgNode::NameIndex is a permanent index into Nodes[]; some
@@ -76,7 +79,7 @@ private:
   void placePhiLoads(void);
   void placePhiStores(void);
   void deletePhis(void);
-  void genCode(IceTargetArch Arch);
+  void genCode(void);
   void simpleDCE(void);
   void multiblockRegAlloc(void);
   void multiblockCompensation(void);

@@ -16,14 +16,21 @@ IceString IceTargetX8632::RegNames[] = {
   "edx",
 };
 
-IceInstList IceTargetX8632::lowerAlloca(const IceInst *Inst, const IceInst *Next,
+IceInstTarget *IceTargetX8632::makeAssign(IceVariable *Dest, IceOperand *Src) {
+  assert(Dest->getRegNum() >= 0);
+  return new IceInstX8632Mov(Dest->getType(), Dest, Src);
+}
+
+IceInstList IceTargetX8632::lowerAlloca(const IceInst *Inst,
+                                        const IceInst *Next,
                                         bool &DeleteNextInst) {
   IceInstList Expansion;
   assert(0); // TODO: implement
   return Expansion;
 }
 
-IceInstList IceTargetX8632::lowerArithmetic(const IceInst *Inst, const IceInst *Next,
+IceInstList IceTargetX8632::lowerArithmetic(const IceInst *Inst,
+                                            const IceInst *Next,
                                             bool &DeleteNextInst) {
   IceInstList Expansion;
   IceOpList Prefer;
@@ -67,7 +74,8 @@ IceInstList IceTargetX8632::lowerArithmetic(const IceInst *Inst, const IceInst *
   return Expansion;
 }
 
-IceInstList IceTargetX8632::lowerAssign(const IceInst *Inst, const IceInst *Next,
+IceInstList IceTargetX8632::lowerAssign(const IceInst *Inst,
+                                        const IceInst *Next,
                                         bool &DeleteNextInst) {
   IceInstList Expansion;
   IceOpList Prefer;
@@ -106,35 +114,40 @@ IceInstList IceTargetX8632::lowerAssign(const IceInst *Inst, const IceInst *Next
   return Expansion;
 }
 
-IceInstList IceTargetX8632::lowerBr(const IceInst *Inst, const IceInst *Next,
+IceInstList IceTargetX8632::lowerBr(const IceInst *Inst,
+                                    const IceInst *Next,
                                     bool &DeleteNextInst) {
   IceInstList Expansion;
   //assert(0); // TODO: implement
   return Expansion;
 }
 
-IceInstList IceTargetX8632::lowerCall(const IceInst *Inst, const IceInst *Next,
+IceInstList IceTargetX8632::lowerCall(const IceInst *Inst,
+                                      const IceInst *Next,
                                       bool &DeleteNextInst) {
   IceInstList Expansion;
   assert(0); // TODO: implement
   return Expansion;
 }
 
-IceInstList IceTargetX8632::lowerConversion(const IceInst *Inst, const IceInst *Next,
+IceInstList IceTargetX8632::lowerConversion(const IceInst *Inst,
+                                            const IceInst *Next,
                                             bool &DeleteNextInst) {
   IceInstList Expansion;
   assert(0); // TODO: implement
   return Expansion;
 }
 
-IceInstList IceTargetX8632::lowerFcmp(const IceInst *Inst, const IceInst *Next,
+IceInstList IceTargetX8632::lowerFcmp(const IceInst *Inst,
+                                      const IceInst *Next,
                                       bool &DeleteNextInst) {
   IceInstList Expansion;
   assert(0); // TODO: implement
   return Expansion;
 }
 
-IceInstList IceTargetX8632::lowerIcmp(const IceInst *Inst, const IceInst *Next,
+IceInstList IceTargetX8632::lowerIcmp(const IceInst *Inst,
+                                      const IceInst *Next,
                                       bool &DeleteNextInst) {
   IceInstList Expansion;
   IceInstTarget *NewInst;
@@ -175,7 +188,8 @@ IceInstList IceTargetX8632::lowerIcmp(const IceInst *Inst, const IceInst *Next,
   return Expansion;
 }
 
-IceInstList IceTargetX8632::lowerLoad(const IceInst *Inst, const IceInst *Next,
+IceInstList IceTargetX8632::lowerLoad(const IceInst *Inst,
+                                      const IceInst *Next,
                                       bool &DeleteNextInst) {
   IceInstList Expansion;
   IceInstTarget *NewInst;
@@ -227,14 +241,16 @@ IceInstList IceTargetX8632::lowerLoad(const IceInst *Inst, const IceInst *Next,
   return Expansion;
 }
 
-IceInstList IceTargetX8632::lowerPhi(const IceInst *Inst, const IceInst *Next,
+IceInstList IceTargetX8632::lowerPhi(const IceInst *Inst,
+                                     const IceInst *Next,
                                      bool &DeleteNextInst) {
   IceInstList Expansion;
   assert(0); // TODO: implement if necessary
   return Expansion;
 }
 
-IceInstList IceTargetX8632::lowerRet(const IceInst *Inst, const IceInst *Next,
+IceInstList IceTargetX8632::lowerRet(const IceInst *Inst,
+                                     const IceInst *Next,
                                      bool &DeleteNextInst) {
   IceInstList Expansion;
   IceInstTarget *NewInst;
@@ -255,21 +271,24 @@ IceInstList IceTargetX8632::lowerRet(const IceInst *Inst, const IceInst *Next,
   return Expansion;
 }
 
-IceInstList IceTargetX8632::lowerSelect(const IceInst *Inst, const IceInst *Next,
+IceInstList IceTargetX8632::lowerSelect(const IceInst *Inst,
+                                        const IceInst *Next,
                                         bool &DeleteNextInst) {
   IceInstList Expansion;
   assert(0); // TODO: implement
   return Expansion;
 }
 
-IceInstList IceTargetX8632::lowerStore(const IceInst *Inst, const IceInst *Next,
+IceInstList IceTargetX8632::lowerStore(const IceInst *Inst,
+                                       const IceInst *Next,
                                        bool &DeleteNextInst) {
   IceInstList Expansion;
   assert(0); // TODO: implement
   return Expansion;
 }
 
-IceInstList IceTargetX8632::lowerSwitch(const IceInst *Inst, const IceInst *Next,
+IceInstList IceTargetX8632::lowerSwitch(const IceInst *Inst,
+                                        const IceInst *Next,
                                         bool &DeleteNextInst) {
   IceInstList Expansion;
   assert(0); // TODO: implement

@@ -11,6 +11,7 @@
 #include "IceInst.h"
 #include "IceOperand.h"
 #include "IceRegManager.h"
+#include "IceTargetLowering.h"
 #include "IceTypes.h"
 
 IceRegManagerEntry::IceRegManagerEntry(IceVariable *Var, unsigned NumReg) : Var(Var) {
@@ -205,7 +206,7 @@ void IceRegManager::updateCandidates(const IceRegManager *Pred) {
 void IceRegManager::updateVotes(const IceRegManager *Pred) {
   for (QueueType::const_iterator I = Queue.begin(), E = Queue.end();
        I != E; ++I) {
-    if ((*I)->getCandidateWeight() == 0)
+    if (!(*I)->isCandidate())
       continue;
     IceInst *LoadInst = (*I)->getFirstLoadInst();
     if (LoadInst == NULL)
@@ -265,29 +266,84 @@ void IceRegManager::makeAssignments(void) {
   }
 }
 
-IceInstList IceRegManager::addCompensations(const IceRegManager *Pred) {
-  IceInstList Compensations;
+IceInstList IceRegManager::addCompensations(const IceRegManager *Pred,
+                                            IceTargetLowering *Target) {
+  // Pass 1: Scan candidate list and generate list of assignments for
+  // currently unavailable operands.  The assignments can be in any
+  // order.  The first register corresponding to a non-candidate or an
+  // unavailable operand becomes the cycle-breaking scratch register.
+  IceInstList CompsUnavailable;
+  IceVariable *Scratch = NULL;
+  IceVarList Avoid;
+  IceOpList Prefer;
   for (QueueType::const_iterator I = Queue.begin(), E = Queue.end();
        I != E; ++I) {
-    if ((*I)->getCandidateWeight() == 0)
+    IceVariable *Dest = (*I)->getVar();
+    if (!(*I)->isCandidate()) {
+      if (Scratch == NULL)
+        Scratch = Dest;
       continue;
+    }
     IceInst *LoadInst = (*I)->getFirstLoadInst();
-    if (LoadInst == NULL)
-      continue;
-    assert(LoadInst->getDest(0));
-    assert(llvm::cast<IceVariable>(LoadInst->getDest(0)) == (*I)->getVar());
-    IceVariable *Dest = LoadInst->getDest(0);
+    assert(LoadInst);
+    assert(LoadInst->getDest(0) == Dest);
     IceOperand *Src = LoadInst->getSrc(0);
-    IceInst *NewInst = new IceInstAssign(Dest->getType(), Dest, Src);
-    Compensations.push_back(NewInst);
+    Prefer.clear();
+    Prefer.push_back(Src);
+    IceVariable *Reg = Pred->getRegister(Dest->getType(), Prefer, Avoid);
+    bool Available = Pred->registerContains(Reg, Src);
+    if (Available)
+      continue;
+    IceInstTarget *NewInst = Target->makeAssign(Dest, Src);
+    CompsUnavailable.push_back(NewInst);
   }
+
+  // Pass 2: Scan candidate list and generate list of assignments for
+  // available operands.  The assignment list must not violate any
+  // dependencies.  For the assignment "reg1=reg2", insert before any
+  // other assignment "reg2=xxx", and after any other assignment
+  // "xxx=reg1".  If these conditions can't be satisfied due to a
+  // dependency cycle, and there is a scratch register regX, then
+  // insert the assignment "regX=reg2" at the early point and insert
+  // the assignment "reg1=regX" at the late point.  If there is no
+  // scratch register, then remove this candidate altogether (and
+  // optionally remove related compensations from already-processed
+  // edges).
+  // TODO: this ordering is completely unimplemented so far.
+  IceInstList CompsAvailable;
+  for (QueueType::const_iterator I = Queue.begin(), E = Queue.end();
+       I != E; ++I) {
+    if (!(*I)->isCandidate())
+      continue;
+    IceVariable *Dest = (*I)->getVar();
+    IceInst *LoadInst = (*I)->getFirstLoadInst();
+    assert(LoadInst);
+    assert(LoadInst->getDest(0) == Dest);
+    IceOperand *Src = LoadInst->getSrc(0);
+    Prefer.clear();
+    Prefer.push_back(Src);
+    IceVariable *Reg = Pred->getRegister(Dest->getType(), Prefer, Avoid);
+    bool Available = Pred->registerContains(Reg, Src);
+    if (!Available)
+      continue;
+    assert(Dest->getRegNum() >= 0);
+    assert(Reg->getRegNum() >= 0);
+    if (Dest->getRegNum() != Reg->getRegNum()) {
+      IceInstTarget *NewInst = Target->makeAssign(Dest, Reg);
+      CompsAvailable.push_back(NewInst);
+    }
+  }
+
+  IceInstList Compensations = CompsAvailable;
+  Compensations.insert(Compensations.begin(),
+                       CompsUnavailable.begin(), CompsUnavailable.end());
   return Compensations;
 }
 
 void IceRegManager::deleteHoists(void) {
   for (QueueType::const_iterator I = Queue.begin(), E = Queue.end();
        I != E; ++I) {
-    if ((*I)->getCandidateWeight() == 0)
+    if (!(*I)->isCandidate())
       continue;
     IceInst *LoadInst = (*I)->getFirstLoadInst();
     if (LoadInst == NULL)
