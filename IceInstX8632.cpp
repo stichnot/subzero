@@ -168,14 +168,19 @@ IceInstList IceTargetX8632::lowerIcmp(const IceInst *Inst,
     if (IceVariable *Variable = llvm::dyn_cast<IceVariable>(Src1))
       Avoid.push_back(Variable);
     IceVariable *Reg = RegManager->getRegister(Src0->getType(), Prefer, Avoid);
+    IceOperand *RegSrc = Reg;
     // Create "reg=Src0" if needed.
     if (!RegManager->registerContains(Reg, Src0)) {
-      NewInst = new IceInstX8632Mov(Src0->getType(), Reg, Src0);
-      Expansion.push_back(NewInst);
-      RegManager->notifyLoad(NewInst);
-      NewInst->setRegState(RegManager);
+      if (llvm::isa<IceConstant>(Src1)) {
+        RegSrc = Src0;
+      } else {
+        NewInst = new IceInstX8632Mov(Src0->getType(), Reg, Src0);
+        Expansion.push_back(NewInst);
+        RegManager->notifyLoad(NewInst);
+        NewInst->setRegState(RegManager);
+      }
     }
-    NewInst = new IceInstX8632Icmp(Reg, Src1);
+    NewInst = new IceInstX8632Icmp(RegSrc, Src1);
     Expansion.push_back(NewInst);
     NewInst->setRegState(RegManager);
     NewInst = new IceInstX8632Br(NextBr->getNode(),
