@@ -17,6 +17,8 @@ void IceVariable::setUse(const IceInst *Inst, const IceCfgNode *Node) {
 }
 
 void IceVariable::removeUse(void) {
+  if (!canAutoDelete())
+    return;
   --UseCount;
   if (UseCount)
     return;

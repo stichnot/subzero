@@ -285,6 +285,7 @@ void IceCfg::translate(void) {
 
   multiblockRegAlloc();
   multiblockCompensation();
+  simpleDCE();
   Str << "================ After multi-block regalloc ================\n";
   dump();
 

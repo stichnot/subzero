@@ -82,7 +82,7 @@ IceRegManager::IceRegManager(IceCfg *Cfg, IceCfgNode *Node, unsigned NumReg) :
     char Buf[100];
     sprintf(Buf, "r%u_%u", i + 1, Node->getIndex());
     IceVariable *Reg = Cfg->getVariable(IceType_i32, Buf);
-    //Reg->setRegNum(i); // TODO: testing
+    Reg->setNoAutoDelete();
     Queue.push_back(new IceRegManagerEntry(Reg, NumReg));
   }
 }
@@ -330,6 +330,9 @@ IceInstList IceRegManager::addCompensations(const IceRegManager *Pred,
     assert(Reg->getRegNum() >= 0);
     if (Dest->getRegNum() != Reg->getRegNum()) {
       IceInstTarget *NewInst = Target->makeAssign(Dest, Reg);
+      // TODO: Find the correct insertion point instead of just
+      // appending.
+      assert(CompsAvailable.empty());
       CompsAvailable.push_back(NewInst);
     }
   }
