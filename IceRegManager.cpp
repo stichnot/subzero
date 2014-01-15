@@ -332,7 +332,8 @@ IceInstList IceRegManager::addCompensations(const IceRegManager *Pred,
       IceInstTarget *NewInst = Target->makeAssign(Dest, Reg);
       // TODO: Find the correct insertion point instead of just
       // appending.
-      assert(CompsAvailable.empty());
+      assert(CompsAvailable.empty() &&
+             "RegManager permutation not yet implemented");
       CompsAvailable.push_back(NewInst);
     }
   }
