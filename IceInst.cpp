@@ -3,6 +3,8 @@
  * be found in the LICENSE file.
  */
 
+#include <stdio.h> // sprintf
+
 #include "IceCfg.h"
 #include "IceCfgNode.h"
 #include "IceInst.h"
@@ -10,8 +12,14 @@
 #include "IceOperand.h"
 #include "IceRegManager.h"
 
-IceInst::IceInst(IceInstType Kind, IceType Type) :
-  Kind(Kind), Type(Type), Deleted(false) {}
+IceInst::IceInst(IceCfg *Cfg, IceInstType Kind, IceType Type) :
+  Kind(Kind), Type(Type), Deleted(false) {
+  Number = Cfg->newInstNumber();
+}
+
+void IceInst::renumber(IceCfg *Cfg) {
+  Number = isDeleted() ? -1 : Cfg->getNewInstNumber(Number);
+}
 
 void IceInst::setDeleted(void) {
   removeUse(NULL);
@@ -236,11 +244,11 @@ void IceInst::markLastUses(IceCfg *Cfg) {
   }
 }
 
-IceInstArithmetic::IceInstArithmetic(IceArithmetic Op, IceType Type,
+IceInstArithmetic::IceInstArithmetic(IceCfg *Cfg, IceArithmetic Op, IceType Type,
                                      IceVariable *Dest,
                                      IceOperand *Source1,
                                      IceOperand *Source2) :
-  IceInst(Arithmetic, Type), Op(Op) {
+  IceInst(Cfg, Arithmetic, Type), Op(Op) {
   addDest(Dest);
   addSource(Source1);
   addSource(Source2);
@@ -261,9 +269,9 @@ bool IceInstArithmetic::isCommutative(void) const {
   }
 }
 
-IceInstAssign::IceInstAssign(IceType Type,
+IceInstAssign::IceInstAssign(IceCfg *Cfg, IceType Type,
                              IceVariable *Dest, IceOperand *Source) :
-  IceInst(Assign, Type) {
+  IceInst(Cfg, Assign, Type) {
   addDest(Dest);
   addSource(Source);
 }
@@ -271,9 +279,9 @@ IceInstAssign::IceInstAssign(IceType Type,
 // If LabelTrue==LabelFalse, we turn it into an unconditional branch.
 // This ensures that, along with the 'switch' instruction semantics,
 // there is at most one edge from one node to another.
-IceInstBr::IceInstBr(IceCfgNode *Node, IceOperand *Source,
+IceInstBr::IceInstBr(IceCfg *Cfg, IceCfgNode *Node, IceOperand *Source,
                      uint32_t LabelTrue, uint32_t LabelFalse) :
-  IceInst(IceInst::Br, IceType_i1), IsConditional(true), Node(Node) {
+  IceInst(Cfg, IceInst::Br, IceType_i1), IsConditional(true), Node(Node) {
   // TODO: It would be better to add CFG edges in
   // IceCfgNode::appendInst() instead of here.
   Node->addFallthrough(LabelFalse);
@@ -283,8 +291,8 @@ IceInstBr::IceInstBr(IceCfgNode *Node, IceOperand *Source,
   }
 }
 
-IceInstBr::IceInstBr(IceCfgNode *Node, uint32_t Label) :
-  IceInst(IceInst::Br, IceType_i1), IsConditional(false), Node(Node) {
+IceInstBr::IceInstBr(IceCfg *Cfg, IceCfgNode *Node, uint32_t Label) :
+  IceInst(Cfg, IceInst::Br, IceType_i1), IsConditional(false), Node(Node) {
   // TODO: It would be better to add CFG edges in
   // IceCfgNode::appendInst() instead of here.
   Node->addFallthrough(Label);
@@ -298,23 +306,23 @@ uint32_t IceInstBr::getLabelFalse(void) const {
   return Node->getFallthrough();
 }
 
-IceInstIcmp::IceInstIcmp(IceICond Condition, IceType Type, IceVariable *Dest,
+IceInstIcmp::IceInstIcmp(IceCfg *Cfg, IceICond Condition, IceType Type, IceVariable *Dest,
                          IceOperand *Source1, IceOperand *Source2) :
-  IceInst(Icmp, Type), Condition(Condition) {
+  IceInst(Cfg, Icmp, Type), Condition(Condition) {
   addDest(Dest);
   addSource(Source1);
   addSource(Source2);
 }
 
-IceInstLoad::IceInstLoad(IceType Type,
+IceInstLoad::IceInstLoad(IceCfg *Cfg, IceType Type,
                          IceVariable *Dest, IceOperand *SourceAddr) :
-  IceInst(Load, Type) {
+  IceInst(Cfg, Load, Type) {
   addDest(Dest);
   addSource(SourceAddr);
 }
 
-IceInstPhi::IceInstPhi(IceType Type, IceVariable *Dest) :
-  IceInst(Phi, Type) {
+IceInstPhi::IceInstPhi(IceCfg *Cfg, IceType Type, IceVariable *Dest) :
+  IceInst(Cfg, Phi, Type) {
   addDest(Dest);
 }
 
@@ -332,7 +340,7 @@ IceInst *IceInstPhi::lower(IceCfg *Cfg, IceCfgNode *Node) {
   IceVariable *NewSrc = Cfg->getVariable(Type, PhiName);
   Dests.clear();
   addDest(NewSrc);
-  IceInstAssign *NewInst = new IceInstAssign(Type, Dest, NewSrc);
+  IceInstAssign *NewInst = new IceInstAssign(Cfg, Type, Dest, NewSrc);
   //NewInst->updateVars(Node);
   Dest->replaceDefinition(NewInst, Node);
   return NewInst;
@@ -348,8 +356,8 @@ IceOperand *IceInstPhi::getOperandForTarget(uint32_t Target) const {
   return NULL;
 }
 
-IceInstRet::IceInstRet(IceType Type, IceOperand *Source) :
-  IceInst(Ret, Type) {
+IceInstRet::IceInstRet(IceCfg *Cfg, IceType Type, IceOperand *Source) :
+  IceInst(Cfg, Ret, Type) {
   if (Source)
     addSource(Source);
 }
@@ -363,7 +371,13 @@ void IceInstTarget::setRegState(const IceRegManager *State) {
 IceOstream& operator<<(IceOstream &Str, const IceInst *I) {
   if (I->isDeleted() && !Str.isVerbose())
     return Str;
-  Str << "  ";
+  char buf[30];
+  int Number = I->getNumber();
+  if (Number < 0)
+    sprintf(buf, "[XXX]");
+  else
+    sprintf(buf, "[%3d]", I->getNumber());
+  Str << buf << "  ";
   if (I->isDeleted())
     Str << "  //";
   I->dump(Str);

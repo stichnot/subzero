@@ -21,6 +21,7 @@ public:
   uint32_t getNonFallthrough(unsigned Which = 0) const {
     return OutEdges[1 + Which];
   }
+  void renumberInstructions(IceCfg *Cfg);
   void splitEdge(IceCfgNode *From, IceCfgNode *To);
   void registerInEdges(IceCfg *Cfg);
   void findAddressOpt(IceCfg *Cfg);

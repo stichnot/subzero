@@ -76,7 +76,7 @@ public:
     Xor,
     Invalid,
   };
-  IceInstX8632Arithmetic(IceX8632Arithmetic Op, IceType Type,
+  IceInstX8632Arithmetic(IceCfg *Cfg, IceX8632Arithmetic Op, IceType Type,
                          IceVariable *Dest, IceOperand *Source);
   IceX8632Arithmetic getOp(void) const { return Op; }
   bool isCommutative(void) const;
@@ -87,7 +87,7 @@ private:
 
 class IceInstX8632Br : public IceInstTarget {
 public:
-  IceInstX8632Br(const IceCfgNode *Node, IceInstIcmp::IceICond Condition);
+  IceInstX8632Br(IceCfg *Cfg, const IceCfgNode *Node, IceInstIcmp::IceICond Condition);
   uint32_t getLabelTrue(void) const;
   // Fall-through
   uint32_t getLabelFalse(void) const;
@@ -99,7 +99,7 @@ private:
 
 class IceInstX8632Icmp : public IceInstTarget {
 public:
-  IceInstX8632Icmp(IceOperand *Src1, IceOperand *Src2);
+  IceInstX8632Icmp(IceCfg *Cfg, IceOperand *Src1, IceOperand *Src2);
   virtual void dump(IceOstream &Str) const;
 private:
 };
@@ -107,7 +107,7 @@ private:
 // TODO: Are Load and Store really just Assigns?
 class IceInstX8632Load : public IceInstTarget {
 public:
-  IceInstX8632Load(IceType Type, IceVariable *Dest, IceOperand *Base,
+  IceInstX8632Load(IceCfg *Cfg, IceType Type, IceVariable *Dest, IceOperand *Base,
                    IceOperand *Index, IceOperand *Shift, IceOperand *Offset);
   virtual void dump(IceOstream &Str) const;
 private:
@@ -115,14 +115,14 @@ private:
 
 class IceInstX8632Mov : public IceInstTarget {
 public:
-  IceInstX8632Mov(IceType Type, IceVariable *Dest, IceOperand *Source);
+  IceInstX8632Mov(IceCfg *Cfg, IceType Type, IceVariable *Dest, IceOperand *Source);
   virtual void dump(IceOstream &Str) const;
 private:
 };
 
 class IceInstX8632Ret : public IceInstTarget {
 public:
-  IceInstX8632Ret(IceType Type, IceVariable *Source);
+  IceInstX8632Ret(IceCfg *Cfg, IceType Type, IceVariable *Source);
   virtual void dump(IceOstream &Str) const;
 private:
 };

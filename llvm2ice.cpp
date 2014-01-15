@@ -89,10 +89,10 @@ IceInst *ConvertInstruction(const Instruction *Inst, IceCfg *Cfg) {
     const Value *RetVal = Ret->getReturnValue();
     if (RetVal) {
       IceType IceRetTy = ConvertType(RetVal->getType());
-      return new IceInstRet(IceRetTy,
+      return new IceInstRet(Cfg, IceRetTy,
                             Cfg->getVariable(IceRetTy, RetVal->getName()));
     } else {
-      return new IceInstRet(IceType_void);
+      return new IceInstRet(Cfg, IceType_void);
     }
     break;
   }
@@ -104,7 +104,7 @@ IceInst *ConvertInstruction(const Instruction *Inst, IceCfg *Cfg) {
     IceOperand *Src0 = Cfg->getVariable(IceTy, Op0->getName());
     IceOperand *Src1 = Cfg->getVariable(IceTy, Op1->getName());
     IceVariable *Dest = Cfg->getVariable(IceTy, BinOp->getName());
-    return new IceInstArithmetic(IceInstArithmetic::Add, IceTy, Dest, Src0,
+    return new IceInstArithmetic(Cfg, IceInstArithmetic::Add, IceTy, Dest, Src0,
                                  Src1);
     break;
   }

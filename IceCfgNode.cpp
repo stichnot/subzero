@@ -37,6 +37,18 @@ void IceCfgNode::addNonFallthrough(uint32_t TargetLabel) {
   OutEdges.push_back(TargetLabel);
 }
 
+void IceCfgNode::renumberInstructions(IceCfg *Cfg) {
+  for (IcePhiList::const_iterator I = Phis.begin(), E = Phis.end();
+       I != E; ++I) {
+    (*I)->renumber(Cfg);
+  }
+  IceInstList::const_iterator I = Insts.begin(), E = Insts.end();
+  while (I != E) {
+    IceInst *Inst = *I++;
+    Inst->renumber(Cfg);
+  }
+}
+
 // Inserts this node between the From and To nodes.  Just updates the
 // in-edge/out-edge structure without doing anything to the CFG
 // linearization.
@@ -146,7 +158,7 @@ void IceCfgNode::placePhiStores(IceCfg *Cfg) {
         continue;
       IceType Type = (*I2)->getDest(0)->getType();
       IceInstAssign *NewInst =
-        new IceInstAssign(Type, (*I2)->getDest(0), Operand);
+        new IceInstAssign(Cfg, Type, (*I2)->getDest(0), Operand);
       NewPhiStores.push_back(NewInst);
     }
   }
@@ -285,7 +297,7 @@ void IceCfgNode::multiblockCompensation(IceCfg *Cfg) {
     IceCfgNode *Pred = Cfg->getNode(*I);
     assert(Pred);
     IceCfgNode *Split = Cfg->splitEdge(*I, NameIndex);
-    Insts.push_back(new IceInstBr(Split, NameIndex));
+    Insts.push_back(new IceInstBr(Cfg, Split, NameIndex));
     Split->InEdges.push_back(*I);
     Split->insertInsts(Split->Insts.end(), Insts);
   }

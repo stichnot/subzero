@@ -51,7 +51,8 @@ private:
 IceCfg::IceCfg(void) : Str(std::cout, this),
                        Type(IceType_void), Target(NULL), Entry(NULL),
                        VariableTranslation(new NameTranslation),
-                       LabelTranslation(new NameTranslation) {
+                       LabelTranslation(new NameTranslation),
+                       NextInstNumber(0) {
   GlobalStr = &Str;
 }
 
@@ -132,6 +133,19 @@ IceVariable *IceCfg::getVariable(IceType Type, uint32_t Index) {
   return Variables[Index];
 }
 
+int IceCfg::newInstNumber(void) {
+  int Result = NextInstNumber;
+  NextInstNumber += 1;
+  return Result;
+}
+
+int IceCfg::getNewInstNumber(int OldNumber) {
+  assert((int)InstNumberRemapping.size() > OldNumber);
+  int NewNumber = newInstNumber();
+  InstNumberRemapping[OldNumber] = NewNumber;
+  return NewNumber;
+}
+
 uint32_t IceCfg::translateVariable(const IceString &Name) {
   return VariableTranslation->translate(Name);
 }
@@ -146,6 +160,19 @@ IceString IceCfg::variableName(uint32_t VariableIndex) const {
 
 IceString IceCfg::labelName(uint32_t LabelIndex) const {
   return LabelTranslation->getName(LabelIndex);
+}
+
+void IceCfg::renumberInstructions(void)
+{
+  InstNumberRemapping.resize(NextInstNumber);
+  NextInstNumber = 0;
+  for (IceNodeList::iterator I = LNodes.begin(), E = LNodes.end();
+       I != E; ++I) {
+    (*I)->renumberInstructions(this);
+  }
+  // TODO: Update live ranges and any other data structures that rely
+  // on the instruction number, before clearing the remap table.
+  InstNumberRemapping.clear();
 }
 
 void IceCfg::registerInEdges(void) {
@@ -275,7 +302,12 @@ void IceCfg::translate(void) {
   Str << "================ After Phi lowering ================\n";
   dump();
 
+  renumberInstructions();
+  Str << "================ After instruction renumbering ================\n";
+  dump();
+
   genCode();
+  renumberInstructions();
   Str << "================ After initial x8632 codegen ================\n";
   dump();
 

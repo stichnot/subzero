@@ -35,6 +35,8 @@ public:
   IceVariable *getVariable(IceType Type, const IceString &Name) {
     return getVariable(Type, translateVariable(Name));
   }
+  int newInstNumber(void);
+  int getNewInstNumber(int OldNumber);
 
   uint32_t translateVariable(const IceString &Name);
   uint32_t translateLabel(const IceString &Name);
@@ -63,9 +65,11 @@ private:
   IceVarList Variables;
   std::vector<const IceInst *> LastUses; // instruction ending each variable's live range
   IceVarList Args; // densely packed vector, subset of Variables
+  std::vector<int> InstNumberRemapping;
 
   class NameTranslation *VariableTranslation;
   class NameTranslation *LabelTranslation;
+  int NextInstNumber;
   // TODO: This goes away when we get target-specific operands with
   // their own dump() methods.
   IceString *RegisterNames;
@@ -73,6 +77,7 @@ private:
   // list of exit IceCfgNode* for liveness analysis
   // operand pool - set of IceOperand
   // whether there is an alloca (frame ptr optimization)
+  void renumberInstructions(void);
   void registerInEdges(void);
   void findAddressOpt(void);
   void markLastUses(void);
