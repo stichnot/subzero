@@ -244,6 +244,29 @@ void IceInst::markLastUses(IceCfg *Cfg) {
   }
 }
 
+void IceInst::liveness(llvm::BitVector &Live) {
+  if (isDeleted())
+    return;
+  // TODO: if all dest operands are dead, consider marking the entire
+  // instruction as dead, which also means not marking its source
+  // operands as live.
+  for (IceVarList::const_iterator I = Dests.begin(), E = Dests.end();
+       I != E; ++I) {
+    if (*I) {
+      Live[(*I)->getIndex()] = false;
+    }
+  }
+  // Phi arguments only get processed in the predecessor node.
+  if (llvm::isa<IceInstPhi>(this))
+    return;
+  for (IceOpList::const_iterator I = Srcs.begin(), E = Srcs.end();
+       I != E; ++I) {
+    if (IceVariable *Var = llvm::dyn_cast_or_null<IceVariable>(*I)) {
+      Live[Var->getIndex()] = true;
+    }
+  }
+}
+
 IceInstArithmetic::IceInstArithmetic(IceCfg *Cfg, IceArithmetic Op, IceType Type,
                                      IceVariable *Dest,
                                      IceOperand *Source1,
@@ -329,6 +352,18 @@ IceInstPhi::IceInstPhi(IceCfg *Cfg, IceType Type, IceVariable *Dest) :
 void IceInstPhi::addArgument(IceOperand *Source, uint32_t Label) {
   addSource(Source);
   Labels.push_back(Label);
+}
+
+IceOperand *IceInstPhi::getArgument(uint32_t Label) const {
+  assert(Labels.size() == Srcs.size());
+  IceEdgeList::const_iterator EdgeIter = Labels.begin(), EdgeEnd = Labels.end();
+  for (IceOpList::const_iterator I = Srcs.begin(), E = Srcs.end();
+       I != E && EdgeIter != EdgeEnd; ++I, ++EdgeIter) {
+    if (*EdgeIter == Label)
+      return *I;
+  }
+  assert(0);
+  return NULL;
 }
 
 // Change "a=phi(...)" to "a_phi=phi(...)" and return a new

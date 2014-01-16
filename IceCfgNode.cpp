@@ -316,6 +316,52 @@ void IceCfgNode::insertInsts(IceInstList::iterator Location,
   }
 }
 
+// Returns true if the incoming liveness changed from before, false if
+// it stayed the same.  IsFirst is set the first time the node is
+// processed, and is a signal to initialize LiveIn.
+bool IceCfgNode::liveness(IceCfg *Cfg, bool IsFirst) {
+  if (IsFirst) {
+    LiveIn.clear();
+    LiveIn.resize(Cfg->getNumVariables());
+  }
+  llvm::BitVector Live(Cfg->getNumVariables());
+  // Initialize Live to be the union of all successors' LiveIn.
+  for (IceEdgeList::const_iterator I = OutEdges.begin(), E = OutEdges.end();
+       I != E; ++I) {
+    IceCfgNode *Succ = Cfg->getNode(*I);
+    for (unsigned i = 0; i < Live.size(); ++i) {
+      Live[i] = Live[i] | Succ->LiveIn[i];
+    }
+    // Mark corresponding argument of phis in successor as live.
+    for (IcePhiList::const_iterator I1 = Succ->Phis.begin(),
+           E1 = Succ->Phis.end(); I1 != E1; ++I1) {
+      IceOperand *Src = (*I1)->getArgument(getIndex());
+      if (IceVariable *Var = llvm::dyn_cast_or_null<IceVariable>(Src)) {
+        Live[Var->getIndex()] = true;
+      }
+    }
+  }
+  // Process instructions in reverse order
+  for (IceInstList::const_reverse_iterator I = Insts.rbegin(), E = Insts.rend();
+       I != E; ++I) {
+    (*I)->liveness(Live);
+  }
+  // Process phis in any order
+  for (IcePhiList::const_iterator I = Phis.begin(), E = Phis.end();
+       I != E; ++I) {
+    (*I)->liveness(Live);
+  }
+  // Add in current LiveIn
+  for (unsigned i = 0; i < Live.size(); ++i) {
+    Live[i] = Live[i] | LiveIn[i];
+  }
+  // Check result, set LiveIn=Live
+  bool Changed = (Live != LiveIn);
+  if (Changed)
+    LiveIn = Live;
+  return Changed;
+}
+
 // ======================== Dump routines ======================== //
 
 void IceCfgNode::dump(IceOstream &Str) const {
@@ -328,6 +374,13 @@ void IceCfgNode::dump(IceOstream &Str) const {
       if (I != InEdges.begin())
         Str << ", ";
       Str << "%" << Str.Cfg->labelName(*I);
+    }
+    Str << "\n";
+    Str << "    // LiveIn:";
+    for (unsigned i = 0; i < LiveIn.size(); ++i) {
+      if (LiveIn[i]) {
+        Str << " %" << Str.Cfg->variableName(i);
+      }
     }
     Str << "\n";
     if (RegManager) {

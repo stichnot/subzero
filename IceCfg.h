@@ -35,6 +35,7 @@ public:
   IceVariable *getVariable(IceType Type, const IceString &Name) {
     return getVariable(Type, translateVariable(Name));
   }
+  unsigned getNumVariables(void) const { return Variables.size(); }
   int newInstNumber(void);
   int getNewInstNumber(int OldNumber);
 
@@ -88,6 +89,7 @@ private:
   void simpleDCE(void);
   void multiblockRegAlloc(void);
   void multiblockCompensation(void);
+  void liveness(void);
 };
 
 #endif // _IceCfg_h

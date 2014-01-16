@@ -273,6 +273,40 @@ void IceCfg::multiblockCompensation(void) {
   }
 }
 
+void IceCfg::liveness(void) {
+  llvm::BitVector NeedToProcess(Nodes.size());
+  unsigned NeedToProcessCount = 0;
+  // Mark all nodes as needing to be processed
+  for (IceNodeList::iterator I = LNodes.begin(), E = LNodes.end();
+       I != E; ++I) {
+    NeedToProcess[(*I)->getIndex()] = true;
+    ++NeedToProcessCount;
+  }
+  for (bool First = true; NeedToProcessCount; First = false) {
+    for (IceNodeList::reverse_iterator I = LNodes.rbegin(), E = LNodes.rend();
+         I != E; ++I) {
+      IceCfgNode *Node = *I;
+      if (NeedToProcess[Node->getIndex()]) {
+        NeedToProcess[Node->getIndex()] = false;
+        --NeedToProcessCount;
+        bool Changed = Node->liveness(this, First);
+        if (Changed) {
+          // Mark all in-edges as needing to be processed
+          const IceEdgeList &InEdges = Node->getInEdges();
+          for (IceEdgeList::const_iterator I1 = InEdges.begin(),
+                 E1 = InEdges.end(); I1 != E1; ++I1) {
+            IceCfgNode *Pred = getNode(*I1);
+            if (!NeedToProcess[Pred->getIndex()]) {
+              NeedToProcess[Pred->getIndex()] = true;
+              ++NeedToProcessCount;
+            }
+          }
+        }
+      }
+    }
+  }
+}
+
 bool IceCfg::isLastUse(const IceInst *Inst, IceOperand *Operand) const {
   IceVariable *Variable = llvm::dyn_cast<IceVariable>(Operand);
   if (Variable == NULL)
@@ -290,6 +324,8 @@ void IceCfg::translate(void) {
 
   Str << "================ Initial CFG ================\n";
   dump();
+
+  liveness();
 
   findAddressOpt();
   markLastUses();

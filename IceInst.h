@@ -55,6 +55,7 @@ public:
                        const IceOpList &NewOperands);
   virtual void removeUse(IceVariable *Variable);
   void markLastUses(IceCfg *Cfg);
+  void liveness(llvm::BitVector &Live);
   virtual void dump(IceOstream &Str) const;
   virtual void dumpExtras(IceOstream &Str) const;
   void dumpSources(IceOstream &Str) const;
@@ -276,6 +277,7 @@ class IceInstPhi : public IceInst {
 public:
   IceInstPhi(IceCfg *Cfg, IceType Type, IceVariable *Dest);
   void addArgument(IceOperand *Source, uint32_t Label);
+  IceOperand *getArgument(uint32_t Label) const;
   IceInst *lower(IceCfg *Cfg, IceCfgNode *Node);
   IceOperand *getOperandForTarget(uint32_t Target) const;
   virtual void dump(IceOstream &Str) const;

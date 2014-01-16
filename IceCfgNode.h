@@ -21,6 +21,8 @@ public:
   uint32_t getNonFallthrough(unsigned Which = 0) const {
     return OutEdges[1 + Which];
   }
+  const IceEdgeList &getInEdges(void) const { return InEdges; }
+  const IceEdgeList &getOutEdges(void) const { return OutEdges; }
   void renumberInstructions(IceCfg *Cfg);
   void splitEdge(IceCfgNode *From, IceCfgNode *To);
   void registerInEdges(IceCfg *Cfg);
@@ -32,12 +34,14 @@ public:
   void genCode(IceCfg *Cfg);
   void multiblockRegAlloc(IceCfg *Cfg);
   void multiblockCompensation(IceCfg *Cfg);
+  bool liveness(IceCfg *Cfg, bool IsFirst);
   void dump(IceOstream &Str) const;
 private:
   const uint32_t NameIndex; // label
   IceEdgeList OutEdges; // first is default/fallthrough
   IceEdgeList InEdges; // in no particular order
   std::vector<IceInstList> Compensations; // ordered by InEdges
+  llvm::BitVector LiveIn; // TODO: consider llvm::SparseBitVector
   IcePhiList Phis; // unordered set of phi instructions
   IceInstList Insts; // ordered list of non-phi instructions
   bool ArePhiLoadsPlaced;

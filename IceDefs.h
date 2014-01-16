@@ -17,6 +17,7 @@
 
 // See http://llvm.org/docs/ProgrammersManual.html#isa
 #include "llvm/Support/Casting.h"
+#include "llvm/ADT/BitVector.h"
 
 class IceCfg;
 class IceCfgNode;
