@@ -13,14 +13,14 @@ def shellcmd(command, echo=True):
     return stdout_result
 
 def find_llvm_bin():
-    if os.path.exists(os.path.expandvars('$LLVMDBG/clang')):
-        return os.path.expandvars('$LLVMDBG')
+    if os.path.exists(os.path.expandvars('$LLVMSVN/clang')):
+        return os.path.expandvars('$LLVMSVN')
     else:
         return ''
 
 if __name__ == '__main__':
     argparser = argparse.ArgumentParser()
-    argparser.add_argument('irfile', nargs='+', type=str)
+    argparser.add_argument('cfile', nargs='+', type=str)
     argparser.add_argument('--llvmbin', nargs='?', type=str)
     args = argparser.parse_args()
 
