@@ -199,6 +199,33 @@ private:
     case CmpInst::ICMP_EQ:
       Cond = IceInstIcmp::Eq;
       break;
+    case CmpInst::ICMP_NE:
+      Cond = IceInstIcmp::Ne;
+      break;
+    case CmpInst::ICMP_UGT:
+      Cond = IceInstIcmp::Ugt;
+      break;
+    case CmpInst::ICMP_UGE:
+      Cond = IceInstIcmp::Uge;
+      break;
+    case CmpInst::ICMP_ULT:
+      Cond = IceInstIcmp::Ult;
+      break;
+    case CmpInst::ICMP_ULE:
+      Cond = IceInstIcmp::Ule;
+      break;
+    case CmpInst::ICMP_SGT:
+      Cond = IceInstIcmp::Sgt;
+      break;
+    case CmpInst::ICMP_SGE:
+      Cond = IceInstIcmp::Sge;
+      break;
+    case CmpInst::ICMP_SLT:
+      Cond = IceInstIcmp::Slt;
+      break;
+    case CmpInst::ICMP_SLE:
+      Cond = IceInstIcmp::Sle;
+      break;
     }
 
     return new IceInstIcmp(Cfg, Cond, IceTy, Dest, Src0, Src1);
