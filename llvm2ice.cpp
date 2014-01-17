@@ -23,11 +23,12 @@
 using namespace llvm;
 
 // Debugging helper
-static std::string LLVMTypeAsString(const Type *T) {
-  std::string TypeName;
-  raw_string_ostream N(TypeName);
-  T->print(N);
-  return N.str();
+template <typename T>
+static std::string LLVMObjectAsString(const T *O) {
+  std::string Dump;
+  raw_string_ostream Stream(Dump);
+  O->print(Stream);
+  return Stream.str();
 }
 
 // The Convert* functions provide conversion from LLVM IR to Ice. The entry
@@ -53,7 +54,7 @@ IceType ConvertIntegerType(const IntegerType *IntTy) {
     return IceType_i64;
   default:
     report_fatal_error(std::string("Invalid PNaCl int type: ") +
-                       LLVMTypeAsString(IntTy));
+                       LLVMObjectAsString(IntTy));
     return IceType_void;
   }
 }
@@ -70,7 +71,7 @@ IceType ConvertType(const Type *Ty) {
     return IceType_f64;
   default:
     report_fatal_error(std::string("Invalid PNaCl type: ") +
-                       LLVMTypeAsString(Ty));
+                       LLVMObjectAsString(Ty));
   }
 
   llvm_unreachable("ConvertType");
@@ -109,8 +110,8 @@ IceInst *ConvertInstruction(const Instruction *Inst, IceCfg *Cfg) {
     break;
   }
   default:
-    // TODO: print instruction
-    report_fatal_error(std::string("Invalid PNaCl instruction: "));
+    report_fatal_error(std::string("Invalid PNaCl instruction: ") +
+                       LLVMObjectAsString(Inst));
   }
 
   llvm_unreachable("ConvertInstruction");
