@@ -99,6 +99,16 @@ private:
     return IceType_void;
   }
 
+  // Given a LLVM instruction and an operand number, produce the IceOperand this
+  // refers to. If there's no such operand, return NULL.
+  IceOperand *convertOperand(const Instruction *Inst, unsigned OpNum) {
+    if (OpNum >= Inst->getNumOperands()) {
+      return NULL;
+    }
+    return Cfg->getVariable(convertType(Inst->getType()),
+                            Inst->getOperand(OpNum)->getName());
+  }
+
   // Note: this currently assumes a 1x1 mapping between LLVM IR and Ice
   // instructions.
   IceInst *convertInstruction(const Instruction *Inst) {
@@ -161,35 +171,27 @@ private:
                                    IceInstArithmetic::IceArithmetic Opcode) {
     const BinaryOperator *BinOp = cast<BinaryOperator>(Inst);
     IceType IceTy = convertType(BinOp->getType());
-    Value *Op0 = BinOp->getOperand(0);
-    Value *Op1 = BinOp->getOperand(1);
-    IceOperand *Src0 = Cfg->getVariable(IceTy, Op0->getName());
-    IceOperand *Src1 = Cfg->getVariable(IceTy, Op1->getName());
+    IceOperand *Src0 = convertOperand(Inst, 0);
+    IceOperand *Src1 = convertOperand(Inst, 1);
     IceVariable *Dest = Cfg->getVariable(IceTy, BinOp->getName());
     return new IceInstArithmetic(Cfg, Opcode, IceTy, Dest, Src0, Src1);
   }
 
   IceInst *convertRetInstruction(const ReturnInst *Inst) {
-    const Value *RetVal = Inst->getReturnValue();
-    if (RetVal) {
-      IceType IceRetTy = convertType(RetVal->getType());
-      return new IceInstRet(Cfg, IceRetTy,
-                            Cfg->getVariable(IceRetTy, RetVal->getName()));
+    IceOperand *RetOperand = convertOperand(Inst, 0);
+    if (RetOperand) {
+      return new IceInstRet(Cfg, RetOperand->getType(), RetOperand);
     } else {
       return new IceInstRet(Cfg, IceType_void);
     }
   }
 
-  IceInst *convertZExtInstruction(const ZExtInst *Inst) {
-    return NULL;
-  }
+  IceInst *convertZExtInstruction(const ZExtInst *Inst) { return NULL; }
 
   IceInst *convertICmpInstruction(const ICmpInst *Inst) {
     IceType IceTy = convertType(Inst->getType());
-    Value *Op0 = Inst->getOperand(0);
-    Value *Op1 = Inst->getOperand(1);
-    IceOperand *Src0 = Cfg->getVariable(IceTy, Op0->getName());
-    IceOperand *Src1 = Cfg->getVariable(IceTy, Op1->getName());
+    IceOperand *Src0 = convertOperand(Inst, 0);
+    IceOperand *Src1 = convertOperand(Inst, 1);
     IceVariable *Dest = Cfg->getVariable(IceTy, Inst->getName());
 
     IceInstIcmp::IceICond Cond;
