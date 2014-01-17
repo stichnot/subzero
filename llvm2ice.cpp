@@ -90,6 +90,17 @@ IceInst *ConvertArithInstruction(const Instruction *Inst,
   return new IceInstArithmetic(Cfg, Opcode, IceTy, Dest, Src0, Src1);
 }
 
+IceInst *ConvertRetInstruction(const ReturnInst *RetInst, IceCfg *Cfg) {
+  const Value *RetVal = RetInst->getReturnValue();
+  if (RetVal) {
+    IceType IceRetTy = ConvertType(RetVal->getType());
+    return new IceInstRet(Cfg, IceRetTy,
+                          Cfg->getVariable(IceRetTy, RetVal->getName()));
+  } else {
+    return new IceInstRet(Cfg, IceType_void);
+  }
+}
+
 // Note: this currently assumes a 1x1 mapping between LLVM IR and Ice
 // instructions.
 IceInst *ConvertInstruction(const Instruction *Inst, IceCfg *Cfg) {
@@ -97,18 +108,8 @@ IceInst *ConvertInstruction(const Instruction *Inst, IceCfg *Cfg) {
   // identified by their address, not their name (there might be no name!);
   // think this through and rewrite as needed.
   switch (Inst->getOpcode()) {
-  case Instruction::Ret: {
-    const ReturnInst *Ret = cast<ReturnInst>(Inst);
-    const Value *RetVal = Ret->getReturnValue();
-    if (RetVal) {
-      IceType IceRetTy = ConvertType(RetVal->getType());
-      return new IceInstRet(Cfg, IceRetTy,
-                            Cfg->getVariable(IceRetTy, RetVal->getName()));
-    } else {
-      return new IceInstRet(Cfg, IceType_void);
-    }
-    break;
-  }
+  case Instruction::Ret:
+    return ConvertRetInstruction(cast<ReturnInst>(Inst), Cfg);
   case Instruction::Add:
     return ConvertArithInstruction(Inst, IceInstArithmetic::Add, Cfg);
   case Instruction::Sub:
