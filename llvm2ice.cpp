@@ -23,8 +23,7 @@
 using namespace llvm;
 
 // Debugging helper
-template <typename T>
-static std::string LLVMObjectAsString(const T *O) {
+template <typename T> static std::string LLVMObjectAsString(const T *O) {
   std::string Dump;
   raw_string_ostream Stream(Dump);
   O->print(Stream);
@@ -78,6 +77,19 @@ IceType ConvertType(const Type *Ty) {
   return IceType_void;
 }
 
+IceInst *ConvertArithInstruction(const Instruction *Inst,
+                                 IceInstArithmetic::IceArithmetic Opcode,
+                                 IceCfg *Cfg) {
+  const BinaryOperator *BinOp = cast<BinaryOperator>(Inst);
+  IceType IceTy = ConvertType(BinOp->getType());
+  Value *Op0 = BinOp->getOperand(0);
+  Value *Op1 = BinOp->getOperand(1);
+  IceOperand *Src0 = Cfg->getVariable(IceTy, Op0->getName());
+  IceOperand *Src1 = Cfg->getVariable(IceTy, Op1->getName());
+  IceVariable *Dest = Cfg->getVariable(IceTy, BinOp->getName());
+  return new IceInstArithmetic(Cfg, Opcode, IceTy, Dest, Src0, Src1);
+}
+
 // Note: this currently assumes a 1x1 mapping between LLVM IR and Ice
 // instructions.
 IceInst *ConvertInstruction(const Instruction *Inst, IceCfg *Cfg) {
@@ -97,18 +109,42 @@ IceInst *ConvertInstruction(const Instruction *Inst, IceCfg *Cfg) {
     }
     break;
   }
-  case Instruction::Add: {
-    const BinaryOperator *BinOp = cast<BinaryOperator>(Inst);
-    IceType IceTy = ConvertType(BinOp->getType());
-    Value *Op0 = BinOp->getOperand(0);
-    Value *Op1 = BinOp->getOperand(1);
-    IceOperand *Src0 = Cfg->getVariable(IceTy, Op0->getName());
-    IceOperand *Src1 = Cfg->getVariable(IceTy, Op1->getName());
-    IceVariable *Dest = Cfg->getVariable(IceTy, BinOp->getName());
-    return new IceInstArithmetic(Cfg, IceInstArithmetic::Add, IceTy, Dest, Src0,
-                                 Src1);
-    break;
-  }
+  case Instruction::Add:
+    return ConvertArithInstruction(Inst, IceInstArithmetic::Add, Cfg);
+  case Instruction::Sub:
+    return ConvertArithInstruction(Inst, IceInstArithmetic::Sub, Cfg);
+  case Instruction::Mul:
+    return ConvertArithInstruction(Inst, IceInstArithmetic::Mul, Cfg);
+  case Instruction::UDiv:
+    return ConvertArithInstruction(Inst, IceInstArithmetic::Udiv, Cfg);
+  case Instruction::SDiv:
+    return ConvertArithInstruction(Inst, IceInstArithmetic::Sdiv, Cfg);
+  case Instruction::URem:
+    return ConvertArithInstruction(Inst, IceInstArithmetic::Urem, Cfg);
+  case Instruction::SRem:
+    return ConvertArithInstruction(Inst, IceInstArithmetic::Srem, Cfg);
+  case Instruction::Shl:
+    return ConvertArithInstruction(Inst, IceInstArithmetic::Shl, Cfg);
+  case Instruction::LShr:
+    return ConvertArithInstruction(Inst, IceInstArithmetic::Lshr, Cfg);
+  case Instruction::AShr:
+    return ConvertArithInstruction(Inst, IceInstArithmetic::Ashr, Cfg);
+  case Instruction::FAdd:
+    return ConvertArithInstruction(Inst, IceInstArithmetic::Fadd, Cfg);
+  case Instruction::FSub:
+    return ConvertArithInstruction(Inst, IceInstArithmetic::Fsub, Cfg);
+  case Instruction::FMul:
+    return ConvertArithInstruction(Inst, IceInstArithmetic::Fmul, Cfg);
+  case Instruction::FDiv:
+    return ConvertArithInstruction(Inst, IceInstArithmetic::Fdiv, Cfg);
+  case Instruction::FRem:
+    return ConvertArithInstruction(Inst, IceInstArithmetic::Frem, Cfg);
+  case Instruction::And:
+    return ConvertArithInstruction(Inst, IceInstArithmetic::And, Cfg);
+  case Instruction::Or:
+    return ConvertArithInstruction(Inst, IceInstArithmetic::Or, Cfg);
+  case Instruction::Xor:
+    return ConvertArithInstruction(Inst, IceInstArithmetic::Xor, Cfg);
   default:
     report_fatal_error(std::string("Invalid PNaCl instruction: ") +
                        LLVMObjectAsString(Inst));
