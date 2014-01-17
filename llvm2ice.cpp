@@ -108,6 +108,10 @@ private:
     switch (Inst->getOpcode()) {
     case Instruction::Ret:
       return convertRetInstruction(cast<ReturnInst>(Inst));
+    case Instruction::ICmp:
+      return convertICmpInstruction(cast<ICmpInst>(Inst));
+    case Instruction::ZExt:
+      return convertZExtInstruction(cast<ZExtInst>(Inst));
     case Instruction::Add:
       return convertArithInstruction(Inst, IceInstArithmetic::Add);
     case Instruction::Sub:
@@ -165,8 +169,8 @@ private:
     return new IceInstArithmetic(Cfg, Opcode, IceTy, Dest, Src0, Src1);
   }
 
-  IceInst *convertRetInstruction(const ReturnInst *RetInst) {
-    const Value *RetVal = RetInst->getReturnValue();
+  IceInst *convertRetInstruction(const ReturnInst *Inst) {
+    const Value *RetVal = Inst->getReturnValue();
     if (RetVal) {
       IceType IceRetTy = convertType(RetVal->getType());
       return new IceInstRet(Cfg, IceRetTy,
@@ -174,6 +178,30 @@ private:
     } else {
       return new IceInstRet(Cfg, IceType_void);
     }
+  }
+
+  IceInst *convertZExtInstruction(const ZExtInst *Inst) {
+    return NULL;
+  }
+
+  IceInst *convertICmpInstruction(const ICmpInst *Inst) {
+    IceType IceTy = convertType(Inst->getType());
+    Value *Op0 = Inst->getOperand(0);
+    Value *Op1 = Inst->getOperand(1);
+    IceOperand *Src0 = Cfg->getVariable(IceTy, Op0->getName());
+    IceOperand *Src1 = Cfg->getVariable(IceTy, Op1->getName());
+    IceVariable *Dest = Cfg->getVariable(IceTy, Inst->getName());
+
+    IceInstIcmp::IceICond Cond;
+    switch (Inst->getPredicate()) {
+    default:
+      llvm_unreachable("ICmpInst predicate");
+    case CmpInst::ICMP_EQ:
+      Cond = IceInstIcmp::Eq;
+      break;
+    }
+
+    return new IceInstIcmp(Cfg, Cond, IceTy, Dest, Src0, Src1);
   }
 
   IceCfgNode *convertBasicBlock(const BasicBlock *BB) {
