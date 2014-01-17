@@ -30,158 +30,166 @@ template <typename T> static std::string LLVMObjectAsString(const T *O) {
   return Stream.str();
 }
 
-// The Convert* functions provide conversion from LLVM IR to Ice. The entry
-// point is ConvertFunction, which creates a new IceCfg from a given
-// llvm::Function.
+// Converter from LLVM to ICE. The entry point is the convertFunction method.
 //
 // Note: this currently assumes that the given IR was verified to be valid PNaCl
 // bitcode:
 // https://developers.google.com/native-client/dev/reference/pnacl-bitcode-abi
 // If not, all kinds of assertions may fire.
 //
-IceType ConvertIntegerType(const IntegerType *IntTy) {
-  switch (IntTy->getBitWidth()) {
-  case 1:
-    return IceType_i1;
-  case 8:
-    return IceType_i8;
-  case 16:
-    return IceType_i16;
-  case 32:
-    return IceType_i32;
-  case 64:
-    return IceType_i64;
-  default:
-    report_fatal_error(std::string("Invalid PNaCl int type: ") +
-                       LLVMObjectAsString(IntTy));
+class LLVM2ICEConverter {
+public:
+  LLVM2ICEConverter() : Cfg(NULL) {}
+
+  IceCfg *convertFunction(const Function *F) {
+    Cfg = new IceCfg;
+    Cfg->setName(F->getName());
+    Cfg->setReturnType(convertType(F->getReturnType()));
+
+    for (Function::const_arg_iterator ArgI = F->arg_begin(),
+                                      ArgE = F->arg_end();
+         ArgI != ArgE; ++ArgI) {
+      IceType ArgType = convertType(ArgI->getType());
+      Cfg->addArg(Cfg->getVariable(ArgType, ArgI->getName()));
+    }
+
+    const BasicBlock &EntryBB = F->getEntryBlock();
+    IceCfgNode *EntryNode = convertBasicBlock(&EntryBB);
+    Cfg->setEntryNode(EntryNode);
+
+    return Cfg;
+  }
+
+private:
+  IceType convertIntegerType(const IntegerType *IntTy) {
+    switch (IntTy->getBitWidth()) {
+    case 1:
+      return IceType_i1;
+    case 8:
+      return IceType_i8;
+    case 16:
+      return IceType_i16;
+    case 32:
+      return IceType_i32;
+    case 64:
+      return IceType_i64;
+    default:
+      report_fatal_error(std::string("Invalid PNaCl int type: ") +
+                         LLVMObjectAsString(IntTy));
+      return IceType_void;
+    }
+  }
+
+  IceType convertType(const Type *Ty) {
+    switch (Ty->getTypeID()) {
+    case Type::VoidTyID:
+      return IceType_void;
+    case Type::IntegerTyID:
+      return convertIntegerType(cast<IntegerType>(Ty));
+    case Type::FloatTyID:
+      return IceType_f32;
+    case Type::DoubleTyID:
+      return IceType_f64;
+    default:
+      report_fatal_error(std::string("Invalid PNaCl type: ") +
+                         LLVMObjectAsString(Ty));
+    }
+
+    llvm_unreachable("convertType");
     return IceType_void;
   }
-}
 
-IceType ConvertType(const Type *Ty) {
-  switch (Ty->getTypeID()) {
-  case Type::VoidTyID:
-    return IceType_void;
-  case Type::IntegerTyID:
-    return ConvertIntegerType(cast<IntegerType>(Ty));
-  case Type::FloatTyID:
-    return IceType_f32;
-  case Type::DoubleTyID:
-    return IceType_f64;
-  default:
-    report_fatal_error(std::string("Invalid PNaCl type: ") +
-                       LLVMObjectAsString(Ty));
+  // Note: this currently assumes a 1x1 mapping between LLVM IR and Ice
+  // instructions.
+  IceInst *convertInstruction(const Instruction *Inst) {
+    // TODO: the reliance on getName here is fishy. LLVM Values are uniquely
+    // identified by their address, not their name (there might be no name!);
+    // think this through and rewrite as needed.
+    switch (Inst->getOpcode()) {
+    case Instruction::Ret:
+      return convertRetInstruction(cast<ReturnInst>(Inst));
+    case Instruction::Add:
+      return convertArithInstruction(Inst, IceInstArithmetic::Add);
+    case Instruction::Sub:
+      return convertArithInstruction(Inst, IceInstArithmetic::Sub);
+    case Instruction::Mul:
+      return convertArithInstruction(Inst, IceInstArithmetic::Mul);
+    case Instruction::UDiv:
+      return convertArithInstruction(Inst, IceInstArithmetic::Udiv);
+    case Instruction::SDiv:
+      return convertArithInstruction(Inst, IceInstArithmetic::Sdiv);
+    case Instruction::URem:
+      return convertArithInstruction(Inst, IceInstArithmetic::Urem);
+    case Instruction::SRem:
+      return convertArithInstruction(Inst, IceInstArithmetic::Srem);
+    case Instruction::Shl:
+      return convertArithInstruction(Inst, IceInstArithmetic::Shl);
+    case Instruction::LShr:
+      return convertArithInstruction(Inst, IceInstArithmetic::Lshr);
+    case Instruction::AShr:
+      return convertArithInstruction(Inst, IceInstArithmetic::Ashr);
+    case Instruction::FAdd:
+      return convertArithInstruction(Inst, IceInstArithmetic::Fadd);
+    case Instruction::FSub:
+      return convertArithInstruction(Inst, IceInstArithmetic::Fsub);
+    case Instruction::FMul:
+      return convertArithInstruction(Inst, IceInstArithmetic::Fmul);
+    case Instruction::FDiv:
+      return convertArithInstruction(Inst, IceInstArithmetic::Fdiv);
+    case Instruction::FRem:
+      return convertArithInstruction(Inst, IceInstArithmetic::Frem);
+    case Instruction::And:
+      return convertArithInstruction(Inst, IceInstArithmetic::And);
+    case Instruction::Or:
+      return convertArithInstruction(Inst, IceInstArithmetic::Or);
+    case Instruction::Xor:
+      return convertArithInstruction(Inst, IceInstArithmetic::Xor);
+    default:
+      report_fatal_error(std::string("Invalid PNaCl instruction: ") +
+                         LLVMObjectAsString(Inst));
+    }
+
+    llvm_unreachable("convertInstruction");
+    return NULL;
   }
 
-  llvm_unreachable("ConvertType");
-  return IceType_void;
-}
-
-IceInst *ConvertArithInstruction(const Instruction *Inst,
-                                 IceInstArithmetic::IceArithmetic Opcode,
-                                 IceCfg *Cfg) {
-  const BinaryOperator *BinOp = cast<BinaryOperator>(Inst);
-  IceType IceTy = ConvertType(BinOp->getType());
-  Value *Op0 = BinOp->getOperand(0);
-  Value *Op1 = BinOp->getOperand(1);
-  IceOperand *Src0 = Cfg->getVariable(IceTy, Op0->getName());
-  IceOperand *Src1 = Cfg->getVariable(IceTy, Op1->getName());
-  IceVariable *Dest = Cfg->getVariable(IceTy, BinOp->getName());
-  return new IceInstArithmetic(Cfg, Opcode, IceTy, Dest, Src0, Src1);
-}
-
-IceInst *ConvertRetInstruction(const ReturnInst *RetInst, IceCfg *Cfg) {
-  const Value *RetVal = RetInst->getReturnValue();
-  if (RetVal) {
-    IceType IceRetTy = ConvertType(RetVal->getType());
-    return new IceInstRet(Cfg, IceRetTy,
-                          Cfg->getVariable(IceRetTy, RetVal->getName()));
-  } else {
-    return new IceInstRet(Cfg, IceType_void);
-  }
-}
-
-// Note: this currently assumes a 1x1 mapping between LLVM IR and Ice
-// instructions.
-IceInst *ConvertInstruction(const Instruction *Inst, IceCfg *Cfg) {
-  // TODO: the reliance on getName here is fishy. LLVM Values are uniquely
-  // identified by their address, not their name (there might be no name!);
-  // think this through and rewrite as needed.
-  switch (Inst->getOpcode()) {
-  case Instruction::Ret:
-    return ConvertRetInstruction(cast<ReturnInst>(Inst), Cfg);
-  case Instruction::Add:
-    return ConvertArithInstruction(Inst, IceInstArithmetic::Add, Cfg);
-  case Instruction::Sub:
-    return ConvertArithInstruction(Inst, IceInstArithmetic::Sub, Cfg);
-  case Instruction::Mul:
-    return ConvertArithInstruction(Inst, IceInstArithmetic::Mul, Cfg);
-  case Instruction::UDiv:
-    return ConvertArithInstruction(Inst, IceInstArithmetic::Udiv, Cfg);
-  case Instruction::SDiv:
-    return ConvertArithInstruction(Inst, IceInstArithmetic::Sdiv, Cfg);
-  case Instruction::URem:
-    return ConvertArithInstruction(Inst, IceInstArithmetic::Urem, Cfg);
-  case Instruction::SRem:
-    return ConvertArithInstruction(Inst, IceInstArithmetic::Srem, Cfg);
-  case Instruction::Shl:
-    return ConvertArithInstruction(Inst, IceInstArithmetic::Shl, Cfg);
-  case Instruction::LShr:
-    return ConvertArithInstruction(Inst, IceInstArithmetic::Lshr, Cfg);
-  case Instruction::AShr:
-    return ConvertArithInstruction(Inst, IceInstArithmetic::Ashr, Cfg);
-  case Instruction::FAdd:
-    return ConvertArithInstruction(Inst, IceInstArithmetic::Fadd, Cfg);
-  case Instruction::FSub:
-    return ConvertArithInstruction(Inst, IceInstArithmetic::Fsub, Cfg);
-  case Instruction::FMul:
-    return ConvertArithInstruction(Inst, IceInstArithmetic::Fmul, Cfg);
-  case Instruction::FDiv:
-    return ConvertArithInstruction(Inst, IceInstArithmetic::Fdiv, Cfg);
-  case Instruction::FRem:
-    return ConvertArithInstruction(Inst, IceInstArithmetic::Frem, Cfg);
-  case Instruction::And:
-    return ConvertArithInstruction(Inst, IceInstArithmetic::And, Cfg);
-  case Instruction::Or:
-    return ConvertArithInstruction(Inst, IceInstArithmetic::Or, Cfg);
-  case Instruction::Xor:
-    return ConvertArithInstruction(Inst, IceInstArithmetic::Xor, Cfg);
-  default:
-    report_fatal_error(std::string("Invalid PNaCl instruction: ") +
-                       LLVMObjectAsString(Inst));
+  IceInst *convertArithInstruction(const Instruction *Inst,
+                                   IceInstArithmetic::IceArithmetic Opcode) {
+    const BinaryOperator *BinOp = cast<BinaryOperator>(Inst);
+    IceType IceTy = convertType(BinOp->getType());
+    Value *Op0 = BinOp->getOperand(0);
+    Value *Op1 = BinOp->getOperand(1);
+    IceOperand *Src0 = Cfg->getVariable(IceTy, Op0->getName());
+    IceOperand *Src1 = Cfg->getVariable(IceTy, Op1->getName());
+    IceVariable *Dest = Cfg->getVariable(IceTy, BinOp->getName());
+    return new IceInstArithmetic(Cfg, Opcode, IceTy, Dest, Src0, Src1);
   }
 
-  llvm_unreachable("ConvertInstruction");
-  return NULL;
-}
-
-IceCfgNode *ConvertBasicBlock(const BasicBlock *BB, IceCfg *Cfg) {
-  IceCfgNode *Node = new IceCfgNode(Cfg, Cfg->translateLabel(BB->getName()));
-  for (BasicBlock::const_iterator II = BB->begin(), II_e = BB->end();
-       II != II_e; ++II) {
-    IceInst *Inst = ConvertInstruction(II, Cfg);
-    Node->appendInst(Inst);
-  }
-  return Node;
-}
-
-IceCfg *ConvertFunction(const Function *F) {
-  IceCfg *Cfg = new IceCfg;
-  Cfg->setName(F->getName());
-  Cfg->setReturnType(ConvertType(F->getReturnType()));
-
-  for (Function::const_arg_iterator ArgI = F->arg_begin(), ArgE = F->arg_end();
-       ArgI != ArgE; ++ArgI) {
-    IceType ArgType = ConvertType(ArgI->getType());
-    Cfg->addArg(Cfg->getVariable(ArgType, ArgI->getName()));
+  IceInst *convertRetInstruction(const ReturnInst *RetInst) {
+    const Value *RetVal = RetInst->getReturnValue();
+    if (RetVal) {
+      IceType IceRetTy = convertType(RetVal->getType());
+      return new IceInstRet(Cfg, IceRetTy,
+                            Cfg->getVariable(IceRetTy, RetVal->getName()));
+    } else {
+      return new IceInstRet(Cfg, IceType_void);
+    }
   }
 
-  const BasicBlock &EntryBB = F->getEntryBlock();
-  IceCfgNode *EntryNode = ConvertBasicBlock(&EntryBB, Cfg);
-  Cfg->setEntryNode(EntryNode);
+  IceCfgNode *convertBasicBlock(const BasicBlock *BB) {
+    IceCfgNode *Node = new IceCfgNode(Cfg, Cfg->translateLabel(BB->getName()));
+    for (BasicBlock::const_iterator II = BB->begin(), II_e = BB->end();
+         II != II_e; ++II) {
+      IceInst *Inst = convertInstruction(II);
+      Node->appendInst(Inst);
+    }
+    return Node;
+  }
 
-  return Cfg;
-}
+private:
+  // Data
+  IceCfg *Cfg;
+};
 
 int main(int argc, char **argv) {
   if (argc < 2) {
@@ -202,7 +210,8 @@ int main(int argc, char **argv) {
   outs() << "==== converting to ICE ====\n";
 
   for (Module::const_iterator I = Mod->begin(), E = Mod->end(); I != E; ++I) {
-    IceCfg *Cfg = ConvertFunction(I);
+    LLVM2ICEConverter FunctionConverter;
+    IceCfg *Cfg = FunctionConverter.convertFunction(I);
     Cfg->dump();
   }
 
