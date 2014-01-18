@@ -278,23 +278,24 @@ void IceCfg::multiblockCompensation(void) {
   }
 }
 
+// TODO: Parameterize liveness() according to the functions actually
+// needed: calculate live ranges ended in each instruction, identify
+// and possibly delete dead instructions, and calculate live range
+// intervals for each variable.
 void IceCfg::liveness(void) {
   llvm::BitVector NeedToProcess(Nodes.size());
-  unsigned NeedToProcessCount = 0;
   // Mark all nodes as needing to be processed
   for (IceNodeList::iterator I = LNodes.begin(), E = LNodes.end();
        I != E; ++I) {
     NeedToProcess[(*I)->getIndex()] = true;
-    ++NeedToProcessCount;
   }
-  for (bool First = true; NeedToProcessCount; First = false) {
+  for (bool First = true; NeedToProcess.any(); First = false) {
     // Iterate in reverse topological order to speed up convergence.
     for (IceNodeList::reverse_iterator I = LNodes.rbegin(), E = LNodes.rend();
          I != E; ++I) {
       IceCfgNode *Node = *I;
       if (NeedToProcess[Node->getIndex()]) {
         NeedToProcess[Node->getIndex()] = false;
-        --NeedToProcessCount;
         bool Changed = Node->liveness(First);
         if (Changed) {
           // Mark all in-edges as needing to be processed
@@ -302,10 +303,7 @@ void IceCfg::liveness(void) {
           for (IceEdgeList::const_iterator I1 = InEdges.begin(),
                  E1 = InEdges.end(); I1 != E1; ++I1) {
             IceCfgNode *Pred = getNode(*I1);
-            if (!NeedToProcess[Pred->getIndex()]) {
-              NeedToProcess[Pred->getIndex()] = true;
-              ++NeedToProcessCount;
-            }
+            NeedToProcess[Pred->getIndex()] = true;
           }
         }
       }

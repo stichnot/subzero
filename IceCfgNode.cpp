@@ -383,6 +383,9 @@ void IceCfgNode::livenessPostprocess(void) {
     IceInst *Inst = *I;
     if (FirstInstNum < 0)
       FirstInstNum = Inst->getNumber();
+    // TODO: What to do if the block contains phi instructions but no
+    // regular instructions?  What live range should the phi
+    // destinations get in this block?
     assert(Inst->getNumber() > LastInstNum);
     LastInstNum = Inst->getNumber();
     Inst->deleteIfDead();

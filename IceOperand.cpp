@@ -48,7 +48,8 @@ void IceVariable::replaceDefinition(IceInst *Inst, const IceCfgNode *Node) {
 
 void IceLiveRange::addSegment(int Start, int End) {
   // TODO: coalesce contiguous ranges, though that may not happen much
-  // when most blocks contain phi instructions.
+  // when most blocks contain phi instructions.  Main exception:
+  // extended basic block pairs that are laid out consecutively.
   Range.insert(std::pair<int, int>(Start, End));
 }
 
