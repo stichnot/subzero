@@ -46,6 +46,12 @@ void IceVariable::replaceDefinition(IceInst *Inst, const IceCfgNode *Node) {
   setDefinition(Inst, Node);
 }
 
+void IceLiveRange::addSegment(int Start, int End) {
+  // TODO: coalesce contiguous ranges, though that may not happen much
+  // when most blocks contain phi instructions.
+  Range.insert(std::pair<int, int>(Start, End));
+}
+
 // ======================== Dump routines ======================== //
 
 IceOstream& operator<<(IceOstream &Str, const IceOperand *O) {
@@ -96,4 +102,18 @@ void IceConstant::dump(IceOstream &Str) const {
   case IceType_void:
     break;
   }
+}
+
+void IceLiveRange::dump(IceOstream &Str) const {
+  for (RangeType::const_iterator I = Range.begin(), E = Range.end();
+       I != E; ++I) {
+    if (I != Range.begin())
+      Str << ", ";
+    Str << "[" << (*I).first << ":" << (*I).second << ")";
+  }
+}
+
+IceOstream& operator<<(IceOstream &Str, const IceLiveRange &L) {
+  L.dump(Str);
+  return Str;
 }

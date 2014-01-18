@@ -7,6 +7,9 @@
 #ifndef _IceOperand_h
 #define _IceOperand_h
 
+#include <set>
+#include <utility>
+
 #include "IceDefs.h"
 #include "IceTypes.h"
 
@@ -82,6 +85,19 @@ private:
   } Value;
 };
 
+class IceLiveRange {
+public:
+  void reset(void) { Range.clear(); }
+  void addSegment(int Start, int End);
+  void dump(IceOstream &Str) const;
+  // TODO: live range inclusion tests and intersection operations
+private:
+  typedef std::set<std::pair<int, int> > RangeType;
+  RangeType Range;
+};
+
+IceOstream& operator<<(IceOstream &Str, const IceLiveRange &L);
+
 // Stack operand, or virtual or physical register
 class IceVariable : public IceOperand {
 public:
@@ -111,6 +127,9 @@ public:
     RegNum = NewRegNum;
   }
   int getRegNum(void) const { return RegNum; }
+  void resetLiveRange(void) { LiveRange.reset(); }
+  void addLiveRange(int Start, int End) { LiveRange.addSegment(Start, End); }
+  const IceLiveRange &getLiveRange(void) const { return LiveRange; }
   virtual void dump(IceOstream &Str) const;
 
   static bool classof(const IceOperand *Operand) {
@@ -134,6 +153,7 @@ private:
   bool AllowAutoDelete;
   // Allocated register; -1 for no allocation
   int RegNum;
+  IceLiveRange LiveRange;
 };
 
 #endif // _IceOperand_h

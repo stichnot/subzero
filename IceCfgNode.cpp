@@ -320,46 +320,85 @@ void IceCfgNode::insertInsts(IceInstList::iterator Location,
 // it stayed the same.  IsFirst is set the first time the node is
 // processed, and is a signal to initialize LiveIn.
 bool IceCfgNode::liveness(IceCfg *Cfg, bool IsFirst) {
+  unsigned NumVars = Cfg->getNumVariables();
   if (IsFirst) {
     LiveIn.clear();
-    LiveIn.resize(Cfg->getNumVariables());
+    LiveIn.resize(NumVars);
+    LiveOut.clear();
+    LiveOut.resize(NumVars);
+    LiveBegin.resize(NumVars);
+    LiveEnd.resize(NumVars);
   }
-  llvm::BitVector Live(Cfg->getNumVariables());
+  LiveBegin.clear();
+  LiveEnd.clear();
+  llvm::BitVector Live(NumVars);
   // Initialize Live to be the union of all successors' LiveIn.
   for (IceEdgeList::const_iterator I = OutEdges.begin(), E = OutEdges.end();
        I != E; ++I) {
     IceCfgNode *Succ = Cfg->getNode(*I);
-    for (unsigned i = 0; i < Live.size(); ++i) {
-      Live[i] = Live[i] | Succ->LiveIn[i];
-    }
+    Live |= Succ->LiveIn;
     // Mark corresponding argument of phis in successor as live.
     for (IcePhiList::const_iterator I1 = Succ->Phis.begin(),
            E1 = Succ->Phis.end(); I1 != E1; ++I1) {
-      IceOperand *Src = (*I1)->getArgument(getIndex());
-      if (IceVariable *Var = llvm::dyn_cast_or_null<IceVariable>(Src)) {
-        Live[Var->getIndex()] = true;
-      }
+      (*I1)->livenessPhiOperand(Live, getIndex());
     }
   }
+  LiveOut = Live;
   // Process instructions in reverse order
   for (IceInstList::const_reverse_iterator I = Insts.rbegin(), E = Insts.rend();
        I != E; ++I) {
-    (*I)->liveness(Live);
+    (*I)->liveness(Live, LiveBegin, LiveEnd);
   }
   // Process phis in any order
   for (IcePhiList::const_iterator I = Phis.begin(), E = Phis.end();
        I != E; ++I) {
-    (*I)->liveness(Live);
+    (*I)->liveness(Live, LiveBegin, LiveEnd);
   }
   // Add in current LiveIn
-  for (unsigned i = 0; i < Live.size(); ++i) {
-    Live[i] = Live[i] | LiveIn[i];
-  }
+  Live |= LiveIn;
   // Check result, set LiveIn=Live
   bool Changed = (Live != LiveIn);
   if (Changed)
     LiveIn = Live;
   return Changed;
+}
+
+void IceCfgNode::livenessPostprocess(IceCfg *Cfg) {
+  unsigned NumVars = Cfg->getNumVariables();
+  int FirstInstNum = -1;
+  int LastInstNum = -1;
+  // Process phis in any order.  Process only Dest operands.
+  for (IcePhiList::const_iterator I = Phis.begin(), E = Phis.end();
+       I != E; ++I) {
+    IceInstPhi *Inst = *I;
+    LastInstNum = Inst->getNumber();
+    Inst->deleteIfDead();
+    if (Inst->isDeleted())
+      continue;
+  }
+  // Process instructions
+  for (IceInstList::const_iterator I = Insts.begin(), E = Insts.end();
+       I != E; ++I) {
+    IceInst *Inst = *I;
+    if (FirstInstNum < 0)
+      FirstInstNum = Inst->getNumber();
+    LastInstNum = Inst->getNumber();
+    Inst->deleteIfDead();
+    if (Inst->isDeleted())
+      continue;
+  }
+  for (unsigned i = 0; i < NumVars; ++i) {
+    int Begin = LiveIn[i] ? FirstInstNum : LiveBegin[i];
+    int End = LiveOut[i] ? LastInstNum + 1 : LiveEnd[i];
+    if (Begin <= 0 && End <= 0)
+      continue;
+    if (Begin <= FirstInstNum)
+      Begin = FirstInstNum;
+    if (End <= 0)
+      End = LastInstNum + 1;
+    IceVariable *Var = Cfg->getVariable(i);
+    Var->addLiveRange(Begin, End);
+  }
 }
 
 // ======================== Dump routines ======================== //

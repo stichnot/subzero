@@ -27,6 +27,7 @@ public:
   // constant pool.
   IceConstant *getConstant(IceType Type, const void *ConstantBits);
   IceConstant *getConstant(IceType Type, int32_t ConstantInt32);
+  IceVariable *getVariable(uint32_t Index) const;
   // Look up a variable used as an rvalue.  The variable might not yet
   // have a definition if its definition is in a predecessor block
   // that hasn't yet been processed, e.g. via a phi for a loopback

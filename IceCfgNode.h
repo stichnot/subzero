@@ -35,13 +35,17 @@ public:
   void multiblockRegAlloc(IceCfg *Cfg);
   void multiblockCompensation(IceCfg *Cfg);
   bool liveness(IceCfg *Cfg, bool IsFirst);
+  void livenessPostprocess(IceCfg *Cfg);
   void dump(IceOstream &Str) const;
 private:
   const uint32_t NameIndex; // label
   IceEdgeList OutEdges; // first is default/fallthrough
   IceEdgeList InEdges; // in no particular order
   std::vector<IceInstList> Compensations; // ordered by InEdges
-  llvm::BitVector LiveIn; // TODO: consider llvm::SparseBitVector
+  // TODO: The Live* vectors are not needed outside liveness analysis,
+  // and could be moved outside of IceCfgNode to save memory.
+  llvm::BitVector LiveIn, LiveOut; // TODO: consider llvm::SparseBitVector
+  std::vector<int> LiveBegin, LiveEnd; // maps variables to inst numbers
   IcePhiList Phis; // unordered set of phi instructions
   IceInstList Insts; // ordered list of non-phi instructions
   bool ArePhiLoadsPlaced;

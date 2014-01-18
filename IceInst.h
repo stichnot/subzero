@@ -42,11 +42,13 @@ public:
   unsigned getDestSize(void) const { return Dests.size(); }
   unsigned getSrcSize(void) const { return Srcs.size(); }
   bool isDeleted(void) const { return Deleted; }
+  bool isLastUse(unsigned SrcIndex) const { return LiveRangesEnded[SrcIndex]; }
   // If an instruction is deleted as a result of replacing it with
   // equivalent instructions, only call setDeleted() *after* inserting
   // the new instructions because of the cascading deletes from
   // reference counting.
   void setDeleted(void);
+  void deleteIfDead(void);
   void updateVars(IceCfgNode *Node);
   void findAddressOpt(IceCfg *Cfg, const IceCfgNode *Node);
   void doAddressOpt(IceVariable *&Base, IceVariable *&Index,
@@ -55,7 +57,8 @@ public:
                        const IceOpList &NewOperands);
   virtual void removeUse(IceVariable *Variable);
   void markLastUses(IceCfg *Cfg);
-  void liveness(llvm::BitVector &Live);
+  void liveness(llvm::BitVector &Live,
+                std::vector<int> &LiveBegin, std::vector<int> &LiveEnd);
   virtual void dump(IceOstream &Str) const;
   virtual void dumpExtras(IceOstream &Str) const;
   void dumpSources(IceOstream &Str) const;
@@ -67,9 +70,15 @@ protected:
   const IceInstType Kind;
   const IceType Type;
   int Number; // the instruction number for describing live ranges
+  // Deleted means irrevocably deleted.
   bool Deleted;
+  // Dead means pending deletion after liveness analysis converges.
+  bool Dead;
+  // TODO: Is there any good reason to allow multiple Dest vars?
+  // Maybe x86 idiv which produces div/rem at once?  sincos intrinsic?
   IceVarList Dests;
   IceOpList Srcs;
+  llvm::SmallBitVector LiveRangesEnded; // size is Srcs.size()
 private:
   // instruction type
   // list of IceOperand LHS definitions
@@ -279,7 +288,9 @@ public:
   void addArgument(IceOperand *Source, uint32_t Label);
   IceOperand *getArgument(uint32_t Label) const;
   IceInst *lower(IceCfg *Cfg, IceCfgNode *Node);
+  // TODO: delete unused getOperandForTarget()
   IceOperand *getOperandForTarget(uint32_t Target) const;
+  void livenessPhiOperand(llvm::BitVector &Live, uint32_t Target);
   virtual void dump(IceOstream &Str) const;
   static bool classof(const IceInst *Inst) {
     return Inst->getKind() == Phi;

@@ -52,7 +52,7 @@ IceCfg::IceCfg(void) : Str(std::cout, this),
                        Type(IceType_void), Target(NULL), Entry(NULL),
                        VariableTranslation(new NameTranslation),
                        LabelTranslation(new NameTranslation),
-                       NextInstNumber(0) {
+                       NextInstNumber(1) {
   GlobalStr = &Str;
 }
 
@@ -123,6 +123,11 @@ IceCfgNode *IceCfg::getNode(uint32_t LabelIndex) const {
 
 IceConstant *IceCfg::getConstant(IceType Type, int32_t ConstantInt32) {
   return new IceConstant(ConstantInt32);
+}
+
+IceVariable *IceCfg::getVariable(uint32_t Index) const {
+  assert(Variables.size() > Index);
+  return Variables[Index];
 }
 
 IceVariable *IceCfg::getVariable(IceType Type, uint32_t Index) {
@@ -283,6 +288,7 @@ void IceCfg::liveness(void) {
     ++NeedToProcessCount;
   }
   for (bool First = true; NeedToProcessCount; First = false) {
+    // Iterate in reverse topological order to speed up convergence.
     for (IceNodeList::reverse_iterator I = LNodes.rbegin(), E = LNodes.rend();
          I != E; ++I) {
       IceCfgNode *Node = *I;
@@ -305,6 +311,18 @@ void IceCfg::liveness(void) {
       }
     }
   }
+  // Reset each variable's live range.
+  for (IceVarList::const_iterator I = Variables.begin(), E = Variables.end();
+       I != E; ++I) {
+    if (IceVariable *Var = *I)
+      Var->resetLiveRange();
+  }
+  // Make a final pass over instructions to delete dead instructions
+  // and build each IceVariable's live range.
+  for (IceNodeList::iterator I = LNodes.begin(), E = LNodes.end();
+       I != E; ++I) {
+    (*I)->livenessPostprocess(this);
+  }
 }
 
 bool IceCfg::isLastUse(const IceInst *Inst, IceOperand *Operand) const {
@@ -323,9 +341,8 @@ void IceCfg::translate(void) {
   registerInEdges();
 
   Str << "================ Initial CFG ================\n";
+  liveness(); // test of liveness
   dump();
-
-  liveness();
 
   findAddressOpt();
   markLastUses();
@@ -383,7 +400,9 @@ void IceCfg::dump(void) const {
       Str << "//"
           << " uses=" << Var->getUseCount()
           << " multiblock=" << Var->isMultiblockLife()
-          << " " << Var << "\n";
+          << " " << Var
+          << " LIVE=" << Var->getLiveRange()
+          << "\n";
     }
   }
   // Print each basic block

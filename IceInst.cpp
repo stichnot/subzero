@@ -13,7 +13,7 @@
 #include "IceRegManager.h"
 
 IceInst::IceInst(IceCfg *Cfg, IceInstType Kind, IceType Type) :
-  Kind(Kind), Type(Type), Deleted(false) {
+  Kind(Kind), Type(Type), Deleted(false), Dead(false) {
   Number = Cfg->newInstNumber();
 }
 
@@ -23,6 +23,11 @@ void IceInst::renumber(IceCfg *Cfg) {
 
 void IceInst::setDeleted(void) {
   removeUse(NULL);
+}
+
+void IceInst::deleteIfDead(void) {
+  if (Dead)
+    setDeleted();
 }
 
 void IceInst::updateVars(IceCfgNode *Node) {
@@ -41,10 +46,13 @@ void IceInst::updateVars(IceCfgNode *Node) {
 
 void IceInst::addDest(IceVariable *Dest) {
   Dests.push_back(Dest);
+  // TODO: Multi-dest instructions need more testing.
+  assert(Dests.size() == 1);
 }
 
 void IceInst::addSource(IceOperand *Source) {
   Srcs.push_back(Source);
+  LiveRangesEnded.resize(Srcs.size());
 }
 
 void IceInst::findAddressOpt(IceCfg *Cfg, const IceCfgNode *Node) {
@@ -75,6 +83,8 @@ void IceInst::findAddressOpt(IceCfg *Cfg, const IceCfgNode *Node) {
   NewOperands.push_back(new IceConstant(Shift));
   NewOperands.push_back(new IceConstant(Offset));
   replaceOperands(Node, Srcs.size() - 1, NewOperands);
+  // TODO: See if liveness information can be incrementally corrected
+  // without a whole new liveness analysis pass.
 }
 
 void IceInst::doAddressOpt(IceVariable *&Base, IceVariable *&Index,
@@ -221,6 +231,7 @@ void IceInst::replaceOperands(const IceCfgNode *Node, unsigned Index,
   // partially delete the defining instruction if the reference count
   // reaches 0, doing a cascading decrement/delete etc.
   OldOperand->removeUse();
+  LiveRangesEnded.resize(Srcs.size());
 }
 
 void IceInst::removeUse(IceVariable *Variable) {
@@ -244,25 +255,48 @@ void IceInst::markLastUses(IceCfg *Cfg) {
   }
 }
 
-void IceInst::liveness(llvm::BitVector &Live) {
+void IceInst::liveness(llvm::BitVector &Live,
+                       std::vector<int> &LiveBegin,
+                       std::vector<int> &LiveEnd) {
   if (isDeleted())
     return;
   // TODO: if all dest operands are dead, consider marking the entire
   // instruction as dead, which also means not marking its source
   // operands as live.
+  // Don't delete a dest-less instruction.
+  Dead = !Dests.empty();
   for (IceVarList::const_iterator I = Dests.begin(), E = Dests.end();
        I != E; ++I) {
     if (*I) {
-      Live[(*I)->getIndex()] = false;
+      unsigned VarNum = (*I)->getIndex();
+      if (Live[VarNum]) {
+        Dead = false;
+        Live[VarNum] = false;
+        LiveBegin[VarNum] = getNumber(); // TODO: adjust if Phi inst
+      }
     }
   }
-  // Phi arguments only get processed in the predecessor node.
-  if (llvm::isa<IceInstPhi>(this))
+  // TODO: Make sure it's OK to delete the instruction and its
+  // potential side effects.
+  if (Dead)
     return;
+  // Phi arguments only get added to Live in the predecessor node, but
+  // we still need to update LiveRangesEnded.
+  bool IsPhi = llvm::isa<IceInstPhi>(this);
+  assert(LiveRangesEnded.size() == Srcs.size());
+  int Index = 0;
+  LiveRangesEnded.reset();
   for (IceOpList::const_iterator I = Srcs.begin(), E = Srcs.end();
-       I != E; ++I) {
+       I != E; ++I, ++Index) {
     if (IceVariable *Var = llvm::dyn_cast_or_null<IceVariable>(*I)) {
-      Live[Var->getIndex()] = true;
+      uint32_t VarNum = Var->getIndex();
+      if (!Live[VarNum]) {
+        LiveRangesEnded[Index] = true;
+        if (!IsPhi) {
+          Live[VarNum] = true;
+          LiveEnd[VarNum] = getNumber();
+        }
+      }
     }
   }
 }
@@ -391,6 +425,31 @@ IceOperand *IceInstPhi::getOperandForTarget(uint32_t Target) const {
   return NULL;
 }
 
+// Updates liveness for a particular operand based on the given
+// predecessor edge.  Doesn't mark the operand as live if the Phi
+// instruction is dead or deleted.  TODO: Make sure liveness
+// convergence works correctly for dead instructions.
+void IceInstPhi::livenessPhiOperand(llvm::BitVector &Live, uint32_t Target) {
+  if (isDeleted() || Dead)
+    return;
+  IceEdgeList::const_iterator EdgeIter = Labels.begin(), EdgeEnd = Labels.end();
+  uint32_t Index = 0;
+  for (IceOpList::const_iterator I = Srcs.begin(), E = Srcs.end();
+       I != E && EdgeIter != EdgeEnd; ++I, ++EdgeIter, ++Index) {
+    if (*EdgeIter == Target) {
+      if (IceVariable *Var = llvm::dyn_cast_or_null<IceVariable>(*I)) {
+        uint32_t SrcIndex = Var->getIndex();
+        if (!Live[SrcIndex]) {
+          LiveRangesEnded[Index] = true;
+          Live[SrcIndex] = true;
+        }
+      }
+      return;
+    }
+  }
+  assert(0);
+}
+
 IceInstRet::IceInstRet(IceCfg *Cfg, IceType Type, IceOperand *Source) :
   IceInst(Cfg, Ret, Type) {
   if (Source)
@@ -432,11 +491,12 @@ void IceInst::dumpExtras(IceOstream &Str) const {
   bool First = true;
   // Print "LIVEEND={a,b,c}" for all source operands whose live ranges
   // are known to end at this instruction.
+  unsigned Index = 0;
   for (IceOpList::const_iterator I = Srcs.begin(), E = Srcs.end();
-       I != E; ++I) {
+       I != E; ++I, ++Index) {
     if (*I == NULL)
       continue;
-    if (Str.Cfg->isLastUse(this, *I)) {
+    if (Str.Cfg->isLastUse(this, *I) || LiveRangesEnded[Index]) {
       if (First)
         Str << " // LIVEEND={";
       else
