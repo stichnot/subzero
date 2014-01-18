@@ -366,16 +366,19 @@ void IceCfgNode::livenessPostprocess(IceLiveness Mode) {
   for (IcePhiList::const_iterator I = Phis.begin(), E = Phis.end();
        I != E; ++I) {
     IceInstPhi *Inst = *I;
-    assert(Inst->getNumber() > LastInstNum);
-    LastInstNum = Inst->getNumber();
     Inst->deleteIfDead();
     if (Inst->isDeleted())
       continue;
+    assert(Inst->getNumber() > LastInstNum);
+    LastInstNum = Inst->getNumber();
   }
   // Process instructions
   for (IceInstList::const_iterator I = Insts.begin(), E = Insts.end();
        I != E; ++I) {
     IceInst *Inst = *I;
+    Inst->deleteIfDead();
+    if (Inst->isDeleted())
+      continue;
     if (FirstInstNum < 0)
       FirstInstNum = Inst->getNumber();
     // TODO: What to do if the block contains phi instructions but no
@@ -383,9 +386,6 @@ void IceCfgNode::livenessPostprocess(IceLiveness Mode) {
     // destinations get in this block?
     assert(Inst->getNumber() > LastInstNum);
     LastInstNum = Inst->getNumber();
-    Inst->deleteIfDead();
-    if (Inst->isDeleted())
-      continue;
   }
   if (Mode != IceLiveness_RangesFull)
     return;
