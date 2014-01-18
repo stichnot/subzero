@@ -45,7 +45,7 @@ IceInstList IceTargetX8632::lowerArithmetic(const IceInst *Inst,
   IceOperand *Src1 = Inst->getSrc(1);
   IceVariable *Reg;
   IceInstTarget *NewInst;
-  bool LRend0 = Cfg->isLastUse(Inst, Src0);
+  bool LRend0 = Inst->isLastUse(0);
   // Prefer Src0 if its live range is ending.
   if (LRend0) {
     Prefer.push_back(Src0);
