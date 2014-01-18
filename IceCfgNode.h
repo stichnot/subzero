@@ -51,10 +51,6 @@ private:
   IceInstList Insts; // ordered list of non-phi instructions
   bool ArePhiLoadsPlaced;
   bool ArePhiStoresPlaced;
-  // arena allocator for the function?
-  // edge-split list for successors
-  // node-specific local register manager
-
   // TODO: Allow the block to have a list of RegManager objects.  A
   // mid-block call instruction kills all scratch registers at once
   // and there is no relationship between pre-and post-call
@@ -67,13 +63,6 @@ private:
   // first and last RegManager objects on the list for computing
   // preferences.
   IceRegManager *RegManager;
-  // list of live operands on entry (unsure if this will be necessary)
-  // virtual<-->physical register mappings (REG)
-  // multi-block regalloc stuff:
-  //   virtual register <--> operand mappings for first assignment
-  //   multi-block regalloc candidates (CAND)
-  //   set of compensating register shuffles (COMPREG)
-  //   set of compensating loads (COMPLD)
   void insertInsts(IceInstList::iterator Location, const IceInstList &NewInsts);
 };
 

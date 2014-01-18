@@ -75,10 +75,7 @@ private:
   // TODO: This goes away when we get target-specific operands with
   // their own dump() methods.
   IceString *RegisterNames;
-  // arena allocator for the function
-  // list of exit IceCfgNode* for liveness analysis
-  // operand pool - set of IceOperand
-  // whether there is an alloca (frame ptr optimization)
+  // TODO: record whether there is an alloca (frame ptr optimization)
   void renumberInstructions(void);
   void registerInEdges(void);
   void findAddressOpt(void);

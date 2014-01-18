@@ -78,14 +78,6 @@ protected:
   IceVarList Dests;
   IceOpList Srcs;
   llvm::SmallBitVector LiveRangesEnded; // size is Srcs.size()
-private:
-  // instruction type
-  // list of IceOperand LHS definitions
-  //   this can be empty list if instruction is dead (use counts of LHS
-  //   operands are 0) but we need to preserve exceptional side effects
-  // list of IceInst RHS uses
-  // which RHS operand live ranges are known to end here
-  // do we tag/retain deleted instructions?
 };
 
 IceOstream& operator<<(IceOstream &Str, const IceInst *I);
