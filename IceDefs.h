@@ -63,7 +63,8 @@ enum IceVerbose {
 class IceOstream {
 public:
   IceOstream(std::ostream &Stream, IceCfg *Cfg)
-    : Stream(Stream), Cfg(Cfg), Verbose(IceV_Instructions) {}
+    : Stream(Stream), Cfg(Cfg),
+      Verbose(IceV_Instructions | IceV_Preds) {}
   bool isVerbose(IceVerbose Mask) { return Verbose & Mask; }
   void setVerbose(IceVerbose Mask) { Verbose = Mask; }
   void addVerbose(IceVerbose Mask) { Verbose |= Mask; }
