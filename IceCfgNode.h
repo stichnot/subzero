@@ -34,8 +34,8 @@ public:
   void genCode(void);
   void multiblockRegAlloc(void);
   void multiblockCompensation(void);
-  bool liveness(bool IsFirst);
-  void livenessPostprocess(void);
+  bool liveness(IceLiveness Mode, bool IsFirst);
+  void livenessPostprocess(IceLiveness Mode);
   void dump(IceOstream &Str) const;
 private:
   IceCfg *const Cfg;

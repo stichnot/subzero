@@ -255,11 +255,29 @@ void IceInst::markLastUses(IceCfg *Cfg) {
   }
 }
 
-void IceInst::liveness(llvm::BitVector &Live,
+void IceInst::liveness(IceLiveness Mode,
+                       llvm::BitVector &Live,
                        std::vector<int> &LiveBegin,
                        std::vector<int> &LiveEnd) {
   if (isDeleted())
     return;
+  if (Mode == IceLiveness_LREndLightweight) {
+    int OpNum = 0;
+    LiveRangesEnded.reset();
+    for (IceOpList::const_iterator I = Srcs.begin(), E = Srcs.end();
+         I != E; ++I, ++OpNum) {
+      if (IceVariable *Var = llvm::dyn_cast_or_null<IceVariable>(*I)) {
+        if (Var->isMultiblockLife())
+          continue;
+        uint32_t Index = Var->getIndex();
+        if (Live[Index])
+          continue;
+        Live[Index] = true;
+        LiveRangesEnded[OpNum] = true;
+      }
+    }
+    return;
+  }
   // TODO: if all dest operands are dead, consider marking the entire
   // instruction as dead, which also means not marking its source
   // operands as live.

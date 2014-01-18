@@ -280,11 +280,15 @@ void IceCfg::multiblockCompensation(void) {
   }
 }
 
-// TODO: Parameterize liveness() according to the functions actually
-// needed: calculate live ranges ended in each instruction, identify
-// and possibly delete dead instructions, and calculate live range
-// intervals for each variable.
-void IceCfg::liveness(void) {
+void IceCfg::liveness(IceLiveness Mode) {
+  if (Mode == IceLiveness_LREndLightweight) {
+    for (IceNodeList::iterator I = LNodes.begin(), E = LNodes.end();
+         I != E; ++I) {
+      (*I)->liveness(Mode, true);
+    }
+    return;
+  }
+
   llvm::BitVector NeedToProcess(Nodes.size());
   // Mark all nodes as needing to be processed
   for (IceNodeList::iterator I = LNodes.begin(), E = LNodes.end();
@@ -298,7 +302,7 @@ void IceCfg::liveness(void) {
       IceCfgNode *Node = *I;
       if (NeedToProcess[Node->getIndex()]) {
         NeedToProcess[Node->getIndex()] = false;
-        bool Changed = Node->liveness(First);
+        bool Changed = Node->liveness(Mode, First);
         if (Changed) {
           // Mark all in-edges as needing to be processed
           const IceEdgeList &InEdges = Node->getInEdges();
@@ -311,17 +315,21 @@ void IceCfg::liveness(void) {
       }
     }
   }
-  // Reset each variable's live range.
-  for (IceVarList::const_iterator I = Variables.begin(), E = Variables.end();
-       I != E; ++I) {
-    if (IceVariable *Var = *I)
-      Var->resetLiveRange();
+  if (Mode == IceLiveness_RangesFull) {
+    // Reset each variable's live range.
+    for (IceVarList::const_iterator I = Variables.begin(), E = Variables.end();
+         I != E; ++I) {
+      if (IceVariable *Var = *I)
+        Var->resetLiveRange();
+    }
   }
-  // Make a final pass over instructions to delete dead instructions
-  // and build each IceVariable's live range.
-  for (IceNodeList::iterator I = LNodes.begin(), E = LNodes.end();
-       I != E; ++I) {
-    (*I)->livenessPostprocess();
+  if (Mode != IceLiveness_LREndLightweight) {
+    // Make a final pass over instructions to delete dead instructions
+    // and build each IceVariable's live range.
+    for (IceNodeList::iterator I = LNodes.begin(), E = LNodes.end();
+         I != E; ++I) {
+      (*I)->livenessPostprocess(Mode);
+    }
   }
 }
 
@@ -343,8 +351,16 @@ void IceCfg::translate(void) {
   Str << "================ Initial CFG ================\n";
   dump();
 
-  Str << "================ Liveness test ================\n";
-  liveness(); // test of liveness
+  liveness(IceLiveness_LREndLightweight);
+  Str << "================ Liveness test 1 ================\n";
+  dump();
+
+  liveness(IceLiveness_LREndFull);
+  Str << "================ Liveness test 2 ================\n";
+  dump();
+
+  liveness(IceLiveness_RangesFull);
+  Str << "================ Liveness test 3 ================\n";
   dump();
 
   findAddressOpt();

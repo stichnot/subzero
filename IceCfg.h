@@ -87,7 +87,7 @@ private:
   void simpleDCE(void);
   void multiblockRegAlloc(void);
   void multiblockCompensation(void);
-  void liveness(void);
+  void liveness(IceLiveness Mode);
 };
 
 #endif // _IceCfg_h

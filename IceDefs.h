@@ -60,6 +60,24 @@ enum IceVerbose {
   IceV_All          = ~IceV_None
 };
 
+enum IceLiveness {
+  // Lightweight version of live-range-end calculation.  Marks the
+  // last use of variables whose definition and uses are completely
+  // within a single block.
+  IceLiveness_LREndLightweight,
+
+  // Full version of live-range-end calculation.  Marks the last uses
+  // of variables based on dataflow analysis.  Records the set of
+  // live-in and live-out variables for each block.  Identifies and
+  // deletes dead instructions (primarily stores).
+  IceLiveness_LREndFull,
+
+  // In addition to IceLiveness_Node, also calculate the complete live
+  // range for each variable in a form suitable for interference
+  // calculation and register allocation.
+  IceLiveness_RangesFull,
+};
+
 class IceOstream {
 public:
   IceOstream(std::ostream &Stream, IceCfg *Cfg)
