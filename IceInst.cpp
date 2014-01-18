@@ -654,7 +654,7 @@ void IceInstIcmp::dump(IceOstream &Str) const {
     Str << "sle";
     break;
   }
-  Str << " " << IceType_i1 << " ";
+  Str << " " << getSrc(0)->getType() << " ";
   dumpSources(Str);
 }
 
