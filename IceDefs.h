@@ -72,8 +72,8 @@ enum IceLiveness {
   // deletes dead instructions (primarily stores).
   IceLiveness_LREndFull,
 
-  // In addition to IceLiveness_Node, also calculate the complete live
-  // range for each variable in a form suitable for interference
+  // In addition to IceLiveness_LREndFull, also calculate the complete
+  // live range for each variable in a form suitable for interference
   // calculation and register allocation.
   IceLiveness_RangesFull,
 };
