@@ -341,6 +341,9 @@ void IceCfg::translate(void) {
   registerInEdges();
 
   Str << "================ Initial CFG ================\n";
+  dump();
+
+  Str << "================ Liveness test ================\n";
   liveness(); // test of liveness
   dump();
 

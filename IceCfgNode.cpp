@@ -423,7 +423,7 @@ void IceCfgNode::dump(IceOstream &Str) const {
     }
     Str << "\n";
   }
-  if (Str.isVerbose(IceV_Liveness)) {
+  if (Str.isVerbose(IceV_Liveness) && !LiveIn.empty()) {
     Str << "    // LiveIn:";
     for (unsigned i = 0; i < LiveIn.size(); ++i) {
       if (LiveIn[i]) {
@@ -457,7 +457,7 @@ void IceCfgNode::dump(IceOstream &Str) const {
       Str << "\n";
     }
   }
-  if (Str.isVerbose(IceV_Liveness)) {
+  if (Str.isVerbose(IceV_Liveness) && !LiveOut.empty()) {
     Str << "    // LiveOut:";
     for (unsigned i = 0; i < LiveOut.size(); ++i) {
       if (LiveOut[i]) {
