@@ -43,3 +43,34 @@ The test is run as follows::
     ../llvm2ice ./ir_samples/<file>.ll
 
 See ir_samples/README.rst for more details.
+
+TODO list
+---------
+
+Here is a list of TODO items.  Some might already be listed in the
+source code with a ``TODO`` comment.
+
+- Add support for not-yet-implemented LLVM bitcode instructions.
+  Start with constructors and ``dump()`` methods, then add lowering
+  and any special needs.
+
+- Constants.  ``i32`` sort of works now, but the rest either outright
+  don't work or haven't been tested.  Floating point constants need to
+  live in a global constant pool.
+
+- Other types, especially ``i64``, ``f32``, and ``f64``.  Most of the
+  requirements are probably in the lowering and register allocation.
+
+- Global symbols.  Internal representation, and emission.
+
+- Configurability of which passes are run.
+
+- Other targets besides x86-32.
+
+- Add code to LLVM so that for each method that needs translation,
+  first offer Subzero the chance to translate, and if Subzero returns
+  an error code, fall back to robust LLVM translation (presumably O0).
+
+- Add code to Subzero allowing fine-grain control of which methods to
+  attempt to translate and which to unconditionally reject.  The
+  control string can come from the command line and/or environment.
