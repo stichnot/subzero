@@ -46,18 +46,34 @@ typedef std::vector<IceCfgNode *> IceNodeList;
 // The IceOstream class wraps a std::ostream and an IceCfg pointer, so
 // that dump routines have access to the IceCfg object and can print
 // labels and variable names.
+
+enum IceVerbose {
+  IceV_None         = 0,
+  IceV_Instructions = 1 << 0,
+  IceV_Deleted      = 1 << 1,
+  IceV_InstNumbers  = 1 << 2,
+  IceV_Preds        = 1 << 3,
+  IceV_Succs        = 1 << 4,
+  IceV_Liveness     = 1 << 5,
+  IceV_RegManager   = 1 << 6,
+  IceV_RegOrigins   = 1 << 7,
+  IceV_All          = ~IceV_None
+};
+
 class IceOstream {
 public:
-  IceOstream(std::ostream &Stream, IceCfg *Cfg) : Stream(Stream), Cfg(Cfg),
-                                                  Verbose(true) {}
-  bool isVerbose(void) const { return Verbose; }
-  void setVerbose(bool NewValue) { Verbose = NewValue; }
+  IceOstream(std::ostream &Stream, IceCfg *Cfg)
+    : Stream(Stream), Cfg(Cfg), Verbose(IceV_Instructions) {}
+  bool isVerbose(IceVerbose Mask) { return Verbose & Mask; }
+  void setVerbose(IceVerbose Mask) { Verbose = Mask; }
+  void addVerbose(IceVerbose Mask) { Verbose |= Mask; }
+  void subVerbose(IceVerbose Mask) { Verbose &= ~Mask; }
   // TODO: Use LLVM's raw_ostream instead.
   // http://llvm.org/docs/CodingStandards.html#use-raw-ostream
   std::ostream &Stream;
   IceCfg *const Cfg;
 private:
-  bool Verbose;
+  uint32_t Verbose;
 };
 
 inline IceOstream& operator<<(IceOstream &Str, const char *S) {

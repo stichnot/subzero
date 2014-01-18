@@ -410,8 +410,10 @@ void IceCfgNode::livenessPostprocess(void) {
 
 void IceCfgNode::dump(IceOstream &Str) const {
   IceString Name = Str.Cfg->labelName(getIndex());
-  Str << Name << ":\n";
-  if (Str.isVerbose()) {
+  if (Str.isVerbose(IceV_Instructions)) {
+    Str << Name << ":\n";
+  }
+  if (Str.isVerbose(IceV_Preds)) {
     Str << "    // preds = ";
     for (IceEdgeList::const_iterator I = InEdges.begin(), E = InEdges.end();
          I != E; ++I) {
@@ -420,6 +422,8 @@ void IceCfgNode::dump(IceOstream &Str) const {
       Str << "%" << Str.Cfg->labelName(*I);
     }
     Str << "\n";
+  }
+  if (Str.isVerbose(IceV_Liveness)) {
     Str << "    // LiveIn:";
     for (unsigned i = 0; i < LiveIn.size(); ++i) {
       if (LiveIn[i]) {
@@ -427,27 +431,33 @@ void IceCfgNode::dump(IceOstream &Str) const {
       }
     }
     Str << "\n";
+  }
+  if (Str.isVerbose(IceV_RegManager)) {
     if (RegManager) {
       Str << "    // FirstLoads={";
       RegManager->dumpFirstLoads(Str);
       Str << "}\n";
     }
   }
-  for (IcePhiList::const_iterator I = Phis.begin(), E = Phis.end();
-       I != E; ++I) {
-    Str << (*I);
+  if (Str.isVerbose(IceV_Instructions)) {
+    for (IcePhiList::const_iterator I = Phis.begin(), E = Phis.end();
+         I != E; ++I) {
+      Str << (*I);
+    }
+    IceInstList::const_iterator I = Insts.begin(), E = Insts.end();
+    while (I != E) {
+      IceInst *Inst = *I++;
+      Str << Inst;
+    }
   }
-  IceInstList::const_iterator I = Insts.begin(), E = Insts.end();
-  while (I != E) {
-    IceInst *Inst = *I++;
-    Str << Inst;
-  }
-  if (Str.isVerbose()) {
+  if (Str.isVerbose(IceV_RegManager)) {
     if (RegManager) {
       Str << "    // AVAIL:";
       RegManager->dump(Str);
       Str << "\n";
     }
+  }
+  if (Str.isVerbose(IceV_Succs)) {
     Str << "    // succs = ";
     for (IceEdgeList::const_iterator I = OutEdges.begin(), E = OutEdges.end();
          I != E; ++I) {

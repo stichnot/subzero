@@ -463,20 +463,22 @@ void IceInstTarget::setRegState(const IceRegManager *State) {
 // ======================== Dump routines ======================== //
 
 IceOstream& operator<<(IceOstream &Str, const IceInst *I) {
-  if (I->isDeleted() && !Str.isVerbose())
+  if (I->isDeleted() && !Str.isVerbose(IceV_Deleted))
     return Str;
-  char buf[30];
-  int Number = I->getNumber();
-  if (Number < 0)
-    sprintf(buf, "[XXX]");
-  else
-    sprintf(buf, "[%3d]", I->getNumber());
-  Str << buf << "  ";
+  if (Str.isVerbose(IceV_InstNumbers)) {
+    char buf[30];
+    int Number = I->getNumber();
+    if (Number < 0)
+      sprintf(buf, "[XXX]");
+    else
+      sprintf(buf, "[%3d]", I->getNumber());
+    Str << buf;
+  }
+  Str << "  ";
   if (I->isDeleted())
     Str << "  //";
   I->dump(Str);
-  if (Str.isVerbose())
-    I->dumpExtras(Str);
+  I->dumpExtras(Str);
   Str << "\n";
   return Str;
 }
@@ -491,22 +493,24 @@ void IceInst::dumpExtras(IceOstream &Str) const {
   bool First = true;
   // Print "LIVEEND={a,b,c}" for all source operands whose live ranges
   // are known to end at this instruction.
-  unsigned Index = 0;
-  for (IceOpList::const_iterator I = Srcs.begin(), E = Srcs.end();
-       I != E; ++I, ++Index) {
-    if (*I == NULL)
-      continue;
-    if (Str.Cfg->isLastUse(this, *I) || LiveRangesEnded[Index]) {
-      if (First)
-        Str << " // LIVEEND={";
-      else
-        Str << ",";
-      Str << *I;
-      First = false;
+  if (Str.isVerbose(IceV_Liveness)) {
+    unsigned Index = 0;
+    for (IceOpList::const_iterator I = Srcs.begin(), E = Srcs.end();
+         I != E; ++I, ++Index) {
+      if (*I == NULL)
+        continue;
+      if (Str.Cfg->isLastUse(this, *I) || LiveRangesEnded[Index]) {
+        if (First)
+          Str << " // LIVEEND={";
+        else
+          Str << ",";
+        Str << *I;
+        First = false;
+      }
     }
+    if (!First)
+      Str << "}";
   }
-  if (!First)
-    Str << "}";
 }
 
 void IceInst::dumpSources(IceOstream &Str) const {
@@ -702,8 +706,10 @@ void IceInstTarget::dump(IceOstream &Str) const {
 
 void IceInstTarget::dumpExtras(IceOstream &Str) const {
   IceInst::dumpExtras(Str);
-  if (RegState) {
-    Str << " //";
-    RegState->dump(Str);
+  if (Str.isVerbose(IceV_RegManager)) {
+    if (RegState) {
+      Str << " //";
+      RegState->dump(Str);
+    }
   }
 }

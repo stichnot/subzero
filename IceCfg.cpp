@@ -251,7 +251,9 @@ void IceCfg::simpleDCE(void) {
     IceVariable *Var = *I;
     if (Var == NULL)
       continue;
-    Str << "Var=" << Var << ", UseCount=" << Var->getUseCount() << "\n";
+    if (Str.isVerbose(IceV_Liveness)) {
+      Str << "Var=" << Var << ", UseCount=" << Var->getUseCount() << "\n";
+    }
     if (Var->getUseCount())
       continue;
     IceInst *Inst = Var->getDefinition();
@@ -372,7 +374,7 @@ void IceCfg::translate(void) {
   Str << "================ After multi-block regalloc ================\n";
   dump();
 
-  Str.setVerbose(false);
+  Str.setVerbose(IceV_Instructions);
   Str << "================ Final output ================\n";
   dump();
 }
@@ -381,14 +383,16 @@ void IceCfg::translate(void) {
 
 void IceCfg::dump(void) const {
   // Print function name+args
-  Str << "define internal " << Type << " " << Name << "(";
-  for (unsigned i = 0; i < Args.size(); ++i) {
-    if (i > 0)
-      Str << ", ";
-    Str << Args[i]->getType() << " " << Args[i];
+  if (Str.isVerbose(IceV_Instructions)) {
+    Str << "define internal " << Type << " " << Name << "(";
+    for (unsigned i = 0; i < Args.size(); ++i) {
+      if (i > 0)
+        Str << ", ";
+      Str << Args[i]->getType() << " " << Args[i];
+    }
+    Str << ") {\n";
   }
-  Str << ") {\n";
-  if (Str.isVerbose()) {
+  if (Str.isVerbose(IceV_Liveness)) {
     // Print summary info about variables
     for (IceVarList::const_iterator I = Variables.begin(), E = Variables.end();
          I != E; ++I) {
@@ -408,5 +412,7 @@ void IceCfg::dump(void) const {
        I != E; ++I) {
     (*I)->dump(Str);
   }
-  Str << "}\n";
+  if (Str.isVerbose(IceV_Instructions)) {
+    Str << "}\n";
+  }
 }

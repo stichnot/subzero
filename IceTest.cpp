@@ -196,6 +196,7 @@ static void TestSimpleLoop(void) {
   Inst = new IceInstRet(Cfg, Src1);
   Node->appendInst(Inst);
 
+  Cfg->Str.setVerbose(IceV_All);
   Cfg->translate();
 
   delete Cfg;
@@ -311,6 +312,7 @@ static void TestSimpleCond(void) {
   Inst = new IceInstRet(Cfg, Src1);
   Node->appendInst(Inst);
 
+  Cfg->Str.setVerbose(IceV_All);
   Cfg->translate();
 
   delete Cfg;

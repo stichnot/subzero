@@ -64,10 +64,10 @@ IceOstream& operator<<(IceOstream &Str, const IceOperand *O) {
 }
 
 void IceVariable::dump(IceOstream &Str) const {
-  if (Str.isVerbose() || RegNum < 0)
+  if (Str.isVerbose(IceV_RegOrigins) || RegNum < 0)
     Str << "%" << Str.Cfg->variableName(VarIndex);
   if (RegNum >= 0) {
-    if (Str.isVerbose())
+    if (Str.isVerbose(IceV_RegOrigins))
       Str << ":";
     Str << Str.Cfg->physicalRegName(RegNum);
   }
