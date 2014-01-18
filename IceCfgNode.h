@@ -23,21 +23,22 @@ public:
   }
   const IceEdgeList &getInEdges(void) const { return InEdges; }
   const IceEdgeList &getOutEdges(void) const { return OutEdges; }
-  void renumberInstructions(IceCfg *Cfg);
+  void renumberInstructions(void);
   void splitEdge(IceCfgNode *From, IceCfgNode *To);
-  void registerInEdges(IceCfg *Cfg);
-  void findAddressOpt(IceCfg *Cfg);
-  void markLastUses(IceCfg *Cfg);
-  void placePhiLoads(IceCfg *Cfg);
-  void placePhiStores(IceCfg *Cfg);
-  void deletePhis(IceCfg *Cfg);
-  void genCode(IceCfg *Cfg);
-  void multiblockRegAlloc(IceCfg *Cfg);
-  void multiblockCompensation(IceCfg *Cfg);
-  bool liveness(IceCfg *Cfg, bool IsFirst);
-  void livenessPostprocess(IceCfg *Cfg);
+  void registerInEdges(void);
+  void findAddressOpt(void);
+  void markLastUses(void);
+  void placePhiLoads(void);
+  void placePhiStores(void);
+  void deletePhis(void);
+  void genCode(void);
+  void multiblockRegAlloc(void);
+  void multiblockCompensation(void);
+  bool liveness(bool IsFirst);
+  void livenessPostprocess(void);
   void dump(IceOstream &Str) const;
 private:
+  IceCfg *const Cfg;
   const uint32_t NameIndex; // label
   IceEdgeList OutEdges; // first is default/fallthrough
   IceEdgeList InEdges; // in no particular order

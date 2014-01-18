@@ -11,7 +11,8 @@
 #include "IceTargetLowering.h"
 
 IceCfgNode::IceCfgNode(IceCfg *Cfg, uint32_t LabelIndex) :
-  NameIndex(LabelIndex), ArePhiLoadsPlaced(false), ArePhiStoresPlaced(false),
+  Cfg(Cfg), NameIndex(LabelIndex),
+  ArePhiLoadsPlaced(false), ArePhiStoresPlaced(false),
   RegManager(NULL) {
   Cfg->addNode(this, LabelIndex);
 }
@@ -37,7 +38,7 @@ void IceCfgNode::addNonFallthrough(uint32_t TargetLabel) {
   OutEdges.push_back(TargetLabel);
 }
 
-void IceCfgNode::renumberInstructions(IceCfg *Cfg) {
+void IceCfgNode::renumberInstructions(void) {
   for (IcePhiList::const_iterator I = Phis.begin(), E = Phis.end();
        I != E; ++I) {
     (*I)->renumber(Cfg);
@@ -78,7 +79,7 @@ void IceCfgNode::splitEdge(IceCfgNode *From, IceCfgNode *To) {
   *Iin = this->getIndex();
 }
 
-void IceCfgNode::registerInEdges(IceCfg *Cfg) {
+void IceCfgNode::registerInEdges(void) {
   for (IceEdgeList::const_iterator I = OutEdges.begin(), E = OutEdges.end();
        I != E; ++I) {
     IceCfgNode *Node = Cfg->getNode(*I);
@@ -86,7 +87,7 @@ void IceCfgNode::registerInEdges(IceCfg *Cfg) {
   }
 }
 
-void IceCfgNode::findAddressOpt(IceCfg *Cfg) {
+void IceCfgNode::findAddressOpt(void) {
   // No need to check the Phi instructions.
   IceInstList::const_iterator I = Insts.begin(), E = Insts.end();
   while (I != E) {
@@ -97,7 +98,7 @@ void IceCfgNode::findAddressOpt(IceCfg *Cfg) {
   }
 }
 
-void IceCfgNode::markLastUses(IceCfg *Cfg) {
+void IceCfgNode::markLastUses(void) {
   // No need to check the Phi instructions.
   IceInstList::const_iterator I = Insts.begin(), E = Insts.end();
   while (I != E) {
@@ -117,7 +118,7 @@ static IceInst *getNextInst(IceInstList::iterator I,
   return *I;
 }
 
-void IceCfgNode::placePhiLoads(IceCfg *Cfg) {
+void IceCfgNode::placePhiLoads(void) {
   assert(!ArePhiLoadsPlaced);
   ArePhiLoadsPlaced = true;
   // Create the phi version of each destination and add it to the phi
@@ -138,7 +139,7 @@ void IceCfgNode::placePhiLoads(IceCfg *Cfg) {
   insertInsts(Insts.begin(), NewPhiLoads);
 }
 
-void IceCfgNode::placePhiStores(IceCfg *Cfg) {
+void IceCfgNode::placePhiStores(void) {
   assert(ArePhiLoadsPlaced);
   assert(!ArePhiStoresPlaced);
   ArePhiStoresPlaced = true;
@@ -180,13 +181,13 @@ void IceCfgNode::placePhiStores(IceCfg *Cfg) {
   insertInsts(InsertionPoint, NewPhiStores);
 }
 
-void IceCfgNode::deletePhis(IceCfg *Cfg) {
+void IceCfgNode::deletePhis(void) {
   for (IcePhiList::iterator I = Phis.begin(), E = Phis.end(); I != E; ++I) {
     (*I)->setDeleted();
   }
 }
 
-void IceCfgNode::genCode(IceCfg *Cfg) {
+void IceCfgNode::genCode(void) {
   const unsigned NumScratchReg = 3; // eax, ecx, edx
   IceTargetLowering *Target = Cfg->getTarget();
   // TODO: Disabling extended basic block handling for now.  IIRC,
@@ -217,7 +218,7 @@ void IceCfgNode::genCode(IceCfg *Cfg) {
   }
 }
 
-void IceCfgNode::multiblockRegAlloc(IceCfg *Cfg) {
+void IceCfgNode::multiblockRegAlloc(void) {
   // Candidates are the operands for which the operand is in the set
   // of FirstLoad operands, and the operand is in the Available set of
   // at least one predecessor RegManager.
@@ -286,7 +287,7 @@ void IceCfgNode::multiblockRegAlloc(IceCfg *Cfg) {
   }
 }
 
-void IceCfgNode::multiblockCompensation(IceCfg *Cfg) {
+void IceCfgNode::multiblockCompensation(void) {
   //return; // TODO: This is broken so disable it for now.
   std::vector<IceInstList>::const_iterator I1 = Compensations.begin();
   for (IceEdgeList::const_iterator I = InEdges.begin(), E = InEdges.end();
@@ -319,7 +320,7 @@ void IceCfgNode::insertInsts(IceInstList::iterator Location,
 // Returns true if the incoming liveness changed from before, false if
 // it stayed the same.  IsFirst is set the first time the node is
 // processed, and is a signal to initialize LiveIn.
-bool IceCfgNode::liveness(IceCfg *Cfg, bool IsFirst) {
+bool IceCfgNode::liveness(bool IsFirst) {
   unsigned NumVars = Cfg->getNumVariables();
   if (IsFirst) {
     LiveIn.clear();
@@ -363,7 +364,7 @@ bool IceCfgNode::liveness(IceCfg *Cfg, bool IsFirst) {
   return Changed;
 }
 
-void IceCfgNode::livenessPostprocess(IceCfg *Cfg) {
+void IceCfgNode::livenessPostprocess(void) {
   unsigned NumVars = Cfg->getNumVariables();
   int FirstInstNum = -1;
   int LastInstNum = -1;

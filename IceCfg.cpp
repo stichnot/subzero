@@ -173,7 +173,7 @@ void IceCfg::renumberInstructions(void)
   NextInstNumber = 0;
   for (IceNodeList::iterator I = LNodes.begin(), E = LNodes.end();
        I != E; ++I) {
-    (*I)->renumberInstructions(this);
+    (*I)->renumberInstructions();
   }
   // TODO: Update live ranges and any other data structures that rely
   // on the instruction number, before clearing the remap table.
@@ -183,14 +183,14 @@ void IceCfg::renumberInstructions(void)
 void IceCfg::registerInEdges(void) {
   for (IceNodeList::iterator I = LNodes.begin(), E = LNodes.end();
        I != E; ++I) {
-    (*I)->registerInEdges(this);
+    (*I)->registerInEdges();
   }
 }
 
 void IceCfg::findAddressOpt(void) {
   for (IceNodeList::iterator I = LNodes.begin(), E = LNodes.end();
        I != E; ++I) {
-    (*I)->findAddressOpt(this);
+    (*I)->findAddressOpt();
   }
 }
 
@@ -199,7 +199,7 @@ void IceCfg::markLastUses(void) {
   LastUses.resize(Variables.size(), NULL);
   for (IceNodeList::iterator I = LNodes.begin(), E = LNodes.end();
        I != E; ++I) {
-    (*I)->markLastUses(this);
+    (*I)->markLastUses();
   }
 }
 
@@ -218,21 +218,21 @@ void IceCfg::markLastUse(IceOperand *Operand, const IceInst *Inst) {
 void IceCfg::placePhiLoads(void) {
   for (IceNodeList::iterator I = LNodes.begin(), E = LNodes.end();
        I != E; ++I) {
-    (*I)->placePhiLoads(this);
+    (*I)->placePhiLoads();
   }
 }
 
 void IceCfg::placePhiStores(void) {
   for (IceNodeList::iterator I = LNodes.begin(), E = LNodes.end();
        I != E; ++I) {
-    (*I)->placePhiStores(this);
+    (*I)->placePhiStores();
   }
 }
 
 void IceCfg::deletePhis(void) {
   for (IceNodeList::iterator I = LNodes.begin(), E = LNodes.end();
        I != E; ++I) {
-    (*I)->deletePhis(this);
+    (*I)->deletePhis();
   }
 }
 
@@ -241,7 +241,7 @@ void IceCfg::genCode(void) {
   RegisterNames = Target->getRegNames();
   for (IceNodeList::iterator I = LNodes.begin(), E = LNodes.end();
        I != E; ++I) {
-    (*I)->genCode(this);
+    (*I)->genCode();
   }
 }
 
@@ -263,7 +263,7 @@ void IceCfg::simpleDCE(void) {
 void IceCfg::multiblockRegAlloc(void) {
   for (IceNodeList::iterator I = LNodes.begin(), E = LNodes.end();
        I != E; ++I) {
-    (*I)->multiblockRegAlloc(this);
+    (*I)->multiblockRegAlloc();
   }
 }
 
@@ -273,7 +273,7 @@ void IceCfg::multiblockCompensation(void) {
   for (unsigned i = 0, e = Nodes.size(); i < e; ++i) {
     IceCfgNode *Node = Nodes[i];
     if (Node) {
-      Node->multiblockCompensation(this);
+      Node->multiblockCompensation();
     }
   }
 }
@@ -295,7 +295,7 @@ void IceCfg::liveness(void) {
       if (NeedToProcess[Node->getIndex()]) {
         NeedToProcess[Node->getIndex()] = false;
         --NeedToProcessCount;
-        bool Changed = Node->liveness(this, First);
+        bool Changed = Node->liveness(First);
         if (Changed) {
           // Mark all in-edges as needing to be processed
           const IceEdgeList &InEdges = Node->getInEdges();
@@ -321,7 +321,7 @@ void IceCfg::liveness(void) {
   // and build each IceVariable's live range.
   for (IceNodeList::iterator I = LNodes.begin(), E = LNodes.end();
        I != E; ++I) {
-    (*I)->livenessPostprocess(this);
+    (*I)->livenessPostprocess();
   }
 }
 
