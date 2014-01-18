@@ -194,27 +194,6 @@ void IceCfg::findAddressOpt(void) {
   }
 }
 
-void IceCfg::markLastUses(void) {
-  LastUses.clear();
-  LastUses.resize(Variables.size(), NULL);
-  for (IceNodeList::iterator I = LNodes.begin(), E = LNodes.end();
-       I != E; ++I) {
-    (*I)->markLastUses();
-  }
-}
-
-void IceCfg::markLastUse(IceOperand *Operand, const IceInst *Inst) {
-  IceVariable *Variable = llvm::dyn_cast<IceVariable>(Operand);
-  if (Variable == NULL)
-    return;
-  if (Variable->isMultiblockLife())
-    return;
-  uint32_t Index = Variable->getIndex();
-  if (false && LastUses[Index])
-    return;
-  LastUses[Index] = Inst;
-}
-
 void IceCfg::placePhiLoads(void) {
   for (IceNodeList::iterator I = LNodes.begin(), E = LNodes.end();
        I != E; ++I) {
@@ -333,18 +312,6 @@ void IceCfg::liveness(IceLiveness Mode) {
   }
 }
 
-bool IceCfg::isLastUse(const IceInst *Inst, IceOperand *Operand) const {
-  IceVariable *Variable = llvm::dyn_cast<IceVariable>(Operand);
-  if (Variable == NULL)
-    return false;
-  uint32_t Index = Variable->getIndex();
-  if (Index >= LastUses.size())
-    return false;
-  // TODO: We can mark multiple last-use instructions for an operand.
-  // E.g., "x=...; if (cond) a=x; else b=x;" has 2 last-uses of x.
-  return (Inst == LastUses[Index]);
-}
-
 void IceCfg::translate(void) {
   registerInEdges();
 
@@ -364,7 +331,7 @@ void IceCfg::translate(void) {
   dump();
 
   findAddressOpt();
-  markLastUses();
+  liveness(IceLiveness_LREndLightweight);
   Str << "================ After x86 address opt ================\n";
   dump();
 

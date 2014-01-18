@@ -246,15 +246,6 @@ void IceInst::removeUse(IceVariable *Variable) {
   }
 }
 
-void IceInst::markLastUses(IceCfg *Cfg) {
-  for (IceOpList::const_iterator I = Srcs.begin(), E = Srcs.end();
-       I != E; ++I) {
-    if (*I == NULL)
-      continue;
-    Cfg->markLastUse(*I, this);
-  }
-}
-
 void IceInst::liveness(IceLiveness Mode,
                        llvm::BitVector &Live,
                        std::vector<int> &LiveBegin,
@@ -517,7 +508,7 @@ void IceInst::dumpExtras(IceOstream &Str) const {
          I != E; ++I, ++Index) {
       if (*I == NULL)
         continue;
-      if (Str.Cfg->isLastUse(this, *I) || LiveRangesEnded[Index]) {
+      if (LiveRangesEnded[Index]) {
         if (First)
           Str << " // LIVEEND={";
         else

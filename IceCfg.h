@@ -47,8 +47,6 @@ public:
   IceString physicalRegName(int Reg) const { return RegisterNames[Reg]; }
   void translate(void);
   void dump(void) const;
-  void markLastUse(IceOperand *Operand, const IceInst *Inst);
-  bool isLastUse(const IceInst *Inst, IceOperand *Operand) const;
 
   mutable IceOstream Str;
 private:

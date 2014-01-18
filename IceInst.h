@@ -56,7 +56,6 @@ public:
   void replaceOperands(const IceCfgNode *Node, unsigned Index,
                        const IceOpList &NewOperands);
   virtual void removeUse(IceVariable *Variable);
-  void markLastUses(IceCfg *Cfg);
   void liveness(IceLiveness Mode, llvm::BitVector &Live,
                 std::vector<int> &LiveBegin, std::vector<int> &LiveEnd);
   virtual void dump(IceOstream &Str) const;

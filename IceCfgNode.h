@@ -27,7 +27,6 @@ public:
   void splitEdge(IceCfgNode *From, IceCfgNode *To);
   void registerInEdges(void);
   void findAddressOpt(void);
-  void markLastUses(void);
   void placePhiLoads(void);
   void placePhiStores(void);
   void deletePhis(void);
