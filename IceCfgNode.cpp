@@ -372,6 +372,7 @@ void IceCfgNode::livenessPostprocess(void) {
   for (IcePhiList::const_iterator I = Phis.begin(), E = Phis.end();
        I != E; ++I) {
     IceInstPhi *Inst = *I;
+    assert(Inst->getNumber() > LastInstNum);
     LastInstNum = Inst->getNumber();
     Inst->deleteIfDead();
     if (Inst->isDeleted())
@@ -383,6 +384,7 @@ void IceCfgNode::livenessPostprocess(void) {
     IceInst *Inst = *I;
     if (FirstInstNum < 0)
       FirstInstNum = Inst->getNumber();
+    assert(Inst->getNumber() > LastInstNum);
     LastInstNum = Inst->getNumber();
     Inst->deleteIfDead();
     if (Inst->isDeleted())
