@@ -413,7 +413,7 @@ void IceCfgNode::dump(IceOstream &Str) const {
   if (Str.isVerbose(IceV_Instructions)) {
     Str << Name << ":\n";
   }
-  if (Str.isVerbose(IceV_Preds)) {
+  if (Str.isVerbose(IceV_Preds) && !InEdges.empty()) {
     Str << "    // preds = ";
     for (IceEdgeList::const_iterator I = InEdges.begin(), E = InEdges.end();
          I != E; ++I) {
