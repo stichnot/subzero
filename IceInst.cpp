@@ -12,8 +12,8 @@
 #include "IceOperand.h"
 #include "IceRegManager.h"
 
-IceInst::IceInst(IceCfg *Cfg, IceInstType Kind, IceType Type) :
-  Kind(Kind), Type(Type), Deleted(false), Dead(false) {
+IceInst::IceInst(IceCfg *Cfg, IceInstType Kind) :
+  Kind(Kind), Deleted(false), Dead(false) {
   Number = Cfg->newInstNumber();
 }
 
@@ -301,11 +301,11 @@ void IceInst::liveness(llvm::BitVector &Live,
   }
 }
 
-IceInstArithmetic::IceInstArithmetic(IceCfg *Cfg, IceArithmetic Op, IceType Type,
+IceInstArithmetic::IceInstArithmetic(IceCfg *Cfg, IceArithmetic Op,
                                      IceVariable *Dest,
                                      IceOperand *Source1,
                                      IceOperand *Source2) :
-  IceInst(Cfg, Arithmetic, Type), Op(Op) {
+  IceInst(Cfg, Arithmetic), Op(Op) {
   addDest(Dest);
   addSource(Source1);
   addSource(Source2);
@@ -326,9 +326,9 @@ bool IceInstArithmetic::isCommutative(void) const {
   }
 }
 
-IceInstAssign::IceInstAssign(IceCfg *Cfg, IceType Type,
+IceInstAssign::IceInstAssign(IceCfg *Cfg,
                              IceVariable *Dest, IceOperand *Source) :
-  IceInst(Cfg, Assign, Type) {
+  IceInst(Cfg, Assign) {
   addDest(Dest);
   addSource(Source);
 }
@@ -338,7 +338,7 @@ IceInstAssign::IceInstAssign(IceCfg *Cfg, IceType Type,
 // there is at most one edge from one node to another.
 IceInstBr::IceInstBr(IceCfg *Cfg, IceCfgNode *Node, IceOperand *Source,
                      uint32_t LabelTrue, uint32_t LabelFalse) :
-  IceInst(Cfg, IceInst::Br, IceType_i1), IsConditional(true), Node(Node) {
+  IceInst(Cfg, IceInst::Br), IsConditional(true), Node(Node) {
   // TODO: It would be better to add CFG edges in
   // IceCfgNode::appendInst() instead of here.
   Node->addFallthrough(LabelFalse);
@@ -349,7 +349,7 @@ IceInstBr::IceInstBr(IceCfg *Cfg, IceCfgNode *Node, IceOperand *Source,
 }
 
 IceInstBr::IceInstBr(IceCfg *Cfg, IceCfgNode *Node, uint32_t Label) :
-  IceInst(Cfg, IceInst::Br, IceType_i1), IsConditional(false), Node(Node) {
+  IceInst(Cfg, IceInst::Br), IsConditional(false), Node(Node) {
   // TODO: It would be better to add CFG edges in
   // IceCfgNode::appendInst() instead of here.
   Node->addFallthrough(Label);
@@ -363,23 +363,23 @@ uint32_t IceInstBr::getLabelFalse(void) const {
   return Node->getFallthrough();
 }
 
-IceInstIcmp::IceInstIcmp(IceCfg *Cfg, IceICond Condition, IceType Type, IceVariable *Dest,
+IceInstIcmp::IceInstIcmp(IceCfg *Cfg, IceICond Condition, IceVariable *Dest,
                          IceOperand *Source1, IceOperand *Source2) :
-  IceInst(Cfg, Icmp, Type), Condition(Condition) {
+  IceInst(Cfg, Icmp), Condition(Condition) {
   addDest(Dest);
   addSource(Source1);
   addSource(Source2);
 }
 
-IceInstLoad::IceInstLoad(IceCfg *Cfg, IceType Type,
+IceInstLoad::IceInstLoad(IceCfg *Cfg,
                          IceVariable *Dest, IceOperand *SourceAddr) :
-  IceInst(Cfg, Load, Type) {
+  IceInst(Cfg, Load) {
   addDest(Dest);
   addSource(SourceAddr);
 }
 
-IceInstPhi::IceInstPhi(IceCfg *Cfg, IceType Type, IceVariable *Dest) :
-  IceInst(Cfg, Phi, Type) {
+IceInstPhi::IceInstPhi(IceCfg *Cfg, IceVariable *Dest) :
+  IceInst(Cfg, Phi) {
   addDest(Dest);
 }
 
@@ -406,10 +406,10 @@ IceInst *IceInstPhi::lower(IceCfg *Cfg, IceCfgNode *Node) {
   assert(Dests.size() == 1);
   IceVariable *Dest = getDest(0);
   IceString PhiName = Cfg->variableName(Dest->getIndex()) + "_phi";
-  IceVariable *NewSrc = Cfg->getVariable(Type, PhiName);
+  IceVariable *NewSrc = Cfg->getVariable(Dest->getType(), PhiName);
   Dests.clear();
   addDest(NewSrc);
-  IceInstAssign *NewInst = new IceInstAssign(Cfg, Type, Dest, NewSrc);
+  IceInstAssign *NewInst = new IceInstAssign(Cfg, Dest, NewSrc);
   //NewInst->updateVars(Node);
   Dest->replaceDefinition(NewInst, Node);
   return NewInst;
@@ -450,8 +450,8 @@ void IceInstPhi::livenessPhiOperand(llvm::BitVector &Live, uint32_t Target) {
   assert(0);
 }
 
-IceInstRet::IceInstRet(IceCfg *Cfg, IceType Type, IceOperand *Source) :
-  IceInst(Cfg, Ret, Type) {
+IceInstRet::IceInstRet(IceCfg *Cfg, IceOperand *Source) :
+  IceInst(Cfg, Ret) {
   if (Source)
     addSource(Source);
 }
@@ -531,7 +531,7 @@ void IceInst::dumpDests(IceOstream &Str) const {
 
 void IceInstAlloca::dump(IceOstream &Str) const {
   dumpDests(Str);
-  Str << " = alloca " << Type
+  Str << " = alloca " << IceType_i8
       << ", i32 " << Size
       << ", align " << Align;
 }
@@ -598,13 +598,13 @@ void IceInstArithmetic::dump(IceOstream &Str) const {
     Str << "invalid";
     break;
   }
-  Str << " " << Type << " ";
+  Str << " " << getDest(0)->getType() << " ";
   dumpSources(Str);
 }
 
 void IceInstAssign::dump(IceOstream &Str) const {
   dumpDests(Str);
-  Str << " = " << Type << " ";
+  Str << " = " << getDest(0)->getType() << " ";
   dumpSources(Str);
 }
 
@@ -654,12 +654,13 @@ void IceInstIcmp::dump(IceOstream &Str) const {
     Str << "sle";
     break;
   }
-  Str << " " << Type << " ";
+  Str << " " << IceType_i1 << " ";
   dumpSources(Str);
 }
 
 void IceInstLoad::dump(IceOstream &Str) const {
   dumpDests(Str);
+  IceType Type = getDest(0)->getType();
   Str << " = load " << Type << "* ";
   dumpSources(Str);
   Str << ", align ";
@@ -678,7 +679,7 @@ void IceInstLoad::dump(IceOstream &Str) const {
 
 void IceInstPhi::dump(IceOstream &Str) const {
   dumpDests(Str);
-  Str << " = phi " << Type << " ";
+  Str << " = phi " << getDest(0)->getType() << " ";
   IceEdgeList::const_iterator EdgeIter = Labels.begin(), EdgeEnd = Labels.end();
   for (IceOpList::const_iterator I = Srcs.begin(), E = Srcs.end();
        I != E && EdgeIter != EdgeEnd; ++I, ++EdgeIter) {
@@ -689,6 +690,7 @@ void IceInstPhi::dump(IceOstream &Str) const {
 }
 
 void IceInstRet::dump(IceOstream &Str) const {
+  IceType Type = Srcs.empty() ? IceType_void : getSrc(0)->getType();
   Str << "ret " << Type << " ";
   dumpSources(Str);
 }

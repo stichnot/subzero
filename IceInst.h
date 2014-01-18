@@ -64,11 +64,10 @@ public:
   void dumpSources(IceOstream &Str) const;
   void dumpDests(IceOstream &Str) const;
 protected:
-  IceInst(IceCfg *Cfg, IceInstType Kind, IceType Type);
+  IceInst(IceCfg *Cfg, IceInstType Kind);
   void addDest(IceVariable *Dest);
   void addSource(IceOperand *Src);
   const IceInstType Kind;
-  const IceType Type;
   int Number; // the instruction number for describing live ranges
   // Deleted means irrevocably deleted.
   bool Deleted;
@@ -94,7 +93,7 @@ IceOstream& operator<<(IceOstream &Str, const IceInst *I);
 class IceInstAlloca : public IceInst {
 public:
   IceInstAlloca(IceCfg *Cfg, uint32_t Size, uint32_t Align) :
-    IceInst(Cfg, Alloca, IceType_i8), Size(Size), Align(Align) {}
+    IceInst(Cfg, Alloca), Size(Size), Align(Align) {}
   virtual void dump(IceOstream &Str) const;
   static bool classof(const IceInst *Inst) {
     return Inst->getKind() == Alloca;
@@ -129,7 +128,7 @@ public:
     Xor,
     Invalid,
   };
-  IceInstArithmetic(IceCfg *Cfg, IceArithmetic Op, IceType Type, IceVariable *Dest,
+  IceInstArithmetic(IceCfg *Cfg, IceArithmetic Op, IceVariable *Dest,
                     IceOperand *Source1, IceOperand *Source2);
   IceArithmetic getOp(void) const { return Op; }
   bool isCommutative(void) const;
@@ -144,7 +143,7 @@ private:
 
 class IceInstAssign : public IceInst {
 public:
-  IceInstAssign(IceCfg *Cfg, IceType Type, IceVariable *Dest, IceOperand *Source);
+  IceInstAssign(IceCfg *Cfg, IceVariable *Dest, IceOperand *Source);
   virtual void dump(IceOstream &Str) const;
   static bool classof(const IceInst *Inst) {
     return Inst->getKind() == Assign;
@@ -178,8 +177,8 @@ private:
 // TODO: implement
 class IceInstCall : public IceInst {
 public:
-  IceInstCall(IceCfg *Cfg, IceType Type, bool Tail=false) :
-    IceInst(Cfg, Call, Type), Tail(Tail) {}
+  IceInstCall(IceCfg *Cfg, bool Tail=false) :
+    IceInst(Cfg, Call), Tail(Tail) {}
   virtual void removeUse(IceVariable *Variable) {}
   virtual void dump(IceOstream &Str) const;
   static bool classof(const IceInst *Inst) {
@@ -261,7 +260,7 @@ public:
     Slt,
     Sle,
   };
-  IceInstIcmp(IceCfg *Cfg, IceICond Condition, IceType Type, IceVariable *Dest,
+  IceInstIcmp(IceCfg *Cfg, IceICond Condition, IceVariable *Dest,
               IceOperand *Source1, IceOperand *Source2);
   IceICond getCondition(void) const { return Condition; }
   virtual void dump(IceOstream &Str) const;
@@ -274,7 +273,7 @@ private:
 
 class IceInstLoad : public IceInst {
 public:
-  IceInstLoad(IceCfg *Cfg, IceType Type, IceVariable *Dest, IceOperand *SourceAddr);
+  IceInstLoad(IceCfg *Cfg, IceVariable *Dest, IceOperand *SourceAddr);
   virtual void dump(IceOstream &Str) const;
   static bool classof(const IceInst *Inst) {
     return Inst->getKind() == Load;
@@ -284,7 +283,7 @@ private:
 
 class IceInstPhi : public IceInst {
 public:
-  IceInstPhi(IceCfg *Cfg, IceType Type, IceVariable *Dest);
+  IceInstPhi(IceCfg *Cfg, IceVariable *Dest);
   void addArgument(IceOperand *Source, uint32_t Label);
   IceOperand *getArgument(uint32_t Label) const;
   IceInst *lower(IceCfg *Cfg, IceCfgNode *Node);
@@ -301,7 +300,7 @@ private:
 
 class IceInstRet : public IceInst {
 public:
-  IceInstRet(IceCfg *Cfg, IceType Type, IceOperand *Source = NULL);
+  IceInstRet(IceCfg *Cfg, IceOperand *Source = NULL);
   virtual void dump(IceOstream &Str) const;
   static bool classof(const IceInst *Inst) {
     return Inst->getKind() == Ret;
@@ -352,7 +351,7 @@ public:
     return Inst->getKind() == Target;
   }
 protected:
-  IceInstTarget(IceCfg *Cfg, IceType Type) : IceInst(Cfg, Target, Type), RegState(NULL) {}
+  IceInstTarget(IceCfg *Cfg) : IceInst(Cfg, Target), RegState(NULL) {}
   const IceRegManager *RegState; // used only for debugging/dumping
 private:
 };

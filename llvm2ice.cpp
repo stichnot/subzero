@@ -174,15 +174,15 @@ private:
     IceOperand *Src0 = convertOperand(Inst, 0);
     IceOperand *Src1 = convertOperand(Inst, 1);
     IceVariable *Dest = Cfg->getVariable(IceTy, BinOp->getName());
-    return new IceInstArithmetic(Cfg, Opcode, IceTy, Dest, Src0, Src1);
+    return new IceInstArithmetic(Cfg, Opcode, Dest, Src0, Src1);
   }
 
   IceInst *convertRetInstruction(const ReturnInst *Inst) {
     IceOperand *RetOperand = convertOperand(Inst, 0);
     if (RetOperand) {
-      return new IceInstRet(Cfg, RetOperand->getType(), RetOperand);
+      return new IceInstRet(Cfg, RetOperand);
     } else {
-      return new IceInstRet(Cfg, IceType_void);
+      return new IceInstRet(Cfg);
     }
   }
 
@@ -230,7 +230,7 @@ private:
       break;
     }
 
-    return new IceInstIcmp(Cfg, Cond, IceTy, Dest, Src0, Src1);
+    return new IceInstIcmp(Cfg, Cond, Dest, Src0, Src1);
   }
 
   IceCfgNode *convertBasicBlock(const BasicBlock *BB) {

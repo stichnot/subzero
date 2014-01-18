@@ -104,7 +104,7 @@ static void TestSimpleLoop(void) {
   Dest = Cfg->getVariable(IceType_i1, "cmp4");
   Src1 = Cfg->getVariable(IceType_i32, "n");
   Src2 = Cfg->getConstant(IceType_i32, 0);
-  Inst = new IceInstIcmp(Cfg, IceInstIcmp::Sgt, IceType_i32, Dest, Src1, Src2);
+  Inst = new IceInstIcmp(Cfg, IceInstIcmp::Sgt, Dest, Src1, Src2);
   Node->appendInst(Inst);
   // br i1 %cmp4, label %for.body, label %for.end
   Src1 = Cfg->getVariable(IceType_i1, "cmp4");
@@ -116,7 +116,7 @@ static void TestSimpleLoop(void) {
   Node = new IceCfgNode(Cfg, Cfg->translateLabel("for.body"));
   // %i.06 = phi i32 [ %inc, %for.body ], [ 0, %entry ]
   Dest = Cfg->getVariable(IceType_i32, "i.06");
-  Phi = new IceInstPhi(Cfg, IceType_i32, Dest);
+  Phi = new IceInstPhi(Cfg, Dest);
   Src1 = Cfg->getVariable(IceType_i32, "inc");
   Phi->addArgument(Src1, Cfg->translateLabel("for.body"));
   Src1 = Cfg->getConstant(IceType_i32, 0);
@@ -124,7 +124,7 @@ static void TestSimpleLoop(void) {
   Node->addPhi(Phi);
   // %sum.05 = phi i32 [ %add, %for.body ], [ 0, %entry ]
   Dest = Cfg->getVariable(IceType_i32, "sum.05");
-  Phi = new IceInstPhi(Cfg, IceType_i32, Dest);
+  Phi = new IceInstPhi(Cfg, Dest);
   Src1 = Cfg->getVariable(IceType_i32, "add");
   Phi->addArgument(Src1, Cfg->translateLabel("for.body"));
   Src1 = Cfg->getConstant(IceType_i32, 0);
@@ -134,46 +134,46 @@ static void TestSimpleLoop(void) {
   Dest = Cfg->getVariable(IceType_i32, "gep_array");
   Src1 = Cfg->getVariable(IceType_i32, "i.06");
   Src2 = Cfg->getConstant(IceType_i32, 4);
-  Inst = new IceInstArithmetic(Cfg, IceInstArithmetic::Mul, IceType_i32,
+  Inst = new IceInstArithmetic(Cfg, IceInstArithmetic::Mul,
                                Dest, Src1, Src2);
   Node->appendInst(Inst);
   // %gep = add i32 %a, %gep_array
   Dest = Cfg->getVariable(IceType_i32, "gep");
   Src1 = Cfg->getVariable(IceType_i32, "a");
   Src2 = Cfg->getVariable(IceType_i32, "gep_array");
-  Inst = new IceInstArithmetic(Cfg, IceInstArithmetic::Add, IceType_i32,
+  Inst = new IceInstArithmetic(Cfg, IceInstArithmetic::Add,
                                Dest, Src1, Src2);
   Node->appendInst(Inst);
   // %gep.asptr = inttoptr i32 %gep to i32*
   // This is a no-op, and wouldn't actually appear in the PNaCl bitcode.
   Dest = Cfg->getVariable(IceType_i32, "gep.asptr");
   Src1 = Cfg->getVariable(IceType_i32, "gep");
-  Inst = new IceInstAssign(Cfg, IceType_i32, Dest, Src1);
+  Inst = new IceInstAssign(Cfg, Dest, Src1);
   Node->appendInst(Inst);
   // %0 = load i32* %gep.asptr, align 1
   Dest = Cfg->getVariable(IceType_i32, "0");
   Src1 = Cfg->getVariable(IceType_i32, "gep.asptr");
-  Inst = new IceInstLoad(Cfg, IceType_i32, Dest, Src1);
+  Inst = new IceInstLoad(Cfg, Dest, Src1);
   Node->appendInst(Inst);
   // %add = add i32 %0, %sum.05
   Dest = Cfg->getVariable(IceType_i32, "add");
   Src1 = Cfg->getVariable(IceType_i32, "0");
   Src2 = Cfg->getVariable(IceType_i32, "sum.05");
-  Inst = new IceInstArithmetic(Cfg, IceInstArithmetic::Add, IceType_i32,
+  Inst = new IceInstArithmetic(Cfg, IceInstArithmetic::Add,
                                Dest, Src1, Src2);
   Node->appendInst(Inst);
   // %inc = add i32 %i.06, 1
   Dest = Cfg->getVariable(IceType_i32, "inc");
   Src1 = Cfg->getVariable(IceType_i32, "i.06");
   Src2 = Cfg->getConstant(IceType_i32, 1);
-  Inst = new IceInstArithmetic(Cfg, IceInstArithmetic::Add, IceType_i32,
+  Inst = new IceInstArithmetic(Cfg, IceInstArithmetic::Add,
                                Dest, Src1, Src2);
   Node->appendInst(Inst);
   // %cmp = icmp slt i32 %inc, %n
   Dest = Cfg->getVariable(IceType_i1, "cmp");
   Src1 = Cfg->getVariable(IceType_i32, "inc");
   Src2 = Cfg->getVariable(IceType_i32, "n");
-  Inst = new IceInstIcmp(Cfg, IceInstIcmp::Slt, IceType_i32, Dest, Src1, Src2);
+  Inst = new IceInstIcmp(Cfg, IceInstIcmp::Slt, Dest, Src1, Src2);
   Node->appendInst(Inst);
   // br i1 %cmp, label %for.body, label %for.end
   Src1 = Cfg->getVariable(IceType_i1, "cmp");
@@ -185,7 +185,7 @@ static void TestSimpleLoop(void) {
   Node = new IceCfgNode(Cfg, Cfg->translateLabel("for.end"));
   // %sum.0.lcssa = phi i32 [ 0, %entry ], [ %add, %for.body ]
   Dest = Cfg->getVariable(IceType_i32, "sum.0.lcssa");
-  Phi = new IceInstPhi(Cfg, IceType_i32, Dest);
+  Phi = new IceInstPhi(Cfg, Dest);
   Src1 = Cfg->getConstant(IceType_i32, 0);
   Phi->addArgument(Src1, Cfg->translateLabel("entry"));
   Src1 = Cfg->getVariable(IceType_i32, "add");
@@ -193,7 +193,7 @@ static void TestSimpleLoop(void) {
   Node->addPhi(Phi);
   // ret i32 %sum.0.lcssa
   Src1 = Cfg->getVariable(IceType_i32, "sum.0.lcssa");
-  Inst = new IceInstRet(Cfg, IceType_i32, Src1);
+  Inst = new IceInstRet(Cfg, Src1);
   Node->appendInst(Inst);
 
   Cfg->translate();
@@ -244,7 +244,7 @@ static void TestSimpleCond(void) {
   Dest = Cfg->getVariable(IceType_i1, "cmp");
   Src1 = Cfg->getVariable(IceType_i32, "n");
   Src2 = Cfg->getConstant(IceType_i32, 0);
-  Inst = new IceInstIcmp(Cfg, IceInstIcmp::Slt, IceType_i32, Dest, Src1, Src2);
+  Inst = new IceInstIcmp(Cfg, IceInstIcmp::Slt, Dest, Src1, Src2);
   Node->appendInst(Inst);
   // br i1 %cmp, label %if.then, label %if.else
   Src1 = Cfg->getVariable(IceType_i1, "cmp");
@@ -258,7 +258,7 @@ static void TestSimpleCond(void) {
   Dest = Cfg->getVariable(IceType_i32, "sub");
   Src1 = Cfg->getConstant(IceType_i32, 1);
   Src2 = Cfg->getVariable(IceType_i32, "n");
-  Inst = new IceInstArithmetic(Cfg, IceInstArithmetic::Sub, IceType_i32,
+  Inst = new IceInstArithmetic(Cfg, IceInstArithmetic::Sub,
                                Dest, Src1, Src2);
   Node->appendInst(Inst);
   // br label %if.end
@@ -271,26 +271,26 @@ static void TestSimpleCond(void) {
   Dest = Cfg->getVariable(IceType_i32, "gep_array");
   Src1 = Cfg->getVariable(IceType_i32, "n");
   Src2 = Cfg->getConstant(IceType_i32, 4);
-  Inst = new IceInstArithmetic(Cfg, IceInstArithmetic::Mul, IceType_i32,
+  Inst = new IceInstArithmetic(Cfg, IceInstArithmetic::Mul,
                                Dest, Src1, Src2);
   Node->appendInst(Inst);
   // %gep = add i32 %a, %gep_array
   Dest = Cfg->getVariable(IceType_i32, "gep");
   Src1 = Cfg->getVariable(IceType_i32, "a");
   Src2 = Cfg->getVariable(IceType_i32, "gep_array");
-  Inst = new IceInstArithmetic(Cfg, IceInstArithmetic::Add, IceType_i32,
+  Inst = new IceInstArithmetic(Cfg, IceInstArithmetic::Add,
                                Dest, Src1, Src2);
   Node->appendInst(Inst);
   // %gep.asptr = inttoptr i32 %gep to i32*
   // This is a no-op, and wouldn't actually appear in the PNaCl bitcode.
   Dest = Cfg->getVariable(IceType_i32, "gep.asptr");
   Src1 = Cfg->getVariable(IceType_i32, "gep");
-  Inst = new IceInstAssign(Cfg, IceType_i32, Dest, Src1);
+  Inst = new IceInstAssign(Cfg, Dest, Src1);
   Node->appendInst(Inst);
   // %0 = load i32* %gep.asptr, align 1
   Dest = Cfg->getVariable(IceType_i32, "0");
   Src1 = Cfg->getVariable(IceType_i32, "gep.asptr");
-  Inst = new IceInstLoad(Cfg, IceType_i32, Dest, Src1);
+  Inst = new IceInstLoad(Cfg, Dest, Src1);
   Node->appendInst(Inst);
   // br label %if.end
   LabelId1 = Cfg->translateLabel("if.end");
@@ -300,7 +300,7 @@ static void TestSimpleCond(void) {
   Node = new IceCfgNode(Cfg, Cfg->translateLabel("if.end"));
   // %result.0 = phi i32 [ %sub, %if.then ], [ %0, %if.else ]
   Dest = Cfg->getVariable(IceType_i32, "result.0");
-  Phi = new IceInstPhi(Cfg, IceType_i32, Dest);
+  Phi = new IceInstPhi(Cfg, Dest);
   Src1 = Cfg->getVariable(IceType_i32, "sub");
   Phi->addArgument(Src1, Cfg->translateLabel("if.then"));
   Src1 = Cfg->getVariable(IceType_i32, "0");
@@ -308,7 +308,7 @@ static void TestSimpleCond(void) {
   Node->addPhi(Phi);
   // ret i32 %result.0
   Src1 = Cfg->getVariable(IceType_i32, "result.0");
-  Inst = new IceInstRet(Cfg, IceType_i32, Src1);
+  Inst = new IceInstRet(Cfg, Src1);
   Node->appendInst(Inst);
 
   Cfg->translate();

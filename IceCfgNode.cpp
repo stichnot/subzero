@@ -157,9 +157,8 @@ void IceCfgNode::placePhiStores(void) {
       assert(Operand);
       if (Operand == NULL)
         continue;
-      IceType Type = (*I2)->getDest(0)->getType();
       IceInstAssign *NewInst =
-        new IceInstAssign(Cfg, Type, (*I2)->getDest(0), Operand);
+        new IceInstAssign(Cfg, (*I2)->getDest(0), Operand);
       NewPhiStores.push_back(NewInst);
     }
   }
