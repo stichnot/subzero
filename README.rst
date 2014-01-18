@@ -74,3 +74,5 @@ source code with a ``TODO`` comment.
 - Add code to Subzero allowing fine-grain control of which methods to
   attempt to translate and which to unconditionally reject.  The
   control string can come from the command line and/or environment.
+
+- Refactor the IR passes using a Visitor pattern.
