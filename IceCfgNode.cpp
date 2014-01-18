@@ -457,6 +457,15 @@ void IceCfgNode::dump(IceOstream &Str) const {
       Str << "\n";
     }
   }
+  if (Str.isVerbose(IceV_Liveness)) {
+    Str << "    // LiveOut:";
+    for (unsigned i = 0; i < LiveOut.size(); ++i) {
+      if (LiveOut[i]) {
+        Str << " %" << Str.Cfg->variableName(i);
+      }
+    }
+    Str << "\n";
+  }
   if (Str.isVerbose(IceV_Succs)) {
     Str << "    // succs = ";
     for (IceEdgeList::const_iterator I = OutEdges.begin(), E = OutEdges.end();
