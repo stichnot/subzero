@@ -225,12 +225,12 @@ void IceCfg::genCode(void) {
 }
 
 // This is a simple dead code elimination based on reference counting.
-// If the use count of a variable is zero, then its defining can be
-// deleted.  That instruction's source operand reference counts can
-// then be decremented, possibly leading to cascading deletes.  This
-// is currently too aggressive and might delete instructions with side
-// effects.  There are no callers for now, but the code is left for
-// reference.
+// If the use count of a variable is zero, then its defining
+// instruction can be deleted.  That instruction's source operand
+// reference counts can then be decremented, possibly leading to
+// cascading deletes.  This is currently too aggressive and might
+// delete instructions with side effects.  There are no callers for
+// now, but the code is left for reference.
 void IceCfg::simpleDCE(void) {
   for (IceVarList::const_iterator I = Variables.begin(), E = Variables.end();
        I != E; ++I) {
