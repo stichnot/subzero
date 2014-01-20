@@ -247,11 +247,14 @@ void IceInst::removeUse(IceVariable *Variable) {
 }
 
 void IceInst::liveness(IceLiveness Mode,
+                       int InstNumber,
                        llvm::BitVector &Live,
                        std::vector<int> &LiveBegin,
                        std::vector<int> &LiveEnd) {
   if (isDeleted())
     return;
+
+  // For lightweight liveness, do the simple calculation and return.
   if (Mode == IceLiveness_LREndLightweight) {
     int OpNum = 0;
     LiveRangesEnded.reset();
@@ -269,6 +272,7 @@ void IceInst::liveness(IceLiveness Mode,
     }
     return;
   }
+
   // TODO: if all dest operands are dead, consider marking the entire
   // instruction as dead, which also means not marking its source
   // operands as live.
@@ -281,7 +285,7 @@ void IceInst::liveness(IceLiveness Mode,
       if (Live[VarNum]) {
         Dead = false;
         Live[VarNum] = false;
-        LiveBegin[VarNum] = getNumber(); // TODO: adjust if Phi inst
+        LiveBegin[VarNum] = InstNumber;
       }
     }
   }
@@ -295,6 +299,17 @@ void IceInst::liveness(IceLiveness Mode,
   assert(LiveRangesEnded.size() == Srcs.size());
   int Index = 0;
   LiveRangesEnded.reset();
+  // TODO: For a 3-address arithmetic instruction on a 2-address
+  // architecture, we need to indicate that the latter source
+  // operand's live range *does* overlap with the dest operand's live
+  // range.  This is because an instruction like "a=b-c" should be
+  // expanded like "a=b; a-=c" and so we want to express "a" and "c"
+  // as interfering.  If this instruction is the latter operand's last
+  // use, we can handle this by using InstNumber+1 instead of
+  // InstNumber for its LiveEnd value.  Note that for "a=b+c" where
+  // c's live range ends, b's live range does not end, and the
+  // operator is commutable, we can reduce register pressure by
+  // commuting the operation.
   for (IceOpList::const_iterator I = Srcs.begin(), E = Srcs.end();
        I != E; ++I, ++Index) {
     if (IceVariable *Var = llvm::dyn_cast_or_null<IceVariable>(*I)) {
@@ -303,7 +318,14 @@ void IceInst::liveness(IceLiveness Mode,
         LiveRangesEnded[Index] = true;
         if (!IsPhi) {
           Live[VarNum] = true;
-          LiveEnd[VarNum] = getNumber();
+          LiveEnd[VarNum] = InstNumber;
+          if (Index == 1 && getKind() == Arithmetic) {
+            // TODO: Do the same for target-specific Arithmetic
+            // instructions, and also optimize for commutativity.
+            // Also, consider moving this special logic into
+            // IceCfgNode::livenessPostprocess().
+            LiveEnd[VarNum] = InstNumber + 1;
+          }
         }
       }
     }

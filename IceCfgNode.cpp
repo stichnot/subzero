@@ -339,12 +339,15 @@ bool IceCfgNode::liveness(IceLiveness Mode, bool IsFirst) {
   // Process instructions in reverse order
   for (IceInstList::const_reverse_iterator I = Insts.rbegin(), E = Insts.rend();
        I != E; ++I) {
-    (*I)->liveness(Mode, Live, LiveBegin, LiveEnd);
+    (*I)->liveness(Mode, (*I)->getNumber(), Live, LiveBegin, LiveEnd);
   }
   // Process phis in any order
+  int FirstPhiNumber = -1;
   for (IcePhiList::const_iterator I = Phis.begin(), E = Phis.end();
        I != E; ++I) {
-    (*I)->liveness(Mode, Live, LiveBegin, LiveEnd);
+    if (FirstPhiNumber < 0)
+      FirstPhiNumber = (*I)->getNumber();
+    (*I)->liveness(Mode, FirstPhiNumber, Live, LiveBegin, LiveEnd);
   }
 
   bool Changed = false;
@@ -369,6 +372,8 @@ void IceCfgNode::livenessPostprocess(IceLiveness Mode) {
     Inst->deleteIfDead();
     if (Inst->isDeleted())
       continue;
+    if (FirstInstNum < 0)
+      FirstInstNum = Inst->getNumber();
     assert(Inst->getNumber() > LastInstNum);
     LastInstNum = Inst->getNumber();
   }
