@@ -89,8 +89,10 @@ class IceLiveRange {
 public:
   void reset(void) { Range.clear(); }
   void addSegment(int Start, int End);
+  bool endsBefore(const IceLiveRange &Other) const;
+  bool overlaps(const IceLiveRange &Other) const;
   void dump(IceOstream &Str) const;
-  // TODO: live range inclusion tests and intersection operations
+  static void unitTests(void);
 private:
   typedef std::set<std::pair<int, int> > RangeType;
   RangeType Range;

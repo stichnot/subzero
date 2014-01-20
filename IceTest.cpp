@@ -52,6 +52,7 @@ int main(int argc, char **argv) {
     Usage(argv[0]);
     return 1;
   }
+  //IceLiveRange::unitTests();
   Function();
   return 0;
 }
