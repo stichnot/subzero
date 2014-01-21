@@ -41,6 +41,7 @@ OBJS= \
 	IceInst.o \
 	IceInstX8632.o \
 	IceOperand.o \
+	IceRegAlloc.o \
 	IceRegManager.o \
 	IceTargetLowering.o \
 	IceTypes.o
