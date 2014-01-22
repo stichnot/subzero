@@ -19,10 +19,7 @@ typedef void (*TestFunctionType)(void);
 static struct {
   const char *TestName;
   TestFunctionType TestFunction;
-} Tests[] = {
-  {"loop", TestSimpleLoop},
-  {"cond", TestSimpleCond},
-};
+} Tests[] = { { "loop", TestSimpleLoop }, { "cond", TestSimpleCond }, };
 const unsigned NumTests = sizeof(Tests) / sizeof(*Tests);
 
 static void Usage(const char *Arg) {
@@ -52,7 +49,7 @@ int main(int argc, char **argv) {
     Usage(argv[0]);
     return 1;
   }
-  //IceLiveRange::unitTests();
+  // IceLiveRange::unitTests();
   Function();
   return 0;
 }
@@ -135,15 +132,13 @@ static void TestSimpleLoop(void) {
   Dest = Cfg->getVariable(IceType_i32, "gep_array");
   Src1 = Cfg->getVariable(IceType_i32, "i.06");
   Src2 = Cfg->getConstant(IceType_i32, 4);
-  Inst = new IceInstArithmetic(Cfg, IceInstArithmetic::Mul,
-                               Dest, Src1, Src2);
+  Inst = new IceInstArithmetic(Cfg, IceInstArithmetic::Mul, Dest, Src1, Src2);
   Node->appendInst(Inst);
   // %gep = add i32 %a, %gep_array
   Dest = Cfg->getVariable(IceType_i32, "gep");
   Src1 = Cfg->getVariable(IceType_i32, "a");
   Src2 = Cfg->getVariable(IceType_i32, "gep_array");
-  Inst = new IceInstArithmetic(Cfg, IceInstArithmetic::Add,
-                               Dest, Src1, Src2);
+  Inst = new IceInstArithmetic(Cfg, IceInstArithmetic::Add, Dest, Src1, Src2);
   Node->appendInst(Inst);
   // %gep.asptr = inttoptr i32 %gep to i32*
   // This is a no-op, and wouldn't actually appear in the PNaCl bitcode.
@@ -160,15 +155,13 @@ static void TestSimpleLoop(void) {
   Dest = Cfg->getVariable(IceType_i32, "add");
   Src1 = Cfg->getVariable(IceType_i32, "0");
   Src2 = Cfg->getVariable(IceType_i32, "sum.05");
-  Inst = new IceInstArithmetic(Cfg, IceInstArithmetic::Add,
-                               Dest, Src1, Src2);
+  Inst = new IceInstArithmetic(Cfg, IceInstArithmetic::Add, Dest, Src1, Src2);
   Node->appendInst(Inst);
   // %inc = add i32 %i.06, 1
   Dest = Cfg->getVariable(IceType_i32, "inc");
   Src1 = Cfg->getVariable(IceType_i32, "i.06");
   Src2 = Cfg->getConstant(IceType_i32, 1);
-  Inst = new IceInstArithmetic(Cfg, IceInstArithmetic::Add,
-                               Dest, Src1, Src2);
+  Inst = new IceInstArithmetic(Cfg, IceInstArithmetic::Add, Dest, Src1, Src2);
   Node->appendInst(Inst);
   // %cmp = icmp slt i32 %inc, %n
   Dest = Cfg->getVariable(IceType_i1, "cmp");
@@ -221,7 +214,8 @@ static void TestSimpleCond(void) {
       %0 = load i32* %gep.asptr, align 1
       br label %if.end
 
-    if.end:                                           ; preds = %if.else, %if.then
+    if.end:                                           ; preds = %if.else,
+    %if.then
       %result.0 = phi i32 [ %sub, %if.then ], [ %0, %if.else ]
       ret i32 %result.0
     }
@@ -260,8 +254,7 @@ static void TestSimpleCond(void) {
   Dest = Cfg->getVariable(IceType_i32, "sub");
   Src1 = Cfg->getConstant(IceType_i32, 1);
   Src2 = Cfg->getVariable(IceType_i32, "n");
-  Inst = new IceInstArithmetic(Cfg, IceInstArithmetic::Sub,
-                               Dest, Src1, Src2);
+  Inst = new IceInstArithmetic(Cfg, IceInstArithmetic::Sub, Dest, Src1, Src2);
   Node->appendInst(Inst);
   // br label %if.end
   LabelId1 = Cfg->translateLabel("if.end");
@@ -273,15 +266,13 @@ static void TestSimpleCond(void) {
   Dest = Cfg->getVariable(IceType_i32, "gep_array");
   Src1 = Cfg->getVariable(IceType_i32, "n");
   Src2 = Cfg->getConstant(IceType_i32, 4);
-  Inst = new IceInstArithmetic(Cfg, IceInstArithmetic::Mul,
-                               Dest, Src1, Src2);
+  Inst = new IceInstArithmetic(Cfg, IceInstArithmetic::Mul, Dest, Src1, Src2);
   Node->appendInst(Inst);
   // %gep = add i32 %a, %gep_array
   Dest = Cfg->getVariable(IceType_i32, "gep");
   Src1 = Cfg->getVariable(IceType_i32, "a");
   Src2 = Cfg->getVariable(IceType_i32, "gep_array");
-  Inst = new IceInstArithmetic(Cfg, IceInstArithmetic::Add,
-                               Dest, Src1, Src2);
+  Inst = new IceInstArithmetic(Cfg, IceInstArithmetic::Add, Dest, Src1, Src2);
   Node->appendInst(Inst);
   // %gep.asptr = inttoptr i32 %gep to i32*
   // This is a no-op, and wouldn't actually appear in the PNaCl bitcode.

@@ -50,9 +50,10 @@ public:
   void dump(void) const;
 
   mutable IceOstream Str;
+
 private:
   IceString Name; // function name
-  IceType Type; // return type
+  IceType Type;   // return type
   IceTargetLowering *Target;
   IceCfgNode *Entry; // entry basic block
   // Difference between Nodes and LNodes.  Nodes is the master list;
@@ -61,10 +62,11 @@ private:
   // container.  LNodes is the linearization; does not contain NULL
   // entries; is a permutation of the non-NULL Nodes entries; is
   // ideally a list container.
-  IceNodeList Nodes; // node list
+  IceNodeList Nodes;  // node list
   IceNodeList LNodes; // linearized node list; Entry should be first
   IceVarList Variables;
-  std::vector<const IceInst *> LastUses; // instruction ending each variable's live range
+  std::vector<const IceInst *>
+  LastUses;        // instruction ending each variable's live range
   IceVarList Args; // densely packed vector, subset of Variables
   std::vector<int> InstNumberRemapping;
 

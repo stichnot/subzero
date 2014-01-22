@@ -48,14 +48,16 @@ public:
   virtual void removeUse(void) {}
   virtual uint32_t getUseCount(void) const { return 0; }
   virtual void dump(IceOstream &Str) const;
+
 protected:
   IceOperand(OperandKind Kind, IceType Type) : Type(Type), Kind(Kind) {}
   const IceType Type;
+
 private:
   const OperandKind Kind;
 };
 
-IceOstream& operator<<(IceOstream &Str, const IceOperand *O);
+IceOstream &operator<<(IceOstream &Str, const IceOperand *O);
 
 // TODO: better design of a minimal per-module constant pool,
 // including synchronized access for parallel translation.
@@ -72,6 +74,7 @@ public:
     OperandKind Kind = Operand->getKind();
     return Kind >= Constant && Kind <= Constant_Num;
   }
+
 private:
   union {
     uint8_t I1;
@@ -88,9 +91,7 @@ private:
 class IceLiveRange {
 public:
   IceLiveRange(void) : Weight(0) {}
-  int getStart(void) const {
-    return Range.empty() ? -1 : Range.begin()->first;
-  }
+  int getStart(void) const { return Range.empty() ? -1 : Range.begin()->first; }
   void reset(void) { Range.clear(); }
   void addSegment(int Start, int End);
   bool endsBefore(const IceLiveRange &Other) const;
@@ -99,21 +100,22 @@ public:
   void setWeight(int NewWeight) { Weight = NewWeight; }
   void dump(IceOstream &Str) const;
   static void unitTests(void);
+
 private:
   typedef std::set<std::pair<int, int> > RangeType;
   RangeType Range;
   int Weight;
 };
 
-IceOstream& operator<<(IceOstream &Str, const IceLiveRange &L);
+IceOstream &operator<<(IceOstream &Str, const IceLiveRange &L);
 
 // Stack operand, or virtual or physical register
 class IceVariable : public IceOperand {
 public:
-  IceVariable(IceType Type, uint32_t Index) :
-    IceOperand(Variable, Type), VarIndex(Index), UseCount(0), DefInst(NULL),
-    DefOrUseNode(NULL), IsMultiDef(false), IsArgument(false),
-    IsMultiblockLife(false), AllowAutoDelete(true), RegNum(-1) {}
+  IceVariable(IceType Type, uint32_t Index)
+      : IceOperand(Variable, Type), VarIndex(Index), UseCount(0), DefInst(NULL),
+        DefOrUseNode(NULL), IsMultiDef(false), IsArgument(false),
+        IsMultiblockLife(false), AllowAutoDelete(true), RegNum(-1) {}
   virtual void setUse(const IceInst *Inst, const IceCfgNode *Node);
   virtual void removeUse(void);
   virtual uint32_t getUseCount(void) const { return UseCount; }
@@ -148,6 +150,7 @@ public:
     OperandKind Kind = Operand->getKind();
     return Kind >= Variable && Kind <= Variable_Num;
   }
+
 private:
   // operand name for pretty-printing
   const uint32_t VarIndex;

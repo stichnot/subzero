@@ -65,7 +65,7 @@ bool IceLiveRange::endsBefore(const IceLiveRange &Other) const {
 bool IceLiveRange::overlaps(const IceLiveRange &Other) const {
   // Do a two-finger walk through the two sorted lists of segments.
   RangeType::const_iterator I1 = Range.begin(), I2 = Other.Range.begin();
-  RangeType::const_iterator E1 = Range.end(),   E2 = Other.Range.end();
+  RangeType::const_iterator E1 = Range.end(), E2 = Other.Range.end();
   while (I1 != E1 && I2 != E2) {
     if (I1->second <= I2->first) {
       ++I1;
@@ -121,7 +121,7 @@ void IceLiveRange::unitTests(void) {
 
 // ======================== dump routines ======================== //
 
-IceOstream& operator<<(IceOstream &Str, const IceOperand *O) {
+IceOstream &operator<<(IceOstream &Str, const IceOperand *O) {
   if (O)
     O->dump(Str);
   else
@@ -139,9 +139,7 @@ void IceVariable::dump(IceOstream &Str) const {
   }
 }
 
-void IceOperand::dump(IceOstream &Str) const {
-  Str << "IceOperand<?>";
-}
+void IceOperand::dump(IceOstream &Str) const { Str << "IceOperand<?>"; }
 
 void IceConstant::dump(IceOstream &Str) const {
   switch (Type) {
@@ -173,15 +171,15 @@ void IceConstant::dump(IceOstream &Str) const {
 
 void IceLiveRange::dump(IceOstream &Str) const {
   Str << "(weight=" << Weight << ") ";
-  for (RangeType::const_iterator I = Range.begin(), E = Range.end();
-       I != E; ++I) {
+  for (RangeType::const_iterator I = Range.begin(), E = Range.end(); I != E;
+       ++I) {
     if (I != Range.begin())
       Str << ", ";
     Str << "[" << (*I).first << ":" << (*I).second << ")";
   }
 }
 
-IceOstream& operator<<(IceOstream &Str, const IceLiveRange &L) {
+IceOstream &operator<<(IceOstream &Str, const IceLiveRange &L) {
   L.dump(Str);
   return Str;
 }

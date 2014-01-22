@@ -17,6 +17,7 @@ public:
   IceTargetX8632(IceCfg *Cfg) : IceTargetLowering(Cfg) {}
   virtual IceInstTarget *makeAssign(IceVariable *Dest, IceOperand *Src);
   virtual IceString *getRegNames(void) const { return RegNames; }
+
 protected:
   virtual IceInstList lowerAlloca(const IceInst *Inst, const IceInst *Next,
                                   bool &DeleteNextInst);
@@ -46,6 +47,7 @@ protected:
                                  bool &DeleteNextInst);
   virtual IceInstList lowerSwitch(const IceInst *Inst, const IceInst *Next,
                                   bool &DeleteNextInst);
+
 private:
   static IceString RegNames[];
 };
@@ -74,24 +76,26 @@ public:
     And,
     Or,
     Xor,
-    Invalid,
-  };
-  IceInstX8632Arithmetic(IceCfg *Cfg, IceX8632Arithmetic Op,
-                         IceVariable *Dest, IceOperand *Source);
+    Invalid, };
+  IceInstX8632Arithmetic(IceCfg *Cfg, IceX8632Arithmetic Op, IceVariable *Dest,
+                         IceOperand *Source);
   IceX8632Arithmetic getOp(void) const { return Op; }
   bool isCommutative(void) const;
   virtual void dump(IceOstream &Str) const;
+
 private:
   const IceX8632Arithmetic Op;
 };
 
 class IceInstX8632Br : public IceInstTarget {
 public:
-  IceInstX8632Br(IceCfg *Cfg, const IceCfgNode *Node, IceInstIcmp::IceICond Condition);
+  IceInstX8632Br(IceCfg *Cfg, const IceCfgNode *Node,
+                 IceInstIcmp::IceICond Condition);
   uint32_t getLabelTrue(void) const;
   // Fall-through
   uint32_t getLabelFalse(void) const;
   virtual void dump(IceOstream &Str) const;
+
 private:
   IceInstIcmp::IceICond Condition;
   const IceCfgNode *Node; // Out-edge target list is kept here.
@@ -101,6 +105,7 @@ class IceInstX8632Icmp : public IceInstTarget {
 public:
   IceInstX8632Icmp(IceCfg *Cfg, IceOperand *Src1, IceOperand *Src2);
   virtual void dump(IceOstream &Str) const;
+
 private:
 };
 
@@ -110,6 +115,7 @@ public:
   IceInstX8632Load(IceCfg *Cfg, IceVariable *Dest, IceOperand *Base,
                    IceOperand *Index, IceOperand *Shift, IceOperand *Offset);
   virtual void dump(IceOstream &Str) const;
+
 private:
 };
 
@@ -117,6 +123,7 @@ class IceInstX8632Mov : public IceInstTarget {
 public:
   IceInstX8632Mov(IceCfg *Cfg, IceVariable *Dest, IceOperand *Source);
   virtual void dump(IceOstream &Str) const;
+
 private:
 };
 
@@ -124,6 +131,7 @@ class IceInstX8632Ret : public IceInstTarget {
 public:
   IceInstX8632Ret(IceCfg *Cfg, IceVariable *Source);
   virtual void dump(IceOstream &Str) const;
+
 private:
 };
 

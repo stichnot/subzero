@@ -26,6 +26,6 @@ enum IceTargetArch {
 };
 
 class IceOstream;
-IceOstream& operator<<(IceOstream &Str, IceType T);
+IceOstream &operator<<(IceOstream &Str, IceType T);
 
 #endif // _IceTypes_h

@@ -19,11 +19,11 @@ public:
   const IceVariable *Var;
   int Register;
   IceLiveRangeWrapper(const IceLiveRange &Range, const IceVariable *Var,
-                      int Register) :
-    Range(Range), Var(Var), Register(Register) {}
+                      int Register)
+      : Range(Range), Var(Var), Register(Register) {}
   void dump(IceOstream &Str) const;
 };
-IceOstream& operator<<(IceOstream &Str, const IceLiveRangeWrapper &R);
+IceOstream &operator<<(IceOstream &Str, const IceLiveRangeWrapper &R);
 
 class IceLinearScan {
 public:
@@ -32,6 +32,7 @@ public:
   void reset(void);
   void doScan(const llvm::SmallBitVector &RegMask);
   void dump(IceOstream &Str) const;
+
 private:
   IceCfg *const Cfg;
   llvm::SmallBitVector Registers;
@@ -39,8 +40,8 @@ private:
   // by starting point in a std::set<>.  Ties are broken by variable
   // number so that sorting is stable.
   struct RangeCompare {
-    bool operator() (const IceLiveRangeWrapper &L,
-                     const IceLiveRangeWrapper &R) const {
+    bool operator()(const IceLiveRangeWrapper &L,
+                    const IceLiveRangeWrapper &R) const {
       int Lstart = L.Range.getStart();
       int Rstart = R.Range.getStart();
       if (Lstart < Rstart)

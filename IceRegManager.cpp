@@ -14,7 +14,8 @@
 #include "IceTargetLowering.h"
 #include "IceTypes.h"
 
-IceRegManagerEntry::IceRegManagerEntry(IceVariable *Var, unsigned NumReg) : Var(Var) {
+IceRegManagerEntry::IceRegManagerEntry(IceVariable *Var, unsigned NumReg)
+    : Var(Var) {
   FirstLoadInst = NULL;
   IsFirstLoadValid = false;
   MultiblockCandidateWeight = 0;
@@ -25,13 +26,15 @@ IceRegManagerEntry::IceRegManagerEntry(IceVariable *Var, unsigned NumReg) : Var(
 }
 
 IceRegManagerEntry::IceRegManagerEntry(const IceRegManagerEntry &Other,
-                                       unsigned NumReg) : Var(Other.Var) {
+                                       unsigned NumReg)
+    : Var(Other.Var) {
   Available = Other.Available;
   FirstLoadInst = Other.FirstLoadInst;
   IsFirstLoadValid = Other.IsFirstLoadValid;
   MultiblockCandidateWeight = Other.MultiblockCandidateWeight;
   PhysicalRegisterVotes = new int[NumReg];
-  memcpy(PhysicalRegisterVotes, Other.PhysicalRegisterVotes, NumReg * sizeof(*PhysicalRegisterVotes));
+  memcpy(PhysicalRegisterVotes, Other.PhysicalRegisterVotes,
+         NumReg * sizeof(*PhysicalRegisterVotes));
   TotalVotes = Other.TotalVotes;
   PhysicalRegister = Other.PhysicalRegister;
 }
@@ -75,8 +78,8 @@ bool IceRegManagerEntry::contains(const IceOperand *Operand) const {
   return false;
 }
 
-IceRegManager::IceRegManager(IceCfg *Cfg, IceCfgNode *Node, unsigned NumReg) :
-  NumReg(NumReg) {
+IceRegManager::IceRegManager(IceCfg *Cfg, IceCfgNode *Node, unsigned NumReg)
+    : NumReg(NumReg) {
   // TODO: Config flag to use physical registers directly.
   for (unsigned i = 0; i < NumReg; ++i) {
     char Buf[100];
@@ -87,8 +90,8 @@ IceRegManager::IceRegManager(IceCfg *Cfg, IceCfgNode *Node, unsigned NumReg) :
   }
 }
 
-IceRegManager::IceRegManager(const IceRegManager &Other) :
-  NumReg(Other.NumReg) {
+IceRegManager::IceRegManager(const IceRegManager &Other)
+    : NumReg(Other.NumReg) {
   for (QueueType::const_iterator I = Other.Queue.begin(), E = Other.Queue.end();
        I != E; ++I) {
     Queue.push_back(new IceRegManagerEntry(**I, NumReg));
@@ -96,14 +99,13 @@ IceRegManager::IceRegManager(const IceRegManager &Other) :
 }
 
 // Prefer[0] is highest preference, Prefer[1] is second, etc.
-IceVariable *IceRegManager::getRegister(IceType Type,
-                                        const IceOpList &Prefer,
+IceVariable *IceRegManager::getRegister(IceType Type, const IceOpList &Prefer,
                                         const IceVarList &Avoid)
-// TODO: "Avoid" is actually a set of virtual or physical registers.
-// Wait - no it's not.  For an Arithmetic instruction, the load of the
-// first operand should avoid using a register that contains the
-// second operand.
-  const {
+    // TODO: "Avoid" is actually a set of virtual or physical registers.
+    // Wait - no it's not.  For an Arithmetic instruction, the load of the
+    // first operand should avoid using a register that contains the
+    // second operand.
+    const {
   // Check each register in LRU order.  If it's in the Avoid list,
   // continue.  If a non-preferred candidate hasn't been seen, set it
   // to this register.  If its index into the Prefer list is better
@@ -111,12 +113,12 @@ IceVariable *IceRegManager::getRegister(IceType Type,
   // TODO: implement this policy
   IceRegManagerEntry *Good = NULL;
   IceRegManagerEntry *Best = NULL;
-  for (QueueType::const_iterator I1 = Queue.begin(), E1 = Queue.end();
-       I1 != E1; ++I1) {
+  for (QueueType::const_iterator I1 = Queue.begin(), E1 = Queue.end(); I1 != E1;
+       ++I1) {
     IceRegManagerEntry *Entry = *I1;
     bool AvoidEntry = false;
     for (IceVarList::const_iterator I2 = Avoid.begin(), E2 = Avoid.end();
-         I2 != E2 ; ++I2) {
+         I2 != E2; ++I2) {
       if (Entry->contains(*I2)) {
         AvoidEntry = true;
         break;
@@ -127,7 +129,7 @@ IceVariable *IceRegManager::getRegister(IceType Type,
     if (Good == NULL)
       Good = Entry;
     for (IceOpList::const_iterator I2 = Prefer.begin(), E2 = Prefer.end();
-         I2 != E2 ; ++I2) {
+         I2 != E2; ++I2) {
       if (Entry->contains(*I2)) {
         // TODO: Only set Best if it is better than the previous Best.
         Best = Entry;
@@ -143,8 +145,8 @@ IceVariable *IceRegManager::getRegister(IceType Type,
 
 bool IceRegManager::registerContains(const IceVariable *Reg,
                                      const IceOperand *Op) const {
-  for (QueueType::const_iterator I = Queue.begin(), E = Queue.end();
-       I != E; ++I) {
+  for (QueueType::const_iterator I = Queue.begin(), E = Queue.end(); I != E;
+       ++I) {
     if ((*I)->getVar() == Reg)
       return (*I)->contains(Op);
   }
@@ -155,8 +157,7 @@ bool IceRegManager::registerContains(const IceVariable *Reg,
 void IceRegManager::notifyLoad(IceInst *Inst, bool IsAssign) {
   IceVariable *Reg = Inst->getDest(0);
   IceRegManagerEntry *Entry = NULL;
-  for (QueueType::iterator I = Queue.begin(), E = Queue.end();
-       I != E; ++I) {
+  for (QueueType::iterator I = Queue.begin(), E = Queue.end(); I != E; ++I) {
     if ((*I)->getVar() == Reg) {
       Entry = *I;
       Queue.erase(I);
@@ -173,8 +174,7 @@ void IceRegManager::notifyStore(IceInst *Inst) {
   IceVariable *Variable = Inst->getDest(0);
   assert(Variable);
   IceRegManagerEntry *Entry = NULL;
-  for (QueueType::iterator I = Queue.begin(), E = Queue.end();
-       I != E; ++I) {
+  for (QueueType::iterator I = Queue.begin(), E = Queue.end(); I != E; ++I) {
     if ((*I)->getVar() == Reg) {
       Entry = *I;
       Queue.erase(I);
@@ -190,8 +190,8 @@ void IceRegManager::notifyStore(IceInst *Inst) {
 }
 
 void IceRegManager::updateCandidates(const IceRegManager *Pred) {
-  for (QueueType::const_iterator I = Queue.begin(), E = Queue.end();
-       I != E; ++I) {
+  for (QueueType::const_iterator I = Queue.begin(), E = Queue.end(); I != E;
+       ++I) {
     IceInst *LoadInst = (*I)->getFirstLoadInst();
     if (LoadInst == NULL)
       continue;
@@ -204,8 +204,8 @@ void IceRegManager::updateCandidates(const IceRegManager *Pred) {
 }
 
 void IceRegManager::updateVotes(const IceRegManager *Pred) {
-  for (QueueType::const_iterator I = Queue.begin(), E = Queue.end();
-       I != E; ++I) {
+  for (QueueType::const_iterator I = Queue.begin(), E = Queue.end(); I != E;
+       ++I) {
     if (!(*I)->isCandidate())
       continue;
     IceInst *LoadInst = (*I)->getFirstLoadInst();
@@ -225,10 +225,10 @@ void IceRegManager::updateVotes(const IceRegManager *Pred) {
   }
 }
 
-IceRegManagerEntry *IceRegManager::getEntryContaining(const IceOperand *Operand)
-  const {
-  for (QueueType::const_iterator I = Queue.begin(), E = Queue.end();
-       I != E; ++I) {
+IceRegManagerEntry *
+IceRegManager::getEntryContaining(const IceOperand *Operand) const {
+  for (QueueType::const_iterator I = Queue.begin(), E = Queue.end(); I != E;
+       ++I) {
     if ((*I)->contains(Operand))
       return *I;
   }
@@ -243,8 +243,8 @@ void IceRegManager::makeAssignments(void) {
   memset(Assigned, 0, NumReg * sizeof(*Assigned));
   while (true) {
     IceRegManagerEntry *BestEntry = NULL;
-    for (QueueType::const_iterator I = Queue.begin(), E = Queue.end();
-         I != E; ++I) {
+    for (QueueType::const_iterator I = Queue.begin(), E = Queue.end(); I != E;
+         ++I) {
       if ((*I)->getVar()->getRegNum() >= 0)
         continue;
       if (BestEntry == NULL ||
@@ -276,8 +276,8 @@ IceInstList IceRegManager::addCompensations(const IceRegManager *Pred,
   IceVariable *Scratch = NULL;
   IceVarList Avoid;
   IceOpList Prefer;
-  for (QueueType::const_iterator I = Queue.begin(), E = Queue.end();
-       I != E; ++I) {
+  for (QueueType::const_iterator I = Queue.begin(), E = Queue.end(); I != E;
+       ++I) {
     IceVariable *Dest = (*I)->getVar();
     if (!(*I)->isCandidate()) {
       if (Scratch == NULL)
@@ -311,8 +311,8 @@ IceInstList IceRegManager::addCompensations(const IceRegManager *Pred,
   // edges).
   // TODO: this ordering is completely unimplemented so far.
   IceInstList CompsAvailable;
-  for (QueueType::const_iterator I = Queue.begin(), E = Queue.end();
-       I != E; ++I) {
+  for (QueueType::const_iterator I = Queue.begin(), E = Queue.end(); I != E;
+       ++I) {
     if (!(*I)->isCandidate())
       continue;
     IceVariable *Dest = (*I)->getVar();
@@ -339,14 +339,14 @@ IceInstList IceRegManager::addCompensations(const IceRegManager *Pred,
   }
 
   IceInstList Compensations = CompsAvailable;
-  Compensations.insert(Compensations.begin(),
-                       CompsUnavailable.begin(), CompsUnavailable.end());
+  Compensations.insert(Compensations.begin(), CompsUnavailable.begin(),
+                       CompsUnavailable.end());
   return Compensations;
 }
 
 void IceRegManager::deleteHoists(void) {
-  for (QueueType::const_iterator I = Queue.begin(), E = Queue.end();
-       I != E; ++I) {
+  for (QueueType::const_iterator I = Queue.begin(), E = Queue.end(); I != E;
+       ++I) {
     if (!(*I)->isCandidate())
       continue;
     IceInst *LoadInst = (*I)->getFirstLoadInst();
@@ -359,16 +359,16 @@ void IceRegManager::deleteHoists(void) {
 // ======================== Dump routines ======================== //
 
 void IceRegManager::dump(IceOstream &Str) const {
-  for (QueueType::const_iterator I = Queue.begin(), E = Queue.end();
-       I != E; ++I) {
+  for (QueueType::const_iterator I = Queue.begin(), E = Queue.end(); I != E;
+       ++I) {
     (*I)->dump(Str);
   }
 }
 
 void IceRegManager::dumpFirstLoads(IceOstream &Str) const {
   bool First = true;
-  for (QueueType::const_iterator I = Queue.begin(), E = Queue.end();
-       I != E; ++I) {
+  for (QueueType::const_iterator I = Queue.begin(), E = Queue.end(); I != E;
+       ++I) {
     IceInst *LoadInst = (*I)->getFirstLoadInst();
     IceOperand *Operand = LoadInst ? LoadInst->getSrc(0) : NULL;
     if (Operand == NULL)

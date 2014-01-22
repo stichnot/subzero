@@ -36,18 +36,19 @@ public:
   bool liveness(IceLiveness Mode, bool IsFirst);
   void livenessPostprocess(IceLiveness Mode);
   void dump(IceOstream &Str) const;
+
 private:
   IceCfg *const Cfg;
-  const uint32_t NameIndex; // label
-  IceEdgeList OutEdges; // first is default/fallthrough
-  IceEdgeList InEdges; // in no particular order
+  const uint32_t NameIndex;               // label
+  IceEdgeList OutEdges;                   // first is default/fallthrough
+  IceEdgeList InEdges;                    // in no particular order
   std::vector<IceInstList> Compensations; // ordered by InEdges
   // TODO: The Live* vectors are not needed outside liveness analysis,
   // and could be moved outside of IceCfgNode to save memory.
-  llvm::BitVector LiveIn, LiveOut; // TODO: consider llvm::SparseBitVector
+  llvm::BitVector LiveIn, LiveOut;     // TODO: consider llvm::SparseBitVector
   std::vector<int> LiveBegin, LiveEnd; // maps variables to inst numbers
-  IcePhiList Phis; // unordered set of phi instructions
-  IceInstList Insts; // ordered list of non-phi instructions
+  IcePhiList Phis;                     // unordered set of phi instructions
+  IceInstList Insts;                   // ordered list of non-phi instructions
   bool ArePhiLoadsPlaced;
   bool ArePhiStoresPlaced;
   // TODO: Allow the block to have a list of RegManager objects.  A

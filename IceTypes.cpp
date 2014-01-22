@@ -8,7 +8,7 @@
 
 // ======================== Dump routines ======================== //
 
-IceOstream& operator<<(IceOstream &Str, IceType T) {
+IceOstream &operator<<(IceOstream &Str, IceType T) {
   switch (T) {
   case IceType_void:
     Str << "void";

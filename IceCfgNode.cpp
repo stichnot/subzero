@@ -10,10 +10,9 @@
 #include "IceRegManager.h"
 #include "IceTargetLowering.h"
 
-IceCfgNode::IceCfgNode(IceCfg *Cfg, uint32_t LabelIndex) :
-  Cfg(Cfg), NameIndex(LabelIndex),
-  ArePhiLoadsPlaced(false), ArePhiStoresPlaced(false),
-  RegManager(NULL) {
+IceCfgNode::IceCfgNode(IceCfg *Cfg, uint32_t LabelIndex)
+    : Cfg(Cfg), NameIndex(LabelIndex), ArePhiLoadsPlaced(false),
+      ArePhiStoresPlaced(false), RegManager(NULL) {
   Cfg->addNode(this, LabelIndex);
 }
 
@@ -39,8 +38,8 @@ void IceCfgNode::addNonFallthrough(uint32_t TargetLabel) {
 }
 
 void IceCfgNode::renumberInstructions(void) {
-  for (IcePhiList::const_iterator I = Phis.begin(), E = Phis.end();
-       I != E; ++I) {
+  for (IcePhiList::const_iterator I = Phis.begin(), E = Phis.end(); I != E;
+       ++I) {
     (*I)->renumber(Cfg);
   }
   IceInstList::const_iterator I = Insts.begin(), E = Insts.end();
@@ -141,13 +140,14 @@ void IceCfgNode::placePhiStores(void) {
     if (Target == NULL)
       continue;
     for (IcePhiList::const_iterator I2 = Target->Phis.begin(),
-           E2 = Target->Phis.end(); I2 != E2; ++I2) {
+                                    E2 = Target->Phis.end();
+         I2 != E2; ++I2) {
       IceOperand *Operand = (*I2)->getOperandForTarget(NameIndex);
       assert(Operand);
       if (Operand == NULL)
         continue;
       IceInstAssign *NewInst =
-        new IceInstAssign(Cfg, (*I2)->getDest(0), Operand);
+          new IceInstAssign(Cfg, (*I2)->getDest(0), Operand);
       NewPhiStores.push_back(NewInst);
     }
   }
@@ -258,7 +258,7 @@ void IceCfgNode::multiblockRegAlloc(void) {
     IceCfgNode *Succ = Cfg->getNode(*I);
     assert(Succ);
     // TODO: Implement voting by successors.
-    //RegManager->updateVotes(Pred->RegManager);
+    // RegManager->updateVotes(Pred->RegManager);
   }
 
   // Tally up the votes and assign physical registers.
@@ -270,13 +270,13 @@ void IceCfgNode::multiblockRegAlloc(void) {
     IceCfgNode *Pred = Cfg->getNode(*I);
     assert(Pred);
     // TODO: use the final RegManager in Pred.
-    Compensations.push_back(RegManager->addCompensations(Pred->RegManager,
-                                                         Cfg->getTarget()));
+    Compensations.push_back(
+        RegManager->addCompensations(Pred->RegManager, Cfg->getTarget()));
   }
 }
 
 void IceCfgNode::multiblockCompensation(void) {
-  //return; // TODO: This is broken so disable it for now.
+  // return; // TODO: This is broken so disable it for now.
   std::vector<IceInstList>::const_iterator I1 = Compensations.begin();
   for (IceEdgeList::const_iterator I = InEdges.begin(), E = InEdges.end();
        I != E; ++I, ++I1) {
@@ -329,7 +329,8 @@ bool IceCfgNode::liveness(IceLiveness Mode, bool IsFirst) {
       Live |= Succ->LiveIn;
       // Mark corresponding argument of phis in successor as live.
       for (IcePhiList::const_iterator I1 = Succ->Phis.begin(),
-             E1 = Succ->Phis.end(); I1 != E1; ++I1) {
+                                      E1 = Succ->Phis.end();
+           I1 != E1; ++I1) {
         (*I1)->livenessPhiOperand(Live, getIndex());
       }
     }
@@ -343,8 +344,8 @@ bool IceCfgNode::liveness(IceLiveness Mode, bool IsFirst) {
   }
   // Process phis in any order
   int FirstPhiNumber = -1;
-  for (IcePhiList::const_iterator I = Phis.begin(), E = Phis.end();
-       I != E; ++I) {
+  for (IcePhiList::const_iterator I = Phis.begin(), E = Phis.end(); I != E;
+       ++I) {
     if (FirstPhiNumber < 0)
       FirstPhiNumber = (*I)->getNumber();
     (*I)->liveness(Mode, FirstPhiNumber, Live, LiveBegin, LiveEnd);
@@ -366,8 +367,8 @@ void IceCfgNode::livenessPostprocess(IceLiveness Mode) {
   int FirstInstNum = -1;
   int LastInstNum = -1;
   // Process phis in any order.  Process only Dest operands.
-  for (IcePhiList::const_iterator I = Phis.begin(), E = Phis.end();
-       I != E; ++I) {
+  for (IcePhiList::const_iterator I = Phis.begin(), E = Phis.end(); I != E;
+       ++I) {
     IceInstPhi *Inst = *I;
     Inst->deleteIfDead();
     if (Inst->isDeleted())
@@ -378,8 +379,8 @@ void IceCfgNode::livenessPostprocess(IceLiveness Mode) {
     LastInstNum = Inst->getNumber();
   }
   // Process instructions
-  for (IceInstList::const_iterator I = Insts.begin(), E = Insts.end();
-       I != E; ++I) {
+  for (IceInstList::const_iterator I = Insts.begin(), E = Insts.end(); I != E;
+       ++I) {
     IceInst *Inst = *I;
     Inst->deleteIfDead();
     if (Inst->isDeleted())
@@ -444,8 +445,8 @@ void IceCfgNode::dump(IceOstream &Str) const {
     }
   }
   if (Str.isVerbose(IceV_Instructions)) {
-    for (IcePhiList::const_iterator I = Phis.begin(), E = Phis.end();
-         I != E; ++I) {
+    for (IcePhiList::const_iterator I = Phis.begin(), E = Phis.end(); I != E;
+         ++I) {
       Str << (*I);
     }
     IceInstList::const_iterator I = Insts.begin(), E = Insts.end();

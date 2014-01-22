@@ -17,8 +17,8 @@ void IceLinearScan::init(void) {
   assert(Inactive.empty());
   assert(Active.empty());
   const IceVarList &Vars = Cfg->getVariables();
-  for (IceVarList::const_iterator I = Vars.begin(), E = Vars.end();
-       I != E; ++I) {
+  for (IceVarList::const_iterator I = Vars.begin(), E = Vars.end(); I != E;
+       ++I) {
     IceVariable *Var = *I;
     if (Var == NULL)
       continue;
@@ -59,8 +59,8 @@ void IceLinearScan::doScan(const llvm::SmallBitVector &RegMask) {
     // under certain conditions, such as single-block lifetime.
     Unhandled.erase(Unhandled.begin());
     // Check for active ranges that have expired.
-    for (UnorderedRanges::iterator I = Active.begin(), E = Active.end();
-         I != E; I = Next) {
+    for (UnorderedRanges::iterator I = Active.begin(), E = Active.end(); I != E;
+         I = Next) {
       Next = I;
       ++Next;
       IceLiveRangeWrapper Item = *I;
@@ -146,7 +146,8 @@ void IceLinearScan::doScan(const llvm::SmallBitVector &RegMask) {
         }
       }
       for (UnorderedRanges::const_iterator I = Inactive.begin(),
-             E = Inactive.end(); I != E; ++I) {
+                                           E = Inactive.end();
+           I != E; ++I) {
         IceLiveRangeWrapper Item = *I;
         if (Item.Range.overlaps(Cur.Range)) {
           assert(Item.Register >= 0);
@@ -154,7 +155,8 @@ void IceLinearScan::doScan(const llvm::SmallBitVector &RegMask) {
         }
       }
       for (OrderedRanges::const_iterator I = Unhandled.begin(),
-             E = Unhandled.end(); I != E; ++I) {
+                                         E = Unhandled.end();
+           I != E; ++I) {
         IceLiveRangeWrapper Item = *I;
         if (Item.Range.overlaps(Cur.Range)) {
           // TODO: handle properly for precolored ranges
@@ -222,7 +224,7 @@ void IceLiveRangeWrapper::dump(IceOstream &Str) const {
   Range.dump(Str);
 }
 
-IceOstream& operator<<(IceOstream &Str, const IceLiveRangeWrapper &R) {
+IceOstream &operator<<(IceOstream &Str, const IceLiveRangeWrapper &R) {
   R.dump(Str);
   return Str;
 }

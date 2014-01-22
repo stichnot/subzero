@@ -62,7 +62,9 @@ public:
   IceInst *getFirstLoadInst(void) const {
     return IsFirstLoadValid ? FirstLoadInst : NULL;
   }
-  void updateCandidateWeight(int Incr=1) { MultiblockCandidateWeight += Incr; }
+  void updateCandidateWeight(int Incr = 1) {
+    MultiblockCandidateWeight += Incr;
+  }
   int getCandidateWeight(void) const { return MultiblockCandidateWeight; }
   bool isCandidate(void) const { return getCandidateWeight() > 0; }
   void voteFor(int Reg) {
@@ -73,6 +75,7 @@ public:
   int getTotalVotes(void) const { return TotalVotes; }
   int getVotes(int Reg) const { return PhysicalRegisterVotes[Reg]; }
   void dump(IceOstream &Str) const;
+
 private:
   // Virtual register.
   IceVariable *const Var;
@@ -117,7 +120,7 @@ private:
 // TODO: Use some "virtual register" subclass of IceVariable.
 class IceRegManager {
 public:
-  typedef std::vector<IceRegManagerEntry*> QueueType;
+  typedef std::vector<IceRegManagerEntry *> QueueType;
   // Initialize a brand new register manager.
   IceRegManager(IceCfg *Cfg, IceCfgNode *Node, unsigned NumReg);
   // Capture the predecessor's end-of-block state for an extended
@@ -125,8 +128,7 @@ public:
   IceRegManager(const IceRegManager &Other);
   // TODO: Are these IceVariable instances duplicated across
   // IceRegManager objects?
-  IceVariable *getRegister(IceType Type,
-                           const IceOpList &Prefer,
+  IceVariable *getRegister(IceType Type, const IceOpList &Prefer,
                            const IceVarList &Avoid) const;
   bool registerContains(const IceVariable *Reg, const IceOperand *Op) const;
   void notifyLoad(IceInst *Inst, bool IsAssign = true);
@@ -140,6 +142,7 @@ public:
   void deleteHoists(void);
   void dump(IceOstream &Str) const;
   void dumpFirstLoads(IceOstream &Str) const;
+
 private:
   const unsigned NumReg;
   // The LRU register queue.  The front element is the least recently
