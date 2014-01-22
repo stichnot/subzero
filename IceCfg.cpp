@@ -12,6 +12,7 @@
 #include "IceDefs.h"
 #include "IceInst.h"
 #include "IceOperand.h"
+#include "IceRegAlloc.h"
 #include "IceTargetLowering.h"
 
 IceOstream *GlobalStr;
@@ -319,6 +320,18 @@ void IceCfg::liveness(IceLiveness Mode) {
   }
 }
 
+void IceCfg::regAlloc(void) {
+  // TODO: This is just testing for a machine with 8 registers, 3 of
+  // which are made available for register allocation.
+  IceLinearScan LinearScan(this);
+  llvm::SmallBitVector RegMask(8);
+  LinearScan.init();
+  RegMask[0] = true;
+  RegMask[3] = true;
+  RegMask[5] = true;
+  LinearScan.doScan(RegMask);
+}
+
 void IceCfg::translate(void) {
   registerInEdges();
 
@@ -335,6 +348,10 @@ void IceCfg::translate(void) {
 
   liveness(IceLiveness_RangesFull);
   Str << "================ Liveness test 3 ================\n";
+  dump();
+
+  regAlloc();
+  Str << "================ After linear scan regalloc ================\n";
   dump();
 
   findAddressOpt();

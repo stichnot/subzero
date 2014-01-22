@@ -25,6 +25,7 @@ class IceCfgNode;
 class IceInst;
 class IceInstPhi;
 class IceInstTarget;
+class IceLiveRange;
 class IceOperand;
 class IceVariable;
 class IceConstant;
@@ -57,6 +58,7 @@ enum IceVerbose {
   IceV_Liveness     = 1 << 5,
   IceV_RegManager   = 1 << 6,
   IceV_RegOrigins   = 1 << 7,
+  IceV_LinearScan   = 1 << 8,
   IceV_All          = ~IceV_None
 };
 
@@ -107,6 +109,21 @@ inline IceOstream& operator<<(IceOstream &Str, const IceString &S) {
 
 inline IceOstream& operator<<(IceOstream &Str, uint32_t U) {
   Str.Stream << U;
+  return Str;
+}
+
+inline IceOstream& operator<<(IceOstream &Str, int32_t I) {
+  Str.Stream << I;
+  return Str;
+}
+
+inline IceOstream& operator<<(IceOstream &Str, uint64_t U) {
+  Str.Stream << U;
+  return Str;
+}
+
+inline IceOstream& operator<<(IceOstream &Str, double D) {
+  Str.Stream << D;
   return Str;
 }
 

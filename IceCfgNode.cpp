@@ -406,7 +406,7 @@ void IceCfgNode::livenessPostprocess(IceLiveness Mode) {
     if (End <= 0)
       End = LastInstNum + 1;
     IceVariable *Var = Cfg->getVariable(i);
-    Var->addLiveRange(Begin, End);
+    Var->addLiveRange(Begin, End, 1);
   }
 }
 

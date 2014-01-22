@@ -87,15 +87,22 @@ private:
 
 class IceLiveRange {
 public:
+  IceLiveRange(void) : Weight(0) {}
+  int getStart(void) const {
+    return Range.empty() ? -1 : Range.begin()->first;
+  }
   void reset(void) { Range.clear(); }
   void addSegment(int Start, int End);
   bool endsBefore(const IceLiveRange &Other) const;
   bool overlaps(const IceLiveRange &Other) const;
+  int getWeight(void) const { return Weight; }
+  void setWeight(int NewWeight) { Weight = NewWeight; }
   void dump(IceOstream &Str) const;
   static void unitTests(void);
 private:
   typedef std::set<std::pair<int, int> > RangeType;
   RangeType Range;
+  int Weight;
 };
 
 IceOstream& operator<<(IceOstream &Str, const IceLiveRange &L);
@@ -130,7 +137,10 @@ public:
   }
   int getRegNum(void) const { return RegNum; }
   void resetLiveRange(void) { LiveRange.reset(); }
-  void addLiveRange(int Start, int End) { LiveRange.addSegment(Start, End); }
+  void addLiveRange(int Start, int End, int WeightDelta) {
+    LiveRange.addSegment(Start, End);
+    LiveRange.setWeight(WeightDelta + LiveRange.getWeight());
+  }
   const IceLiveRange &getLiveRange(void) const { return LiveRange; }
   virtual void dump(IceOstream &Str) const;
 

@@ -172,6 +172,7 @@ void IceConstant::dump(IceOstream &Str) const {
 }
 
 void IceLiveRange::dump(IceOstream &Str) const {
+  Str << "(weight=" << Weight << ") ";
   for (RangeType::const_iterator I = Range.begin(), E = Range.end();
        I != E; ++I) {
     if (I != Range.begin())
