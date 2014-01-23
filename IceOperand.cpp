@@ -3,6 +3,8 @@
  * be found in the LICENSE file.
  */
 
+#include <stdio.h> // sprintf
+
 #include "IceCfg.h"
 #include "IceInst.h"
 #include "IceOperand.h"
@@ -44,6 +46,14 @@ void IceVariable::setDefinition(IceInst *Inst, const IceCfgNode *Node) {
 void IceVariable::replaceDefinition(IceInst *Inst, const IceCfgNode *Node) {
   DefInst = NULL;
   setDefinition(Inst, Node);
+}
+
+IceString IceVariable::getName(void) const {
+  if (Name != "")
+    return Name;
+  char buf[30];
+  sprintf(buf, "__%u", getIndex());
+  return buf;
 }
 
 void IceLiveRange::addSegment(int Start, int End) {
@@ -131,7 +141,7 @@ IceOstream &operator<<(IceOstream &Str, const IceOperand *O) {
 
 void IceVariable::dump(IceOstream &Str) const {
   if (Str.isVerbose(IceV_RegOrigins) || RegNum < 0)
-    Str << "%" << Str.Cfg->variableName(VarIndex);
+    Str << "%" << getName();
   if (RegNum >= 0) {
     if (Str.isVerbose(IceV_RegOrigins))
       Str << ":";

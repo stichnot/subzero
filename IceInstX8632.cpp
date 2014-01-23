@@ -442,8 +442,8 @@ void IceInstX8632Br::dump(IceOstream &Str) const {
     Str << "sle";
     break;
   }
-  Str << ", label %" << Str.Cfg->labelName(getLabelTrue()) << ", label %"
-      << Str.Cfg->labelName(getLabelFalse());
+  Str << ", label %" << Str.Cfg->getNode(getLabelTrue())->getName()
+      << ", label %" << Str.Cfg->getNode(getLabelFalse())->getName();
 }
 
 void IceInstX8632Icmp::dump(IceOstream &Str) const {

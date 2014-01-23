@@ -38,6 +38,18 @@ static TestFunctionType GetTest(const char *TestName) {
   return NULL;
 }
 
+static IceValueTranslation<IceString> VariableTranslation, LabelTranslation;
+
+static IceVariable *getVariable(IceCfg *Cfg, IceType Type, IceString Name) {
+  uint32_t Index = VariableTranslation.translate(Name);
+  return Cfg->makeVariable(Type, Index, Name);
+}
+
+static IceCfgNode *getNode(IceCfg *Cfg, IceString Name) {
+  uint32_t Index = LabelTranslation.translate(Name);
+  return Cfg->makeNode(Index, Name);
+}
+
 int main(int argc, char **argv) {
   if (argc != 2) {
     Usage(argv[0]);
@@ -93,100 +105,103 @@ static void TestSimpleLoop(void) {
   Cfg->setName("@simple_loop");
   Cfg->setReturnType(IceType_i32);
   Cfg->makeTarget(IceTarget_X8632);
-  Cfg->addArg(Cfg->getVariable(IceType_i32, "a"));
-  Cfg->addArg(Cfg->getVariable(IceType_i32, "n"));
+  Cfg->addArg(getVariable(Cfg, IceType_i32, "a"));
+  Cfg->addArg(getVariable(Cfg, IceType_i32, "n"));
 
-  Node = new IceCfgNode(Cfg, Cfg->translateLabel("entry"));
+  // Node = new IceCfgNode(Cfg, Cfg->translateLabel("entry"));
+  Node = getNode(Cfg, "entry");
   Cfg->setEntryNode(Node);
   // %cmp4 = icmp sgt i32 %n, 0
-  Dest = Cfg->getVariable(IceType_i1, "cmp4");
-  Src1 = Cfg->getVariable(IceType_i32, "n");
+  Dest = getVariable(Cfg, IceType_i1, "cmp4");
+  Src1 = getVariable(Cfg, IceType_i32, "n");
   Src2 = Cfg->getConstant(IceType_i32, 0);
   Inst = new IceInstIcmp(Cfg, IceInstIcmp::Sgt, Dest, Src1, Src2);
   Node->appendInst(Inst);
   // br i1 %cmp4, label %for.body, label %for.end
-  Src1 = Cfg->getVariable(IceType_i1, "cmp4");
-  LabelId1 = Cfg->translateLabel("for.body");
-  LabelId2 = Cfg->translateLabel("for.end");
+  Src1 = getVariable(Cfg, IceType_i1, "cmp4");
+  LabelId1 = getNode(Cfg, "for.body")->getIndex();
+  LabelId2 = getNode(Cfg, "for.end")->getIndex();
   Inst = new IceInstBr(Cfg, Node, Src1, LabelId1, LabelId2);
   Node->appendInst(Inst);
 
-  Node = new IceCfgNode(Cfg, Cfg->translateLabel("for.body"));
+  // Node = new IceCfgNode(Cfg, Cfg->translateLabel("for.body"));
+  Node = getNode(Cfg, "for.body");
   // %i.06 = phi i32 [ %inc, %for.body ], [ 0, %entry ]
-  Dest = Cfg->getVariable(IceType_i32, "i.06");
+  Dest = getVariable(Cfg, IceType_i32, "i.06");
   Phi = new IceInstPhi(Cfg, Dest);
-  Src1 = Cfg->getVariable(IceType_i32, "inc");
-  Phi->addArgument(Src1, Cfg->translateLabel("for.body"));
+  Src1 = getVariable(Cfg, IceType_i32, "inc");
+  Phi->addArgument(Src1, getNode(Cfg, "for.body")->getIndex());
   Src1 = Cfg->getConstant(IceType_i32, 0);
-  Phi->addArgument(Src1, Cfg->translateLabel("entry"));
+  Phi->addArgument(Src1, getNode(Cfg, "entry")->getIndex());
   Node->addPhi(Phi);
   // %sum.05 = phi i32 [ %add, %for.body ], [ 0, %entry ]
-  Dest = Cfg->getVariable(IceType_i32, "sum.05");
+  Dest = getVariable(Cfg, IceType_i32, "sum.05");
   Phi = new IceInstPhi(Cfg, Dest);
-  Src1 = Cfg->getVariable(IceType_i32, "add");
-  Phi->addArgument(Src1, Cfg->translateLabel("for.body"));
+  Src1 = getVariable(Cfg, IceType_i32, "add");
+  Phi->addArgument(Src1, getNode(Cfg, "for.body")->getIndex());
   Src1 = Cfg->getConstant(IceType_i32, 0);
-  Phi->addArgument(Src1, Cfg->translateLabel("entry"));
+  Phi->addArgument(Src1, getNode(Cfg, "entry")->getIndex());
   Node->addPhi(Phi);
   // %gep_array = mul i32 %i.06, 4
-  Dest = Cfg->getVariable(IceType_i32, "gep_array");
-  Src1 = Cfg->getVariable(IceType_i32, "i.06");
+  Dest = getVariable(Cfg, IceType_i32, "gep_array");
+  Src1 = getVariable(Cfg, IceType_i32, "i.06");
   Src2 = Cfg->getConstant(IceType_i32, 4);
   Inst = new IceInstArithmetic(Cfg, IceInstArithmetic::Mul, Dest, Src1, Src2);
   Node->appendInst(Inst);
   // %gep = add i32 %a, %gep_array
-  Dest = Cfg->getVariable(IceType_i32, "gep");
-  Src1 = Cfg->getVariable(IceType_i32, "a");
-  Src2 = Cfg->getVariable(IceType_i32, "gep_array");
+  Dest = getVariable(Cfg, IceType_i32, "gep");
+  Src1 = getVariable(Cfg, IceType_i32, "a");
+  Src2 = getVariable(Cfg, IceType_i32, "gep_array");
   Inst = new IceInstArithmetic(Cfg, IceInstArithmetic::Add, Dest, Src1, Src2);
   Node->appendInst(Inst);
   // %gep.asptr = inttoptr i32 %gep to i32*
   // This is a no-op, and wouldn't actually appear in the PNaCl bitcode.
-  Dest = Cfg->getVariable(IceType_i32, "gep.asptr");
-  Src1 = Cfg->getVariable(IceType_i32, "gep");
+  Dest = getVariable(Cfg, IceType_i32, "gep.asptr");
+  Src1 = getVariable(Cfg, IceType_i32, "gep");
   Inst = new IceInstAssign(Cfg, Dest, Src1);
   Node->appendInst(Inst);
   // %0 = load i32* %gep.asptr, align 1
-  Dest = Cfg->getVariable(IceType_i32, "0");
-  Src1 = Cfg->getVariable(IceType_i32, "gep.asptr");
+  Dest = getVariable(Cfg, IceType_i32, "0");
+  Src1 = getVariable(Cfg, IceType_i32, "gep.asptr");
   Inst = new IceInstLoad(Cfg, Dest, Src1);
   Node->appendInst(Inst);
   // %add = add i32 %0, %sum.05
-  Dest = Cfg->getVariable(IceType_i32, "add");
-  Src1 = Cfg->getVariable(IceType_i32, "0");
-  Src2 = Cfg->getVariable(IceType_i32, "sum.05");
+  Dest = getVariable(Cfg, IceType_i32, "add");
+  Src1 = getVariable(Cfg, IceType_i32, "0");
+  Src2 = getVariable(Cfg, IceType_i32, "sum.05");
   Inst = new IceInstArithmetic(Cfg, IceInstArithmetic::Add, Dest, Src1, Src2);
   Node->appendInst(Inst);
   // %inc = add i32 %i.06, 1
-  Dest = Cfg->getVariable(IceType_i32, "inc");
-  Src1 = Cfg->getVariable(IceType_i32, "i.06");
+  Dest = getVariable(Cfg, IceType_i32, "inc");
+  Src1 = getVariable(Cfg, IceType_i32, "i.06");
   Src2 = Cfg->getConstant(IceType_i32, 1);
   Inst = new IceInstArithmetic(Cfg, IceInstArithmetic::Add, Dest, Src1, Src2);
   Node->appendInst(Inst);
   // %cmp = icmp slt i32 %inc, %n
-  Dest = Cfg->getVariable(IceType_i1, "cmp");
-  Src1 = Cfg->getVariable(IceType_i32, "inc");
-  Src2 = Cfg->getVariable(IceType_i32, "n");
+  Dest = getVariable(Cfg, IceType_i1, "cmp");
+  Src1 = getVariable(Cfg, IceType_i32, "inc");
+  Src2 = getVariable(Cfg, IceType_i32, "n");
   Inst = new IceInstIcmp(Cfg, IceInstIcmp::Slt, Dest, Src1, Src2);
   Node->appendInst(Inst);
   // br i1 %cmp, label %for.body, label %for.end
-  Src1 = Cfg->getVariable(IceType_i1, "cmp");
-  LabelId1 = Cfg->translateLabel("for.body");
-  LabelId2 = Cfg->translateLabel("for.end");
+  Src1 = getVariable(Cfg, IceType_i1, "cmp");
+  LabelId1 = getNode(Cfg, "for.body")->getIndex();
+  LabelId2 = getNode(Cfg, "for.end")->getIndex();
   Inst = new IceInstBr(Cfg, Node, Src1, LabelId1, LabelId2);
   Node->appendInst(Inst);
 
-  Node = new IceCfgNode(Cfg, Cfg->translateLabel("for.end"));
+  // Node = new IceCfgNode(Cfg, Cfg->translateLabel("for.end"));
+  Node = getNode(Cfg, "for.end");
   // %sum.0.lcssa = phi i32 [ 0, %entry ], [ %add, %for.body ]
-  Dest = Cfg->getVariable(IceType_i32, "sum.0.lcssa");
+  Dest = getVariable(Cfg, IceType_i32, "sum.0.lcssa");
   Phi = new IceInstPhi(Cfg, Dest);
   Src1 = Cfg->getConstant(IceType_i32, 0);
-  Phi->addArgument(Src1, Cfg->translateLabel("entry"));
-  Src1 = Cfg->getVariable(IceType_i32, "add");
-  Phi->addArgument(Src1, Cfg->translateLabel("for.body"));
+  Phi->addArgument(Src1, getNode(Cfg, "entry")->getIndex());
+  Src1 = getVariable(Cfg, IceType_i32, "add");
+  Phi->addArgument(Src1, getNode(Cfg, "for.body")->getIndex());
   Node->addPhi(Phi);
   // ret i32 %sum.0.lcssa
-  Src1 = Cfg->getVariable(IceType_i32, "sum.0.lcssa");
+  Src1 = getVariable(Cfg, IceType_i32, "sum.0.lcssa");
   Inst = new IceInstRet(Cfg, Src1);
   Node->appendInst(Inst);
 
@@ -231,76 +246,80 @@ static void TestSimpleCond(void) {
   Cfg->setName("@simple_cond");
   Cfg->setReturnType(IceType_i32);
   Cfg->makeTarget(IceTarget_X8632);
-  Cfg->addArg(Cfg->getVariable(IceType_i32, "a"));
-  Cfg->addArg(Cfg->getVariable(IceType_i32, "n"));
+  Cfg->addArg(getVariable(Cfg, IceType_i32, "a"));
+  Cfg->addArg(getVariable(Cfg, IceType_i32, "n"));
 
-  Node = new IceCfgNode(Cfg, Cfg->translateLabel("entry"));
+  // Node = new IceCfgNode(Cfg, Cfg->translateLabel("entry"));
+  Node = getNode(Cfg, "entry");
   Cfg->setEntryNode(Node);
   // %cmp = icmp slt i32 %n, 0
-  Dest = Cfg->getVariable(IceType_i1, "cmp");
-  Src1 = Cfg->getVariable(IceType_i32, "n");
+  Dest = getVariable(Cfg, IceType_i1, "cmp");
+  Src1 = getVariable(Cfg, IceType_i32, "n");
   Src2 = Cfg->getConstant(IceType_i32, 0);
   Inst = new IceInstIcmp(Cfg, IceInstIcmp::Slt, Dest, Src1, Src2);
   Node->appendInst(Inst);
   // br i1 %cmp, label %if.then, label %if.else
-  Src1 = Cfg->getVariable(IceType_i1, "cmp");
-  LabelId1 = Cfg->translateLabel("if.then");
-  LabelId2 = Cfg->translateLabel("if.else");
+  Src1 = getVariable(Cfg, IceType_i1, "cmp");
+  LabelId1 = getNode(Cfg, "if.then")->getIndex();
+  LabelId2 = getNode(Cfg, "if.else")->getIndex();
   Inst = new IceInstBr(Cfg, Node, Src1, LabelId1, LabelId2);
   Node->appendInst(Inst);
 
-  Node = new IceCfgNode(Cfg, Cfg->translateLabel("if.then"));
+  // Node = new IceCfgNode(Cfg, Cfg->translateLabel("if.then"));
+  Node = getNode(Cfg, "if.then");
   // %sub = sub i32 1, %n
-  Dest = Cfg->getVariable(IceType_i32, "sub");
+  Dest = getVariable(Cfg, IceType_i32, "sub");
   Src1 = Cfg->getConstant(IceType_i32, 1);
-  Src2 = Cfg->getVariable(IceType_i32, "n");
+  Src2 = getVariable(Cfg, IceType_i32, "n");
   Inst = new IceInstArithmetic(Cfg, IceInstArithmetic::Sub, Dest, Src1, Src2);
   Node->appendInst(Inst);
   // br label %if.end
-  LabelId1 = Cfg->translateLabel("if.end");
+  LabelId1 = getNode(Cfg, "if.end")->getIndex();
   Inst = new IceInstBr(Cfg, Node, LabelId1);
   Node->appendInst(Inst);
 
-  Node = new IceCfgNode(Cfg, Cfg->translateLabel("if.else"));
+  // Node = new IceCfgNode(Cfg, Cfg->translateLabel("if.else"));
+  Node = getNode(Cfg, "if.else");
   // %gep_array = mul i32 %n, 4
-  Dest = Cfg->getVariable(IceType_i32, "gep_array");
-  Src1 = Cfg->getVariable(IceType_i32, "n");
+  Dest = getVariable(Cfg, IceType_i32, "gep_array");
+  Src1 = getVariable(Cfg, IceType_i32, "n");
   Src2 = Cfg->getConstant(IceType_i32, 4);
   Inst = new IceInstArithmetic(Cfg, IceInstArithmetic::Mul, Dest, Src1, Src2);
   Node->appendInst(Inst);
   // %gep = add i32 %a, %gep_array
-  Dest = Cfg->getVariable(IceType_i32, "gep");
-  Src1 = Cfg->getVariable(IceType_i32, "a");
-  Src2 = Cfg->getVariable(IceType_i32, "gep_array");
+  Dest = getVariable(Cfg, IceType_i32, "gep");
+  Src1 = getVariable(Cfg, IceType_i32, "a");
+  Src2 = getVariable(Cfg, IceType_i32, "gep_array");
   Inst = new IceInstArithmetic(Cfg, IceInstArithmetic::Add, Dest, Src1, Src2);
   Node->appendInst(Inst);
   // %gep.asptr = inttoptr i32 %gep to i32*
   // This is a no-op, and wouldn't actually appear in the PNaCl bitcode.
-  Dest = Cfg->getVariable(IceType_i32, "gep.asptr");
-  Src1 = Cfg->getVariable(IceType_i32, "gep");
+  Dest = getVariable(Cfg, IceType_i32, "gep.asptr");
+  Src1 = getVariable(Cfg, IceType_i32, "gep");
   Inst = new IceInstAssign(Cfg, Dest, Src1);
   Node->appendInst(Inst);
   // %0 = load i32* %gep.asptr, align 1
-  Dest = Cfg->getVariable(IceType_i32, "0");
-  Src1 = Cfg->getVariable(IceType_i32, "gep.asptr");
+  Dest = getVariable(Cfg, IceType_i32, "0");
+  Src1 = getVariable(Cfg, IceType_i32, "gep.asptr");
   Inst = new IceInstLoad(Cfg, Dest, Src1);
   Node->appendInst(Inst);
   // br label %if.end
-  LabelId1 = Cfg->translateLabel("if.end");
+  LabelId1 = getNode(Cfg, "if.end")->getIndex();
   Inst = new IceInstBr(Cfg, Node, LabelId1);
   Node->appendInst(Inst);
 
-  Node = new IceCfgNode(Cfg, Cfg->translateLabel("if.end"));
+  // Node = new IceCfgNode(Cfg, Cfg->translateLabel("if.end"));
+  Node = getNode(Cfg, "if.end");
   // %result.0 = phi i32 [ %sub, %if.then ], [ %0, %if.else ]
-  Dest = Cfg->getVariable(IceType_i32, "result.0");
+  Dest = getVariable(Cfg, IceType_i32, "result.0");
   Phi = new IceInstPhi(Cfg, Dest);
-  Src1 = Cfg->getVariable(IceType_i32, "sub");
-  Phi->addArgument(Src1, Cfg->translateLabel("if.then"));
-  Src1 = Cfg->getVariable(IceType_i32, "0");
-  Phi->addArgument(Src1, Cfg->translateLabel("if.else"));
+  Src1 = getVariable(Cfg, IceType_i32, "sub");
+  Phi->addArgument(Src1, getNode(Cfg, "if.then")->getIndex());
+  Src1 = getVariable(Cfg, IceType_i32, "0");
+  Phi->addArgument(Src1, getNode(Cfg, "if.else")->getIndex());
   Node->addPhi(Phi);
   // ret i32 %result.0
-  Src1 = Cfg->getVariable(IceType_i32, "result.0");
+  Src1 = getVariable(Cfg, IceType_i32, "result.0");
   Inst = new IceInstRet(Cfg, Src1);
   Node->appendInst(Inst);
 

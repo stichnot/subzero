@@ -3,6 +3,8 @@
  * be found in the LICENSE file.
  */
 
+#include <stdio.h> // sprintf
+
 #include "IceCfg.h"
 #include "IceCfgNode.h"
 #include "IceInst.h"
@@ -10,11 +12,9 @@
 #include "IceRegManager.h"
 #include "IceTargetLowering.h"
 
-IceCfgNode::IceCfgNode(IceCfg *Cfg, uint32_t LabelIndex)
-    : Cfg(Cfg), NameIndex(LabelIndex), ArePhiLoadsPlaced(false),
-      ArePhiStoresPlaced(false), RegManager(NULL) {
-  Cfg->addNode(this, LabelIndex);
-}
+IceCfgNode::IceCfgNode(IceCfg *Cfg, uint32_t LabelIndex, IceString Name)
+    : Cfg(Cfg), NameIndex(LabelIndex), Name(Name), ArePhiLoadsPlaced(false),
+      ArePhiStoresPlaced(false), RegManager(NULL) {}
 
 void IceCfgNode::appendInst(IceInst *Inst) {
   Insts.push_back(Inst);
@@ -27,6 +27,14 @@ void IceCfgNode::addPhi(IceInstPhi *Inst) {
   assert(Insts.empty());
   Phis.push_back(Inst);
   Inst->updateVars(this);
+}
+
+IceString IceCfgNode::getName(void) const {
+  if (Name != "")
+    return Name;
+  char buf[30];
+  sprintf(buf, "__%u", getIndex());
+  return buf;
 }
 
 void IceCfgNode::addFallthrough(uint32_t TargetLabel) {
@@ -414,9 +422,8 @@ void IceCfgNode::livenessPostprocess(IceLiveness Mode) {
 // ======================== Dump routines ======================== //
 
 void IceCfgNode::dump(IceOstream &Str) const {
-  IceString Name = Str.Cfg->labelName(getIndex());
   if (Str.isVerbose(IceV_Instructions)) {
-    Str << Name << ":\n";
+    Str << getName() << ":\n";
   }
   if (Str.isVerbose(IceV_Preds) && !InEdges.empty()) {
     Str << "    // preds = ";
@@ -424,7 +431,7 @@ void IceCfgNode::dump(IceOstream &Str) const {
          I != E; ++I) {
       if (I != InEdges.begin())
         Str << ", ";
-      Str << "%" << Str.Cfg->labelName(*I);
+      Str << "%" << Str.Cfg->getNode(*I)->getName();
     }
     Str << "\n";
   }
@@ -432,7 +439,7 @@ void IceCfgNode::dump(IceOstream &Str) const {
     Str << "    // LiveIn:";
     for (unsigned i = 0; i < LiveIn.size(); ++i) {
       if (LiveIn[i]) {
-        Str << " %" << Str.Cfg->variableName(i);
+        Str << " %" << Str.Cfg->getVariable(i)->getName();
       }
     }
     Str << "\n";
@@ -466,7 +473,7 @@ void IceCfgNode::dump(IceOstream &Str) const {
     Str << "    // LiveOut:";
     for (unsigned i = 0; i < LiveOut.size(); ++i) {
       if (LiveOut[i]) {
-        Str << " %" << Str.Cfg->variableName(i);
+        Str << " %" << Str.Cfg->getVariable(i)->getName();
       }
     }
     Str << "\n";
@@ -477,7 +484,7 @@ void IceCfgNode::dump(IceOstream &Str) const {
          I != E; ++I) {
       if (I != OutEdges.begin())
         Str << ", ";
-      Str << "%" << Str.Cfg->labelName(*I);
+      Str << "%" << Str.Cfg->getNode(*I)->getName();
     }
     Str << "\n";
   }

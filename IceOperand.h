@@ -112,9 +112,9 @@ IceOstream &operator<<(IceOstream &Str, const IceLiveRange &L);
 // Stack operand, or virtual or physical register
 class IceVariable : public IceOperand {
 public:
-  IceVariable(IceType Type, uint32_t Index)
-      : IceOperand(Variable, Type), VarIndex(Index), UseCount(0), DefInst(NULL),
-        DefOrUseNode(NULL), IsMultiDef(false), IsArgument(false),
+  IceVariable(IceType Type, uint32_t Index, const IceString &Name)
+      : IceOperand(Variable, Type), VarIndex(Index), Name(Name), UseCount(0),
+        DefInst(NULL), DefOrUseNode(NULL), IsMultiDef(false), IsArgument(false),
         IsMultiblockLife(false), AllowAutoDelete(true), RegNum(-1) {}
   virtual void setUse(const IceInst *Inst, const IceCfgNode *Node);
   virtual void removeUse(void);
@@ -144,6 +144,7 @@ public:
     LiveRange.setWeight(WeightDelta + LiveRange.getWeight());
   }
   const IceLiveRange &getLiveRange(void) const { return LiveRange; }
+  IceString getName(void) const;
   virtual void dump(IceOstream &Str) const;
 
   static bool classof(const IceOperand *Operand) {
@@ -152,8 +153,8 @@ public:
   }
 
 private:
-  // operand name for pretty-printing
   const uint32_t VarIndex;
+  const IceString Name;
   // decorations
   uint32_t UseCount;
   // TODO: A Phi instruction lowers into several assignment

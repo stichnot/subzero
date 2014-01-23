@@ -11,6 +11,7 @@
 #include <stdint.h>
 
 #include <list>
+#include <map>
 #include <ostream>
 #include <string>
 #include <vector>
@@ -78,6 +79,30 @@ enum IceLiveness {
   // live range for each variable in a form suitable for interference
   // calculation and register allocation.
   IceLiveness_RangesFull,
+};
+
+// This is a convenience templated class that provides a mapping
+// between a parameterized type and small unsigned integers.  The
+// small integer is meant to be the index for an IceCfgNode or
+// IceVariable.  If the ICE is generated directly from the bitcode,
+// this won't be necessary, but it is helpful for manual generation or
+// generation from a different IR such as translating from LLVM.
+template <typename T> class IceValueTranslation {
+public:
+  typedef typename std::map<const T, uint32_t> ContainerType;
+  IceValueTranslation(void) {}
+  void clear(void) { Entries.clear(); }
+  uint32_t translate(const T &Value) {
+    typename ContainerType::const_iterator Iter = Entries.find(Value);
+    if (Iter != Entries.end())
+      return Iter->second;
+    uint32_t Index = Entries.size();
+    Entries[Value] = Index;
+    return Index;
+  }
+
+private:
+  ContainerType Entries;
 };
 
 class IceOstream {

@@ -417,8 +417,8 @@ IceOperand *IceInstPhi::getArgument(uint32_t Label) const {
 IceInst *IceInstPhi::lower(IceCfg *Cfg, IceCfgNode *Node) {
   assert(Dests.size() == 1);
   IceVariable *Dest = getDest(0);
-  IceString PhiName = Cfg->variableName(Dest->getIndex()) + "_phi";
-  IceVariable *NewSrc = Cfg->getVariable(Dest->getType(), PhiName);
+  IceString PhiName = Dest->getName() + "_phi";
+  IceVariable *NewSrc = Cfg->makeVariable(Dest->getType(), -1, PhiName);
   Dests.clear();
   addDest(NewSrc);
   IceInstAssign *NewInst = new IceInstAssign(Cfg, Dest, NewSrc);
@@ -625,10 +625,10 @@ void IceInstBr::dump(IceOstream &Str) const {
   dumpDests(Str);
   Str << "br ";
   if (IsConditional) {
-    Str << "i1 " << Srcs[0] << ", label %" << Str.Cfg->labelName(getLabelTrue())
-        << ", ";
+    Str << "i1 " << Srcs[0] << ", label %"
+        << Str.Cfg->getNode(getLabelTrue())->getName() << ", ";
   }
-  Str << "label %" << Str.Cfg->labelName(getLabelFalse());
+  Str << "label %" << Str.Cfg->getNode(getLabelFalse())->getName();
 }
 
 void IceInstIcmp::dump(IceOstream &Str) const {
@@ -697,7 +697,8 @@ void IceInstPhi::dump(IceOstream &Str) const {
        I != E && EdgeIter != EdgeEnd; ++I, ++EdgeIter) {
     if (I != Srcs.begin())
       Str << ", ";
-    Str << "[ " << *I << ", %" << Str.Cfg->labelName(*EdgeIter) << " ]";
+    Str << "[ " << *I << ", %" << Str.Cfg->getNode(*EdgeIter)->getName()
+        << " ]";
   }
 }
 

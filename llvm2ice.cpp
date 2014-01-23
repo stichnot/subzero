@@ -42,6 +42,8 @@ public:
   LLVM2ICEConverter() : Cfg(NULL) {}
 
   IceCfg *convertFunction(const Function *F) {
+    VariableTranslation.clear();
+    LabelTranslation.clear();
     Cfg = new IceCfg;
     Cfg->setName(F->getName());
     Cfg->setReturnType(convertType(F->getReturnType()));
@@ -50,7 +52,9 @@ public:
                                       ArgE = F->arg_end();
          ArgI != ArgE; ++ArgI) {
       IceType ArgType = convertType(ArgI->getType());
-      Cfg->addArg(Cfg->getVariable(ArgType, ArgI->getName()));
+      const Value *V = &cast<const Value>(*ArgI);
+      uint32_t Index = VariableTranslation.translate(V);
+      Cfg->addArg(Cfg->makeVariable(ArgType, Index, V->getName()));
     }
 
     const BasicBlock &EntryBB = F->getEntryBlock();
@@ -105,8 +109,9 @@ private:
     if (OpNum >= Inst->getNumOperands()) {
       return NULL;
     }
-    return Cfg->getVariable(convertType(Inst->getType()),
-                            Inst->getOperand(OpNum)->getName());
+    const Value *V = Inst->getOperand(OpNum);
+    uint32_t Index = VariableTranslation.translate(V);
+    return Cfg->makeVariable(convertType(Inst->getType()), Index, V->getName());
   }
 
   // Note: this currently assumes a 1x1 mapping between LLVM IR and Ice
@@ -173,7 +178,9 @@ private:
     IceType IceTy = convertType(BinOp->getType());
     IceOperand *Src0 = convertOperand(Inst, 0);
     IceOperand *Src1 = convertOperand(Inst, 1);
-    IceVariable *Dest = Cfg->getVariable(IceTy, BinOp->getName());
+    const Value *V = &cast<const Value>(*Inst);
+    uint32_t Index = VariableTranslation.translate(V);
+    IceVariable *Dest = Cfg->makeVariable(IceTy, Index, BinOp->getName());
     return new IceInstArithmetic(Cfg, Opcode, Dest, Src0, Src1);
   }
 
@@ -192,7 +199,9 @@ private:
     IceType IceTy = convertType(Inst->getType());
     IceOperand *Src0 = convertOperand(Inst, 0);
     IceOperand *Src1 = convertOperand(Inst, 1);
-    IceVariable *Dest = Cfg->getVariable(IceTy, Inst->getName());
+    const Value *V = &cast<const Value>(*Inst);
+    uint32_t Index = VariableTranslation.translate(V);
+    IceVariable *Dest = Cfg->makeVariable(IceTy, Index, Inst->getName());
 
     IceInstIcmp::IceICond Cond;
     switch (Inst->getPredicate()) {
@@ -234,7 +243,8 @@ private:
   }
 
   IceCfgNode *convertBasicBlock(const BasicBlock *BB) {
-    IceCfgNode *Node = new IceCfgNode(Cfg, Cfg->translateLabel(BB->getName()));
+    uint32_t Index = LabelTranslation.translate(BB);
+    IceCfgNode *Node = Cfg->makeNode(Index, BB->getName());
     for (BasicBlock::const_iterator II = BB->begin(), II_e = BB->end();
          II != II_e; ++II) {
       IceInst *Inst = convertInstruction(II);
@@ -246,6 +256,8 @@ private:
 private:
   // Data
   IceCfg *Cfg;
+  IceValueTranslation<const Value *> VariableTranslation;
+  IceValueTranslation<const BasicBlock *> LabelTranslation;
 };
 
 int main(int argc, char **argv) {

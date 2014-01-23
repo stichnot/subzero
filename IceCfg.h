@@ -23,28 +23,19 @@ public:
   void addNode(IceCfgNode *Node, uint32_t LabelIndex);
   IceCfgNode *splitEdge(uint32_t FromNodeIndex, uint32_t ToNodeIndex);
   IceCfgNode *getNode(uint32_t LabelIndex) const;
+  IceCfgNode *makeNode(uint32_t LabelIndex = -1, IceString Name = "");
   // getConstant() is not const because it might add something to the
   // constant pool.
   IceConstant *getConstant(IceType Type, const void *ConstantBits);
   IceConstant *getConstant(IceType Type, int32_t ConstantInt32);
   IceVariable *getVariable(uint32_t Index) const;
-  // Look up a variable used as an rvalue.  The variable might not yet
-  // have a definition if its definition is in a predecessor block
-  // that hasn't yet been processed, e.g. via a phi for a loopback
-  // edge.
-  IceVariable *getVariable(IceType Type, uint32_t Index);
-  IceVariable *getVariable(IceType Type, const IceString &Name) {
-    return getVariable(Type, translateVariable(Name));
-  }
+  IceVariable *makeVariable(IceType Type, uint32_t Index = -1,
+                            const IceString &Name = "");
   const IceVarList &getVariables(void) const { return Variables; }
   unsigned getNumVariables(void) const { return Variables.size(); }
   int newInstNumber(void);
   int getNewInstNumber(int OldNumber);
 
-  uint32_t translateVariable(const IceString &Name);
-  uint32_t translateLabel(const IceString &Name);
-  IceString variableName(uint32_t VariableIndex) const;
-  IceString labelName(uint32_t LabelIndex) const;
   IceString physicalRegName(int Reg) const { return RegisterNames[Reg]; }
   void translate(void);
   void dump(void) const;
@@ -70,8 +61,6 @@ private:
   IceVarList Args; // densely packed vector, subset of Variables
   std::vector<int> InstNumberRemapping;
 
-  class NameTranslation *VariableTranslation;
-  class NameTranslation *LabelTranslation;
   int NextInstNumber;
   // TODO: This goes away when we get target-specific operands with
   // their own dump() methods.

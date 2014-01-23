@@ -11,10 +11,11 @@
 
 class IceCfgNode {
 public:
-  IceCfgNode(IceCfg *Cfg, uint32_t LabelIndex);
+  IceCfgNode(IceCfg *Cfg, uint32_t LabelIndex, IceString Name = "");
   void appendInst(IceInst *Inst);
   void addPhi(IceInstPhi *Phi);
   uint32_t getIndex(void) const { return NameIndex; }
+  IceString getName(void) const;
   void addFallthrough(uint32_t TargetLabel);
   void addNonFallthrough(uint32_t TargetLabel);
   uint32_t getFallthrough(void) const { return OutEdges[0]; }
@@ -40,6 +41,7 @@ public:
 private:
   IceCfg *const Cfg;
   const uint32_t NameIndex;               // label
+  IceString Name;                         // for dumping only
   IceEdgeList OutEdges;                   // first is default/fallthrough
   IceEdgeList InEdges;                    // in no particular order
   std::vector<IceInstList> Compensations; // ordered by InEdges

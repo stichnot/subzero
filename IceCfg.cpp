@@ -51,14 +51,11 @@ private:
 
 IceCfg::IceCfg(void)
     : Str(std::cout, this), Type(IceType_void), Target(NULL), Entry(NULL),
-      VariableTranslation(new NameTranslation),
-      LabelTranslation(new NameTranslation), NextInstNumber(1) {
+      NextInstNumber(1) {
   GlobalStr = &Str;
 }
 
 IceCfg::~IceCfg() {
-  delete VariableTranslation;
-  delete LabelTranslation;
   // TODO: All ICE data destructors should have proper destructors.
   // However, be careful with delete statements since we'll likely be
   // using arena-based allocation.
@@ -89,10 +86,9 @@ IceCfgNode *IceCfg::splitEdge(uint32_t FromNodeIndex, uint32_t ToNodeIndex) {
   IceCfgNode *From = getNode(FromNodeIndex);
   IceCfgNode *To = getNode(ToNodeIndex);
   // Create the new node.
-  IceString NewNodeName =
-      "s__" + labelName(FromNodeIndex) + "__" + labelName(ToNodeIndex);
-  uint32_t NewNodeIndex = translateLabel(NewNodeName);
-  IceCfgNode *NewNode = new IceCfgNode(this, NewNodeIndex);
+  IceString NewNodeName = "s__" + getNode(FromNodeIndex)->getName() + "__" +
+                          getNode(ToNodeIndex)->getName();
+  IceCfgNode *NewNode = makeNode(-1, NewNodeName);
   // TODO: It's ugly that LNodes has to be manipulated this way.
   assert(NewNode == LNodes.back());
   LNodes.pop_back();
@@ -119,20 +115,37 @@ IceCfgNode *IceCfg::getNode(uint32_t LabelIndex) const {
   return Nodes[LabelIndex];
 }
 
+IceCfgNode *IceCfg::makeNode(uint32_t LabelIndex, IceString Name) {
+  if (LabelIndex == (uint32_t) - 1)
+    LabelIndex = Nodes.size();
+  if (Nodes.size() <= LabelIndex)
+    Nodes.resize(LabelIndex + 1);
+  if (Nodes[LabelIndex] == NULL) {
+    IceCfgNode *Node = new IceCfgNode(this, LabelIndex, Name);
+    Nodes[LabelIndex] = Node;
+    LNodes.push_back(Node);
+  }
+  return Nodes[LabelIndex];
+}
+
 IceConstant *IceCfg::getConstant(IceType Type, int32_t ConstantInt32) {
   return new IceConstant(ConstantInt32);
 }
 
 IceVariable *IceCfg::getVariable(uint32_t Index) const {
   assert(Variables.size() > Index);
+  assert(Variables[Index]);
   return Variables[Index];
 }
 
-IceVariable *IceCfg::getVariable(IceType Type, uint32_t Index) {
+IceVariable *IceCfg::makeVariable(IceType Type, uint32_t Index,
+                                  const IceString &Name) {
+  if (Index == (uint32_t) - 1)
+    Index = Variables.size();
   if (Variables.size() <= Index)
     Variables.resize(Index + 1);
   if (Variables[Index] == NULL)
-    Variables[Index] = new IceVariable(Type, Index);
+    Variables[Index] = new IceVariable(Type, Index, Name);
   return Variables[Index];
 }
 
@@ -147,22 +160,6 @@ int IceCfg::getNewInstNumber(int OldNumber) {
   int NewNumber = newInstNumber();
   InstNumberRemapping[OldNumber] = NewNumber;
   return NewNumber;
-}
-
-uint32_t IceCfg::translateVariable(const IceString &Name) {
-  return VariableTranslation->translate(Name);
-}
-
-uint32_t IceCfg::translateLabel(const IceString &Name) {
-  return LabelTranslation->translate(Name);
-}
-
-IceString IceCfg::variableName(uint32_t VariableIndex) const {
-  return VariableTranslation->getName(VariableIndex);
-}
-
-IceString IceCfg::labelName(uint32_t LabelIndex) const {
-  return LabelTranslation->getName(LabelIndex);
 }
 
 void IceCfg::renumberInstructions(void) {
