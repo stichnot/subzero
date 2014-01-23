@@ -97,6 +97,7 @@ public:
     if (Iter != Entries.end())
       return Iter->second;
     uint32_t Index = Entries.size();
+    ++Index; // TODO: this adds holes to the index space for testing; remove.
     Entries[Value] = Index;
     return Index;
   }
