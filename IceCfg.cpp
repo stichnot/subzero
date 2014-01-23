@@ -15,38 +15,6 @@
 
 IceOstream *GlobalStr;
 
-// Provides a mapping between strings and small unsigned integers.
-// The small integers can be used for vector indices.
-class NameTranslation {
-public:
-  typedef std::vector<IceString> Container;
-  NameTranslation(void) {}
-  uint32_t translate(const IceString &Name) {
-    for (Container::size_type i = 0; i < Strings.size(); ++i) {
-      if (Strings[i] == Name)
-        return i;
-    }
-    Strings.push_back(""); // TODO: gaps added for testing; remove
-    uint32_t NewIndex = Strings.size();
-    Strings.push_back(Name);
-    return NewIndex;
-  }
-  IceString getName(Container::size_type Index) const {
-    if (Index >= Strings.size())
-      return "<overflow>";
-#if 0
-    char buf[20]; // TODO: remove debugging suffix
-    sprintf(buf, "_%d", (int)Index); // TODO: use proper cast
-    return Strings[Index] + buf;
-#else
-    return Strings[Index];
-#endif
-  }
-
-private:
-  Container Strings;
-};
-
 IceCfg::IceCfg(void)
     : Str(std::cout, this), Type(IceType_void), Target(NULL), Entry(NULL),
       NextInstNumber(1) {
