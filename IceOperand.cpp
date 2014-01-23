@@ -3,8 +3,6 @@
  * be found in the LICENSE file.
  */
 
-#include <stdio.h> // sprintf
-
 #include "IceCfg.h"
 #include "IceInst.h"
 #include "IceOperand.h"

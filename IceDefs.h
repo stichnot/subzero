@@ -9,10 +9,12 @@
 
 #include <assert.h>
 #include <stdint.h>
+#include <stdio.h> // sprintf
 
 #include <list>
 #include <map>
 #include <ostream>
+#include <set>
 #include <string>
 #include <vector>
 

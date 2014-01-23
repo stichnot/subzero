@@ -7,9 +7,6 @@
 #ifndef _IceRegAlloc_h
 #define _IceRegAlloc_h
 
-#include <list>
-#include <map>
-
 #include "IceDefs.h"
 #include "IceTypes.h"
 

@@ -3,9 +3,6 @@
  * be found in the LICENSE file.
  */
 
-#include <stdio.h>
-#include <string.h>
-
 #include "IceCfg.h"
 #include "IceCfgNode.h"
 #include "IceInst.h"

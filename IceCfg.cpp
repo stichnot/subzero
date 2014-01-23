@@ -3,9 +3,7 @@
  * be found in the LICENSE file.
  */
 
-#include <stdio.h> // TODO: only for debugging sprintf
-
-#include <iostream>
+#include <iostream> // std::cout
 
 #include "IceCfg.h"
 #include "IceCfgNode.h"

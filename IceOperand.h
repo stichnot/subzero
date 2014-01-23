@@ -7,9 +7,6 @@
 #ifndef _IceOperand_h
 #define _IceOperand_h
 
-#include <set>
-#include <utility>
-
 #include "IceDefs.h"
 #include "IceTypes.h"
 
