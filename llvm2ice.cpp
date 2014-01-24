@@ -110,16 +110,13 @@ private:
       return NULL;
     }
     const Value *V = Inst->getOperand(OpNum);
-    uint32_t Index = VariableTranslation.translate(V);
-    return Cfg->makeVariable(convertType(Inst->getType()), Index, V->getName());
+    return Cfg->makeVariable(convertType(Inst->getType()),
+                             VariableTranslation.translate(V), V->getName());
   }
 
   // Note: this currently assumes a 1x1 mapping between LLVM IR and Ice
   // instructions.
   IceInst *convertInstruction(const Instruction *Inst) {
-    // TODO: the reliance on getName here is fishy. LLVM Values are uniquely
-    // identified by their address, not their name (there might be no name!);
-    // think this through and rewrite as needed.
     switch (Inst->getOpcode()) {
     case Instruction::Ret:
       return convertRetInstruction(cast<ReturnInst>(Inst));
