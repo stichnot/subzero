@@ -142,7 +142,7 @@ void IceCfgNode::placePhiStores(void) {
     for (IcePhiList::const_iterator I2 = Target->Phis.begin(),
                                     E2 = Target->Phis.end();
          I2 != E2; ++I2) {
-      IceOperand *Operand = (*I2)->getOperandForTarget(NameIndex);
+      IceOperand *Operand = (*I2)->getOperandForTarget(this);
       assert(Operand);
       if (Operand == NULL)
         continue;
@@ -286,7 +286,7 @@ void IceCfgNode::multiblockCompensation(void) {
     IceCfgNode *Pred = Cfg->getNode(*I);
     assert(Pred);
     IceCfgNode *Split = Cfg->splitEdge(*I, NameIndex);
-    Insts.push_back(new IceInstBr(Cfg, NameIndex));
+    Insts.push_back(new IceInstBr(Cfg, this));
     Split->InEdges.push_back(*I);
     Split->insertInsts(Split->Insts.end(), Insts);
   }
@@ -331,7 +331,7 @@ bool IceCfgNode::liveness(IceLiveness Mode, bool IsFirst) {
       for (IcePhiList::const_iterator I1 = Succ->Phis.begin(),
                                       E1 = Succ->Phis.end();
            I1 != E1; ++I1) {
-        (*I1)->livenessPhiOperand(Live, getIndex());
+        (*I1)->livenessPhiOperand(Live, this);
       }
     }
     LiveOut = Live;

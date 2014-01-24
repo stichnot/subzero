@@ -95,7 +95,7 @@ static void TestSimpleLoop(void) {
   IceInstPhi *Phi;
   IceVariable *Dest;
   IceOperand *Src1, *Src2;
-  uint32_t LabelId1, LabelId2;
+  IceCfgNode *LabelId1, *LabelId2;
   IceCfgNode *Node;
 
   IceCfg *Cfg = new IceCfg;
@@ -116,8 +116,8 @@ static void TestSimpleLoop(void) {
   Node->appendInst(Inst);
   // br i1 %cmp4, label %for.body, label %for.end
   Src1 = getVariable(Cfg, IceType_i1, "cmp4");
-  LabelId1 = getNode(Cfg, "for.body")->getIndex();
-  LabelId2 = getNode(Cfg, "for.end")->getIndex();
+  LabelId1 = getNode(Cfg, "for.body");
+  LabelId2 = getNode(Cfg, "for.end");
   Inst = new IceInstBr(Cfg, Src1, LabelId1, LabelId2);
   Node->appendInst(Inst);
 
@@ -127,17 +127,17 @@ static void TestSimpleLoop(void) {
   Dest = getVariable(Cfg, IceType_i32, "i.06");
   Phi = new IceInstPhi(Cfg, Dest);
   Src1 = getVariable(Cfg, IceType_i32, "inc");
-  Phi->addArgument(Src1, getNode(Cfg, "for.body")->getIndex());
+  Phi->addArgument(Src1, getNode(Cfg, "for.body"));
   Src1 = Cfg->getConstant(IceType_i32, 0);
-  Phi->addArgument(Src1, getNode(Cfg, "entry")->getIndex());
+  Phi->addArgument(Src1, getNode(Cfg, "entry"));
   Node->addPhi(Phi);
   // %sum.05 = phi i32 [ %add, %for.body ], [ 0, %entry ]
   Dest = getVariable(Cfg, IceType_i32, "sum.05");
   Phi = new IceInstPhi(Cfg, Dest);
   Src1 = getVariable(Cfg, IceType_i32, "add");
-  Phi->addArgument(Src1, getNode(Cfg, "for.body")->getIndex());
+  Phi->addArgument(Src1, getNode(Cfg, "for.body"));
   Src1 = Cfg->getConstant(IceType_i32, 0);
-  Phi->addArgument(Src1, getNode(Cfg, "entry")->getIndex());
+  Phi->addArgument(Src1, getNode(Cfg, "entry"));
   Node->addPhi(Phi);
   // %gep_array = mul i32 %i.06, 4
   Dest = getVariable(Cfg, IceType_i32, "gep_array");
@@ -182,8 +182,8 @@ static void TestSimpleLoop(void) {
   Node->appendInst(Inst);
   // br i1 %cmp, label %for.body, label %for.end
   Src1 = getVariable(Cfg, IceType_i1, "cmp");
-  LabelId1 = getNode(Cfg, "for.body")->getIndex();
-  LabelId2 = getNode(Cfg, "for.end")->getIndex();
+  LabelId1 = getNode(Cfg, "for.body");
+  LabelId2 = getNode(Cfg, "for.end");
   Inst = new IceInstBr(Cfg, Src1, LabelId1, LabelId2);
   Node->appendInst(Inst);
 
@@ -193,9 +193,9 @@ static void TestSimpleLoop(void) {
   Dest = getVariable(Cfg, IceType_i32, "sum.0.lcssa");
   Phi = new IceInstPhi(Cfg, Dest);
   Src1 = Cfg->getConstant(IceType_i32, 0);
-  Phi->addArgument(Src1, getNode(Cfg, "entry")->getIndex());
+  Phi->addArgument(Src1, getNode(Cfg, "entry"));
   Src1 = getVariable(Cfg, IceType_i32, "add");
-  Phi->addArgument(Src1, getNode(Cfg, "for.body")->getIndex());
+  Phi->addArgument(Src1, getNode(Cfg, "for.body"));
   Node->addPhi(Phi);
   // ret i32 %sum.0.lcssa
   Src1 = getVariable(Cfg, IceType_i32, "sum.0.lcssa");
@@ -237,7 +237,7 @@ static void TestSimpleCond(void) {
   IceInstPhi *Phi;
   IceVariable *Dest;
   IceOperand *Src1, *Src2;
-  uint32_t LabelId1, LabelId2;
+  IceCfgNode *LabelId1, *LabelId2;
   IceCfgNode *Node;
 
   IceCfg *Cfg = new IceCfg;
@@ -258,8 +258,8 @@ static void TestSimpleCond(void) {
   Node->appendInst(Inst);
   // br i1 %cmp, label %if.then, label %if.else
   Src1 = getVariable(Cfg, IceType_i1, "cmp");
-  LabelId1 = getNode(Cfg, "if.then")->getIndex();
-  LabelId2 = getNode(Cfg, "if.else")->getIndex();
+  LabelId1 = getNode(Cfg, "if.then");
+  LabelId2 = getNode(Cfg, "if.else");
   Inst = new IceInstBr(Cfg, Src1, LabelId1, LabelId2);
   Node->appendInst(Inst);
 
@@ -272,7 +272,7 @@ static void TestSimpleCond(void) {
   Inst = new IceInstArithmetic(Cfg, IceInstArithmetic::Sub, Dest, Src1, Src2);
   Node->appendInst(Inst);
   // br label %if.end
-  LabelId1 = getNode(Cfg, "if.end")->getIndex();
+  LabelId1 = getNode(Cfg, "if.end");
   Inst = new IceInstBr(Cfg, LabelId1);
   Node->appendInst(Inst);
 
@@ -302,7 +302,7 @@ static void TestSimpleCond(void) {
   Inst = new IceInstLoad(Cfg, Dest, Src1);
   Node->appendInst(Inst);
   // br label %if.end
-  LabelId1 = getNode(Cfg, "if.end")->getIndex();
+  LabelId1 = getNode(Cfg, "if.end");
   Inst = new IceInstBr(Cfg, LabelId1);
   Node->appendInst(Inst);
 
@@ -312,9 +312,9 @@ static void TestSimpleCond(void) {
   Dest = getVariable(Cfg, IceType_i32, "result.0");
   Phi = new IceInstPhi(Cfg, Dest);
   Src1 = getVariable(Cfg, IceType_i32, "sub");
-  Phi->addArgument(Src1, getNode(Cfg, "if.then")->getIndex());
+  Phi->addArgument(Src1, getNode(Cfg, "if.then"));
   Src1 = getVariable(Cfg, IceType_i32, "0");
-  Phi->addArgument(Src1, getNode(Cfg, "if.else")->getIndex());
+  Phi->addArgument(Src1, getNode(Cfg, "if.else"));
   Node->addPhi(Phi);
   // ret i32 %result.0
   Src1 = getVariable(Cfg, IceType_i32, "result.0");

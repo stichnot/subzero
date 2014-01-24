@@ -179,8 +179,8 @@ IceInstList IceTargetX8632::lowerIcmp(const IceInst *Inst, const IceInst *Next,
     Expansion.push_back(NewInst);
     NewInst->setRegState(RegManager);
     NewInst =
-        new IceInstX8632Br(Cfg, NextBr->getLabelTrue(), NextBr->getLabelFalse(),
-                           InstIcmp->getCondition());
+        new IceInstX8632Br(Cfg, NextBr->getTargetTrue(),
+                           NextBr->getTargetFalse(), InstIcmp->getCondition());
     Expansion.push_back(NewInst);
     DeleteNextInst = true;
   } else {
@@ -301,11 +301,11 @@ IceInstX8632Arithmetic::IceInstX8632Arithmetic(IceCfg *Cfg,
   addSource(Source);
 }
 
-IceInstX8632Br::IceInstX8632Br(IceCfg *Cfg, uint32_t LabelTrue,
-                               uint32_t LabelFalse,
+IceInstX8632Br::IceInstX8632Br(IceCfg *Cfg, IceCfgNode *TargetTrue,
+                               IceCfgNode *TargetFalse,
                                IceInstIcmp::IceICond Condition)
-    : IceInstTarget(Cfg), Condition(Condition), LabelTrue(LabelTrue),
-      LabelFalse(LabelFalse) {}
+    : IceInstTarget(Cfg), Condition(Condition), TargetTrue(TargetTrue),
+      TargetFalse(TargetFalse) {}
 
 IceInstX8632Icmp::IceInstX8632Icmp(IceCfg *Cfg, IceOperand *Src0,
                                    IceOperand *Src1)
@@ -437,8 +437,8 @@ void IceInstX8632Br::dump(IceOstream &Str) const {
     Str << "sle";
     break;
   }
-  Str << ", label %" << Str.Cfg->getNode(getLabelTrue())->getName()
-      << ", label %" << Str.Cfg->getNode(getLabelFalse())->getName();
+  Str << ", label %" << getTargetTrue()->getName() << ", label %"
+      << getTargetFalse()->getName();
 }
 
 void IceInstX8632Icmp::dump(IceOstream &Str) const {

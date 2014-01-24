@@ -350,24 +350,23 @@ IceInstAssign::IceInstAssign(IceCfg *Cfg, IceVariable *Dest, IceOperand *Source)
 // If LabelTrue==LabelFalse, we turn it into an unconditional branch.
 // This ensures that, along with the 'switch' instruction semantics,
 // there is at most one edge from one node to another.
-IceInstBr::IceInstBr(IceCfg *Cfg, IceOperand *Source, uint32_t LabelTrue,
-                     uint32_t LabelFalse)
-    : IceInst(Cfg, IceInst::Br), IsConditional(true), LabelFalse(LabelFalse),
-      LabelTrue(LabelTrue) {
-  if (LabelTrue != LabelFalse) {
+IceInstBr::IceInstBr(IceCfg *Cfg, IceOperand *Source, IceCfgNode *TargetTrue,
+                     IceCfgNode *TargetFalse)
+    : IceInst(Cfg, IceInst::Br), TargetFalse(TargetFalse),
+      TargetTrue(TargetTrue) {
+  if (TargetTrue != TargetFalse) {
     addSource(Source);
   }
 }
 
-IceInstBr::IceInstBr(IceCfg *Cfg, uint32_t Label)
-    : IceInst(Cfg, IceInst::Br), IsConditional(false), LabelFalse(Label),
-      LabelTrue(-1) {}
+IceInstBr::IceInstBr(IceCfg *Cfg, IceCfgNode *Target)
+    : IceInst(Cfg, IceInst::Br), TargetFalse(Target), TargetTrue(NULL) {}
 
 IceEdgeList IceInstBr::getTerminatorEdges(void) const {
   IceEdgeList OutEdges;
-  OutEdges.push_back(LabelFalse);
-  if (IsConditional)
-    OutEdges.push_back(LabelTrue);
+  OutEdges.push_back(TargetFalse->getIndex());
+  if (TargetTrue)
+    OutEdges.push_back(TargetTrue->getIndex());
   return OutEdges;
 }
 
@@ -389,14 +388,14 @@ IceInstPhi::IceInstPhi(IceCfg *Cfg, IceVariable *Dest) : IceInst(Cfg, Phi) {
   addDest(Dest);
 }
 
-void IceInstPhi::addArgument(IceOperand *Source, uint32_t Label) {
+void IceInstPhi::addArgument(IceOperand *Source, IceCfgNode *Label) {
   addSource(Source);
   Labels.push_back(Label);
 }
 
-IceOperand *IceInstPhi::getArgument(uint32_t Label) const {
+IceOperand *IceInstPhi::getArgument(IceCfgNode *Label) const {
   assert(Labels.size() == Srcs.size());
-  IceEdgeList::const_iterator EdgeIter = Labels.begin(), EdgeEnd = Labels.end();
+  IceNodeList::const_iterator EdgeIter = Labels.begin(), EdgeEnd = Labels.end();
   for (IceOpList::const_iterator I = Srcs.begin(), E = Srcs.end();
        I != E && EdgeIter != EdgeEnd; ++I, ++EdgeIter) {
     if (*EdgeIter == Label)
@@ -421,8 +420,8 @@ IceInst *IceInstPhi::lower(IceCfg *Cfg, IceCfgNode *Node) {
   return NewInst;
 }
 
-IceOperand *IceInstPhi::getOperandForTarget(uint32_t Target) const {
-  IceEdgeList::const_iterator EdgeIter = Labels.begin(), EdgeEnd = Labels.end();
+IceOperand *IceInstPhi::getOperandForTarget(IceCfgNode *Target) const {
+  IceNodeList::const_iterator EdgeIter = Labels.begin(), EdgeEnd = Labels.end();
   for (IceOpList::const_iterator I = Srcs.begin(), E = Srcs.end();
        I != E && EdgeIter != EdgeEnd; ++I, ++EdgeIter) {
     if (*EdgeIter == Target)
@@ -435,10 +434,10 @@ IceOperand *IceInstPhi::getOperandForTarget(uint32_t Target) const {
 // predecessor edge.  Doesn't mark the operand as live if the Phi
 // instruction is dead or deleted.  TODO: Make sure liveness
 // convergence works correctly for dead instructions.
-void IceInstPhi::livenessPhiOperand(llvm::BitVector &Live, uint32_t Target) {
+void IceInstPhi::livenessPhiOperand(llvm::BitVector &Live, IceCfgNode *Target) {
   if (isDeleted() || Dead)
     return;
-  IceEdgeList::const_iterator EdgeIter = Labels.begin(), EdgeEnd = Labels.end();
+  IceNodeList::const_iterator EdgeIter = Labels.begin(), EdgeEnd = Labels.end();
   uint32_t Index = 0;
   for (IceOpList::const_iterator I = Srcs.begin(), E = Srcs.end();
        I != E && EdgeIter != EdgeEnd; ++I, ++EdgeIter, ++Index) {
@@ -618,11 +617,11 @@ void IceInstAssign::dump(IceOstream &Str) const {
 void IceInstBr::dump(IceOstream &Str) const {
   dumpDests(Str);
   Str << "br ";
-  if (IsConditional) {
-    Str << "i1 " << Srcs[0] << ", label %"
-        << Str.Cfg->getNode(getLabelTrue())->getName() << ", ";
+  if (getTargetTrue()) {
+    Str << "i1 " << Srcs[0] << ", label %" << getTargetTrue()->getName()
+        << ", ";
   }
-  Str << "label %" << Str.Cfg->getNode(getLabelFalse())->getName();
+  Str << "label %" << getTargetFalse()->getName();
 }
 
 void IceInstIcmp::dump(IceOstream &Str) const {
@@ -686,13 +685,12 @@ void IceInstLoad::dump(IceOstream &Str) const {
 void IceInstPhi::dump(IceOstream &Str) const {
   dumpDests(Str);
   Str << " = phi " << getDest(0)->getType() << " ";
-  IceEdgeList::const_iterator EdgeIter = Labels.begin(), EdgeEnd = Labels.end();
+  IceNodeList::const_iterator EdgeIter = Labels.begin(), EdgeEnd = Labels.end();
   for (IceOpList::const_iterator I = Srcs.begin(), E = Srcs.end();
        I != E && EdgeIter != EdgeEnd; ++I, ++EdgeIter) {
     if (I != Srcs.begin())
       Str << ", ";
-    Str << "[ " << *I << ", %" << Str.Cfg->getNode(*EdgeIter)->getName()
-        << " ]";
+    Str << "[ " << *I << ", %" << (*EdgeIter)->getName() << " ]";
   }
 }
 

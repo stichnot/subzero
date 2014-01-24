@@ -148,20 +148,22 @@ private:
 class IceInstBr : public IceInst {
 public:
   // Conditional branch
-  IceInstBr(IceCfg *Cfg, IceOperand *Source, uint32_t LabelTrue,
-            uint32_t LabelFalse);
+  IceInstBr(IceCfg *Cfg, IceOperand *Source, IceCfgNode *TargetTrue,
+            IceCfgNode *TargetFalse);
   // Unconditional branch
-  IceInstBr(IceCfg *Cfg, uint32_t Label);
-  uint32_t getLabelTrue(void) const { return LabelTrue; }
-  uint32_t getLabelFalse(void) const { return LabelFalse; }
+  IceInstBr(IceCfg *Cfg, IceCfgNode *Target);
+  IceCfgNode *getTargetTrue(void) const { return TargetTrue; }
+  IceCfgNode *getTargetFalse(void) const { return TargetFalse; }
   virtual IceEdgeList getTerminatorEdges(void) const;
   virtual void dump(IceOstream &Str) const;
   static bool classof(const IceInst *Inst) { return Inst->getKind() == Br; }
 
 private:
-  const bool IsConditional;
-  const uint32_t LabelFalse;
-  const uint32_t LabelTrue;
+  // const bool IsConditional;
+  // const uint32_t LabelFalse;
+  // const uint32_t LabelTrue;
+  IceCfgNode *const TargetFalse;
+  IceCfgNode *const TargetTrue; // NULL if unconditional branch
 };
 
 // TODO: implement
@@ -271,17 +273,17 @@ private:
 class IceInstPhi : public IceInst {
 public:
   IceInstPhi(IceCfg *Cfg, IceVariable *Dest);
-  void addArgument(IceOperand *Source, uint32_t Label);
-  IceOperand *getArgument(uint32_t Label) const;
+  void addArgument(IceOperand *Source, IceCfgNode *Label);
+  IceOperand *getArgument(IceCfgNode *Label) const;
   IceInst *lower(IceCfg *Cfg, IceCfgNode *Node);
   // TODO: delete unused getOperandForTarget()
-  IceOperand *getOperandForTarget(uint32_t Target) const;
-  void livenessPhiOperand(llvm::BitVector &Live, uint32_t Target);
+  IceOperand *getOperandForTarget(IceCfgNode *Target) const;
+  void livenessPhiOperand(llvm::BitVector &Live, IceCfgNode *Target);
   virtual void dump(IceOstream &Str) const;
   static bool classof(const IceInst *Inst) { return Inst->getKind() == Phi; }
 
 private:
-  IceEdgeList Labels; // corresponding to Srcs
+  IceNodeList Labels; // corresponding to Srcs
 };
 
 class IceInstRet : public IceInst {
