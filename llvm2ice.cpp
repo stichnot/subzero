@@ -62,7 +62,7 @@ public:
     return Cfg;
   }
 
- private:
+private:
   // LLVM values (instructions, etc.) are mapped directly to ICE variables.
   // convertValueToIceVar has a version that forces an ICE type on the variable,
   // and a version that just uses convertType on V.
@@ -104,6 +104,8 @@ public:
       return IceType_f32;
     case Type::DoubleTyID:
       return IceType_f64;
+    case Type::PointerTyID:
+      return IceType_i32;
     default:
       report_fatal_error(std::string("Invalid PNaCl type: ") +
                          LLVMObjectAsString(Ty));
@@ -126,14 +128,16 @@ public:
   // instructions.
   IceInst *convertInstruction(const Instruction *Inst) {
     switch (Inst->getOpcode()) {
-      case Instruction::Br:
-        return convertBrInstruction(cast<BranchInst>(Inst));
+    case Instruction::Br:
+      return convertBrInstruction(cast<BranchInst>(Inst));
     case Instruction::Ret:
       return convertRetInstruction(cast<ReturnInst>(Inst));
     case Instruction::IntToPtr:
       return convertIntToPtrInstruction(cast<IntToPtrInst>(Inst));
     case Instruction::ICmp:
       return convertICmpInstruction(cast<ICmpInst>(Inst));
+    case Instruction::Load:
+      return convertLoadInstruction(cast<LoadInst>(Inst));
     case Instruction::ZExt:
       return convertZExtInstruction(cast<ZExtInst>(Inst));
     case Instruction::Add:
@@ -181,6 +185,13 @@ public:
     return NULL;
   }
 
+  IceInst *convertLoadInstruction(const LoadInst *Inst) {
+    IceOperand *Src = convertOperand(Inst, 0);
+    assert(Src->getType() == IceType_i32 && "Expecting loads only from i32");
+    IceVariable *Dest = convertValueToIceVar(Inst);
+    return new IceInstLoad(Cfg, Dest, Src);
+  }
+
   IceInst *convertArithInstruction(const Instruction *Inst,
                                    IceInstArithmetic::IceArithmetic Opcode) {
     const BinaryOperator *BinOp = cast<BinaryOperator>(Inst);
@@ -191,11 +202,11 @@ public:
   }
 
   IceInst *convertBrInstruction(const BranchInst *Inst) {
-    //IceOperand *Src = convertOperand(Inst, 0);
-    //if (Inst->isConditional()) {
-      //BasicBlock *BBThen = Inst->getSuccessor(0);
-      //BasicBlock *BBElse = Inst->getSuccessor(1);
-      ////return new IceInstBr(
+    // IceOperand *Src = convertOperand(Inst, 0);
+    // if (Inst->isConditional()) {
+    // BasicBlock *BBThen = Inst->getSuccessor(0);
+    // BasicBlock *BBElse = Inst->getSuccessor(1);
+    ////return new IceInstBr(
     //}
     return 0;
   }
