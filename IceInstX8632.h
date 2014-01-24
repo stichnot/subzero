@@ -89,16 +89,17 @@ private:
 
 class IceInstX8632Br : public IceInstTarget {
 public:
-  IceInstX8632Br(IceCfg *Cfg, const IceCfgNode *Node,
+  IceInstX8632Br(IceCfg *Cfg, uint32_t LabelTrue, uint32_t LabelFalse,
                  IceInstIcmp::IceICond Condition);
-  uint32_t getLabelTrue(void) const;
+  uint32_t getLabelTrue(void) const { return LabelTrue; }
   // Fall-through
-  uint32_t getLabelFalse(void) const;
+  uint32_t getLabelFalse(void) const { return LabelFalse; }
   virtual void dump(IceOstream &Str) const;
 
 private:
   IceInstIcmp::IceICond Condition;
-  const IceCfgNode *Node; // Out-edge target list is kept here.
+  uint32_t LabelTrue;
+  uint32_t LabelFalse;
 };
 
 class IceInstX8632Icmp : public IceInstTarget {

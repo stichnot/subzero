@@ -350,30 +350,26 @@ IceInstAssign::IceInstAssign(IceCfg *Cfg, IceVariable *Dest, IceOperand *Source)
 // If LabelTrue==LabelFalse, we turn it into an unconditional branch.
 // This ensures that, along with the 'switch' instruction semantics,
 // there is at most one edge from one node to another.
-IceInstBr::IceInstBr(IceCfg *Cfg, IceCfgNode *Node, IceOperand *Source,
-                     uint32_t LabelTrue, uint32_t LabelFalse)
-    : IceInst(Cfg, IceInst::Br), IsConditional(true), Node(Node) {
-  // TODO: It would be better to add CFG edges in
-  // IceCfgNode::appendInst() instead of here.
-  Node->addFallthrough(LabelFalse);
+IceInstBr::IceInstBr(IceCfg *Cfg, IceOperand *Source, uint32_t LabelTrue,
+                     uint32_t LabelFalse)
+    : IceInst(Cfg, IceInst::Br), IsConditional(true), LabelFalse(LabelFalse),
+      LabelTrue(LabelTrue) {
   if (LabelTrue != LabelFalse) {
-    Node->addNonFallthrough(LabelTrue);
     addSource(Source);
   }
 }
 
-IceInstBr::IceInstBr(IceCfg *Cfg, IceCfgNode *Node, uint32_t Label)
-    : IceInst(Cfg, IceInst::Br), IsConditional(false), Node(Node) {
-  // TODO: It would be better to add CFG edges in
-  // IceCfgNode::appendInst() instead of here.
-  Node->addFallthrough(Label);
-}
+IceInstBr::IceInstBr(IceCfg *Cfg, uint32_t Label)
+    : IceInst(Cfg, IceInst::Br), IsConditional(false), LabelFalse(Label),
+      LabelTrue(-1) {}
 
-uint32_t IceInstBr::getLabelTrue(void) const {
-  return Node->getNonFallthrough();
+IceEdgeList IceInstBr::getTerminatorEdges(void) const {
+  IceEdgeList OutEdges;
+  OutEdges.push_back(LabelFalse);
+  if (IsConditional)
+    OutEdges.push_back(LabelTrue);
+  return OutEdges;
 }
-
-uint32_t IceInstBr::getLabelFalse(void) const { return Node->getFallthrough(); }
 
 IceInstIcmp::IceInstIcmp(IceCfg *Cfg, IceICond Condition, IceVariable *Dest,
                          IceOperand *Source1, IceOperand *Source2)

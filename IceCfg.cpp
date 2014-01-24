@@ -140,10 +140,10 @@ void IceCfg::renumberInstructions(void) {
   InstNumberRemapping.clear();
 }
 
-void IceCfg::registerInEdges(void) {
+void IceCfg::registerEdges(void) {
   for (IceNodeList::iterator I = LNodes.begin(), E = LNodes.end(); I != E;
        ++I) {
-    (*I)->registerInEdges();
+    (*I)->registerEdges();
   }
 }
 
@@ -314,8 +314,6 @@ void IceCfg::regAlloc(void) {
 //     Unleash all caller-saves plus the callee-saves already used
 //   At some point, lower phis
 void IceCfg::translate(void) {
-  registerInEdges();
-
   Str << "================ Initial CFG ================\n";
   dump();
 

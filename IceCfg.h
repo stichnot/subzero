@@ -20,6 +20,7 @@ public:
   IceTargetLowering *getTarget(void) const { return Target; }
   void addArg(IceVariable *Arg);
   void setEntryNode(IceCfgNode *EntryNode);
+  void registerEdges(void);
   void addNode(IceCfgNode *Node, uint32_t LabelIndex);
   IceCfgNode *splitEdge(uint32_t FromNodeIndex, uint32_t ToNodeIndex);
   IceCfgNode *getNode(uint32_t LabelIndex) const;
@@ -67,7 +68,6 @@ private:
   IceString *RegisterNames;
   // TODO: record whether there is an alloca (frame ptr optimization)
   void renumberInstructions(void);
-  void registerInEdges(void);
   void findAddressOpt(void);
   void markLastUses(void);
   void placePhiLoads(void);

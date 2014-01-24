@@ -57,6 +57,7 @@ public:
     const BasicBlock &EntryBB = F->getEntryBlock();
     IceCfgNode *EntryNode = convertBasicBlock(&EntryBB);
     Cfg->setEntryNode(EntryNode);
+    Cfg->registerEdges();
 
     return Cfg;
   }

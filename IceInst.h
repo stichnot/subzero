@@ -41,6 +41,10 @@ public:
   }
   unsigned getDestSize(void) const { return Dests.size(); }
   unsigned getSrcSize(void) const { return Srcs.size(); }
+  virtual IceEdgeList getTerminatorEdges(void) const {
+    assert(0);
+    return IceEdgeList();
+  }
   bool isDeleted(void) const { return Deleted; }
   bool isLastUse(unsigned SrcIndex) const { return LiveRangesEnded[SrcIndex]; }
   // If an instruction is deleted as a result of replacing it with
@@ -144,23 +148,24 @@ private:
 class IceInstBr : public IceInst {
 public:
   // Conditional branch
-  IceInstBr(IceCfg *Cfg, IceCfgNode *Node, IceOperand *Source,
-            uint32_t LabelTrue, uint32_t LabelFalse);
+  IceInstBr(IceCfg *Cfg, IceOperand *Source, uint32_t LabelTrue,
+            uint32_t LabelFalse);
   // Unconditional branch.  This kind of instruction is actually
   // redundant in ICE because unconditional branches are represented
   // as IceCfgNode out-edges, and the final decision on whether to
   // emit an unconditional branch depends on the final block layout.
-  IceInstBr(IceCfg *Cfg, IceCfgNode *Node, uint32_t Label);
-  uint32_t getLabelTrue(void) const;
+  IceInstBr(IceCfg *Cfg, uint32_t Label);
+  uint32_t getLabelTrue(void) const { return LabelTrue; }
   // Fall-through
-  uint32_t getLabelFalse(void) const;
-  const IceCfgNode *getNode(void) const { return Node; }
+  uint32_t getLabelFalse(void) const { return LabelFalse; }
+  virtual IceEdgeList getTerminatorEdges(void) const;
   virtual void dump(IceOstream &Str) const;
   static bool classof(const IceInst *Inst) { return Inst->getKind() == Br; }
 
 private:
   const bool IsConditional;
-  const IceCfgNode *Node; // Out-edge target list is kept here.
+  const uint32_t LabelFalse; // fall-through
+  const uint32_t LabelTrue;
 };
 
 // TODO: implement
@@ -286,6 +291,7 @@ private:
 class IceInstRet : public IceInst {
 public:
   IceInstRet(IceCfg *Cfg, IceOperand *Source = NULL);
+  virtual IceEdgeList getTerminatorEdges(void) const { return IceEdgeList(); }
   virtual void dump(IceOstream &Str) const;
   static bool classof(const IceInst *Inst) { return Inst->getKind() == Ret; }
 
@@ -320,6 +326,7 @@ public:
   IceInstSwitch(IceCfg *Cfg, IceType Type, IceOperand *Source,
                 int32_t LabelDefault);
   void addBranch(IceType Type, IceOperand *Source, int32_t Label);
+  virtual IceEdgeList getTerminatorEdges(void) const;
   static bool classof(const IceInst *Inst) { return Inst->getKind() == Switch; }
 
 private:

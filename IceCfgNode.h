@@ -26,7 +26,7 @@ public:
   const IceEdgeList &getOutEdges(void) const { return OutEdges; }
   void renumberInstructions(void);
   void splitEdge(IceCfgNode *From, IceCfgNode *To);
-  void registerInEdges(void);
+  void registerEdges(void);
   void findAddressOpt(void);
   void placePhiLoads(void);
   void placePhiStores(void);

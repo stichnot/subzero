@@ -179,7 +179,8 @@ IceInstList IceTargetX8632::lowerIcmp(const IceInst *Inst, const IceInst *Next,
     Expansion.push_back(NewInst);
     NewInst->setRegState(RegManager);
     NewInst =
-        new IceInstX8632Br(Cfg, NextBr->getNode(), InstIcmp->getCondition());
+        new IceInstX8632Br(Cfg, NextBr->getLabelTrue(), NextBr->getLabelFalse(),
+                           InstIcmp->getCondition());
     Expansion.push_back(NewInst);
     DeleteNextInst = true;
   } else {
@@ -300,17 +301,11 @@ IceInstX8632Arithmetic::IceInstX8632Arithmetic(IceCfg *Cfg,
   addSource(Source);
 }
 
-IceInstX8632Br::IceInstX8632Br(IceCfg *Cfg, const IceCfgNode *Node,
+IceInstX8632Br::IceInstX8632Br(IceCfg *Cfg, uint32_t LabelTrue,
+                               uint32_t LabelFalse,
                                IceInstIcmp::IceICond Condition)
-    : IceInstTarget(Cfg), Condition(Condition), Node(Node) {}
-
-uint32_t IceInstX8632Br::getLabelTrue(void) const {
-  return Node->getNonFallthrough();
-}
-
-uint32_t IceInstX8632Br::getLabelFalse(void) const {
-  return Node->getFallthrough();
-}
+    : IceInstTarget(Cfg), Condition(Condition), LabelTrue(LabelTrue),
+      LabelFalse(LabelFalse) {}
 
 IceInstX8632Icmp::IceInstX8632Icmp(IceCfg *Cfg, IceOperand *Src0,
                                    IceOperand *Src1)

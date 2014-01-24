@@ -118,7 +118,7 @@ static void TestSimpleLoop(void) {
   Src1 = getVariable(Cfg, IceType_i1, "cmp4");
   LabelId1 = getNode(Cfg, "for.body")->getIndex();
   LabelId2 = getNode(Cfg, "for.end")->getIndex();
-  Inst = new IceInstBr(Cfg, Node, Src1, LabelId1, LabelId2);
+  Inst = new IceInstBr(Cfg, Src1, LabelId1, LabelId2);
   Node->appendInst(Inst);
 
   // Node = new IceCfgNode(Cfg, Cfg->translateLabel("for.body"));
@@ -184,7 +184,7 @@ static void TestSimpleLoop(void) {
   Src1 = getVariable(Cfg, IceType_i1, "cmp");
   LabelId1 = getNode(Cfg, "for.body")->getIndex();
   LabelId2 = getNode(Cfg, "for.end")->getIndex();
-  Inst = new IceInstBr(Cfg, Node, Src1, LabelId1, LabelId2);
+  Inst = new IceInstBr(Cfg, Src1, LabelId1, LabelId2);
   Node->appendInst(Inst);
 
   // Node = new IceCfgNode(Cfg, Cfg->translateLabel("for.end"));
@@ -203,6 +203,7 @@ static void TestSimpleLoop(void) {
   Node->appendInst(Inst);
 
   Cfg->Str.setVerbose(IceV_All);
+  Cfg->registerEdges();
   Cfg->translate();
 
   delete Cfg;
@@ -259,7 +260,7 @@ static void TestSimpleCond(void) {
   Src1 = getVariable(Cfg, IceType_i1, "cmp");
   LabelId1 = getNode(Cfg, "if.then")->getIndex();
   LabelId2 = getNode(Cfg, "if.else")->getIndex();
-  Inst = new IceInstBr(Cfg, Node, Src1, LabelId1, LabelId2);
+  Inst = new IceInstBr(Cfg, Src1, LabelId1, LabelId2);
   Node->appendInst(Inst);
 
   // Node = new IceCfgNode(Cfg, Cfg->translateLabel("if.then"));
@@ -272,7 +273,7 @@ static void TestSimpleCond(void) {
   Node->appendInst(Inst);
   // br label %if.end
   LabelId1 = getNode(Cfg, "if.end")->getIndex();
-  Inst = new IceInstBr(Cfg, Node, LabelId1);
+  Inst = new IceInstBr(Cfg, LabelId1);
   Node->appendInst(Inst);
 
   // Node = new IceCfgNode(Cfg, Cfg->translateLabel("if.else"));
@@ -302,7 +303,7 @@ static void TestSimpleCond(void) {
   Node->appendInst(Inst);
   // br label %if.end
   LabelId1 = getNode(Cfg, "if.end")->getIndex();
-  Inst = new IceInstBr(Cfg, Node, LabelId1);
+  Inst = new IceInstBr(Cfg, LabelId1);
   Node->appendInst(Inst);
 
   // Node = new IceCfgNode(Cfg, Cfg->translateLabel("if.end"));
@@ -321,6 +322,7 @@ static void TestSimpleCond(void) {
   Node->appendInst(Inst);
 
   Cfg->Str.setVerbose(IceV_All);
+  Cfg->registerEdges();
   Cfg->translate();
 
   delete Cfg;

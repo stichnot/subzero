@@ -84,7 +84,8 @@ void IceCfgNode::splitEdge(IceCfgNode *From, IceCfgNode *To) {
   *Iin = this->getIndex();
 }
 
-void IceCfgNode::registerInEdges(void) {
+void IceCfgNode::registerEdges(void) {
+  OutEdges = (*Insts.rbegin())->getTerminatorEdges();
   for (IceEdgeList::const_iterator I = OutEdges.begin(), E = OutEdges.end();
        I != E; ++I) {
     IceCfgNode *Node = Cfg->getNode(*I);
@@ -292,7 +293,7 @@ void IceCfgNode::multiblockCompensation(void) {
     IceCfgNode *Pred = Cfg->getNode(*I);
     assert(Pred);
     IceCfgNode *Split = Cfg->splitEdge(*I, NameIndex);
-    Insts.push_back(new IceInstBr(Cfg, Split, NameIndex));
+    Insts.push_back(new IceInstBr(Cfg, NameIndex));
     Split->InEdges.push_back(*I);
     Split->insertInsts(Split->Insts.end(), Insts);
   }
