@@ -41,9 +41,9 @@ public:
   }
   unsigned getDestSize(void) const { return Dests.size(); }
   unsigned getSrcSize(void) const { return Srcs.size(); }
-  virtual IceEdgeList getTerminatorEdges(void) const {
+  virtual IceNodeList getTerminatorEdges(void) const {
     assert(0);
-    return IceEdgeList();
+    return IceNodeList();
   }
   bool isDeleted(void) const { return Deleted; }
   bool isLastUse(unsigned SrcIndex) const { return LiveRangesEnded[SrcIndex]; }
@@ -154,7 +154,7 @@ public:
   IceInstBr(IceCfg *Cfg, IceCfgNode *Target);
   IceCfgNode *getTargetTrue(void) const { return TargetTrue; }
   IceCfgNode *getTargetFalse(void) const { return TargetFalse; }
-  virtual IceEdgeList getTerminatorEdges(void) const;
+  virtual IceNodeList getTerminatorEdges(void) const;
   virtual void dump(IceOstream &Str) const;
   static bool classof(const IceInst *Inst) { return Inst->getKind() == Br; }
 
@@ -286,7 +286,7 @@ private:
 class IceInstRet : public IceInst {
 public:
   IceInstRet(IceCfg *Cfg, IceOperand *Source = NULL);
-  virtual IceEdgeList getTerminatorEdges(void) const { return IceEdgeList(); }
+  virtual IceNodeList getTerminatorEdges(void) const { return IceNodeList(); }
   virtual void dump(IceOstream &Str) const;
   static bool classof(const IceInst *Inst) { return Inst->getKind() == Ret; }
 
@@ -321,7 +321,7 @@ public:
   IceInstSwitch(IceCfg *Cfg, IceType Type, IceOperand *Source,
                 int32_t LabelDefault);
   void addBranch(IceType Type, IceOperand *Source, int32_t Label);
-  virtual IceEdgeList getTerminatorEdges(void) const;
+  virtual IceNodeList getTerminatorEdges(void) const;
   static bool classof(const IceInst *Inst) { return Inst->getKind() == Switch; }
 
 private:

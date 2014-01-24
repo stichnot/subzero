@@ -22,7 +22,7 @@ public:
   void setEntryNode(IceCfgNode *EntryNode);
   void registerEdges(void);
   void addNode(IceCfgNode *Node, uint32_t LabelIndex);
-  IceCfgNode *splitEdge(uint32_t FromNodeIndex, uint32_t ToNodeIndex);
+  IceCfgNode *splitEdge(IceCfgNode *From, IceCfgNode *To);
   IceCfgNode *getNode(uint32_t LabelIndex) const;
   IceCfgNode *makeNode(uint32_t LabelIndex = -1, IceString Name = "");
   // getConstant() is not const because it might add something to the

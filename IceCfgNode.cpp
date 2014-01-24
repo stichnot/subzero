@@ -53,36 +53,36 @@ void IceCfgNode::renumberInstructions(void) {
 // missing a terminator instruction in one of the nodes.
 void IceCfgNode::splitEdge(IceCfgNode *From, IceCfgNode *To) {
   // Find the out-edge position.
-  IceEdgeList::iterator Iout = From->OutEdges.begin();
-  IceEdgeList::iterator Eout = From->OutEdges.end();
+  IceNodeList::iterator Iout = From->OutEdges.begin();
+  IceNodeList::iterator Eout = From->OutEdges.end();
   for (; Iout != Eout; ++Iout) {
-    if (*Iout == To->getIndex())
+    if (*Iout == To)
       break;
   }
   assert(Iout != Eout);
 
   // Find the in-edge position.
-  IceEdgeList::iterator Iin = To->InEdges.begin();
-  IceEdgeList::iterator Ein = To->InEdges.end();
+  IceNodeList::iterator Iin = To->InEdges.begin();
+  IceNodeList::iterator Ein = To->InEdges.end();
   for (; Iin != Ein; ++Iin) {
-    if (*Iin == From->getIndex())
+    if (*Iin == From)
       break;
   }
   assert(Iin != Ein);
 
   // Update all edges.
   this->OutEdges.push_back(*Iout);
-  *Iout = this->getIndex();
+  *Iout = this;
   this->InEdges.push_back(*Iin);
-  *Iin = this->getIndex();
+  *Iin = this;
 }
 
 void IceCfgNode::registerEdges(void) {
   OutEdges = (*Insts.rbegin())->getTerminatorEdges();
-  for (IceEdgeList::const_iterator I = OutEdges.begin(), E = OutEdges.end();
+  for (IceNodeList::const_iterator I = OutEdges.begin(), E = OutEdges.end();
        I != E; ++I) {
-    IceCfgNode *Node = Cfg->getNode(*I);
-    Node->InEdges.push_back(NameIndex);
+    IceCfgNode *Node = *I;
+    Node->InEdges.push_back(this);
   }
 }
 
@@ -133,9 +133,9 @@ void IceCfgNode::placePhiStores(void) {
   ArePhiStoresPlaced = true;
 
   IceInstList NewPhiStores;
-  for (IceEdgeList::const_iterator I1 = OutEdges.begin(), E1 = OutEdges.end();
+  for (IceNodeList::const_iterator I1 = OutEdges.begin(), E1 = OutEdges.end();
        I1 != E1; ++I1) {
-    IceCfgNode *Target = Cfg->getNode(*I1);
+    IceCfgNode *Target = *I1;
     assert(Target);
     if (Target == NULL)
       continue;
@@ -182,7 +182,7 @@ void IceCfgNode::genCode(void) {
   // there was a problem when adding compensations.  Revisit when
   // compensations are fixed.
   if (false && InEdges.size() == 1) {
-    IceCfgNode *Pred = Cfg->getNode(InEdges[0]);
+    IceCfgNode *Pred = InEdges[0];
     assert(Pred);
     // TODO: Use the final RegManager in Pred.
     RegManager = new IceRegManager(*Pred->RegManager);
@@ -234,9 +234,9 @@ void IceCfgNode::multiblockRegAlloc(void) {
 
   // Consider each predecessor and update the
   // MultiblockCandidateWeight values.
-  for (IceEdgeList::const_iterator I = InEdges.begin(), E = InEdges.end();
+  for (IceNodeList::const_iterator I = InEdges.begin(), E = InEdges.end();
        I != E; ++I) {
-    IceCfgNode *Pred = Cfg->getNode(*I);
+    IceCfgNode *Pred = *I;
     assert(Pred);
     // TODO: use the final RegManager in Pred.
     RegManager->updateCandidates(Pred->RegManager);
@@ -244,18 +244,18 @@ void IceCfgNode::multiblockRegAlloc(void) {
 
   // Consider each predecessor and update the PhysicalRegisterVotes
   // values.
-  for (IceEdgeList::const_iterator I = InEdges.begin(), E = InEdges.end();
+  for (IceNodeList::const_iterator I = InEdges.begin(), E = InEdges.end();
        I != E; ++I) {
-    IceCfgNode *Pred = Cfg->getNode(*I);
+    IceCfgNode *Pred = *I;
     assert(Pred);
     RegManager->updateVotes(Pred->RegManager);
   }
 
   // Consider each successor and update the PhysicalRegisterVotes
   // values.
-  for (IceEdgeList::const_iterator I = OutEdges.begin(), E = OutEdges.end();
+  for (IceNodeList::const_iterator I = OutEdges.begin(), E = OutEdges.end();
        I != E; ++I) {
-    IceCfgNode *Succ = Cfg->getNode(*I);
+    IceCfgNode *Succ = *I;
     assert(Succ);
     // TODO: Implement voting by successors.
     // RegManager->updateVotes(Pred->RegManager);
@@ -265,9 +265,9 @@ void IceCfgNode::multiblockRegAlloc(void) {
   RegManager->makeAssignments();
 
   // Add compensation entries as necessary.
-  for (IceEdgeList::const_iterator I = InEdges.begin(), E = InEdges.end();
+  for (IceNodeList::const_iterator I = InEdges.begin(), E = InEdges.end();
        I != E; ++I) {
-    IceCfgNode *Pred = Cfg->getNode(*I);
+    IceCfgNode *Pred = *I;
     assert(Pred);
     // TODO: use the final RegManager in Pred.
     Compensations.push_back(
@@ -278,14 +278,14 @@ void IceCfgNode::multiblockRegAlloc(void) {
 void IceCfgNode::multiblockCompensation(void) {
   // return; // TODO: This is broken so disable it for now.
   std::vector<IceInstList>::const_iterator I1 = Compensations.begin();
-  for (IceEdgeList::const_iterator I = InEdges.begin(), E = InEdges.end();
+  for (IceNodeList::const_iterator I = InEdges.begin(), E = InEdges.end();
        I != E; ++I, ++I1) {
     IceInstList Insts = *I1;
     if (Insts.empty())
       continue;
-    IceCfgNode *Pred = Cfg->getNode(*I);
+    IceCfgNode *Pred = *I;
     assert(Pred);
-    IceCfgNode *Split = Cfg->splitEdge(*I, NameIndex);
+    IceCfgNode *Split = Cfg->splitEdge(*I, this);
     Insts.push_back(new IceInstBr(Cfg, this));
     Split->InEdges.push_back(*I);
     Split->insertInsts(Split->Insts.end(), Insts);
@@ -323,9 +323,9 @@ bool IceCfgNode::liveness(IceLiveness Mode, bool IsFirst) {
     LiveBegin.clear();
     LiveEnd.clear();
     // Initialize Live to be the union of all successors' LiveIn.
-    for (IceEdgeList::const_iterator I = OutEdges.begin(), E = OutEdges.end();
+    for (IceNodeList::const_iterator I = OutEdges.begin(), E = OutEdges.end();
          I != E; ++I) {
-      IceCfgNode *Succ = Cfg->getNode(*I);
+      IceCfgNode *Succ = *I;
       Live |= Succ->LiveIn;
       // Mark corresponding argument of phis in successor as live.
       for (IcePhiList::const_iterator I1 = Succ->Phis.begin(),
@@ -419,11 +419,11 @@ void IceCfgNode::dump(IceOstream &Str) const {
   }
   if (Str.isVerbose(IceV_Preds) && !InEdges.empty()) {
     Str << "    // preds = ";
-    for (IceEdgeList::const_iterator I = InEdges.begin(), E = InEdges.end();
+    for (IceNodeList::const_iterator I = InEdges.begin(), E = InEdges.end();
          I != E; ++I) {
       if (I != InEdges.begin())
         Str << ", ";
-      Str << "%" << Str.Cfg->getNode(*I)->getName();
+      Str << "%" << (*I)->getName();
     }
     Str << "\n";
   }
@@ -472,11 +472,11 @@ void IceCfgNode::dump(IceOstream &Str) const {
   }
   if (Str.isVerbose(IceV_Succs)) {
     Str << "    // succs = ";
-    for (IceEdgeList::const_iterator I = OutEdges.begin(), E = OutEdges.end();
+    for (IceNodeList::const_iterator I = OutEdges.begin(), E = OutEdges.end();
          I != E; ++I) {
       if (I != OutEdges.begin())
         Str << ", ";
-      Str << "%" << Str.Cfg->getNode(*I)->getName();
+      Str << "%" << (*I)->getName();
     }
     Str << "\n";
   }

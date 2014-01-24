@@ -16,8 +16,8 @@ public:
   void addPhi(IceInstPhi *Phi);
   uint32_t getIndex(void) const { return NameIndex; }
   IceString getName(void) const;
-  const IceEdgeList &getInEdges(void) const { return InEdges; }
-  const IceEdgeList &getOutEdges(void) const { return OutEdges; }
+  const IceNodeList &getInEdges(void) const { return InEdges; }
+  const IceNodeList &getOutEdges(void) const { return OutEdges; }
   void renumberInstructions(void);
   void splitEdge(IceCfgNode *From, IceCfgNode *To);
   void registerEdges(void);
@@ -36,8 +36,8 @@ private:
   IceCfg *const Cfg;
   const uint32_t NameIndex;               // label
   IceString Name;                         // for dumping only
-  IceEdgeList OutEdges;                   // in no particular order
-  IceEdgeList InEdges;                    // in no particular order
+  IceNodeList OutEdges;                   // in no particular order
+  IceNodeList InEdges;                    // in no particular order
   std::vector<IceInstList> Compensations; // ordered by InEdges
   // TODO: The Live* vectors are not needed outside liveness analysis,
   // and could be moved outside of IceCfgNode to save memory.

@@ -48,12 +48,9 @@ void IceCfg::addNode(IceCfgNode *Node, uint32_t LabelIndex) {
   LNodes.push_back(Node);
 }
 
-IceCfgNode *IceCfg::splitEdge(uint32_t FromNodeIndex, uint32_t ToNodeIndex) {
-  IceCfgNode *From = getNode(FromNodeIndex);
-  IceCfgNode *To = getNode(ToNodeIndex);
+IceCfgNode *IceCfg::splitEdge(IceCfgNode *From, IceCfgNode *To) {
   // Create the new node.
-  IceString NewNodeName = "s__" + getNode(FromNodeIndex)->getName() + "__" +
-                          getNode(ToNodeIndex)->getName();
+  IceString NewNodeName = "s__" + From->getName() + "__" + To->getName();
   IceCfgNode *NewNode = makeNode(-1, NewNodeName);
   // TODO: It's ugly that LNodes has to be manipulated this way.
   assert(NewNode == LNodes.back());
@@ -251,11 +248,11 @@ void IceCfg::liveness(IceLiveness Mode) {
         bool Changed = Node->liveness(Mode, First);
         if (Changed) {
           // Mark all in-edges as needing to be processed
-          const IceEdgeList &InEdges = Node->getInEdges();
-          for (IceEdgeList::const_iterator I1 = InEdges.begin(),
+          const IceNodeList &InEdges = Node->getInEdges();
+          for (IceNodeList::const_iterator I1 = InEdges.begin(),
                                            E1 = InEdges.end();
                I1 != E1; ++I1) {
-            IceCfgNode *Pred = getNode(*I1);
+            IceCfgNode *Pred = *I1;
             NeedToProcess[Pred->getIndex()] = true;
           }
         }

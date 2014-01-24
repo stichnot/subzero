@@ -362,11 +362,11 @@ IceInstBr::IceInstBr(IceCfg *Cfg, IceOperand *Source, IceCfgNode *TargetTrue,
 IceInstBr::IceInstBr(IceCfg *Cfg, IceCfgNode *Target)
     : IceInst(Cfg, IceInst::Br), TargetFalse(Target), TargetTrue(NULL) {}
 
-IceEdgeList IceInstBr::getTerminatorEdges(void) const {
-  IceEdgeList OutEdges;
-  OutEdges.push_back(TargetFalse->getIndex());
+IceNodeList IceInstBr::getTerminatorEdges(void) const {
+  IceNodeList OutEdges;
+  OutEdges.push_back(TargetFalse);
   if (TargetTrue)
-    OutEdges.push_back(TargetTrue->getIndex());
+    OutEdges.push_back(TargetTrue);
   return OutEdges;
 }
 
