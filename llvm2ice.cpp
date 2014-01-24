@@ -226,11 +226,11 @@ private:
       IceOperand *Src = convertOperand(Inst, 0);
       // TODO: strange - why do IceInstBr refer to nodes by index directly,
       // rather than pointers to Nodes?
-      return new IceInstBr(Cfg, Src, mapBasicBlockToNode(BBThen)->getIndex(),
-                           mapBasicBlockToNode(BBElse)->getIndex());
+      return new IceInstBr(Cfg, Src, mapBasicBlockToNode(BBThen),
+                           mapBasicBlockToNode(BBElse));
     } else {
       BasicBlock *BBSucc = Inst->getSuccessor(0);
-      return new IceInstBr(Cfg, mapBasicBlockToNode(BBSucc)->getIndex());
+      return new IceInstBr(Cfg, mapBasicBlockToNode(BBSucc));
     }
   }
 
