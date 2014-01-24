@@ -51,12 +51,15 @@ public:
     for (Function::const_arg_iterator ArgI = F->arg_begin(),
                                       ArgE = F->arg_end();
          ArgI != ArgE; ++ArgI) {
-      Cfg->addArg(convertValueToIceVar(ArgI));
+      Cfg->addArg(mapValueToIceVar(ArgI));
     }
 
-    const BasicBlock &EntryBB = F->getEntryBlock();
-    IceCfgNode *EntryNode = convertBasicBlock(&EntryBB);
-    Cfg->setEntryNode(EntryNode);
+    for (Function::const_iterator BBI = F->begin(), BBE = F->end(); BBI != BBE;
+         ++BBI) {
+      convertBasicBlock(BBI);
+    }
+
+    Cfg->setEntryNode(mapBasicBlockToNode(&F->getEntryBlock()));
     Cfg->registerEdges();
 
     return Cfg;
@@ -64,15 +67,19 @@ public:
 
 private:
   // LLVM values (instructions, etc.) are mapped directly to ICE variables.
-  // convertValueToIceVar has a version that forces an ICE type on the variable,
+  // mapValueToIceVar has a version that forces an ICE type on the variable,
   // and a version that just uses convertType on V.
-  IceVariable *convertValueToIceVar(const Value *V, IceType IceTy) {
+  IceVariable *mapValueToIceVar(const Value *V, IceType IceTy) {
     return Cfg->makeVariable(IceTy, VariableTranslation.translate(V),
                              V->getName());
   }
 
-  IceVariable *convertValueToIceVar(const Value *V) {
-    return convertValueToIceVar(V, convertType(V->getType()));
+  IceVariable *mapValueToIceVar(const Value *V) {
+    return mapValueToIceVar(V, convertType(V->getType()));
+  }
+
+  IceCfgNode *mapBasicBlockToNode(const BasicBlock *BB) {
+    return Cfg->makeNode(LabelTranslation.translate(BB), BB->getName());
   }
 
   IceType convertIntegerType(const IntegerType *IntTy) {
@@ -121,7 +128,7 @@ private:
     if (OpNum >= Inst->getNumOperands()) {
       return NULL;
     }
-    return convertValueToIceVar(Inst->getOperand(OpNum));
+    return mapValueToIceVar(Inst->getOperand(OpNum));
   }
 
   // Note: this currently assumes a 1x1 mapping between LLVM IR and Ice
@@ -188,7 +195,7 @@ private:
   IceInst *convertLoadInstruction(const LoadInst *Inst) {
     IceOperand *Src = convertOperand(Inst, 0);
     assert(Src->getType() == IceType_i32 && "Expecting loads only from i32");
-    IceVariable *Dest = convertValueToIceVar(Inst);
+    IceVariable *Dest = mapValueToIceVar(Inst);
     return new IceInstLoad(Cfg, Dest, Src);
   }
 
@@ -197,23 +204,28 @@ private:
     const BinaryOperator *BinOp = cast<BinaryOperator>(Inst);
     IceOperand *Src0 = convertOperand(Inst, 0);
     IceOperand *Src1 = convertOperand(Inst, 1);
-    IceVariable *Dest = convertValueToIceVar(BinOp);
+    IceVariable *Dest = mapValueToIceVar(BinOp);
     return new IceInstArithmetic(Cfg, Opcode, Dest, Src0, Src1);
   }
 
   IceInst *convertBrInstruction(const BranchInst *Inst) {
-    // IceOperand *Src = convertOperand(Inst, 0);
-    // if (Inst->isConditional()) {
-    // BasicBlock *BBThen = Inst->getSuccessor(0);
-    // BasicBlock *BBElse = Inst->getSuccessor(1);
-    ////return new IceInstBr(
-    //}
-    return 0;
+    if (Inst->isConditional()) {
+      BasicBlock *BBThen = Inst->getSuccessor(0);
+      BasicBlock *BBElse = Inst->getSuccessor(1);
+      IceOperand *Src = convertOperand(Inst, 0);
+      // TODO: strange - why do IceInstBr refer to nodes by index directly,
+      // rather than pointers to Nodes?
+      return new IceInstBr(Cfg, Src, mapBasicBlockToNode(BBThen)->getIndex(),
+                           mapBasicBlockToNode(BBElse)->getIndex());
+    } else {
+      BasicBlock *BBSucc = Inst->getSuccessor(0);
+      return new IceInstBr(Cfg, mapBasicBlockToNode(BBSucc)->getIndex());
+    }
   }
 
   IceInst *convertIntToPtrInstruction(const IntToPtrInst *Inst) {
     IceOperand *Src = convertOperand(Inst, 0);
-    IceVariable *Dest = convertValueToIceVar(Inst, IceType_i32);
+    IceVariable *Dest = mapValueToIceVar(Inst, IceType_i32);
 
     return new IceInstAssign(Cfg, Dest, Src);
   }
@@ -232,7 +244,7 @@ private:
   IceInst *convertICmpInstruction(const ICmpInst *Inst) {
     IceOperand *Src0 = convertOperand(Inst, 0);
     IceOperand *Src1 = convertOperand(Inst, 1);
-    IceVariable *Dest = convertValueToIceVar(Inst);
+    IceVariable *Dest = mapValueToIceVar(Inst);
 
     IceInstIcmp::IceICond Cond;
     switch (Inst->getPredicate()) {
@@ -274,8 +286,7 @@ private:
   }
 
   IceCfgNode *convertBasicBlock(const BasicBlock *BB) {
-    uint32_t Index = LabelTranslation.translate(BB);
-    IceCfgNode *Node = Cfg->makeNode(Index, BB->getName());
+    IceCfgNode *Node = mapBasicBlockToNode(BB);
     for (BasicBlock::const_iterator II = BB->begin(), II_e = BB->end();
          II != II_e; ++II) {
       IceInst *Inst = convertInstruction(II);
