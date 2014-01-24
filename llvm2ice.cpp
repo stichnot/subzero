@@ -110,7 +110,7 @@ private:
       return NULL;
     }
     const Value *V = Inst->getOperand(OpNum);
-    return Cfg->makeVariable(convertType(Inst->getType()),
+    return Cfg->makeVariable(convertType(V->getType()),
                              VariableTranslation.translate(V), V->getName());
   }
 
@@ -118,8 +118,12 @@ private:
   // instructions.
   IceInst *convertInstruction(const Instruction *Inst) {
     switch (Inst->getOpcode()) {
+      case Instruction::Br:
+        return convertBrInstruction(cast<BranchInst>(Inst));
     case Instruction::Ret:
       return convertRetInstruction(cast<ReturnInst>(Inst));
+    case Instruction::IntToPtr:
+      return convertIntToPtrInstruction(cast<IntToPtrInst>(Inst));
     case Instruction::ICmp:
       return convertICmpInstruction(cast<ICmpInst>(Inst));
     case Instruction::ZExt:
@@ -179,6 +183,24 @@ private:
     uint32_t Index = VariableTranslation.translate(V);
     IceVariable *Dest = Cfg->makeVariable(IceTy, Index, BinOp->getName());
     return new IceInstArithmetic(Cfg, Opcode, Dest, Src0, Src1);
+  }
+
+  IceInst *convertBrInstruction(const BranchInst *Inst) {
+    //IceOperand *Src = convertOperand(Inst, 0);
+    //if (Inst->isConditional()) {
+      //BasicBlock *BBThen = Inst->getSuccessor(0);
+      //BasicBlock *BBElse = Inst->getSuccessor(1);
+      ////return new IceInstBr(
+    //}
+    return 0;
+  }
+
+  IceInst *convertIntToPtrInstruction(const IntToPtrInst *Inst) {
+    const Value *V = &cast<const Value>(*Inst);
+    uint32_t Index = VariableTranslation.translate(V);
+    IceOperand *Src = convertOperand(Inst, 0);
+    IceVariable *Dest = Cfg->makeVariable(IceType_i32, Index, Inst->getName());
+    return new IceInstAssign(Cfg, Dest, Src);
   }
 
   IceInst *convertRetInstruction(const ReturnInst *Inst) {
