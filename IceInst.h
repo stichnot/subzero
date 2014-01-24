@@ -156,7 +156,6 @@ public:
   // emit an unconditional branch depends on the final block layout.
   IceInstBr(IceCfg *Cfg, uint32_t Label);
   uint32_t getLabelTrue(void) const { return LabelTrue; }
-  // Fall-through
   uint32_t getLabelFalse(void) const { return LabelFalse; }
   virtual IceEdgeList getTerminatorEdges(void) const;
   virtual void dump(IceOstream &Str) const;
@@ -164,7 +163,7 @@ public:
 
 private:
   const bool IsConditional;
-  const uint32_t LabelFalse; // fall-through
+  const uint32_t LabelFalse;
   const uint32_t LabelTrue;
 };
 
