@@ -71,5 +71,8 @@ IceTest.o: IceTest.cpp *.h
 $(OBJS): %.o: %.cpp *.h
 	$(CXX) -c $(CXXFLAGS) $< -o $@
 
+check: llvm2ice
+	$(LLVM_SRC_PATH)/utils/lit/lit.py -sv tests_lit
+
 clean:
 	rm -f llvm2ice subzerotest *.o
