@@ -1,4 +1,4 @@
-; RUN: llvm2ice %s | FileCheck %s
+; RUN: %llvm2ice %s | FileCheck %s
 
 ; CHECK: converting to ICE
 
