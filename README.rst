@@ -44,6 +44,21 @@ The test is run as follows::
 
 See ir_samples/README.rst for more details.
 
+Running the test suite
+----------------------
+
+Subzero uses the LLVM ``lit`` testing tool for its test suite, which lives in
+``tests_lit``. To execute the test suite, first build Subzero, and then run::
+
+    python <path_to_lit.py> -sv tests_lit
+
+``path_to_lit`` is the direct path to the lit script in the LLVM source
+(``$LLVM_SRC_PATH/utils/lit/lit.py``).
+
+The above ``lit`` execution also needs the LLVM binary path in the
+``LLVM_BIN_PATH`` env var.
+
+
 TODO list
 ---------
 
