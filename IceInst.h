@@ -150,10 +150,7 @@ public:
   // Conditional branch
   IceInstBr(IceCfg *Cfg, IceOperand *Source, uint32_t LabelTrue,
             uint32_t LabelFalse);
-  // Unconditional branch.  This kind of instruction is actually
-  // redundant in ICE because unconditional branches are represented
-  // as IceCfgNode out-edges, and the final decision on whether to
-  // emit an unconditional branch depends on the final block layout.
+  // Unconditional branch
   IceInstBr(IceCfg *Cfg, uint32_t Label);
   uint32_t getLabelTrue(void) const { return LabelTrue; }
   uint32_t getLabelFalse(void) const { return LabelFalse; }
