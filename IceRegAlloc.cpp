@@ -4,12 +4,13 @@
  */
 
 #include "IceCfg.h"
+#include "IceInst.h"
 #include "IceOperand.h"
 #include "IceRegAlloc.h"
 
 // First-time initialization.  Gather the live ranges of all variables
 // and add them to the Unhandled set.
-void IceLinearScan::init(void) {
+void IceLinearScan::init(bool AllowSingleBlockRanges) {
   assert(Unhandled.empty());
   assert(Handled.empty());
   assert(Inactive.empty());
@@ -19,6 +20,11 @@ void IceLinearScan::init(void) {
        ++I) {
     IceVariable *Var = *I;
     if (Var == NULL)
+      continue;
+    if (!AllowSingleBlockRanges && !Var->isMultiblockLife() &&
+        !llvm::isa<IceInstPhi>(Var->getDefinition()))
+      continue;
+    if (Var->getLiveRange().getStart() < 0) // empty live range
       continue;
     Unhandled.insert(IceLiveRangeWrapper(Var->getLiveRange(), Var, -1));
   }
@@ -210,6 +216,30 @@ void IceLinearScan::doScan(const llvm::SmallBitVector &RegMask) {
       }
     }
     dump(Cfg->Str);
+  }
+  // Move anything Active or Inactive to Handled for easier handling.
+  for (UnorderedRanges::iterator I = Active.begin(), E = Active.end();
+       I != E; I = Next) {
+    Next = I;
+    ++Next;
+    Handled.push_back(*I);
+    Active.erase(I);
+  }
+  for (UnorderedRanges::iterator I = Inactive.begin(), E = Inactive.end();
+       I != E; I = Next) {
+    Next = I;
+    ++Next;
+    Handled.push_back(*I);
+    Inactive.erase(I);
+  }
+  dump(Cfg->Str);
+}
+
+void IceLinearScan::assign(void) const {
+  for (UnorderedRanges::const_iterator I = Handled.begin(), E = Handled.end();
+       I != E; ++I) {
+    IceLiveRangeWrapper Item = *I;
+    Item.Var->setRegNum(Item.Register);
   }
 }
 

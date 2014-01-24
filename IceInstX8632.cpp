@@ -10,7 +10,26 @@
 #include "IceOperand.h"
 #include "IceRegManager.h"
 
-IceString IceTargetX8632::RegNames[] = { "eax", "ecx", "edx", };
+IceString IceTargetX8632::RegNames[] = { "eax", "ecx", "edx", "ebx",
+                                         "esp", "ebp", "esi", "edi", };
+
+llvm::SmallBitVector IceTargetX8632::getCallerSaveMask(void) const {
+  llvm::SmallBitVector Mask(sizeof(RegNames) / sizeof(*RegNames));
+  Mask[0] = true; // eax
+  Mask[1] = true; // ecx
+  Mask[2] = true; // edx
+  return Mask;
+}
+
+llvm::SmallBitVector IceTargetX8632::getCalleeSaveMask(void) const {
+  llvm::SmallBitVector Mask(sizeof(RegNames) / sizeof(*RegNames));
+  Mask[3] = true; // ebx
+  // TODO: Disable ebp if Cfg has an alloca.
+  Mask[5] = true; // ebp
+  Mask[6] = true; // esi
+  Mask[7] = true; // edi
+  return Mask;
+}
 
 IceInstTarget *IceTargetX8632::makeAssign(IceVariable *Dest, IceOperand *Src) {
   assert(Dest->getRegNum() >= 0);
@@ -159,20 +178,24 @@ IceInstList IceTargetX8632::lowerIcmp(const IceInst *Inst, const IceInst *Next,
     // except there is no Dest variable to store.
     IceOperand *Src0 = Inst->getSrc(0);
     IceOperand *Src1 = Inst->getSrc(1);
-    Prefer.push_back(Src0);
-    if (IceVariable *Variable = llvm::dyn_cast<IceVariable>(Src1))
-      Avoid.push_back(Variable);
-    IceVariable *Reg = RegManager->getRegister(Src0->getType(), Prefer, Avoid);
-    IceOperand *RegSrc = Reg;
-    // Create "reg=Src0" if needed.
-    if (!RegManager->registerContains(Reg, Src0)) {
-      if (llvm::isa<IceConstant>(Src1)) {
-        RegSrc = Src0;
-      } else {
-        NewInst = new IceInstX8632Mov(Cfg, Reg, Src0);
-        Expansion.push_back(NewInst);
-        RegManager->notifyLoad(NewInst);
-        NewInst->setRegState(RegManager);
+    IceOperand *RegSrc = Src0;
+    if (!llvm::isa<IceVariable>(Src0) ||
+        llvm::dyn_cast<IceVariable>(Src0)->getRegNum() < 0) {
+      Prefer.push_back(Src0);
+      if (IceVariable *Variable = llvm::dyn_cast<IceVariable>(Src1))
+        Avoid.push_back(Variable);
+      IceVariable *Reg = RegManager->getRegister(Src0->getType(), Prefer, Avoid);
+      RegSrc = Reg;
+      // Create "reg=Src0" if needed.
+      if (!RegManager->registerContains(Reg, Src0)) {
+        if (llvm::isa<IceConstant>(Src1)) {
+          RegSrc = Src0;
+        } else {
+          NewInst = new IceInstX8632Mov(Cfg, Reg, Src0);
+          Expansion.push_back(NewInst);
+          RegManager->notifyLoad(NewInst);
+          NewInst->setRegState(RegManager);
+        }
       }
     }
     NewInst = new IceInstX8632Icmp(Cfg, RegSrc, Src1);
@@ -200,18 +223,21 @@ IceInstList IceTargetX8632::lowerLoad(const IceInst *Inst, const IceInst *Next,
   IceOperand *Src3 = Inst->getSrc(3); // Offset - constant
   IceOpList Prefer;
   IceVarList Avoid;
-  Prefer.push_back(Src0);
-  if (IceVariable *Variable = llvm::dyn_cast_or_null<IceVariable>(Src1))
-    Avoid.push_back(Variable);
-  IceVariable *Reg1 = RegManager->getRegister(Dest->getType(), Prefer, Avoid);
-  if (!RegManager->registerContains(Reg1, Src0)) {
-    NewInst = new IceInstX8632Mov(Cfg, Reg1, Src0);
-    Expansion.push_back(NewInst);
-    RegManager->notifyLoad(NewInst);
-    NewInst->setRegState(RegManager);
+  IceVariable *Reg1 = llvm::dyn_cast<IceVariable>(Src0);
+  if (Reg1 == NULL || Reg1->getRegNum() < 0) {
+    Prefer.push_back(Src0);
+    if (IceVariable *Variable = llvm::dyn_cast_or_null<IceVariable>(Src1))
+      Avoid.push_back(Variable);
+    Reg1 = RegManager->getRegister(Dest->getType(), Prefer, Avoid);
+    if (!RegManager->registerContains(Reg1, Src0)) {
+      NewInst = new IceInstX8632Mov(Cfg, Reg1, Src0);
+      Expansion.push_back(NewInst);
+      RegManager->notifyLoad(NewInst);
+      NewInst->setRegState(RegManager);
+    }
   }
-  IceVariable *Reg2 = NULL;
-  if (Src1) {
+  IceVariable *Reg2 = llvm::dyn_cast_or_null<IceVariable>(Src1);
+  if (Src1 && (Reg2 == NULL || Reg2->getRegNum() < 0)) {
     Prefer.clear();
     Avoid.clear();
     Prefer.push_back(Src1);

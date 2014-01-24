@@ -17,6 +17,8 @@ public:
   IceTargetX8632(IceCfg *Cfg) : IceTargetLowering(Cfg) {}
   virtual IceInstTarget *makeAssign(IceVariable *Dest, IceOperand *Src);
   virtual IceString *getRegNames(void) const { return RegNames; }
+  virtual llvm::SmallBitVector getCallerSaveMask(void) const;
+  virtual llvm::SmallBitVector getCalleeSaveMask(void) const;
 
 protected:
   virtual IceInstList lowerAlloca(const IceInst *Inst, const IceInst *Next,

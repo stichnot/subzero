@@ -29,6 +29,7 @@ IceCfg::~IceCfg() {
 
 void IceCfg::makeTarget(IceTargetArch Arch) {
   Target = IceTargetLowering::createLowering(Arch, this);
+  RegisterNames = Target->getRegNames();
 }
 
 void IceCfg::addArg(IceVariable *Arg) {
@@ -174,7 +175,6 @@ void IceCfg::deletePhis(void) {
 
 void IceCfg::genCode(void) {
   assert(Target && "IceCfg::makeTarget() wasn't called.");
-  RegisterNames = Target->getRegNames();
   for (IceNodeList::iterator I = LNodes.begin(), E = LNodes.end(); I != E;
        ++I) {
     (*I)->genCode();
@@ -281,12 +281,10 @@ void IceCfg::regAlloc(void) {
   // TODO: This is just testing for a machine with 8 registers, 3 of
   // which are made available for register allocation.
   IceLinearScan LinearScan(this);
-  llvm::SmallBitVector RegMask(8);
-  LinearScan.init();
-  RegMask[0] = true;
-  RegMask[3] = true;
-  RegMask[5] = true;
+  llvm::SmallBitVector RegMask = getTarget()->getCalleeSaveMask();
+  LinearScan.init(false);
   LinearScan.doScan(RegMask);
+  LinearScan.assign();
 }
 
 // Proposed pass list:
@@ -314,6 +312,7 @@ void IceCfg::translate(void) {
   Str << "================ Initial CFG ================\n";
   dump();
 
+#if 0
   liveness(IceLiveness_LREndLightweight);
   Str << "================ Liveness test 1 ================\n";
   dump();
@@ -329,18 +328,25 @@ void IceCfg::translate(void) {
   regAlloc();
   Str << "================ After linear scan regalloc ================\n";
   dump();
+#endif
 
   findAddressOpt();
-  liveness(IceLiveness_LREndLightweight);
+  liveness(IceLiveness_RangesFull);
   Str << "================ After x86 address opt ================\n";
   dump();
 
+  regAlloc();
+  Str << "================ After linear scan regalloc ================\n";
+  dump();
+
+#if 0
   placePhiLoads();
   placePhiStores();
   deletePhis();
   renumberInstructions();
   Str << "================ After Phi lowering ================\n";
   dump();
+#endif
 
   genCode();
   renumberInstructions();
@@ -351,11 +357,13 @@ void IceCfg::translate(void) {
   Str << "================ After simple DCE ================\n";
   dump();
 
+#if 0
   multiblockRegAlloc();
   multiblockCompensation();
   liveness(IceLiveness_LREndLightweight);
   Str << "================ After multi-block regalloc ================\n";
   dump();
+#endif
 
   Str.setVerbose(IceV_Instructions);
   Str << "================ Final output ================\n";

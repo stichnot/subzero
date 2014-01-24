@@ -18,6 +18,8 @@ public:
                     bool &DeleteNextInst);
   virtual IceInstTarget *makeAssign(IceVariable *Dest, IceOperand *Src) = 0;
   virtual IceString *getRegNames(void) const = 0;
+  virtual llvm::SmallBitVector getCallerSaveMask(void) const = 0;
+  virtual llvm::SmallBitVector getCalleeSaveMask(void) const = 0;
 
 protected:
   IceTargetLowering(IceCfg *Cfg) : Cfg(Cfg) {}

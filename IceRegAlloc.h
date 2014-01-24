@@ -13,9 +13,9 @@
 class IceLiveRangeWrapper {
 public:
   const IceLiveRange &Range;
-  const IceVariable *Var;
+  IceVariable *Var;
   int Register;
-  IceLiveRangeWrapper(const IceLiveRange &Range, const IceVariable *Var,
+  IceLiveRangeWrapper(const IceLiveRange &Range, IceVariable *Var,
                       int Register)
       : Range(Range), Var(Var), Register(Register) {}
   void dump(IceOstream &Str) const;
@@ -25,9 +25,10 @@ IceOstream &operator<<(IceOstream &Str, const IceLiveRangeWrapper &R);
 class IceLinearScan {
 public:
   IceLinearScan(IceCfg *Cfg) : Cfg(Cfg) {}
-  void init(void);
+  void init(bool AllowSingleBlockRanges);
   void reset(void);
   void doScan(const llvm::SmallBitVector &RegMask);
+  void assign(void) const;
   void dump(IceOstream &Str) const;
 
 private:
