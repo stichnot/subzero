@@ -35,14 +35,6 @@ IceString IceCfgNode::getName(void) const {
   return buf;
 }
 
-void IceCfgNode::addFallthrough(uint32_t TargetLabel) {
-  OutEdges.insert(OutEdges.begin(), TargetLabel);
-}
-
-void IceCfgNode::addNonFallthrough(uint32_t TargetLabel) {
-  OutEdges.push_back(TargetLabel);
-}
-
 void IceCfgNode::renumberInstructions(void) {
   for (IcePhiList::const_iterator I = Phis.begin(), E = Phis.end(); I != E;
        ++I) {
@@ -57,7 +49,8 @@ void IceCfgNode::renumberInstructions(void) {
 
 // Inserts this node between the From and To nodes.  Just updates the
 // in-edge/out-edge structure without doing anything to the CFG
-// linearization.
+// linearization.  TODO: Edge splitting is now broken because we are
+// missing a terminator instruction in one of the nodes.
 void IceCfgNode::splitEdge(IceCfgNode *From, IceCfgNode *To) {
   // Find the out-edge position.
   IceEdgeList::iterator Iout = From->OutEdges.begin();
@@ -78,7 +71,7 @@ void IceCfgNode::splitEdge(IceCfgNode *From, IceCfgNode *To) {
   assert(Iin != Ein);
 
   // Update all edges.
-  this->addFallthrough(*Iout);
+  this->OutEdges.push_back(*Iout);
   *Iout = this->getIndex();
   this->InEdges.push_back(*Iin);
   *Iin = this->getIndex();

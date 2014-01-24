@@ -16,12 +16,6 @@ public:
   void addPhi(IceInstPhi *Phi);
   uint32_t getIndex(void) const { return NameIndex; }
   IceString getName(void) const;
-  void addFallthrough(uint32_t TargetLabel);
-  void addNonFallthrough(uint32_t TargetLabel);
-  uint32_t getFallthrough(void) const { return OutEdges[0]; }
-  uint32_t getNonFallthrough(unsigned Which = 0) const {
-    return OutEdges[1 + Which];
-  }
   const IceEdgeList &getInEdges(void) const { return InEdges; }
   const IceEdgeList &getOutEdges(void) const { return OutEdges; }
   void renumberInstructions(void);
@@ -42,7 +36,7 @@ private:
   IceCfg *const Cfg;
   const uint32_t NameIndex;               // label
   IceString Name;                         // for dumping only
-  IceEdgeList OutEdges;                   // first is default/fallthrough
+  IceEdgeList OutEdges;                   // in no particular order
   IceEdgeList InEdges;                    // in no particular order
   std::vector<IceInstList> Compensations; // ordered by InEdges
   // TODO: The Live* vectors are not needed outside liveness analysis,
