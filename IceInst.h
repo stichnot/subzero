@@ -159,9 +159,6 @@ public:
   static bool classof(const IceInst *Inst) { return Inst->getKind() == Br; }
 
 private:
-  // const bool IsConditional;
-  // const uint32_t LabelFalse;
-  // const uint32_t LabelTrue;
   IceCfgNode *const TargetFalse;
   IceCfgNode *const TargetTrue; // NULL if unconditional branch
 };
