@@ -51,10 +51,7 @@ public:
     for (Function::const_arg_iterator ArgI = F->arg_begin(),
                                       ArgE = F->arg_end();
          ArgI != ArgE; ++ArgI) {
-      IceType ArgType = convertType(ArgI->getType());
-      const Value *V = &cast<const Value>(*ArgI);
-      uint32_t Index = VariableTranslation.translate(V);
-      Cfg->addArg(Cfg->makeVariable(ArgType, Index, V->getName()));
+      Cfg->addArg(convertValueToIceVar(ArgI));
     }
 
     const BasicBlock &EntryBB = F->getEntryBlock();
@@ -64,7 +61,19 @@ public:
     return Cfg;
   }
 
-private:
+ private:
+  // LLVM values (instructions, etc.) are mapped directly to ICE variables.
+  // convertValueToIceVar has a version that forces an ICE type on the variable,
+  // and a version that just uses convertType on V.
+  IceVariable *convertValueToIceVar(const Value *V, IceType IceTy) {
+    return Cfg->makeVariable(IceTy, VariableTranslation.translate(V),
+                             V->getName());
+  }
+
+  IceVariable *convertValueToIceVar(const Value *V) {
+    return convertValueToIceVar(V, convertType(V->getType()));
+  }
+
   IceType convertIntegerType(const IntegerType *IntTy) {
     switch (IntTy->getBitWidth()) {
     case 1:
@@ -109,9 +118,7 @@ private:
     if (OpNum >= Inst->getNumOperands()) {
       return NULL;
     }
-    const Value *V = Inst->getOperand(OpNum);
-    return Cfg->makeVariable(convertType(V->getType()),
-                             VariableTranslation.translate(V), V->getName());
+    return convertValueToIceVar(Inst->getOperand(OpNum));
   }
 
   // Note: this currently assumes a 1x1 mapping between LLVM IR and Ice
@@ -176,12 +183,9 @@ private:
   IceInst *convertArithInstruction(const Instruction *Inst,
                                    IceInstArithmetic::IceArithmetic Opcode) {
     const BinaryOperator *BinOp = cast<BinaryOperator>(Inst);
-    IceType IceTy = convertType(BinOp->getType());
     IceOperand *Src0 = convertOperand(Inst, 0);
     IceOperand *Src1 = convertOperand(Inst, 1);
-    const Value *V = &cast<const Value>(*Inst);
-    uint32_t Index = VariableTranslation.translate(V);
-    IceVariable *Dest = Cfg->makeVariable(IceTy, Index, BinOp->getName());
+    IceVariable *Dest = convertValueToIceVar(BinOp);
     return new IceInstArithmetic(Cfg, Opcode, Dest, Src0, Src1);
   }
 
@@ -196,10 +200,9 @@ private:
   }
 
   IceInst *convertIntToPtrInstruction(const IntToPtrInst *Inst) {
-    const Value *V = &cast<const Value>(*Inst);
-    uint32_t Index = VariableTranslation.translate(V);
     IceOperand *Src = convertOperand(Inst, 0);
-    IceVariable *Dest = Cfg->makeVariable(IceType_i32, Index, Inst->getName());
+    IceVariable *Dest = convertValueToIceVar(Inst, IceType_i32);
+
     return new IceInstAssign(Cfg, Dest, Src);
   }
 
@@ -215,12 +218,9 @@ private:
   IceInst *convertZExtInstruction(const ZExtInst *Inst) { return NULL; }
 
   IceInst *convertICmpInstruction(const ICmpInst *Inst) {
-    IceType IceTy = convertType(Inst->getType());
     IceOperand *Src0 = convertOperand(Inst, 0);
     IceOperand *Src1 = convertOperand(Inst, 1);
-    const Value *V = &cast<const Value>(*Inst);
-    uint32_t Index = VariableTranslation.translate(V);
-    IceVariable *Dest = Cfg->makeVariable(IceTy, Index, Inst->getName());
+    IceVariable *Dest = convertValueToIceVar(Inst);
 
     IceInstIcmp::IceICond Cond;
     switch (Inst->getPredicate()) {
