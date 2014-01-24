@@ -312,24 +312,6 @@ void IceCfg::translate(void) {
   Str << "================ Initial CFG ================\n";
   dump();
 
-#if 0
-  liveness(IceLiveness_LREndLightweight);
-  Str << "================ Liveness test 1 ================\n";
-  dump();
-
-  liveness(IceLiveness_LREndFull);
-  Str << "================ Liveness test 2 ================\n";
-  dump();
-
-  liveness(IceLiveness_RangesFull);
-  Str << "================ Liveness test 3 ================\n";
-  dump();
-
-  regAlloc();
-  Str << "================ After linear scan regalloc ================\n";
-  dump();
-#endif
-
   findAddressOpt();
   liveness(IceLiveness_RangesFull);
   Str << "================ After x86 address opt ================\n";
