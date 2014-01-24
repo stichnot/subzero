@@ -10,6 +10,8 @@
 #include "IceOperand.h"
 #include "IceTypes.h"
 
+#include "llvm/IR/Constant.h"
+#include "llvm/IR/Constants.h"
 #include "llvm/IR/DataLayout.h"
 #include "llvm/IR/Instruction.h"
 #include "llvm/IR/Instructions.h"
@@ -128,7 +130,16 @@ private:
     if (OpNum >= Inst->getNumOperands()) {
       return NULL;
     }
-    return mapValueToIceVar(Inst->getOperand(OpNum));
+    const Value *Op = Inst->getOperand(OpNum);
+    if (const Constant *Const = dyn_cast<Constant>(Op)) {
+      // For now only constant integers are supported.
+      // TODO: support all kinds of constants
+      const ConstantInt *CI = cast<ConstantInt>(Const);
+      return Cfg->getConstant(IceType_i32,
+                              static_cast<uint32_t>(CI->getZExtValue()));
+    } else {
+      return mapValueToIceVar(Inst->getOperand(OpNum));
+    }
   }
 
   // Note: this currently assumes a 1x1 mapping between LLVM IR and Ice
