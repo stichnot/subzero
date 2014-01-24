@@ -271,10 +271,6 @@ int main(int argc, char **argv) {
     return 1;
   }
 
-  Mod->dump();
-
-  outs() << "==== converting to ICE ====\n";
-
   for (Module::const_iterator I = Mod->begin(), E = Mod->end(); I != E; ++I) {
     LLVM2ICEConverter FunctionConverter;
     IceCfg *Cfg = FunctionConverter.convertFunction(I);

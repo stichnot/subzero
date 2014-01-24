@@ -1,11 +1,11 @@
 ; RUN: %llvm2ice %s | FileCheck %s
 
-; CHECK: converting to ICE
-
-; Function Attrs: nounwind readnone
 define void @foo() {
+; CHECK: define internal void foo()
 entry:
   ret void
+; CHECK: entry
+; CHECK-NEXT: ret void
 }
 
 
