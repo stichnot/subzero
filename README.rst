@@ -65,6 +65,13 @@ TODO list
 Here is a list of TODO items.  Some might already be listed in the
 source code with a ``TODO`` comment.
 
+- Add command-line and environment control of translation options,
+  such as target, verbosity, and control of which methods to
+  translate.  ICE should have a simple API for setting and getting
+  these options.  llvm2ice can use ``llvm::cl`` functionality to set
+  them.  New lit tests can use a -notranslate flag while ICE bugs are
+  fixed.
+
 - Add support for not-yet-implemented LLVM bitcode instructions.
   Start with constructors and ``dump()`` methods, then add lowering
   and any special needs.
