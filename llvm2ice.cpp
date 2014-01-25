@@ -146,6 +146,8 @@ private:
   // instructions.
   IceInst *convertInstruction(const Instruction *Inst) {
     switch (Inst->getOpcode()) {
+    case Instruction::PHI:
+      return convertPHINodeInstruction(cast<PHINode>(Inst));
     case Instruction::Br:
       return convertBrInstruction(cast<BranchInst>(Inst));
     case Instruction::Ret:
@@ -219,13 +221,20 @@ private:
     return new IceInstArithmetic(Cfg, Opcode, Dest, Src0, Src1);
   }
 
+  IceInst *convertPHINodeInstruction(const PHINode *Inst) {
+    IceInstPhi *IcePhi = new IceInstPhi(Cfg, mapValueToIceVar(Inst));
+    for (unsigned N = 0, E = Inst->getNumIncomingValues(); N != E; ++N) {
+      IcePhi->addArgument(convertOperand(Inst, N),
+                          mapBasicBlockToNode(Inst->getIncomingBlock(N)));
+    }
+    return IcePhi;
+  }
+
   IceInst *convertBrInstruction(const BranchInst *Inst) {
     if (Inst->isConditional()) {
+      IceOperand *Src = convertOperand(Inst, 0);
       BasicBlock *BBThen = Inst->getSuccessor(0);
       BasicBlock *BBElse = Inst->getSuccessor(1);
-      IceOperand *Src = convertOperand(Inst, 0);
-      // TODO: strange - why do IceInstBr refer to nodes by index directly,
-      // rather than pointers to Nodes?
       return new IceInstBr(Cfg, Src, mapBasicBlockToNode(BBThen),
                            mapBasicBlockToNode(BBElse));
     } else {
