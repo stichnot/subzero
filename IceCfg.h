@@ -16,7 +16,6 @@ public:
   ~IceCfg();
   void setName(const IceString &FunctionName) { Name = FunctionName; }
   void setReturnType(IceType ReturnType) { Type = ReturnType; }
-  void makeTarget(IceTargetArch Arch);
   IceTargetLowering *getTarget(void) const { return Target; }
   void addArg(IceVariable *Arg);
   void setEntryNode(IceCfgNode *EntryNode);
@@ -38,7 +37,7 @@ public:
   int getNewInstNumber(int OldNumber);
 
   IceString physicalRegName(int Reg) const { return RegisterNames[Reg]; }
-  void translate(void);
+  void translate(IceTargetArch TargetArch = IceTarget_X8632);
   void dump(void) const;
 
   mutable IceOstream Str;
@@ -67,6 +66,7 @@ private:
   // their own dump() methods.
   IceString *RegisterNames;
   // TODO: record whether there is an alloca (frame ptr optimization)
+  void makeTarget(IceTargetArch Arch);
   void renumberInstructions(void);
   void findAddressOpt(void);
   void markLastUses(void);

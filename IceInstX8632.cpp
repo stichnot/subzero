@@ -280,16 +280,19 @@ IceInstList IceTargetX8632::lowerRet(const IceInst *Inst, const IceInst *Next,
   IceInstTarget *NewInst;
   IceOperand *Src0 = Inst->getSrc(0);
   IceVariable *Reg;
-  IceOpList Prefer;
-  IceVarList Avoid;
-  Prefer.push_back(Src0);
-  Reg = RegManager->getRegister(Src0->getType(), Prefer, Avoid);
-  if (!RegManager->registerContains(Reg, Src0)) {
-    NewInst = new IceInstX8632Mov(Cfg, Reg, Src0);
-    Expansion.push_back(NewInst);
-    RegManager->notifyLoad(NewInst);
-    NewInst->setRegState(RegManager);
-  }
+  if (Src0) {
+    IceOpList Prefer;
+    IceVarList Avoid;
+    Prefer.push_back(Src0);
+    Reg = RegManager->getRegister(Src0->getType(), Prefer, Avoid);
+    if (!RegManager->registerContains(Reg, Src0)) {
+      NewInst = new IceInstX8632Mov(Cfg, Reg, Src0);
+      Expansion.push_back(NewInst);
+      RegManager->notifyLoad(NewInst);
+      NewInst->setRegState(RegManager);
+    }
+  } else
+    Reg = NULL;
   NewInst = new IceInstX8632Ret(Cfg, Reg);
   Expansion.push_back(NewInst);
   return Expansion;
@@ -361,7 +364,8 @@ IceInstX8632Mov::IceInstX8632Mov(IceCfg *Cfg, IceVariable *Dest,
 
 IceInstX8632Ret::IceInstX8632Ret(IceCfg *Cfg, IceVariable *Source)
     : IceInstTarget(Cfg) {
-  addSource(Source);
+  if (Source)
+    addSource(Source);
 }
 
 // ======================== Dump routines ======================== //

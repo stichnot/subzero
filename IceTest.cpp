@@ -101,7 +101,6 @@ static void TestSimpleLoop(void) {
   IceCfg *Cfg = new IceCfg;
   Cfg->setName("@simple_loop");
   Cfg->setReturnType(IceType_i32);
-  Cfg->makeTarget(IceTarget_X8632);
   Cfg->addArg(getVariable(Cfg, IceType_i32, "a"));
   Cfg->addArg(getVariable(Cfg, IceType_i32, "n"));
 
@@ -130,7 +129,7 @@ static void TestSimpleLoop(void) {
   Phi->addArgument(Src1, getNode(Cfg, "for.body"));
   Src1 = Cfg->getConstant(IceType_i32, 0);
   Phi->addArgument(Src1, getNode(Cfg, "entry"));
-  Node->addPhi(Phi);
+  Node->appendInst(Phi);
   // %sum.05 = phi i32 [ %add, %for.body ], [ 0, %entry ]
   Dest = getVariable(Cfg, IceType_i32, "sum.05");
   Phi = new IceInstPhi(Cfg, Dest);
@@ -138,7 +137,7 @@ static void TestSimpleLoop(void) {
   Phi->addArgument(Src1, getNode(Cfg, "for.body"));
   Src1 = Cfg->getConstant(IceType_i32, 0);
   Phi->addArgument(Src1, getNode(Cfg, "entry"));
-  Node->addPhi(Phi);
+  Node->appendInst(Phi);
   // %gep_array = mul i32 %i.06, 4
   Dest = getVariable(Cfg, IceType_i32, "gep_array");
   Src1 = getVariable(Cfg, IceType_i32, "i.06");
@@ -196,7 +195,7 @@ static void TestSimpleLoop(void) {
   Phi->addArgument(Src1, getNode(Cfg, "entry"));
   Src1 = getVariable(Cfg, IceType_i32, "add");
   Phi->addArgument(Src1, getNode(Cfg, "for.body"));
-  Node->addPhi(Phi);
+  Node->appendInst(Phi);
   // ret i32 %sum.0.lcssa
   Src1 = getVariable(Cfg, IceType_i32, "sum.0.lcssa");
   Inst = new IceInstRet(Cfg, Src1);
@@ -243,7 +242,6 @@ static void TestSimpleCond(void) {
   IceCfg *Cfg = new IceCfg;
   Cfg->setName("@simple_cond");
   Cfg->setReturnType(IceType_i32);
-  Cfg->makeTarget(IceTarget_X8632);
   Cfg->addArg(getVariable(Cfg, IceType_i32, "a"));
   Cfg->addArg(getVariable(Cfg, IceType_i32, "n"));
 
@@ -315,7 +313,7 @@ static void TestSimpleCond(void) {
   Phi->addArgument(Src1, getNode(Cfg, "if.then"));
   Src1 = getVariable(Cfg, IceType_i32, "0");
   Phi->addArgument(Src1, getNode(Cfg, "if.else"));
-  Node->addPhi(Phi);
+  Node->appendInst(Phi);
   // ret i32 %result.0
   Src1 = getVariable(Cfg, IceType_i32, "result.0");
   Inst = new IceInstRet(Cfg, Src1);

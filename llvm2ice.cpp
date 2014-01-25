@@ -340,6 +340,7 @@ int main(int argc, char **argv) {
     LLVM2ICEConverter FunctionConverter;
     IceCfg *Cfg = FunctionConverter.convertFunction(I);
     Cfg->dump();
+    Cfg->translate();
   }
 
   return 0;

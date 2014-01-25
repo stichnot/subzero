@@ -131,7 +131,7 @@ private:
 
 class IceInstX8632Ret : public IceInstTarget {
 public:
-  IceInstX8632Ret(IceCfg *Cfg, IceVariable *Source);
+  IceInstX8632Ret(IceCfg *Cfg, IceVariable *Source = NULL);
   virtual void dump(IceOstream &Str) const;
 
 private:

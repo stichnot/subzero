@@ -290,7 +290,8 @@ void IceCfg::regAlloc(void) {
 //   regAlloc()
 //     Unleash all caller-saves plus the callee-saves already used
 //   At some point, lower phis
-void IceCfg::translate(void) {
+void IceCfg::translate(IceTargetArch TargetArch) {
+  makeTarget(TargetArch);
   Str << "================ Initial CFG ================\n";
   dump();
 

@@ -15,15 +15,14 @@ IceCfgNode::IceCfgNode(IceCfg *Cfg, uint32_t LabelIndex, IceString Name)
       ArePhiStoresPlaced(false), RegManager(NULL) {}
 
 void IceCfgNode::appendInst(IceInst *Inst) {
-  Insts.push_back(Inst);
-  Inst->updateVars(this);
-}
-
-void IceCfgNode::addPhi(IceInstPhi *Inst) {
-  assert(!ArePhiLoadsPlaced);
-  assert(!ArePhiStoresPlaced);
-  assert(Insts.empty());
-  Phis.push_back(Inst);
+  if (IceInstPhi *Phi = llvm::dyn_cast<IceInstPhi>(Inst)) {
+    assert(!ArePhiLoadsPlaced);
+    assert(!ArePhiStoresPlaced);
+    assert(Insts.empty());
+    Phis.push_back(Phi);
+  } else {
+    Insts.push_back(Inst);
+  }
   Inst->updateVars(this);
 }
 
