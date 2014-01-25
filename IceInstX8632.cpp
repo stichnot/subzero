@@ -184,7 +184,8 @@ IceInstList IceTargetX8632::lowerIcmp(const IceInst *Inst, const IceInst *Next,
       Prefer.push_back(Src0);
       if (IceVariable *Variable = llvm::dyn_cast<IceVariable>(Src1))
         Avoid.push_back(Variable);
-      IceVariable *Reg = RegManager->getRegister(Src0->getType(), Prefer, Avoid);
+      IceVariable *Reg =
+          RegManager->getRegister(Src0->getType(), Prefer, Avoid);
       RegSrc = Reg;
       // Create "reg=Src0" if needed.
       if (!RegManager->registerContains(Reg, Src0)) {
