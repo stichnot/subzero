@@ -206,93 +206,6 @@ void IceCfgNode::genCode(void) {
   }
 }
 
-void IceCfgNode::multiblockRegAlloc(void) {
-  // Candidates are the operands for which the operand is in the set
-  // of FirstLoad operands, and the operand is in the Available set of
-  // at least one predecessor RegManager.
-  //
-  // Construct the candidate list by checking each predecessor for
-  // each FirstLoad operand.
-  //
-  // Vote on physical register assignment.  For each virtual register,
-  // keep a tally of the number of votes for each physical register.
-  // A physical register assignment for a candidate in a predecessor
-  // block gets one vote.  Same for a successor block.  There is also
-  // a vote for preferences in the current block arising from
-  // instruction constraints.
-  //
-  // Add a compensation entry for each in-edge as necessary.  A
-  // compensation is either a load of an unavailable operand, or a
-  // register move.  A compensation is unnecessary when it is a
-  // register move with both the source and dest known to map to the
-  // same physical register.
-  //
-  // After this runs on all blocks, physical register assignment is
-  // complete.  multiblockCompensation() then passes over the blocks
-  // adds the compensation code, and removes the candidate assignment
-  // instructions.
-
-  // Consider each predecessor and update the
-  // MultiblockCandidateWeight values.
-  for (IceNodeList::const_iterator I = InEdges.begin(), E = InEdges.end();
-       I != E; ++I) {
-    IceCfgNode *Pred = *I;
-    assert(Pred);
-    // TODO: use the final RegManager in Pred.
-    RegManager->updateCandidates(Pred->RegManager);
-  }
-
-  // Consider each predecessor and update the PhysicalRegisterVotes
-  // values.
-  for (IceNodeList::const_iterator I = InEdges.begin(), E = InEdges.end();
-       I != E; ++I) {
-    IceCfgNode *Pred = *I;
-    assert(Pred);
-    RegManager->updateVotes(Pred->RegManager);
-  }
-
-  // Consider each successor and update the PhysicalRegisterVotes
-  // values.
-  for (IceNodeList::const_iterator I = OutEdges.begin(), E = OutEdges.end();
-       I != E; ++I) {
-    IceCfgNode *Succ = *I;
-    assert(Succ);
-    // TODO: Implement voting by successors.
-    // RegManager->updateVotes(Pred->RegManager);
-  }
-
-  // Tally up the votes and assign physical registers.
-  RegManager->makeAssignments();
-
-  // Add compensation entries as necessary.
-  for (IceNodeList::const_iterator I = InEdges.begin(), E = InEdges.end();
-       I != E; ++I) {
-    IceCfgNode *Pred = *I;
-    assert(Pred);
-    // TODO: use the final RegManager in Pred.
-    Compensations.push_back(
-        RegManager->addCompensations(Pred->RegManager, Cfg->getTarget()));
-  }
-}
-
-void IceCfgNode::multiblockCompensation(void) {
-  // return; // TODO: This is broken so disable it for now.
-  std::vector<IceInstList>::const_iterator I1 = Compensations.begin();
-  for (IceNodeList::const_iterator I = InEdges.begin(), E = InEdges.end();
-       I != E; ++I, ++I1) {
-    IceInstList Insts = *I1;
-    if (Insts.empty())
-      continue;
-    IceCfgNode *Pred = *I;
-    assert(Pred);
-    IceCfgNode *Split = Cfg->splitEdge(*I, this);
-    Insts.push_back(new IceInstBr(Cfg, this));
-    Split->InEdges.push_back(*I);
-    Split->insertInsts(Split->Insts.end(), Insts);
-  }
-  RegManager->deleteHoists();
-}
-
 void IceCfgNode::insertInsts(IceInstList::iterator Location,
                              const IceInstList &NewInsts) {
   Insts.insert(Location, NewInsts.begin(), NewInsts.end());
@@ -435,13 +348,6 @@ void IceCfgNode::dump(IceOstream &Str) const {
       }
     }
     Str << "\n";
-  }
-  if (Str.isVerbose(IceV_RegManager)) {
-    if (RegManager) {
-      Str << "    // FirstLoads={";
-      RegManager->dumpFirstLoads(Str);
-      Str << "}\n";
-    }
   }
   if (Str.isVerbose(IceV_Instructions)) {
     for (IcePhiList::const_iterator I = Phis.begin(), E = Phis.end(); I != E;

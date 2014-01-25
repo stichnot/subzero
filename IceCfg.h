@@ -75,8 +75,6 @@ private:
   void deletePhis(void);
   void genCode(void);
   void simpleDCE(void);
-  void multiblockRegAlloc(void);
-  void multiblockCompensation(void);
   void liveness(IceLiveness Mode);
   void regAlloc(void);
 };

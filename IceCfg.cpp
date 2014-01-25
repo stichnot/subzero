@@ -205,24 +205,6 @@ void IceCfg::simpleDCE(void) {
   }
 }
 
-void IceCfg::multiblockRegAlloc(void) {
-  for (IceNodeList::iterator I = LNodes.begin(), E = LNodes.end(); I != E;
-       ++I) {
-    (*I)->multiblockRegAlloc();
-  }
-}
-
-void IceCfg::multiblockCompensation(void) {
-  // TODO: Make sure the Node iterator plays nicely with the
-  // possibility of adding new blocks from edge splitting.
-  for (unsigned i = 0, e = Nodes.size(); i < e; ++i) {
-    IceCfgNode *Node = Nodes[i];
-    if (Node) {
-      Node->multiblockCompensation();
-    }
-  }
-}
-
 void IceCfg::liveness(IceLiveness Mode) {
   if (Mode == IceLiveness_LREndLightweight) {
     for (IceNodeList::iterator I = LNodes.begin(), E = LNodes.end(); I != E;
@@ -338,14 +320,6 @@ void IceCfg::translate(void) {
   liveness(IceLiveness_LREndLightweight);
   Str << "================ After simple DCE ================\n";
   dump();
-
-#if 0
-  multiblockRegAlloc();
-  multiblockCompensation();
-  liveness(IceLiveness_LREndLightweight);
-  Str << "================ After multi-block regalloc ================\n";
-  dump();
-#endif
 
   Str.setVerbose(IceV_Instructions);
   Str << "================ Final output ================\n";

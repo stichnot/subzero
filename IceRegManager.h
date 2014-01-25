@@ -59,21 +59,6 @@ public:
   void store(IceInst *Inst);
   bool contains(const IceOperand *Operand) const;
   IceVariable *getVar(void) const { return Var; }
-  IceInst *getFirstLoadInst(void) const {
-    return IsFirstLoadValid ? FirstLoadInst : NULL;
-  }
-  void updateCandidateWeight(int Incr = 1) {
-    MultiblockCandidateWeight += Incr;
-  }
-  int getCandidateWeight(void) const { return MultiblockCandidateWeight; }
-  bool isCandidate(void) const { return getCandidateWeight() > 0; }
-  void voteFor(int Reg) {
-    assert(PhysicalRegisterVotes);
-    ++PhysicalRegisterVotes[Reg];
-    ++TotalVotes;
-  }
-  int getTotalVotes(void) const { return TotalVotes; }
-  int getVotes(int Reg) const { return PhysicalRegisterVotes[Reg]; }
   void dump(IceOstream &Str) const;
 
 private:
@@ -82,39 +67,6 @@ private:
 
   // Set of operands currently available in the virtual register.
   IceOpList Available;
-
-  // Instruction that loads the first operand into the virtual
-  // register.  Used for multiblock register allocation.  Can be NULL
-  // if the first load into the virtual register is not a valid
-  // candidate for multiblock register allocation, e.g. the Load
-  // bitcode.
-  IceInst *FirstLoadInst;
-
-  // Whether the first load into the virtual register has been
-  // encountered.  TODO: consider saving memory by initializing
-  // FirstLoadInst to point to a sentinel instruction.
-  bool IsFirstLoadValid;
-
-  // Number of predecessors that have the FirstLoadInst operand in the
-  // Available set.  Must be greater than zero to be a candidation for
-  // multiblock register allocation.
-  int MultiblockCandidateWeight;
-
-  // This is an array indexed by (small) physical register number,
-  // giving the number of "votes" for each physical register.  Initial
-  // votes are given during initial instruction selection as a result
-  // of target instruction constraints.
-  int *PhysicalRegisterVotes;
-
-  // The sum of PhysicalRegisterVotes, for convenience.  The virtual
-  // register with the highest TotalVotes gets the first pick of
-  // physical registers.
-  int TotalVotes;
-
-  // If nonnegative, this is the (small) register number of the
-  // assigned physical register.  TODO: consider moving this into
-  // IceVariable for global register allocation.
-  int PhysicalRegister;
 };
 
 // TODO: Use some "virtual register" subclass of IceVariable.
@@ -133,15 +85,7 @@ public:
   bool registerContains(const IceVariable *Reg, const IceOperand *Op) const;
   void notifyLoad(IceInst *Inst, bool IsAssign = true);
   void notifyStore(IceInst *Inst);
-  void updateCandidates(const IceRegManager *Pred);
-  void updateVotes(const IceRegManager *Pred);
-  IceRegManagerEntry *getEntryContaining(const IceOperand *Operand) const;
-  void makeAssignments(void);
-  IceInstList addCompensations(const IceRegManager *Pred,
-                               IceTargetLowering *Target);
-  void deleteHoists(void);
   void dump(IceOstream &Str) const;
-  void dumpFirstLoads(IceOstream &Str) const;
 
 private:
   const unsigned NumReg;

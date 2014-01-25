@@ -26,8 +26,6 @@ public:
   void placePhiStores(void);
   void deletePhis(void);
   void genCode(void);
-  void multiblockRegAlloc(void);
-  void multiblockCompensation(void);
   bool liveness(IceLiveness Mode, bool IsFirst);
   void livenessPostprocess(IceLiveness Mode);
   void dump(IceOstream &Str) const;
