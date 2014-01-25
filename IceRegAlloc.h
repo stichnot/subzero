@@ -15,8 +15,7 @@ public:
   const IceLiveRange &Range;
   IceVariable *Var;
   int Register;
-  IceLiveRangeWrapper(const IceLiveRange &Range, IceVariable *Var,
-                      int Register)
+  IceLiveRangeWrapper(const IceLiveRange &Range, IceVariable *Var, int Register)
       : Range(Range), Var(Var), Register(Register) {}
   void dump(IceOstream &Str) const;
 };

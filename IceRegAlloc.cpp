@@ -218,8 +218,8 @@ void IceLinearScan::doScan(const llvm::SmallBitVector &RegMask) {
     dump(Cfg->Str);
   }
   // Move anything Active or Inactive to Handled for easier handling.
-  for (UnorderedRanges::iterator I = Active.begin(), E = Active.end();
-       I != E; I = Next) {
+  for (UnorderedRanges::iterator I = Active.begin(), E = Active.end(); I != E;
+       I = Next) {
     Next = I;
     ++Next;
     Handled.push_back(*I);
