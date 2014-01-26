@@ -275,6 +275,14 @@ bool IceCfgNode::liveness(IceLiveness Mode, bool IsFirst) {
   return Changed;
 }
 
+// Now that basic liveness is complete, remove dead instructions that
+// were tentatively marked as dead, and compute actual live ranges.
+// It is assumed that within a single basic block, a live range begins
+// at most once and ends at most once.  This is certainly true for
+// pure SSA form.  It is also true once phis are lowered, since each
+// assignment to the phi-based temporary is in a different basic
+// block, and there is a single read that ends the live in the basic
+// block that contained the actual phi instruction.
 void IceCfgNode::livenessPostprocess(IceLiveness Mode) {
   int FirstInstNum = -1;
   int LastInstNum = -1;

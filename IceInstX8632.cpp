@@ -251,19 +251,25 @@ IceInstList IceTargetX8632::lowerLoad(const IceInst *Inst, const IceInst *Next,
       NewInst->setRegState(RegManager);
     }
   }
-  Prefer.clear();
-  Avoid.clear();
-  Avoid.push_back(Reg1);
-  Avoid.push_back(Reg2);
-  IceVariable *Reg = RegManager->getRegister(Dest->getType(), Prefer, Avoid);
+  IceVariable *Reg = Dest;
+  if (Dest->getRegNum() < 0) {
+    Prefer.clear();
+    Avoid.clear();
+    Avoid.push_back(Reg1);
+    Avoid.push_back(Reg2);
+    Reg = RegManager->getRegister(Dest->getType(), Prefer, Avoid);
+  }
   NewInst = new IceInstX8632Load(Cfg, Reg, Reg1, Reg2, Src2, Src3);
   Expansion.push_back(NewInst);
-  RegManager->notifyLoad(NewInst, false);
+  if (Reg != Dest) // TODO: clean this up
+    RegManager->notifyLoad(NewInst, false);
   NewInst->setRegState(RegManager);
-  NewInst = new IceInstX8632Mov(Cfg, Dest, Reg);
-  Expansion.push_back(NewInst);
-  RegManager->notifyStore(NewInst);
-  NewInst->setRegState(RegManager);
+  if (Reg != Dest) {
+    NewInst = new IceInstX8632Mov(Cfg, Dest, Reg);
+    Expansion.push_back(NewInst);
+    RegManager->notifyStore(NewInst);
+    NewInst->setRegState(RegManager);
+  }
   return Expansion;
 }
 

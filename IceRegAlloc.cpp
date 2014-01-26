@@ -21,12 +21,15 @@ void IceLinearScan::init(bool AllowSingleBlockRanges) {
     IceVariable *Var = *I;
     if (Var == NULL)
       continue;
+#if 0
     if (!AllowSingleBlockRanges && !Var->isMultiblockLife() &&
         !llvm::isa<IceInstPhi>(Var->getDefinition()))
       continue;
+#endif
     if (Var->getLiveRange().getStart() < 0) // empty live range
       continue;
-    Unhandled.insert(IceLiveRangeWrapper(Var->getLiveRange(), Var, -1));
+    Unhandled.insert(IceLiveRangeWrapper(Var->getLiveRange(), Var,
+                                         Var->getRegNum()));
   }
 }
 
@@ -62,6 +65,9 @@ void IceLinearScan::doScan(const llvm::SmallBitVector &RegMask) {
     // TODO: Ignore certain live ranges, or treat their weight as 0,
     // under certain conditions, such as single-block lifetime.
     Unhandled.erase(Unhandled.begin());
+    // TODO: If Cur comes from "z=y+..." and y's live range is being
+    // expired or inactivated, favor using y's register.
+
     // Check for active ranges that have expired.
     for (UnorderedRanges::iterator I = Active.begin(), E = Active.end(); I != E;
          I = Next) {
@@ -126,7 +132,7 @@ void IceLinearScan::doScan(const llvm::SmallBitVector &RegMask) {
       IceLiveRangeWrapper UnhandledItem = *I;
       if (UnhandledItem.Register >= 0 &&
           UnhandledItem.Range.overlaps(Cur.Range)) {
-        assert(Free[UnhandledItem.Register]); // TODO: is this assert valid?
+        //assert(Free[UnhandledItem.Register]); // TODO: is this assert valid?
         Free[UnhandledItem.Register] = false;
       }
     }

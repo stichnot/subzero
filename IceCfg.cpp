@@ -267,6 +267,11 @@ void IceCfg::regAlloc(void) {
   LinearScan.init(false);
   LinearScan.doScan(RegMask);
   LinearScan.assign();
+
+  RegMask = getTarget()->getCallerSaveMask();
+  LinearScan.reset();
+  LinearScan.doScan(RegMask);
+  LinearScan.assign();
 }
 
 // Proposed pass list:

@@ -131,7 +131,8 @@ public:
   void setNoAutoDelete(void) { AllowAutoDelete = false; }
   bool canAutoDelete(void) const { return AllowAutoDelete; }
   void setRegNum(int NewRegNum) {
-    assert(RegNum < 0); // shouldn't set it more than once
+    assert(RegNum < 0 ||
+           RegNum == NewRegNum); // shouldn't set it more than once
     RegNum = NewRegNum;
   }
   int getRegNum(void) const { return RegNum; }
