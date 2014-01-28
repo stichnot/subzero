@@ -318,6 +318,17 @@ void IceCfgNode::livenessPostprocess(IceLiveness Mode) {
 
   unsigned NumVars = Cfg->getNumVariables();
   for (unsigned i = 0; i < NumVars; ++i) {
+    // Deal with the case where the variable is both live-in and
+    // live-out, but LiveEnd comes before LiveBegin.  In this case, we
+    // need to add two segments to the live range because there is a
+    // hole in the middle.  This would typically happen as a result of
+    // phi lowering in the presence of loopback edges.
+    if (LiveIn[i] && LiveOut[i] && LiveBegin[i] > LiveEnd[i]) {
+      IceVariable *Var = Cfg->getVariable(i);
+      Var->addLiveRange(FirstInstNum, LiveEnd[i], 1);
+      Var->addLiveRange(LiveBegin[i], LastInstNum, 1);
+      continue;
+    }
     int Begin = LiveIn[i] ? FirstInstNum : LiveBegin[i];
     int End = LiveOut[i] ? LastInstNum + 1 : LiveEnd[i];
     if (Begin <= 0 && End <= 0)

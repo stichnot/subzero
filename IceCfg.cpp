@@ -309,10 +309,10 @@ void IceCfg::translate(IceTargetArch TargetArch) {
 
   genCode();
   renumberInstructions();
+  liveness(IceLiveness_RangesFull);
   Str << "================ After initial x8632 codegen ================\n";
   dump();
 
-  liveness(IceLiveness_RangesFull);
   regAlloc();
   Str << "================ After linear scan regalloc ================\n";
   dump();
