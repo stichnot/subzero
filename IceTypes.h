@@ -20,6 +20,7 @@ enum IceType {
 
 enum IceTargetArch {
   IceTarget_X8632,
+  IceTarget_X8632_old,
   IceTarget_X8664,
   IceTarget_ARM32,
   IceTarget_ARM64,

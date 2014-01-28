@@ -263,13 +263,8 @@ void IceCfg::regAlloc(void) {
   // TODO: This is just testing for a machine with 8 registers, 3 of
   // which are made available for register allocation.
   IceLinearScan LinearScan(this);
-  llvm::SmallBitVector RegMask = getTarget()->getCalleeSaveMask();
+  llvm::SmallBitVector RegMask = getTarget()->getRegisterMask();
   LinearScan.init(false);
-  LinearScan.doScan(RegMask);
-  LinearScan.assign();
-
-  RegMask = getTarget()->getCallerSaveMask();
-  LinearScan.reset();
   LinearScan.doScan(RegMask);
   LinearScan.assign();
 }
@@ -305,26 +300,21 @@ void IceCfg::translate(IceTargetArch TargetArch) {
   Str << "================ After x86 address opt ================\n";
   dump();
 
-  regAlloc();
-  Str << "================ After linear scan regalloc ================\n";
-  dump();
-
-#if 0
   placePhiLoads();
   placePhiStores();
   deletePhis();
   renumberInstructions();
   Str << "================ After Phi lowering ================\n";
   dump();
-#endif
 
   genCode();
   renumberInstructions();
   Str << "================ After initial x8632 codegen ================\n";
   dump();
 
-  liveness(IceLiveness_LREndLightweight);
-  Str << "================ After simple DCE ================\n";
+  liveness(IceLiveness_RangesFull);
+  regAlloc();
+  Str << "================ After linear scan regalloc ================\n";
   dump();
 
   Str.setVerbose(IceV_Instructions);
@@ -354,7 +344,8 @@ void IceCfg::dump(void) const {
         continue;
       Str << "//"
           << " uses=" << Var->getUseCount()
-          << " multiblock=" << Var->isMultiblockLife() << " " << Var
+          << " multiblock=" << Var->isMultiblockLife() << " "
+          << " weight=" << Var->getWeight() << " " << Var
           << " LIVE=" << Var->getLiveRange() << "\n";
     }
   }

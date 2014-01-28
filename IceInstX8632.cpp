@@ -13,16 +13,11 @@
 IceString IceTargetX8632::RegNames[] = { "eax", "ecx", "edx", "ebx",
                                          "esp", "ebp", "esi", "edi", };
 
-llvm::SmallBitVector IceTargetX8632::getCallerSaveMask(void) const {
+llvm::SmallBitVector IceTargetX8632::getRegisterMask(void) const {
   llvm::SmallBitVector Mask(sizeof(RegNames) / sizeof(*RegNames));
   Mask[0] = true; // eax
   Mask[1] = true; // ecx
   Mask[2] = true; // edx
-  return Mask;
-}
-
-llvm::SmallBitVector IceTargetX8632::getCalleeSaveMask(void) const {
-  llvm::SmallBitVector Mask(sizeof(RegNames) / sizeof(*RegNames));
   Mask[3] = true; // ebx
   // TODO: Disable ebp if Cfg has an alloca.
   Mask[5] = true; // ebp
@@ -368,6 +363,16 @@ IceInstX8632Mov::IceInstX8632Mov(IceCfg *Cfg, IceVariable *Dest,
   addSource(Source);
 }
 
+bool IceInstX8632Mov::isRedundantAssign(void) const {
+  int DestRegNum = getDest(0)->getRegNum();
+  if (DestRegNum < 0)
+    return false;
+  IceVariable *Src = llvm::dyn_cast<IceVariable>(getSrc(0));
+  if (Src == NULL)
+    return false;
+  return DestRegNum == Src->getRegNum();
+}
+
 IceInstX8632Ret::IceInstX8632Ret(IceCfg *Cfg, IceVariable *Source)
     : IceInstTarget(Cfg) {
   if (Source)
@@ -502,4 +507,232 @@ void IceInstX8632Ret::dump(IceOstream &Str) const {
   IceType Type = Srcs.empty() ? IceType_void : getSrc(0)->getType();
   Str << "ret." << Type << " ";
   dumpSources(Str);
+}
+
+////////////////////////////////////////////////////////////////
+
+IceString IceTargetX8632S::RegNames[] = { "eax", "ecx", "edx", "ebx",
+                                          "esp", "ebp", "esi", "edi", };
+
+llvm::SmallBitVector IceTargetX8632S::getRegisterMask(void) const {
+  llvm::SmallBitVector Mask(sizeof(RegNames) / sizeof(*RegNames));
+  Mask[0] = true; // eax
+  Mask[1] = true; // ecx
+  Mask[2] = true; // edx
+  Mask[3] = true; // ebx
+  // TODO: Disable ebp if Cfg has an alloca.
+  Mask[5] = true; // ebp
+  Mask[6] = true; // esi
+  Mask[7] = true; // edi
+  return Mask;
+}
+
+IceInstTarget *IceTargetX8632S::makeAssign(IceVariable *Dest, IceOperand *Src) {
+  assert(Dest->getRegNum() >= 0);
+  return new IceInstX8632Mov(Cfg, Dest, Src);
+}
+
+IceInstList IceTargetX8632S::lowerAlloca(const IceInst *Inst,
+                                         const IceInst *Next,
+                                         bool &DeleteNextInst) {
+  IceInstList Expansion;
+  assert(0); // TODO: implement
+  return Expansion;
+}
+
+IceInstList IceTargetX8632S::lowerArithmetic(const IceInst *Inst,
+                                             const IceInst *Next,
+                                             bool &DeleteNextInst) {
+  IceInstList Expansion;
+  // TODO: Several instructions require specific physical registers,
+  // namely div, rem, shift.
+  IceVariable *Dest = Inst->getDest(0);
+  IceOperand *Src0 = Inst->getSrc(0);
+  IceOperand *Src1 = Inst->getSrc(1);
+  IceVariable *Reg;
+  IceInstTarget *NewInst;
+  // a=b+c ==> t=b; t+=c; a=t
+  Reg = Cfg->makeVariable(Dest->getType());
+  // TODO: Change this and other uses of the arbitrary constant "100"
+  // to properly encode and deal with "infinite" weight.
+  Reg->setWeight(100);
+  NewInst = new IceInstX8632Mov(Cfg, Reg, Src0);
+  Expansion.push_back(NewInst);
+  NewInst = new IceInstX8632Arithmetic(
+      Cfg,
+      (IceInstX8632Arithmetic::IceX8632Arithmetic)llvm::cast<IceInstArithmetic>(
+          Inst)->getOp(),
+      Reg, Src1);
+  Expansion.push_back(NewInst);
+  NewInst = new IceInstX8632Mov(Cfg, Dest, Reg);
+  Expansion.push_back(NewInst);
+  return Expansion;
+}
+
+IceInstList IceTargetX8632S::lowerAssign(const IceInst *Inst,
+                                         const IceInst *Next,
+                                         bool &DeleteNextInst) {
+  IceInstList Expansion;
+  IceVariable *Dest = Inst->getDest(0);
+  IceOperand *Src0 = Inst->getSrc(0);
+  IceVariable *Reg;
+  IceInstTarget *NewInst;
+  // a=b ==> t=b; a=t; (link t->b)
+  Reg = Cfg->makeVariable(Dest->getType());
+  Reg->setWeight(100);
+  Reg->setLinkedTo(llvm::dyn_cast<IceVariable>(Src0));
+  NewInst = new IceInstX8632Mov(Cfg, Reg, Src0);
+  Expansion.push_back(NewInst);
+  NewInst = new IceInstX8632Mov(Cfg, Dest, Reg);
+  Expansion.push_back(NewInst);
+  return Expansion;
+}
+
+IceInstList IceTargetX8632S::lowerBr(const IceInst *Inst, const IceInst *Next,
+                                     bool &DeleteNextInst) {
+  IceInstList Expansion;
+  // assert(0); // TODO: implement
+  return Expansion;
+}
+
+IceInstList IceTargetX8632S::lowerCall(const IceInst *Inst, const IceInst *Next,
+                                       bool &DeleteNextInst) {
+  IceInstList Expansion;
+  assert(0); // TODO: implement
+  return Expansion;
+}
+
+IceInstList IceTargetX8632S::lowerConversion(const IceInst *Inst,
+                                             const IceInst *Next,
+                                             bool &DeleteNextInst) {
+  IceInstList Expansion;
+  assert(0); // TODO: implement
+  return Expansion;
+}
+
+IceInstList IceTargetX8632S::lowerFcmp(const IceInst *Inst, const IceInst *Next,
+                                       bool &DeleteNextInst) {
+  IceInstList Expansion;
+  assert(0); // TODO: implement
+  return Expansion;
+}
+
+IceInstList IceTargetX8632S::lowerIcmp(const IceInst *Inst, const IceInst *Next,
+                                       bool &DeleteNextInst) {
+  IceInstList Expansion;
+  IceInstTarget *NewInst;
+  // For now, require that the following instruction is a branch
+  // based on the last use of this instruction's Dest operand.
+  // TODO: Fix this.
+  if (llvm::isa<IceInstBr>(Next) && Inst->getDest(0) == Next->getSrc(0)) {
+    const IceInstIcmp *InstIcmp = llvm::cast<IceInstIcmp>(Inst);
+    const IceInstBr *NextBr = llvm::cast<IceInstBr>(Next);
+    // This is basically identical to an Arithmetic instruction,
+    // except there is no Dest variable to store.
+    // cmp a,b ==> mov t,a; cmp t,b
+    IceOperand *Src0 = Inst->getSrc(0);
+    IceOperand *Src1 = Inst->getSrc(1);
+    IceVariable *Reg = Cfg->makeVariable(Src0->getType());
+    Reg->setWeight(100);
+    Reg->setLinkedTo(llvm::dyn_cast<IceVariable>(Src0));
+    NewInst = new IceInstX8632Mov(Cfg, Reg, Src0);
+    Expansion.push_back(NewInst);
+    NewInst = new IceInstX8632Icmp(Cfg, Reg, Src1);
+    Expansion.push_back(NewInst);
+    NewInst =
+        new IceInstX8632Br(Cfg, NextBr->getTargetTrue(),
+                           NextBr->getTargetFalse(), InstIcmp->getCondition());
+    Expansion.push_back(NewInst);
+    DeleteNextInst = true;
+  } else {
+    assert(0);
+  }
+  return Expansion;
+}
+
+IceInstList IceTargetX8632S::lowerLoad(const IceInst *Inst, const IceInst *Next,
+                                       bool &DeleteNextInst) {
+  IceInstList Expansion;
+  IceInstTarget *NewInst;
+  IceVariable *Dest = Inst->getDest(0);
+  IceOperand *Src0 = Inst->getSrc(0); // Base
+  IceOperand *Src1 = Inst->getSrc(1); // Index - could be NULL
+  IceOperand *Src2 = Inst->getSrc(2); // Shift - constant
+  IceOperand *Src3 = Inst->getSrc(3); // Offset - constant
+  assert(Src0 != NULL && llvm::isa<IceVariable>(Src0));
+  assert(Src1 == NULL || llvm::isa<IceVariable>(Src1));
+  assert(Src2 == NULL || llvm::isa<IceConstant>(Src2));
+  assert(Src3 == NULL || llvm::isa<IceConstant>(Src3));
+  // dest=load[base,index,shift,offset] ==>
+  // t0=base; t1=index; t2=load[base,index,shift,offset]; dest=t2
+  IceVariable *Reg0 = Cfg->makeVariable(Src0->getType());
+  Reg0->setWeight(100);
+  Reg0->setLinkedTo(llvm::dyn_cast<IceVariable>(Src0));
+  NewInst = new IceInstX8632Mov(Cfg, Reg0, Src0);
+  Expansion.push_back(NewInst);
+  IceVariable *Reg1 = NULL;
+  if (Src1) {
+    Reg1 = Cfg->makeVariable(Src1->getType());
+    Reg1->setWeight(100);
+    Reg1->setLinkedTo(llvm::dyn_cast<IceVariable>(Src1));
+    NewInst = new IceInstX8632Mov(Cfg, Reg1, Src1);
+    Expansion.push_back(NewInst);
+  }
+  IceVariable *Reg2 = Cfg->makeVariable(Dest->getType());
+  Reg2->setWeight(100);
+  NewInst = new IceInstX8632Load(Cfg, Reg2, Reg0, Reg1, Src2, Src3);
+  Expansion.push_back(NewInst);
+  NewInst = new IceInstX8632Mov(Cfg, Dest, Reg2);
+  Expansion.push_back(NewInst);
+
+  return Expansion;
+}
+
+IceInstList IceTargetX8632S::lowerPhi(const IceInst *Inst, const IceInst *Next,
+                                      bool &DeleteNextInst) {
+  IceInstList Expansion;
+  assert(0); // TODO: implement if necessary
+  return Expansion;
+}
+
+IceInstList IceTargetX8632S::lowerRet(const IceInst *Inst, const IceInst *Next,
+                                      bool &DeleteNextInst) {
+  IceInstList Expansion;
+  IceInstTarget *NewInst;
+  IceOperand *Src0 = Inst->getSrc(0);
+  IceVariable *Reg = NULL;
+  if (Src0) {
+    Reg = Cfg->makeVariable(Src0->getType());
+    Reg->setWeight(100);
+    Reg->setRegNum(0); // eax
+    NewInst = new IceInstX8632Mov(Cfg, Reg, Src0);
+    Expansion.push_back(NewInst);
+  }
+  NewInst = new IceInstX8632Ret(Cfg, Reg);
+  Expansion.push_back(NewInst);
+  return Expansion;
+}
+
+IceInstList IceTargetX8632S::lowerSelect(const IceInst *Inst,
+                                         const IceInst *Next,
+                                         bool &DeleteNextInst) {
+  IceInstList Expansion;
+  assert(0); // TODO: implement
+  return Expansion;
+}
+
+IceInstList IceTargetX8632S::lowerStore(const IceInst *Inst,
+                                        const IceInst *Next,
+                                        bool &DeleteNextInst) {
+  IceInstList Expansion;
+  assert(0); // TODO: implement
+  return Expansion;
+}
+
+IceInstList IceTargetX8632S::lowerSwitch(const IceInst *Inst,
+                                         const IceInst *Next,
+                                         bool &DeleteNextInst) {
+  IceInstList Expansion;
+  assert(0); // TODO: implement
+  return Expansion;
 }

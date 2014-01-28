@@ -467,7 +467,8 @@ void IceInstTarget::setRegState(const IceRegManager *State) {
 // ======================== Dump routines ======================== //
 
 IceOstream &operator<<(IceOstream &Str, const IceInst *I) {
-  if (I->isDeleted() && !Str.isVerbose(IceV_Deleted))
+  if (!Str.isVerbose(IceV_Deleted) &&
+      (I->isDeleted() || I->isRedundantAssign()))
     return Str;
   if (Str.isVerbose(IceV_InstNumbers)) {
     char buf[30];

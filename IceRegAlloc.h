@@ -32,7 +32,6 @@ public:
 
 private:
   IceCfg *const Cfg;
-  llvm::SmallBitVector Registers;
   // RangeCompare is the comparator for sorting an IceLiveRangeWrapper
   // by starting point in a std::set<>.  Ties are broken by variable
   // number so that sorting is stable.

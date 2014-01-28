@@ -28,8 +28,8 @@ void IceLinearScan::init(bool AllowSingleBlockRanges) {
 #endif
     if (Var->getLiveRange().getStart() < 0) // empty live range
       continue;
-    Unhandled.insert(IceLiveRangeWrapper(Var->getLiveRange(), Var,
-                                         Var->getRegNum()));
+    Unhandled.insert(
+        IceLiveRangeWrapper(Var->getLiveRange(), Var, Var->getRegNum()));
   }
 }
 
@@ -48,15 +48,17 @@ void IceLinearScan::reset(void) {
 }
 
 void IceLinearScan::doScan(const llvm::SmallBitVector &RegMask) {
-  Registers = RegMask;
-  if (!Registers.any())
+  if (!RegMask.any())
     return;
+  // RegUses[I] is the number of live ranges (variables) that register
+  // I is currently assigned to.  It can be greater than 1 as a result
+  // of IceVariable::LinkedTo.
+  std::vector<int> RegUses(RegMask.size());
   // Unhandled is already set to all ranges in increasing order of
   // start points.
   assert(Active.empty());
   assert(Inactive.empty());
   assert(Handled.empty());
-  llvm::SmallBitVector Free;
   UnorderedRanges::iterator Next;
   while (!Unhandled.empty()) {
     IceLiveRangeWrapper Cur = *Unhandled.begin();
@@ -68,6 +70,7 @@ void IceLinearScan::doScan(const llvm::SmallBitVector &RegMask) {
     // TODO: If Cur comes from "z=y+..." and y's live range is being
     // expired or inactivated, favor using y's register.
 
+    int LinkedReg = -1;
     // Check for active ranges that have expired.
     for (UnorderedRanges::iterator I = Active.begin(), E = Active.end(); I != E;
          I = Next) {
@@ -80,19 +83,27 @@ void IceLinearScan::doScan(const llvm::SmallBitVector &RegMask) {
         Active.erase(I);
         Handled.push_back(Item);
         assert(Item.Register >= 0);
-        assert(!Registers[Item.Register]);
-        Registers[Item.Register] = true;
+        --RegUses[Item.Register];
+        assert(RegUses[Item.Register] >= 0);
       } else if (!Item.Range.overlaps(Cur.Range)) {
         if (Cfg->Str.isVerbose(IceV_LinearScan))
           Cfg->Str << "Inactivating " << Item << "\n";
         Active.erase(I);
         Inactive.push_back(Item);
         assert(Item.Register >= 0);
-        assert(!Registers[Item.Register]);
-        Registers[Item.Register] = true;
+        --RegUses[Item.Register];
+        assert(RegUses[Item.Register] >= 0);
+      } else {
+        if (Cur.Var->getLinkedTo() == Item.Var) {
+          assert(LinkedReg < 0);
+          LinkedReg = Item.Register;
+          assert(LinkedReg >= 0);
+          if (Cfg->Str.isVerbose(IceV_LinearScan))
+            Cfg->Str << "Linking to   " << Item << "\n";
+        }
       }
     }
-    // Check for inactive range that have expired or reactivated.
+    // Check for inactive ranges that have expired or reactivated.
     for (UnorderedRanges::iterator I = Inactive.begin(), E = Inactive.end();
          I != E; I = Next) {
       Next = I;
@@ -109,12 +120,25 @@ void IceLinearScan::doScan(const llvm::SmallBitVector &RegMask) {
         Inactive.erase(I);
         Active.push_back(Item);
         assert(Item.Register >= 0);
-        assert(Registers[Item.Register]);
-        Registers[Item.Register] = false;
+        ++RegUses[Item.Register];
+        assert(RegUses[Item.Register] >= 0);
+        if (Cur.Var->getLinkedTo() == Item.Var) {
+          assert(LinkedReg < 0);
+          LinkedReg = Item.Register;
+          assert(LinkedReg >= 0);
+          if (Cfg->Str.isVerbose(IceV_LinearScan))
+            Cfg->Str << "Linking to   " << Item << "\n";
+        }
       }
     }
     // Calculate available registers.
-    Free = Registers;
+    // TODO: Figure out whether removing any of these registers
+    // affects the LinkedReg assignment.
+    llvm::SmallBitVector Free = RegMask;
+    for (unsigned i = 0; i < RegMask.size(); ++i) {
+      if (RegUses[i] > 0)
+        Free[i] = false;
+    }
     // Remove registers where an Inactive range overlaps with the
     // current range.
     for (UnorderedRanges::iterator I = Inactive.begin(), E = Inactive.end();
@@ -132,27 +156,36 @@ void IceLinearScan::doScan(const llvm::SmallBitVector &RegMask) {
       IceLiveRangeWrapper UnhandledItem = *I;
       if (UnhandledItem.Register >= 0 &&
           UnhandledItem.Range.overlaps(Cur.Range)) {
-        //assert(Free[UnhandledItem.Register]); // TODO: is this assert valid?
+        // assert(Free[UnhandledItem.Register]); // TODO: is this assert valid?
         Free[UnhandledItem.Register] = false;
       }
     }
-    if (Free.any()) {
+    if (LinkedReg >= 0) {
+      Cur.Register = LinkedReg;
+      if (Cfg->Str.isVerbose(IceV_LinearScan))
+        Cfg->Str << "Allocating   " << Cur << "\n";
+      ++RegUses[Cur.Register];
+      assert(RegUses[Cur.Register] >= 0);
+      Active.push_back(Cur);
+    } else if (Free.any()) {
       if (Cur.Register < 0)
         // TODO: there might be a better policy than lowest-numbered
         // available register.
         Cur.Register = Free.find_first();
       if (Cfg->Str.isVerbose(IceV_LinearScan))
         Cfg->Str << "Allocating   " << Cur << "\n";
-      Registers[Cur.Register] = false;
+      ++RegUses[Cur.Register];
+      assert(RegUses[Cur.Register] >= 0);
       Active.push_back(Cur);
     } else {
-      std::vector<int> Weights(Registers.size());
+      std::vector<int> Weights(RegMask.size());
       for (UnorderedRanges::const_iterator I = Active.begin(), E = Active.end();
            I != E; ++I) {
         IceLiveRangeWrapper Item = *I;
         if (Item.Range.overlaps(Cur.Range)) {
           assert(Item.Register >= 0);
-          Weights[Item.Register] += Item.Range.getWeight();
+          Weights[Item.Register] +=
+              Item.Range.getWeight() * Item.Var->getWeight();
         }
       }
       for (UnorderedRanges::const_iterator I = Inactive.begin(),
@@ -161,7 +194,8 @@ void IceLinearScan::doScan(const llvm::SmallBitVector &RegMask) {
         IceLiveRangeWrapper Item = *I;
         if (Item.Range.overlaps(Cur.Range)) {
           assert(Item.Register >= 0);
-          Weights[Item.Register] += Item.Range.getWeight();
+          Weights[Item.Register] +=
+              Item.Range.getWeight() * Item.Var->getWeight();
         }
       }
       for (OrderedRanges::const_iterator I = Unhandled.begin(),
@@ -196,6 +230,8 @@ void IceLinearScan::doScan(const llvm::SmallBitVector &RegMask) {
           if (Item.Register == MinWeightIndex) {
             if (Cfg->Str.isVerbose(IceV_LinearScan))
               Cfg->Str << "Evicting     " << Item << "\n";
+            --RegUses[Item.Register];
+            assert(RegUses[Item.Register] >= 0);
             Item.Register = -1;
             Active.erase(I);
             Handled.push_back(Item);
@@ -209,6 +245,8 @@ void IceLinearScan::doScan(const llvm::SmallBitVector &RegMask) {
           if (Item.Register == MinWeightIndex) {
             if (Cfg->Str.isVerbose(IceV_LinearScan))
               Cfg->Str << "Evicting     " << Item << "\n";
+            //--RegUses[Item.Register];
+            // assert(RegUses[Item.Register] >= 0);
             Item.Register = -1;
             Inactive.erase(I);
             Handled.push_back(Item);
@@ -216,6 +254,8 @@ void IceLinearScan::doScan(const llvm::SmallBitVector &RegMask) {
         }
         // Assign the register to Cur.
         Cur.Register = MinWeightIndex;
+        ++RegUses[Cur.Register];
+        assert(RegUses[Cur.Register] >= 0);
         Active.push_back(Cur);
         if (Cfg->Str.isVerbose(IceV_LinearScan))
           Cfg->Str << "Allocating   " << Cur << "\n";
@@ -245,6 +285,7 @@ void IceLinearScan::assign(void) const {
   for (UnorderedRanges::const_iterator I = Handled.begin(), E = Handled.end();
        I != E; ++I) {
     IceLiveRangeWrapper Item = *I;
+    Cfg->Str << "Assigning reg " << Item.Register << " to " << Item.Var << "\n";
     Item.Var->setRegNum(Item.Register);
   }
 }

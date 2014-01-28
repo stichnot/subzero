@@ -112,7 +112,8 @@ public:
   IceVariable(IceType Type, uint32_t Index, const IceString &Name)
       : IceOperand(Variable, Type), VarIndex(Index), Name(Name), UseCount(0),
         DefInst(NULL), DefOrUseNode(NULL), IsMultiDef(false), IsArgument(false),
-        IsMultiblockLife(false), AllowAutoDelete(true), RegNum(-1) {}
+        IsMultiblockLife(false), AllowAutoDelete(true), RegNum(-1), Weight(1),
+        LinkedTo(NULL) {}
   virtual void setUse(const IceInst *Inst, const IceCfgNode *Node);
   virtual void removeUse(void);
   virtual uint32_t getUseCount(void) const { return UseCount; }
@@ -136,10 +137,18 @@ public:
     RegNum = NewRegNum;
   }
   int getRegNum(void) const { return RegNum; }
+  void setWeight(int NewWeight) { Weight = NewWeight; }
+  int getWeight(void) const { return Weight; }
+  void setLinkedTo(IceVariable *Parent) {
+    assert(LinkedTo == NULL);
+    assert(Parent != this);
+    LinkedTo = Parent;
+  }
+  IceVariable *getLinkedTo(void) const { return LinkedTo; }
   void resetLiveRange(void) { LiveRange.reset(); }
   void addLiveRange(int Start, int End, int WeightDelta) {
     LiveRange.addSegment(Start, End);
-    LiveRange.setWeight(WeightDelta + LiveRange.getWeight());
+    LiveRange.setWeight(WeightDelta * LiveRange.getWeight() + getWeight());
   }
   const IceLiveRange &getLiveRange(void) const { return LiveRange; }
   IceString getName(void) const;
@@ -165,8 +174,9 @@ private:
   bool IsArgument;
   bool IsMultiblockLife;
   bool AllowAutoDelete;
-  // Allocated register; -1 for no allocation
-  int RegNum;
+  int RegNum; // Allocated register; -1 for no allocation
+  int Weight; // Register allocation priority
+  IceVariable *LinkedTo;
   IceLiveRange LiveRange;
 };
 

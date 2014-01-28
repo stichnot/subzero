@@ -17,8 +17,48 @@ public:
   IceTargetX8632(IceCfg *Cfg) : IceTargetLowering(Cfg) {}
   virtual IceInstTarget *makeAssign(IceVariable *Dest, IceOperand *Src);
   virtual IceString *getRegNames(void) const { return RegNames; }
-  virtual llvm::SmallBitVector getCallerSaveMask(void) const;
-  virtual llvm::SmallBitVector getCalleeSaveMask(void) const;
+  virtual llvm::SmallBitVector getRegisterMask(void) const;
+
+protected:
+  virtual IceInstList lowerAlloca(const IceInst *Inst, const IceInst *Next,
+                                  bool &DeleteNextInst);
+  virtual IceInstList lowerArithmetic(const IceInst *Inst, const IceInst *Next,
+                                      bool &DeleteNextInst);
+  virtual IceInstList lowerAssign(const IceInst *Inst, const IceInst *Next,
+                                  bool &DeleteNextInst);
+  virtual IceInstList lowerBr(const IceInst *Inst, const IceInst *Next,
+                              bool &DeleteNextInst);
+  virtual IceInstList lowerCall(const IceInst *Inst, const IceInst *Next,
+                                bool &DeleteNextInst);
+  virtual IceInstList lowerConversion(const IceInst *Inst, const IceInst *Next,
+                                      bool &DeleteNextInst);
+  virtual IceInstList lowerFcmp(const IceInst *Inst, const IceInst *Next,
+                                bool &DeleteNextInst);
+  virtual IceInstList lowerIcmp(const IceInst *Inst, const IceInst *Next,
+                                bool &DeleteNextInst);
+  virtual IceInstList lowerLoad(const IceInst *Inst, const IceInst *Next,
+                                bool &DeleteNextInst);
+  virtual IceInstList lowerPhi(const IceInst *Inst, const IceInst *Next,
+                               bool &DeleteNextInst);
+  virtual IceInstList lowerRet(const IceInst *Inst, const IceInst *Next,
+                               bool &DeleteNextInst);
+  virtual IceInstList lowerSelect(const IceInst *Inst, const IceInst *Next,
+                                  bool &DeleteNextInst);
+  virtual IceInstList lowerStore(const IceInst *Inst, const IceInst *Next,
+                                 bool &DeleteNextInst);
+  virtual IceInstList lowerSwitch(const IceInst *Inst, const IceInst *Next,
+                                  bool &DeleteNextInst);
+
+private:
+  static IceString RegNames[];
+};
+
+class IceTargetX8632S : public IceTargetX8632 {
+public:
+  IceTargetX8632S(IceCfg *Cfg) : IceTargetX8632(Cfg) {}
+  virtual IceInstTarget *makeAssign(IceVariable *Dest, IceOperand *Src);
+  virtual IceString *getRegNames(void) const { return RegNames; }
+  virtual llvm::SmallBitVector getRegisterMask(void) const;
 
 protected:
   virtual IceInstList lowerAlloca(const IceInst *Inst, const IceInst *Next,
@@ -124,6 +164,7 @@ private:
 class IceInstX8632Mov : public IceInstTarget {
 public:
   IceInstX8632Mov(IceCfg *Cfg, IceVariable *Dest, IceOperand *Source);
+  virtual bool isRedundantAssign(void) const;
   virtual void dump(IceOstream &Str) const;
 
 private:

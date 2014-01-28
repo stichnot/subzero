@@ -45,6 +45,7 @@ public:
     assert(0);
     return IceNodeList();
   }
+  virtual bool isRedundantAssign(void) const { return false; }
   bool isDeleted(void) const { return Deleted; }
   bool isLastUse(unsigned SrcIndex) const { return LiveRangesEnded[SrcIndex]; }
   // If an instruction is deleted as a result of replacing it with
