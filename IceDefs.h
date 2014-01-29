@@ -63,6 +63,7 @@ enum IceVerbose {
   IceV_LinearScan = 1 << 8,
   IceV_All = ~IceV_None
 };
+typedef uint32_t IceVerboseMask;
 
 enum IceLiveness {
   // Lightweight version of live-range-end calculation.  Marks the
@@ -111,17 +112,17 @@ class IceOstream {
 public:
   IceOstream(std::ostream &Stream, IceCfg *Cfg)
       : Stream(Stream), Cfg(Cfg), Verbose(IceV_Instructions | IceV_Preds) {}
-  bool isVerbose(IceVerbose Mask) { return Verbose & Mask; }
-  void setVerbose(IceVerbose Mask) { Verbose = Mask; }
-  void addVerbose(IceVerbose Mask) { Verbose |= Mask; }
-  void subVerbose(IceVerbose Mask) { Verbose &= ~Mask; }
+  bool isVerbose(IceVerboseMask Mask) { return Verbose & Mask; }
+  void setVerbose(IceVerboseMask Mask) { Verbose = Mask; }
+  void addVerbose(IceVerboseMask Mask) { Verbose |= Mask; }
+  void subVerbose(IceVerboseMask Mask) { Verbose &= ~Mask; }
   // TODO: Use LLVM's raw_ostream instead.
   // http://llvm.org/docs/CodingStandards.html#use-raw-ostream
   std::ostream &Stream;
   IceCfg *const Cfg;
 
 private:
-  uint32_t Verbose;
+  IceVerboseMask Verbose;
 };
 
 inline IceOstream &operator<<(IceOstream &Str, const char *S) {
