@@ -93,15 +93,17 @@ public:
     else if (Weight != Inf)
       Weight += Delta;
   }
-  void addWeight(const IceRegWeight &Other) { addWeight(Other.getWeight()); }
+  void addWeight(const IceRegWeight &Other) { addWeight(Other.Weight); }
   void setWeight(uint32_t Val) { Weight = Val; }
   uint32_t getWeight(void) const { return Weight; }
-  bool isInf(void) const { return getWeight() == Inf; }
+  bool isInf(void) const { return Weight == Inf; }
 
 private:
   uint32_t Weight;
 };
 IceOstream &operator<<(IceOstream &Str, const IceRegWeight &W);
+bool operator<(const IceRegWeight &A, const IceRegWeight &B);
+bool operator<=(const IceRegWeight &A, const IceRegWeight &B);
 
 class IceLiveRange {
 public:

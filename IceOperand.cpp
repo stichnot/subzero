@@ -7,6 +7,13 @@
 #include "IceInst.h"
 #include "IceOperand.h"
 
+bool operator<(const IceRegWeight &A, const IceRegWeight &B) {
+  return A.getWeight() < B.getWeight();
+}
+bool operator<=(const IceRegWeight &A, const IceRegWeight &B) {
+  return !(B < A);
+}
+
 void IceVariable::setUse(const IceInst *Inst, const IceCfgNode *Node) {
   ++UseCount;
   if (llvm::isa<IceInstPhi>(Inst) ||

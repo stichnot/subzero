@@ -212,11 +212,10 @@ void IceLinearScan::doScan(const llvm::SmallBitVector &RegMask) {
       int MinWeightIndex = RegMask.find_first();
       for (unsigned i = MinWeightIndex + 1; i < Weights.size(); ++i) {
         if (RegMask[i] &&
-            Weights[i].getWeight() < Weights[MinWeightIndex].getWeight())
+            Weights[i] < Weights[MinWeightIndex])
           MinWeightIndex = i;
       }
-      if (Cur.range().getWeight().getWeight() <=
-          Weights[MinWeightIndex].getWeight()) {
+      if (Cur.range().getWeight() <= Weights[MinWeightIndex]) {
         // Cur doesn't have priority over any other live ranges, so
         // don't allocate any register to it, and move it to the
         // Handled state.
