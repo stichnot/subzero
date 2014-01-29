@@ -555,7 +555,7 @@ IceInstList IceTargetX8632S::lowerArithmetic(const IceInst *Inst,
   Reg = Cfg->makeVariable(Dest->getType());
   // TODO: Change this and other uses of the arbitrary constant "100"
   // to properly encode and deal with "infinite" weight.
-  Reg->setWeight(100);
+  Reg->setWeightInfinite();
   Reg->setPreferredRegister(llvm::dyn_cast<IceVariable>(Src0), false);
   NewInst = new IceInstX8632Mov(Cfg, Reg, Src0);
   Expansion.push_back(NewInst);
@@ -580,7 +580,7 @@ IceInstList IceTargetX8632S::lowerAssign(const IceInst *Inst,
   IceInstTarget *NewInst;
   // a=b ==> t=b; a=t; (link t->b)
   Reg = Cfg->makeVariable(Dest->getType());
-  Reg->setWeight(100);
+  Reg->setWeightInfinite();
   Reg->setPreferredRegister(llvm::dyn_cast<IceVariable>(Src0), true);
   NewInst = new IceInstX8632Mov(Cfg, Reg, Src0);
   Expansion.push_back(NewInst);
@@ -634,7 +634,7 @@ IceInstList IceTargetX8632S::lowerIcmp(const IceInst *Inst, const IceInst *Next,
     IceOperand *Src0 = Inst->getSrc(0);
     IceOperand *Src1 = Inst->getSrc(1);
     IceVariable *Reg = Cfg->makeVariable(Src0->getType());
-    Reg->setWeight(100);
+    Reg->setWeightInfinite();
     Reg->setPreferredRegister(llvm::dyn_cast<IceVariable>(Src0), true);
     NewInst = new IceInstX8632Mov(Cfg, Reg, Src0);
     Expansion.push_back(NewInst);
@@ -667,20 +667,20 @@ IceInstList IceTargetX8632S::lowerLoad(const IceInst *Inst, const IceInst *Next,
   // dest=load[base,index,shift,offset] ==>
   // t0=base; t1=index; t2=load[base,index,shift,offset]; dest=t2
   IceVariable *Reg0 = Cfg->makeVariable(Src0->getType());
-  Reg0->setWeight(100);
+  Reg0->setWeightInfinite();
   Reg0->setPreferredRegister(llvm::dyn_cast<IceVariable>(Src0), true);
   NewInst = new IceInstX8632Mov(Cfg, Reg0, Src0);
   Expansion.push_back(NewInst);
   IceVariable *Reg1 = NULL;
   if (Src1) {
     Reg1 = Cfg->makeVariable(Src1->getType());
-    Reg1->setWeight(100);
+    Reg1->setWeightInfinite();
     Reg1->setPreferredRegister(llvm::dyn_cast<IceVariable>(Src1), true);
     NewInst = new IceInstX8632Mov(Cfg, Reg1, Src1);
     Expansion.push_back(NewInst);
   }
   IceVariable *Reg2 = Cfg->makeVariable(Dest->getType());
-  Reg2->setWeight(100);
+  Reg2->setWeightInfinite();
   NewInst = new IceInstX8632Load(Cfg, Reg2, Reg0, Reg1, Src2, Src3);
   Expansion.push_back(NewInst);
   NewInst = new IceInstX8632Mov(Cfg, Dest, Reg2);
@@ -704,7 +704,7 @@ IceInstList IceTargetX8632S::lowerRet(const IceInst *Inst, const IceInst *Next,
   IceVariable *Reg = NULL;
   if (Src0) {
     Reg = Cfg->makeVariable(Src0->getType());
-    Reg->setWeight(100);
+    Reg->setWeightInfinite();
     Reg->setRegNum(0); // eax
     NewInst = new IceInstX8632Mov(Cfg, Reg, Src0);
     Expansion.push_back(NewInst);

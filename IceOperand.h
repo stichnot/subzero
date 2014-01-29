@@ -138,6 +138,7 @@ public:
   void setRegNumTmp(int NewRegNum) { RegNumTmp = NewRegNum; }
   int getRegNumTmp(void) const { return RegNumTmp; }
   void setWeight(int NewWeight) { Weight = NewWeight; }
+  void setWeightInfinite(void) { Weight = 100; }
   int getWeight(void) const { return Weight; }
   void setPreferredRegister(IceVariable *Prefer, bool Overlap) {
     RegisterPreference = Prefer;
