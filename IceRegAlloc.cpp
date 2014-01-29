@@ -286,8 +286,9 @@ void IceLinearScan::assign(void) const {
   for (UnorderedRanges::const_iterator I = Handled.begin(), E = Handled.end();
        I != E; ++I) {
     IceLiveRangeWrapper Item = *I;
-    Cfg->Str << "Assigning reg " << Item.Var->getRegNumTmp() << " to "
-             << Item.Var << "\n";
+    int RegNum = Item.Var->getRegNumTmp();
+    Cfg->Str << "Assigning " << Cfg->physicalRegName(RegNum) << "(r" << RegNum
+             << ") to " << Item.Var << "\n";
     Item.Var->setRegNum(Item.Var->getRegNumTmp());
   }
 }
