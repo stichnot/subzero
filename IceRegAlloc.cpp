@@ -147,13 +147,15 @@ void IceLinearScan::doScan(const llvm::SmallBitVector &RegMask) {
     }
     IceVariable *Prefer = Cur.Var->getPreferredRegister();
     int PreferReg = Prefer ? Prefer->getRegNumTmp() : -1;
-    for (unsigned i = 0; i < RegMask.size(); ++i) {
-      if (RegMask[i]) {
-        Cfg->Str << Cfg->physicalRegName(i) << "(U=" << RegUses[i]
-                 << ",F=" << Free[i] << ") ";
+    if (Cfg->Str.isVerbose(IceV_LinearScan)) {
+      for (unsigned i = 0; i < RegMask.size(); ++i) {
+        if (RegMask[i]) {
+          Cfg->Str << Cfg->physicalRegName(i) << "(U=" << RegUses[i]
+                   << ",F=" << Free[i] << ") ";
+        }
       }
+      Cfg->Str << "\n";
     }
-    Cfg->Str << "\n";
     if (Prefer && PreferReg >= 0 &&
         (Cur.Var->getRegisterOverlap() || Free[PreferReg])) {
       Cur.Var->setRegNumTmp(PreferReg);
