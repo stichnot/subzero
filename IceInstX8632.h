@@ -15,6 +15,7 @@
 class IceTargetX8632 : public IceTargetLowering {
 public:
   IceTargetX8632(IceCfg *Cfg) : IceTargetLowering(Cfg) {}
+  virtual IceRegManager *makeRegManager(IceCfgNode *Node);
   virtual IceInstTarget *makeAssign(IceVariable *Dest, IceOperand *Src);
   virtual IceString *getRegNames(void) const { return RegNames; }
   virtual llvm::SmallBitVector getRegisterMask(void) const;
@@ -67,6 +68,7 @@ private:
 class IceTargetX8632S : public IceTargetX8632 {
 public:
   IceTargetX8632S(IceCfg *Cfg) : IceTargetX8632(Cfg) {}
+  virtual IceRegManager *makeRegManager(IceCfgNode *Node) { return NULL; }
   virtual IceInstTarget *makeAssign(IceVariable *Dest, IceOperand *Src);
   virtual llvm::SmallBitVector getRegisterMask(void) const;
 

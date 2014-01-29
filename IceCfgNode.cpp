@@ -179,20 +179,8 @@ void IceCfgNode::deletePhis(void) {
 }
 
 void IceCfgNode::genCode(void) {
-  const unsigned NumScratchReg = 3; // eax, ecx, edx
   IceTargetLowering *Target = Cfg->getTarget();
-  // TODO: Disabling extended basic block handling for now.  IIRC,
-  // there was a problem when adding compensations.  Revisit when
-  // compensations are fixed.
-  if (false && InEdges.size() == 1) {
-    IceCfgNode *Pred = InEdges[0];
-    assert(Pred);
-    // TODO: Use the final RegManager in Pred.
-    RegManager = new IceRegManager(*Pred->RegManager);
-  } else {
-    RegManager = new IceRegManager(Cfg, this, NumScratchReg);
-  }
-  Target->setRegManager(RegManager);
+  RegManager = Target->makeRegManager(this);
   // Defer the Phi instructions.
   IceInstList::iterator I = Insts.begin(), E = Insts.end();
   while (I != E) {

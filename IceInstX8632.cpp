@@ -26,6 +26,13 @@ llvm::SmallBitVector IceTargetX8632::getRegisterMask(void) const {
   return Mask;
 }
 
+IceRegManager *IceTargetX8632::makeRegManager(IceCfgNode *Node) {
+  const unsigned NumScratchReg = 3; // eax, ecx, edx
+  // TODO: Optimize for extended basic blocks.
+  RegManager = new IceRegManager(Cfg, Node, NumScratchReg);
+  return RegManager;
+}
+
 IceInstTarget *IceTargetX8632::makeAssign(IceVariable *Dest, IceOperand *Src) {
   assert(Dest->getRegNum() >= 0);
   return new IceInstX8632Mov(Cfg, Dest, Src);
