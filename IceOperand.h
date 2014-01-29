@@ -82,23 +82,48 @@ private:
   } Value;
 };
 
+class IceRegWeight {
+public:
+  IceRegWeight(void) : Weight(0) {}
+  IceRegWeight(uint32_t Weight) : Weight(Weight) {}
+  const static uint32_t Inf = ~0;
+  void addWeight(uint32_t Delta) {
+    if (Delta == Inf)
+      Weight = Inf;
+    else if (Weight != Inf)
+      Weight += Delta;
+  }
+  void addWeight(const IceRegWeight &Other) { addWeight(Other.getWeight()); }
+  void setWeight(uint32_t Val) { Weight = Val; }
+  uint32_t getWeight(void) const { return Weight; }
+  bool isInf(void) const { return getWeight() == Inf; }
+
+private:
+  uint32_t Weight;
+};
+IceOstream &operator<<(IceOstream &Str, const IceRegWeight &W);
+
 class IceLiveRange {
 public:
   IceLiveRange(void) : Weight(0) {}
   int getStart(void) const { return Range.empty() ? -1 : Range.begin()->first; }
-  void reset(void) { Range.clear(); }
+  void reset(void) {
+    Range.clear();
+    Weight.setWeight(0);
+  }
   void addSegment(int Start, int End);
   bool endsBefore(const IceLiveRange &Other) const;
   bool overlaps(const IceLiveRange &Other) const;
-  int getWeight(void) const { return Weight; }
-  void setWeight(int NewWeight) { Weight = NewWeight; }
+  IceRegWeight getWeight(void) const { return Weight; }
+  void setWeight(const IceRegWeight &NewWeight) { Weight = NewWeight; }
+  void addWeight(uint32_t Delta) { Weight.addWeight(Delta); }
   void dump(IceOstream &Str) const;
   static void unitTests(void);
 
 private:
   typedef std::set<std::pair<int, int> > RangeType;
   RangeType Range;
-  int Weight;
+  IceRegWeight Weight;
 };
 
 IceOstream &operator<<(IceOstream &Str, const IceLiveRange &L);
@@ -137,9 +162,9 @@ public:
   int getRegNum(void) const { return RegNum; }
   void setRegNumTmp(int NewRegNum) { RegNumTmp = NewRegNum; }
   int getRegNumTmp(void) const { return RegNumTmp; }
-  void setWeight(int NewWeight) { Weight = NewWeight; }
-  void setWeightInfinite(void) { Weight = 100; }
-  int getWeight(void) const { return Weight; }
+  void setWeight(uint32_t NewWeight) { Weight = NewWeight; }
+  void setWeightInfinite(void) { Weight = IceRegWeight::Inf; }
+  IceRegWeight getWeight(void) const { return Weight; }
   void setPreferredRegister(IceVariable *Prefer, bool Overlap) {
     RegisterPreference = Prefer;
     AllowRegisterOverlap = Overlap;
@@ -147,9 +172,11 @@ public:
   IceVariable *getPreferredRegister(void) const { return RegisterPreference; }
   bool getRegisterOverlap(void) const { return AllowRegisterOverlap; }
   void resetLiveRange(void) { LiveRange.reset(); }
-  void addLiveRange(int Start, int End, int WeightDelta) {
+  void addLiveRange(int Start, int End, uint32_t WeightDelta) {
+    assert(WeightDelta != IceRegWeight::Inf);
     LiveRange.addSegment(Start, End);
-    LiveRange.setWeight(WeightDelta * LiveRange.getWeight() + getWeight());
+    if (!Weight.isInf())
+      LiveRange.addWeight(WeightDelta * Weight.getWeight());
   }
   const IceLiveRange &getLiveRange(void) const { return LiveRange; }
   IceString getName(void) const;
@@ -175,9 +202,9 @@ private:
   bool IsArgument;
   bool IsMultiblockLife;
   bool AllowAutoDelete;
-  int RegNum;    // Allocated register; -1 for no allocation
-  int RegNumTmp; // Tentative assignment during register allocation
-  int Weight;    // Register allocation priority
+  int RegNum;          // Allocated register; -1 for no allocation
+  int RegNumTmp;       // Tentative assignment during register allocation
+  IceRegWeight Weight; // Register allocation priority
   IceVariable *RegisterPreference;
   bool AllowRegisterOverlap;
   IceLiveRange LiveRange;

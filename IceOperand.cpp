@@ -191,3 +191,11 @@ IceOstream &operator<<(IceOstream &Str, const IceLiveRange &L) {
   L.dump(Str);
   return Str;
 }
+
+IceOstream &operator<<(IceOstream &Str, const IceRegWeight &W) {
+  if (W.getWeight() == IceRegWeight::Inf)
+    Str << "Inf";
+  else
+    Str << W.getWeight();
+  return Str;
+}

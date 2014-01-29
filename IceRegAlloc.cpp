@@ -175,14 +175,14 @@ void IceLinearScan::doScan(const llvm::SmallBitVector &RegMask) {
       assert(RegUses[Cur.Var->getRegNumTmp()] >= 0);
       Active.push_back(Cur);
     } else {
-      std::vector<int> Weights(RegMask.size());
+      std::vector<IceRegWeight> Weights(RegMask.size());
       for (UnorderedRanges::const_iterator I = Active.begin(), E = Active.end();
            I != E; ++I) {
         IceLiveRangeWrapper Item = *I;
         if (Item.overlaps(Cur)) {
-          assert(Item.Var->getRegNumTmp() >= 0);
-          Weights[Item.Var->getRegNumTmp()] +=
-              Item.range().getWeight() * Item.Var->getWeight();
+          int RegNum = Item.Var->getRegNumTmp();
+          assert(RegNum >= 0);
+          Weights[RegNum].addWeight(Item.range().getWeight());
         }
       }
       for (UnorderedRanges::const_iterator I = Inactive.begin(),
@@ -190,9 +190,9 @@ void IceLinearScan::doScan(const llvm::SmallBitVector &RegMask) {
            I != E; ++I) {
         IceLiveRangeWrapper Item = *I;
         if (Item.overlaps(Cur)) {
-          assert(Item.Var->getRegNumTmp() >= 0);
-          Weights[Item.Var->getRegNumTmp()] +=
-              Item.range().getWeight() * Item.Var->getWeight();
+          int RegNum = Item.Var->getRegNumTmp();
+          assert(RegNum >= 0);
+          Weights[RegNum].addWeight(Item.range().getWeight());
         }
       }
       for (OrderedRanges::const_iterator I = Unhandled.begin(),
@@ -200,18 +200,21 @@ void IceLinearScan::doScan(const llvm::SmallBitVector &RegMask) {
            I != E; ++I) {
         IceLiveRangeWrapper Item = *I;
         if (Item.overlaps(Cur)) {
+          int RegNum = Item.Var->getRegNumTmp();
           // TODO: handle properly for precolored ranges
-          if (Item.Var->getRegNumTmp() >= 0 && false) {
-            Weights[Item.Var->getRegNumTmp()] = 1 << 31; // effectively infinite
+          if (RegNum >= 0 && false) {
+            Weights[RegNum].setWeight(IceRegWeight::Inf);
           }
         }
       }
       int MinWeightIndex = RegMask.find_first();
       for (unsigned i = MinWeightIndex + 1; i < Weights.size(); ++i) {
-        if (RegMask[i] && Weights[i] < Weights[MinWeightIndex])
+        if (RegMask[i] &&
+            Weights[i].getWeight() < Weights[MinWeightIndex].getWeight())
           MinWeightIndex = i;
       }
-      if (Cur.range().getWeight() <= Weights[MinWeightIndex]) {
+      if (Cur.range().getWeight().getWeight() <=
+          Weights[MinWeightIndex].getWeight()) {
         // Cur doesn't have priority over any other live ranges, so
         // don't allocate any register to it, and move it to the
         // Handled state.
