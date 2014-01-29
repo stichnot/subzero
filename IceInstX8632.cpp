@@ -14,15 +14,15 @@ IceString IceTargetX8632::RegNames[] = { "eax", "ecx", "edx", "ebx",
                                          "esp", "ebp", "esi", "edi", };
 
 llvm::SmallBitVector IceTargetX8632::getRegisterMask(void) const {
-  llvm::SmallBitVector Mask(sizeof(RegNames) / sizeof(*RegNames));
-  Mask[0] = true; // eax
-  Mask[1] = true; // ecx
-  Mask[2] = true; // edx
-  Mask[3] = true; // ebx
+  llvm::SmallBitVector Mask(Reg_NUM);
+  Mask[Reg_eax] = true;
+  Mask[Reg_ecx] = true;
+  Mask[Reg_edx] = true;
+  Mask[Reg_ebx] = true;
   // TODO: Disable ebp if Cfg has an alloca.
-  Mask[5] = true; // ebp
-  Mask[6] = true; // esi
-  Mask[7] = true; // edi
+  Mask[Reg_ebp] = true;
+  Mask[Reg_esi] = true;
+  Mask[Reg_edi] = true;
   return Mask;
 }
 
@@ -511,19 +511,16 @@ void IceInstX8632Ret::dump(IceOstream &Str) const {
 
 ////////////////////////////////////////////////////////////////
 
-IceString IceTargetX8632S::RegNames[] = { "eax", "ecx", "edx", "ebx",
-                                          "esp", "ebp", "esi", "edi", };
-
 llvm::SmallBitVector IceTargetX8632S::getRegisterMask(void) const {
-  llvm::SmallBitVector Mask(sizeof(RegNames) / sizeof(*RegNames));
-  Mask[0] = true; // eax
-  Mask[1] = true; // ecx
-  Mask[2] = true; // edx
-  Mask[3] = true; // ebx
+  llvm::SmallBitVector Mask(Reg_NUM);
+  Mask[Reg_eax] = true;
+  Mask[Reg_ecx] = true;
+  Mask[Reg_edx] = true;
+  Mask[Reg_ebx] = true;
   // TODO: Disable ebp if Cfg has an alloca.
-  Mask[5] = true; // ebp
-  Mask[6] = true; // esi
-  Mask[7] = true; // edi
+  Mask[Reg_ebp] = true;
+  Mask[Reg_esi] = true;
+  Mask[Reg_edi] = true;
   return Mask;
 }
 
@@ -705,7 +702,7 @@ IceInstList IceTargetX8632S::lowerRet(const IceInst *Inst, const IceInst *Next,
   if (Src0) {
     Reg = Cfg->makeVariable(Src0->getType());
     Reg->setWeightInfinite();
-    Reg->setRegNum(0); // eax
+    Reg->setRegNum(Reg_eax);
     NewInst = new IceInstX8632Mov(Cfg, Reg, Src0);
     Expansion.push_back(NewInst);
   }

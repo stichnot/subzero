@@ -18,6 +18,17 @@ public:
   virtual IceInstTarget *makeAssign(IceVariable *Dest, IceOperand *Src);
   virtual IceString *getRegNames(void) const { return RegNames; }
   virtual llvm::SmallBitVector getRegisterMask(void) const;
+  enum Registers {
+    Reg_eax = 0,
+    Reg_ecx = 1,
+    Reg_edx = 2,
+    Reg_ebx = 3,
+    Reg_esp = 4,
+    Reg_ebp = 5,
+    Reg_esi = 6,
+    Reg_edi = 7,
+    Reg_NUM = 8
+  };
 
 protected:
   virtual IceInstList lowerAlloca(const IceInst *Inst, const IceInst *Next,
@@ -57,7 +68,6 @@ class IceTargetX8632S : public IceTargetX8632 {
 public:
   IceTargetX8632S(IceCfg *Cfg) : IceTargetX8632(Cfg) {}
   virtual IceInstTarget *makeAssign(IceVariable *Dest, IceOperand *Src);
-  virtual IceString *getRegNames(void) const { return RegNames; }
   virtual llvm::SmallBitVector getRegisterMask(void) const;
 
 protected:
@@ -91,7 +101,6 @@ protected:
                                   bool &DeleteNextInst);
 
 private:
-  static IceString RegNames[];
 };
 
 // Two-address arithmetic instructions.
