@@ -10,13 +10,22 @@
 #include "IceDefs.h"
 #include "IceTypes.h"
 
+// Currently this just wraps an IceVariable pointer, so in principle
+// we could use containers of IceVariable* instead of
+// IceLiveRangeWrapper.  But in the future, we may want to do more
+// complex things such as live range splitting, and keeping a wrapper
+// should make that simpler.
 class IceLiveRangeWrapper {
 public:
-  const IceLiveRange &Range;
-  IceVariable *Var;
-  int Register;
-  IceLiveRangeWrapper(const IceLiveRange &Range, IceVariable *Var, int Register)
-      : Range(Range), Var(Var), Register(Register) {}
+  IceLiveRangeWrapper(IceVariable *Var) : Var(Var) {}
+  const IceLiveRange &range(void) const { return Var->getLiveRange(); }
+  bool endsBefore(const IceLiveRangeWrapper &Other) const {
+    return range().endsBefore(Other.range());
+  }
+  bool overlaps(const IceLiveRangeWrapper &Other) const {
+    return range().overlaps(Other.range());
+  }
+  IceVariable *const Var;
   void dump(IceOstream &Str) const;
 };
 IceOstream &operator<<(IceOstream &Str, const IceLiveRangeWrapper &R);
@@ -38,8 +47,8 @@ private:
   struct RangeCompare {
     bool operator()(const IceLiveRangeWrapper &L,
                     const IceLiveRangeWrapper &R) const {
-      int Lstart = L.Range.getStart();
-      int Rstart = R.Range.getStart();
+      int Lstart = L.Var->getLiveRange().getStart();
+      int Rstart = R.Var->getLiveRange().getStart();
       if (Lstart < Rstart)
         return true;
       if (Lstart > Rstart)

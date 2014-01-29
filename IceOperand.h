@@ -24,9 +24,6 @@
   or maybe a TLS address
  */
 
-class IceVariable;
-class IceConstant;
-
 class IceOperand {
 public:
   enum OperandKind {
@@ -112,8 +109,9 @@ public:
   IceVariable(IceType Type, uint32_t Index, const IceString &Name)
       : IceOperand(Variable, Type), VarIndex(Index), Name(Name), UseCount(0),
         DefInst(NULL), DefOrUseNode(NULL), IsMultiDef(false), IsArgument(false),
-        IsMultiblockLife(false), AllowAutoDelete(true), RegNum(-1), Weight(1),
-        LinkedTo(NULL) {}
+        IsMultiblockLife(false), AllowAutoDelete(true), RegNum(-1),
+        RegNumTmp(-1), Weight(1), RegisterPreference(NULL),
+        AllowRegisterOverlap(false) {}
   virtual void setUse(const IceInst *Inst, const IceCfgNode *Node);
   virtual void removeUse(void);
   virtual uint32_t getUseCount(void) const { return UseCount; }
@@ -137,14 +135,16 @@ public:
     RegNum = NewRegNum;
   }
   int getRegNum(void) const { return RegNum; }
+  void setRegNumTmp(int NewRegNum) { RegNumTmp = NewRegNum; }
+  int getRegNumTmp(void) const { return RegNumTmp; }
   void setWeight(int NewWeight) { Weight = NewWeight; }
   int getWeight(void) const { return Weight; }
-  void setLinkedTo(IceVariable *Parent) {
-    assert(LinkedTo == NULL);
-    assert(Parent != this);
-    LinkedTo = Parent;
+  void setPreferredRegister(IceVariable *Prefer, bool Overlap) {
+    RegisterPreference = Prefer;
+    AllowRegisterOverlap = Overlap;
   }
-  IceVariable *getLinkedTo(void) const { return LinkedTo; }
+  IceVariable *getPreferredRegister(void) const { return RegisterPreference; }
+  bool getRegisterOverlap(void) const { return AllowRegisterOverlap; }
   void resetLiveRange(void) { LiveRange.reset(); }
   void addLiveRange(int Start, int End, int WeightDelta) {
     LiveRange.addSegment(Start, End);
@@ -174,9 +174,11 @@ private:
   bool IsArgument;
   bool IsMultiblockLife;
   bool AllowAutoDelete;
-  int RegNum; // Allocated register; -1 for no allocation
-  int Weight; // Register allocation priority
-  IceVariable *LinkedTo;
+  int RegNum;    // Allocated register; -1 for no allocation
+  int RegNumTmp; // Tentative assignment during register allocation
+  int Weight;    // Register allocation priority
+  IceVariable *RegisterPreference;
+  bool AllowRegisterOverlap;
   IceLiveRange LiveRange;
 };
 

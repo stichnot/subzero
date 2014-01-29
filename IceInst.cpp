@@ -309,7 +309,7 @@ void IceInst::liveness(IceLiveness Mode, int InstNumber, llvm::BitVector &Live,
             // instructions, and also optimize for commutativity.
             // Also, consider moving this special logic into
             // IceCfgNode::livenessPostprocess().
-            LiveEnd[VarNum] = InstNumber + 1;
+            LiveEnd[VarNum] = InstNumber /* + 1*/;
           }
         }
       }
@@ -415,6 +415,8 @@ IceInst *IceInstPhi::lower(IceCfg *Cfg, IceCfgNode *Node) {
   Dests.clear();
   addDest(NewSrc);
   IceInstAssign *NewInst = new IceInstAssign(Cfg, Dest, NewSrc);
+  Dest->setPreferredRegister(NewSrc, false);
+  NewSrc->setPreferredRegister(Dest, false);
   // NewInst->updateVars(Node);
   Dest->replaceDefinition(NewInst, Node);
   return NewInst;

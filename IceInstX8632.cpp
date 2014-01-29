@@ -556,6 +556,7 @@ IceInstList IceTargetX8632S::lowerArithmetic(const IceInst *Inst,
   // TODO: Change this and other uses of the arbitrary constant "100"
   // to properly encode and deal with "infinite" weight.
   Reg->setWeight(100);
+  Reg->setPreferredRegister(llvm::dyn_cast<IceVariable>(Src0), false);
   NewInst = new IceInstX8632Mov(Cfg, Reg, Src0);
   Expansion.push_back(NewInst);
   NewInst = new IceInstX8632Arithmetic(
@@ -580,7 +581,7 @@ IceInstList IceTargetX8632S::lowerAssign(const IceInst *Inst,
   // a=b ==> t=b; a=t; (link t->b)
   Reg = Cfg->makeVariable(Dest->getType());
   Reg->setWeight(100);
-  Reg->setLinkedTo(llvm::dyn_cast<IceVariable>(Src0));
+  Reg->setPreferredRegister(llvm::dyn_cast<IceVariable>(Src0), true);
   NewInst = new IceInstX8632Mov(Cfg, Reg, Src0);
   Expansion.push_back(NewInst);
   NewInst = new IceInstX8632Mov(Cfg, Dest, Reg);
@@ -634,7 +635,7 @@ IceInstList IceTargetX8632S::lowerIcmp(const IceInst *Inst, const IceInst *Next,
     IceOperand *Src1 = Inst->getSrc(1);
     IceVariable *Reg = Cfg->makeVariable(Src0->getType());
     Reg->setWeight(100);
-    Reg->setLinkedTo(llvm::dyn_cast<IceVariable>(Src0));
+    Reg->setPreferredRegister(llvm::dyn_cast<IceVariable>(Src0), true);
     NewInst = new IceInstX8632Mov(Cfg, Reg, Src0);
     Expansion.push_back(NewInst);
     NewInst = new IceInstX8632Icmp(Cfg, Reg, Src1);
@@ -667,14 +668,14 @@ IceInstList IceTargetX8632S::lowerLoad(const IceInst *Inst, const IceInst *Next,
   // t0=base; t1=index; t2=load[base,index,shift,offset]; dest=t2
   IceVariable *Reg0 = Cfg->makeVariable(Src0->getType());
   Reg0->setWeight(100);
-  Reg0->setLinkedTo(llvm::dyn_cast<IceVariable>(Src0));
+  Reg0->setPreferredRegister(llvm::dyn_cast<IceVariable>(Src0), true);
   NewInst = new IceInstX8632Mov(Cfg, Reg0, Src0);
   Expansion.push_back(NewInst);
   IceVariable *Reg1 = NULL;
   if (Src1) {
     Reg1 = Cfg->makeVariable(Src1->getType());
     Reg1->setWeight(100);
-    Reg1->setLinkedTo(llvm::dyn_cast<IceVariable>(Src1));
+    Reg1->setPreferredRegister(llvm::dyn_cast<IceVariable>(Src1), true);
     NewInst = new IceInstX8632Mov(Cfg, Reg1, Src1);
     Expansion.push_back(NewInst);
   }
