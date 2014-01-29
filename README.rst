@@ -5,38 +5,44 @@ Building
 --------
 
 You must have LLVM trunk source code available and built.  See
-http://llvm.org/docs/GettingStarted.html#getting-started-quickly-a-summary
-for guidance.
+http://llvm.org/docs/GettingStarted.html#getting-started-quickly-a-summary for
+guidance.
 
-Set variables ``LLVM_SRC_PATH``, ``LLVM_BUILD_PATH``, and
-``LLVM_BIN_PATH`` to point to the appropriate directories in the LLVM
-source and build directories.  These can be set as environment
-variables, or you can modify the top-level Makefile.
+Set variables ``LLVM_SRC_PATH``, ``LLVM_BUILD_PATH``, and ``LLVM_BIN_PATH`` to
+point to the appropriate directories in the LLVM source and build directories.
+These can be set as environment variables, or you can modify the top-level
+Makefile.
 
 Run ``make`` at the top level to build targets ``subzerotest`` and ``llvm2ice``.
 
 ``subzerotest``
 ---------------
 
+Note: ``subzerotest`` is deprecated; use ``llvm2ice`` instead.  The
+``subzerotest`` equivalent inputs can be found in::
+
+    tests_lit/llvm2ice_tests/simple-cond.ll
+    tests_lit/llvm2ice_tests/simple-loop.ll
+
 The ``subzerotest`` program uses ``IceTest.cpp`` as a driver.  It
-hand-constructs the ICE IR for a small number of tests and runs the
-various translation phases on the IR, dumping the IR at various points.
+hand-constructs the ICE IR for a small number of tests and runs the various
+translation phases on the IR, dumping the IR at various points.
 
 The test is run as follows::
 
     ./subzerotest cond
     ./subzerotest loop
 
-The ``cond`` test is a simple if-then-else conditional, and the
-``loop`` test is a simple loop that sums the elements of an array.
+The ``cond`` test is a simple if-then-else conditional, and the ``loop`` test is
+a simple loop that sums the elements of an array.
 
 ``llvm2ice``
 ------------
 
-The ``llvm2ice`` program uses the LLVM infrastructure to parse an LLVM
-bitcode file, translate it into ICE, and dump the ICE IR.  At this
-time, no Subzero translation is performed.  The goal at this point is
-to ensure that the LLVM and Subzero IR dumps agree with each other.
+The ``llvm2ice`` program uses the LLVM infrastructure to parse an LLVM bitcode
+file, translate it into ICE, and dump the ICE IR.  At this time, no Subzero
+translation is performed.  The goal at this point is to ensure that the LLVM and
+Subzero IR dumps agree with each other.
 
 The test is run as follows::
 
@@ -58,27 +64,28 @@ Subzero uses the LLVM ``lit`` testing tool for its test suite, which lives in
 The above ``lit`` execution also needs the LLVM binary path in the
 ``LLVM_BIN_PATH`` env var.
 
+Assuming the LLVM paths are set up, ``make check`` is a convenient way to run
+the test suite.
+
 
 TODO list
 ---------
 
-Here is a list of TODO items.  Some might already be listed in the
-source code with a ``TODO`` comment.
+Here is a list of TODO items.  Some might already be listed in the source code
+with a ``TODO`` comment.
 
-- Add command-line and environment control of translation options,
-  such as target, verbosity, and control of which methods to
-  translate.  ICE should have a simple API for setting and getting
-  these options.  llvm2ice can use ``llvm::cl`` functionality to set
-  them.  New lit tests can use a -notranslate flag while ICE bugs are
-  fixed.
+- Add command-line and environment control of translation options, such as
+  target, verbosity, and control of which methods to translate.  ICE should have
+  a simple API for setting and getting these options.  llvm2ice can use
+  ``llvm::cl`` functionality to set them.  New lit tests can use a -notranslate
+  flag while ICE bugs are fixed.
 
-- Add support for not-yet-implemented LLVM bitcode instructions.
-  Start with constructors and ``dump()`` methods, then add lowering
-  and any special needs.
+- Add support for not-yet-implemented LLVM bitcode instructions.  Start with
+  constructors and ``dump()`` methods, then add lowering and any special needs.
 
-- Constants.  ``i32`` sort of works now, but the rest either outright
-  don't work or haven't been tested.  Floating point constants need to
-  live in a global constant pool.
+- Constants.  ``i32`` sort of works now, but the rest either outright don't work
+  or haven't been tested.  Floating point constants need to live in a global
+  constant pool.
 
 - Other types, especially ``i64``, ``f32``, and ``f64``.  Most of the
   requirements are probably in the lowering and register allocation.
@@ -89,12 +96,12 @@ source code with a ``TODO`` comment.
 
 - Other targets besides x86-32.
 
-- Add code to LLVM so that for each method that needs translation,
-  first offer Subzero the chance to translate, and if Subzero returns
-  an error code, fall back to robust LLVM translation (presumably O0).
+- Add code to LLVM so that for each method that needs translation, first offer
+  Subzero the chance to translate, and if Subzero returns an error code, fall
+  back to robust LLVM translation (presumably O0).
 
-- Add code to Subzero allowing fine-grain control of which methods to
-  attempt to translate and which to unconditionally reject.  The
-  control string can come from the command line and/or environment.
+- Add code to Subzero allowing fine-grain control of which methods to attempt to
+  translate and which to unconditionally reject.  The control string can come
+  from the command line and/or environment.
 
 - Refactor the IR passes using a Visitor pattern.
