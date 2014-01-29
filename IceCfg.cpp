@@ -264,9 +264,7 @@ void IceCfg::regAlloc(void) {
   // which are made available for register allocation.
   IceLinearScan LinearScan(this);
   llvm::SmallBitVector RegMask = getTarget()->getRegisterMask();
-  LinearScan.init(false);
-  LinearScan.doScan(RegMask);
-  LinearScan.assign();
+  LinearScan.scan(RegMask);
 }
 
 // Proposed pass list:

@@ -181,6 +181,9 @@ public:
       LiveRange.addWeight(WeightDelta * Weight.getWeight());
   }
   const IceLiveRange &getLiveRange(void) const { return LiveRange; }
+  void setLiveRangeInfiniteWeight(void) {
+    LiveRange.setWeight(IceRegWeight::Inf);
+  }
   IceString getName(void) const;
   virtual void dump(IceOstream &Str) const;
 

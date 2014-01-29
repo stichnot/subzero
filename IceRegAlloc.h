@@ -33,10 +33,7 @@ IceOstream &operator<<(IceOstream &Str, const IceLiveRangeWrapper &R);
 class IceLinearScan {
 public:
   IceLinearScan(IceCfg *Cfg) : Cfg(Cfg) {}
-  void init(bool AllowSingleBlockRanges);
-  void reset(void);
-  void doScan(const llvm::SmallBitVector &RegMask);
-  void assign(void) const;
+  void scan(const llvm::SmallBitVector &RegMask);
   void dump(IceOstream &Str) const;
 
 private:
@@ -49,11 +46,9 @@ private:
                     const IceLiveRangeWrapper &R) const {
       int Lstart = L.Var->getLiveRange().getStart();
       int Rstart = R.Var->getLiveRange().getStart();
-      if (Lstart < Rstart)
-        return true;
-      if (Lstart > Rstart)
-        return false;
-      return L.Var->getIndex() < R.Var->getIndex();
+      if (Lstart == Rstart)
+        return L.Var->getIndex() < R.Var->getIndex();
+      return Lstart < Rstart;
     }
   };
   typedef std::set<IceLiveRangeWrapper, RangeCompare> OrderedRanges;
