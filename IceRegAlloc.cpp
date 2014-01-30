@@ -326,8 +326,10 @@ void IceLinearScan::scan(const llvm::SmallBitVector &RegMask) {
       if (RegNum < 0) {
         Cfg->Str << "Not assigning " << Item.Var << "\n";
       } else {
-        Cfg->Str << (RegNum == Item.Var->getRegNum() ? "Reassigning " : "Assigning ") << Cfg->physicalRegName(RegNum) << "(r" << RegNum
-                 << ") to " << Item.Var << "\n";
+        Cfg->Str << (RegNum == Item.Var->getRegNum() ? "Reassigning "
+                                                     : "Assigning ")
+                 << Cfg->physicalRegName(RegNum) << "(r" << RegNum << ") to "
+                 << Item.Var << "\n";
       }
     }
     Item.Var->setRegNum(Item.Var->getRegNumTmp());
