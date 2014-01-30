@@ -8,10 +8,17 @@
 #include "IceOperand.h"
 #include "IceRegAlloc.h"
 
-// Implements the linear-scan algorithm.  Requires running
-// IceCfg::liveness(IceLiveness_RangesFull) in preparation.  Results
-// are left in IceVariable::RegNumTmp for each IceVariable referenced
-// in the IceLinearScan::Handled list.
+// Implements the linear-scan algorithm.  Based on "Linear Scan
+// Register Allocation in the Context of SSA Form and Register
+// Constraints" by Hanspeter Mössenböck and Michael Pfeiffer,
+// ftp://ftp.ssw.uni-linz.ac.at/pub/Papers/Moe02.PDF .  This
+// implementation is modified to take affinity into account and allow
+// two interfering variables to share the same register in certain
+// cases.
+//
+// Requires running IceCfg::liveness(IceLiveness_RangesFull) in
+// preparation.  Results are assigned to IceVariable::RegNum for each
+// IceVariable.
 void IceLinearScan::scan(const llvm::SmallBitVector &RegMask) {
   if (!RegMask.any())
     return;
