@@ -62,10 +62,34 @@ IceString IceVariable::getName(void) const {
 }
 
 void IceLiveRange::addSegment(int Start, int End) {
-  // TODO: coalesce contiguous ranges, though that may not happen much
-  // when most blocks contain phi instructions.  Main exception:
-  // extended basic block pairs that are laid out consecutively.
-  Range.insert(std::pair<int, int>(Start, End));
+  RangeElementType Element(Start, End);
+  RangeType::iterator Next = Range.lower_bound(Element);
+  assert(Next == Range.upper_bound(Element)); // Element not already present
+
+  // Beginning of code that merges contiguous segments.  TODO: change
+  // "if(true)" to "if(false)" to see if this extra optimization code
+  // gives any performance gain, or is just destabilizing.
+  if (true) {
+    RangeType::iterator FirstDelete = Next;
+    RangeType::iterator Prev = Next;
+    bool hasPrev = (Next != Range.begin());
+    if (hasPrev)
+      --Prev;
+    // See if Element and Next should be joined.
+    if (End == Next->first) {
+      Element.second = Next->second;
+      ++Next;
+    }
+    // See if Prev and Element should be joined.
+    if (hasPrev && Prev->second == Start) {
+      Element.first = Prev->first;
+      FirstDelete = Prev;
+    }
+    Range.erase(FirstDelete, Next);
+  }
+  // End of code that merges contiguous segments.
+
+  Range.insert(Next, Element);
 }
 
 bool IceLiveRange::endsBefore(const IceLiveRange &Other) const {

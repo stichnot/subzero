@@ -123,7 +123,8 @@ public:
   static void unitTests(void);
 
 private:
-  typedef std::set<std::pair<int, int> > RangeType;
+  typedef std::pair<int, int> RangeElementType;
+  typedef std::set<RangeElementType> RangeType;
   RangeType Range;
   IceRegWeight Weight;
 };
