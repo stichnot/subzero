@@ -293,6 +293,11 @@ void IceCfg::translate(IceTargetArch TargetArch) {
   Str << "================ Initial CFG ================\n";
   dump();
 
+  // TODO: If we're anyway planning to do full liveness analysis
+  // (including dead store elimination) after lowering, and we're
+  // using global register allocation and not the local register
+  // manager, then findAddressOpt() should be done as part of
+  // lowering.
   findAddressOpt();
   liveness(IceLiveness_RangesFull);
   Str << "================ After x86 address opt ================\n";
