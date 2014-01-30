@@ -334,6 +334,17 @@ void IceLinearScan::scan(const llvm::SmallBitVector &RegMask) {
     }
     Item.Var->setRegNum(Item.Var->getRegNumTmp());
   }
+
+  // TODO: Consider running register allocation one more time, with
+  // infinite registers, for two reasons.  First, evicted live ranges
+  // get a second chance for a register.  Second, it allows coalescing
+  // of stack slots.  If there is no time budget for the second
+  // register allocation run, each unallocated variable just gets its
+  // own slot.
+  //
+  // Another idea for coalescing stack slots is to initialize the
+  // Unhandled list with just the unallocated variables, saving time
+  // but not offering second-chance opportunities.
 }
 
 // ======================== Dump routines ======================== //
