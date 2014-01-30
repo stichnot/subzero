@@ -177,7 +177,9 @@ public:
   void addLiveRange(int Start, int End, uint32_t WeightDelta) {
     assert(WeightDelta != IceRegWeight::Inf);
     LiveRange.addSegment(Start, End);
-    if (!Weight.isInf())
+    if (Weight.isInf())
+      LiveRange.setWeight(IceRegWeight::Inf);
+    else
       LiveRange.addWeight(WeightDelta * Weight.getWeight());
   }
   const IceLiveRange &getLiveRange(void) const { return LiveRange; }
