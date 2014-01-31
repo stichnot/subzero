@@ -167,13 +167,19 @@ private:
 // TODO: implement
 class IceInstCall : public IceInst {
 public:
-  IceInstCall(IceCfg *Cfg, bool Tail = false)
-      : IceInst(Cfg, Call), Tail(Tail) {}
+  IceInstCall(IceCfg *Cfg, IceVariable *Dest, IceOperand *CallTarget,
+              bool Tail = false)
+      : IceInst(Cfg, Call), CallTarget(CallTarget), Tail(Tail) {
+    addDest(Dest);
+  }
+  void addArg(IceOperand *Arg) { addSource(Arg); }
+  IceOperand *getCallTarget(void) const { return CallTarget; }
   virtual void removeUse(IceVariable *Variable) {}
   virtual void dump(IceOstream &Str) const;
   static bool classof(const IceInst *Inst) { return Inst->getKind() == Call; }
 
 private:
+  IceOperand *CallTarget;
   const bool Tail;
 };
 

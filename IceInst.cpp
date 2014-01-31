@@ -628,6 +628,16 @@ void IceInstBr::dump(IceOstream &Str) const {
   Str << "label %" << getTargetFalse()->getName();
 }
 
+void IceInstCall::dump(IceOstream &Str) const {
+  dumpDests(Str);
+  Str << " = ";
+  if (Tail)
+    Str << "tail ";
+  Str << "call " << getCallTarget() << "(";
+  dumpSources(Str);
+  Str << ")";
+}
+
 void IceInstIcmp::dump(IceOstream &Str) const {
   dumpDests(Str);
   Str << " = icmp ";

@@ -132,6 +132,10 @@ private:
       return NULL;
     }
     const Value *Op = Inst->getOperand(OpNum);
+    return convertValue(Op);
+  }
+
+  IceOperand *convertValue(const Value *Op) {
     if (const Constant *Const = dyn_cast<Constant>(Op)) {
       // For now only constant integers are supported.
       // TODO: support all kinds of constants
@@ -145,7 +149,7 @@ private:
         return NULL;
       }
     } else {
-      return mapValueToIceVar(Inst->getOperand(OpNum));
+      return mapValueToIceVar(Op);
     }
   }
 
@@ -203,6 +207,8 @@ private:
       return convertArithInstruction(Inst, IceInstArithmetic::Or);
     case Instruction::Xor:
       return convertArithInstruction(Inst, IceInstArithmetic::Xor);
+    case Instruction::Call:
+      return convertCallInstruction(cast<CallInst>(Inst));
     default:
       report_fatal_error(std::string("Invalid PNaCl instruction: ") +
                          LLVMObjectAsString(Inst));
@@ -312,6 +318,18 @@ private:
     return new IceInstIcmp(Cfg, Cond, Dest, Src0, Src1);
   }
 
+  IceInst *convertCallInstruction(const CallInst *Inst) {
+    IceVariable *Dest = mapValueToIceVar(Inst);
+    IceOperand *CallTarget = convertValue(Inst->getCalledValue());
+    IceInstCall *NewInst =
+        new IceInstCall(Cfg, Dest, CallTarget, Inst->isTailCall());
+    unsigned NumArgs = Inst->getNumArgOperands();
+    for (unsigned i = 0; i < NumArgs; ++i) {
+      NewInst->addArg(convertOperand(Inst, i));
+    }
+    return NewInst;
+  }
+
   IceCfgNode *convertBasicBlock(const BasicBlock *BB) {
     IceCfgNode *Node = mapBasicBlockToNode(BB);
     for (BasicBlock::const_iterator II = BB->begin(), II_e = BB->end();
@@ -373,6 +391,8 @@ int main(int argc, char **argv) {
     VerboseMask |= VerboseList[i];
 
   for (Module::const_iterator I = Mod->begin(), E = Mod->end(); I != E; ++I) {
+    if (I->empty())
+      continue;
     LLVM2ICEConverter FunctionConverter;
     IceCfg *Cfg = FunctionConverter.convertFunction(I);
     if (!VerboseList.empty())
