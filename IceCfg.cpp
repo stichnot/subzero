@@ -296,7 +296,8 @@ void IceCfg::regAlloc(void) {
 //   At some point, lower phis
 void IceCfg::translate(IceTargetArch TargetArch) {
   makeTarget(TargetArch);
-  Str << "================ Initial CFG ================\n";
+  if (Str.isVerbose())
+    Str << "================ Initial CFG ================\n";
   dump();
 
   // TODO: If we're anyway planning to do full liveness analysis
@@ -306,28 +307,33 @@ void IceCfg::translate(IceTargetArch TargetArch) {
   // lowering.
   findAddressOpt();
   liveness(IceLiveness_RangesFull);
-  Str << "================ After x86 address opt ================\n";
+  if (Str.isVerbose())
+    Str << "================ After x86 address opt ================\n";
   dump();
 
   placePhiLoads();
   placePhiStores();
   deletePhis();
   renumberInstructions();
-  Str << "================ After Phi lowering ================\n";
+  if (Str.isVerbose())
+    Str << "================ After Phi lowering ================\n";
   dump();
 
   genCode();
   renumberInstructions();
   liveness(IceLiveness_RangesFull);
-  Str << "================ After initial x8632 codegen ================\n";
+  if (Str.isVerbose())
+    Str << "================ After initial x8632 codegen ================\n";
   dump();
 
   regAlloc();
-  Str << "================ After linear scan regalloc ================\n";
+  if (Str.isVerbose())
+    Str << "================ After linear scan regalloc ================\n";
   dump();
 
   Str.setVerbose(IceV_Instructions);
-  Str << "================ Final output ================\n";
+  if (Str.isVerbose())
+    Str << "================ Final output ================\n";
   dump();
 }
 

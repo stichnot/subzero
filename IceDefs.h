@@ -112,7 +112,7 @@ class IceOstream {
 public:
   IceOstream(std::ostream &Stream, IceCfg *Cfg)
       : Stream(Stream), Cfg(Cfg), Verbose(IceV_Instructions | IceV_Preds) {}
-  bool isVerbose(IceVerboseMask Mask) { return Verbose & Mask; }
+  bool isVerbose(IceVerboseMask Mask = IceV_All) { return Verbose & Mask; }
   void setVerbose(IceVerboseMask Mask) { Verbose = Mask; }
   void addVerbose(IceVerboseMask Mask) { Verbose |= Mask; }
   void subVerbose(IceVerboseMask Mask) { Verbose &= ~Mask; }

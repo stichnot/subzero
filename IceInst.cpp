@@ -65,9 +65,10 @@ void IceInst::findAddressOpt(IceCfg *Cfg, const IceCfgNode *Node) {
   if (Base == BaseOrig)
     return;
 
-  Cfg->Str << "Found AddressOpt opportunity: BaseOrig=" << BaseOrig
-           << " Base=" << Base << " Index=" << Index << " Shift=" << Shift
-           << " Offset=" << Offset << "\n";
+  if (Cfg->Str.isVerbose())
+    Cfg->Str << "Found AddressOpt opportunity: BaseOrig=" << BaseOrig
+             << " Base=" << Base << " Index=" << Index << " Shift=" << Shift
+             << " Offset=" << Offset << "\n";
 
   // Replace Srcs.back() with Base+Index+Shift+Offset, updating
   // reference counts and deleting resulting dead instructions.
