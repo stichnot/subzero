@@ -19,13 +19,27 @@ Run ``make`` at the top level to build the main target ``llvm2ice``.
 ------------
 
 The ``llvm2ice`` program uses the LLVM infrastructure to parse an LLVM bitcode
-file, translate it into ICE, and dump the ICE IR.  At this time, no Subzero
-translation is performed.  The goal at this point is to ensure that the LLVM and
-Subzero IR dumps agree with each other.
+file and translate it into ICE.  It then invokes ICE's translate method to lower
+it to target-specific machine code, dumping the IR at various stages of the
+translation.
 
-The test is run as follows::
+The program can be run as follows::
 
     ../llvm2ice ./ir_samples/<file>.ll
+    ../llvm2ice ./tests_lit/llvm2ice_tests/<file>.ll
+
+At this time, ``llvm2ice`` accepts a few arguments:
+
+    ``-help`` -- Show available arguments and possible values.
+
+    ``-notranslate`` -- Suppress the ICE translation phase, which is useful if
+    ICE is missing some support.
+
+    ``-target=<TARGET>`` -- Set the target architecture (default x8632).
+
+    ``-verbose=<list>`` -- Set verbosity flags.  This argument allows a
+    comma-separated list of values.  The default is ``inst,pred`` to roughly
+    match the .ll bitcode file.  Of particular use are ``all`` and ``none``.
 
 See ir_samples/README.rst for more details.
 
