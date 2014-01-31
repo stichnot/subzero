@@ -272,7 +272,11 @@ private:
     }
   }
 
-  IceInst *convertZExtInstruction(const ZExtInst *Inst) { return NULL; }
+  IceInst *convertZExtInstruction(const ZExtInst *Inst) {
+    IceOperand *Src = convertOperand(Inst, 0);
+    IceVariable *Dest = mapValueToIceVar(Inst);
+    return new IceInstConversion(Cfg, IceInstConversion::Zext, Dest, Src);
+  }
 
   IceInst *convertICmpInstruction(const ICmpInst *Inst) {
     IceOperand *Src0 = convertOperand(Inst, 0);

@@ -201,13 +201,15 @@ public:
     Inttoptr,
     Bitcast,
   };
-  IceInstConversion(IceCfg *Cfg, IceConvert Conversion, IceType Type,
-                    IceOperand *Dest, IceOperand *Source);
+  IceInstConversion(IceCfg *Cfg, IceConvert Conversion, IceVariable *Dest,
+                    IceOperand *Source);
+  virtual void dump(IceOstream &Str) const;
   static bool classof(const IceInst *Inst) {
     return Inst->getKind() == Conversion;
   }
 
 private:
+  IceConvert ConversionKind;
 };
 
 // TODO: implement
