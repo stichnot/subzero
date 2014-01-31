@@ -73,6 +73,8 @@ private:
   // mapValueToIceVar has a version that forces an ICE type on the variable,
   // and a version that just uses convertType on V.
   IceVariable *mapValueToIceVar(const Value *V, IceType IceTy) {
+    if (IceTy == IceType_void)
+      return NULL;
     return Cfg->makeVariable(IceTy, VariableTranslation.translate(V),
                              V->getName());
   }

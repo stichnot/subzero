@@ -22,6 +22,7 @@ public:
     Cast,
     Fcmp,
     Icmp,
+    Kill, // not part of LLVM/PNaCl bitcode
     Load,
     Phi,
     Ret,
@@ -53,6 +54,7 @@ public:
   // the new instructions because of the cascading deletes from
   // reference counting.
   void setDeleted(void);
+  void setDisallowDead(void) { DisallowDead = true; }
   void deleteIfDead(void);
   void updateVars(IceCfgNode *Node);
   void findAddressOpt(IceCfg *Cfg, const IceCfgNode *Node);
@@ -78,6 +80,10 @@ protected:
   bool Deleted;
   // Dead means pending deletion after liveness analysis converges.
   bool Dead;
+  // Some instructions, e.g. stack pointer adjustments, may appear
+  // dead after liveness analysis, but shouldn't be deleted because of
+  // their "hidden" side effects.
+  bool DisallowDead;
   // TODO: Is there any good reason to allow multiple Dest vars?
   // Maybe x86 idiv which produces div/rem at once?  sincos intrinsic?
   IceVarList Dests;
@@ -170,11 +176,16 @@ public:
   IceInstCall(IceCfg *Cfg, IceVariable *Dest, IceOperand *CallTarget,
               bool Tail = false)
       : IceInst(Cfg, IceInst::Call), CallTarget(CallTarget), Tail(Tail) {
-    addDest(Dest);
+    if (Dest)
+      addDest(Dest);
   }
   void addArg(IceOperand *Arg) { addSource(Arg); }
   IceOperand *getCallTarget(void) const { return CallTarget; }
-  virtual void removeUse(IceVariable *Variable) {}
+  bool isTail(void) const { return Tail; }
+  virtual void removeUse(IceVariable *Variable) {
+    assert(Variable == NULL);
+    Deleted = true;
+  }
   virtual void dump(IceOstream &Str) const;
   static bool classof(const IceInst *Inst) { return Inst->getKind() == Call; }
 
@@ -263,6 +274,13 @@ public:
 
 private:
   IceICond Condition;
+};
+
+class IceInstKill : public IceInst {
+public:
+  IceInstKill(IceCfg *Cfg, const IceVarList &KilledRegs);
+  virtual void dump(IceOstream &Str) const;
+  static bool classof(const IceInst *Inst) { return Inst->getKind() == Kill; }
 };
 
 class IceInstLoad : public IceInst {

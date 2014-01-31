@@ -6,6 +6,29 @@
 #include "IceDefs.h"
 #include "IceTypes.h"
 
+uint32_t iceTypeWidth(IceType T) {
+  switch (T) {
+  case IceType_void:
+    return 0;
+  case IceType_i1:
+    return 1;
+  case IceType_i8:
+    return 1;
+  case IceType_i16:
+    return 2;
+  case IceType_i32:
+    return 4;
+  case IceType_i64:
+    return 8;
+  case IceType_f32:
+    return 4;
+  case IceType_f64:
+    return 8;
+  }
+  assert(0);
+  return 0;
+}
+
 // ======================== Dump routines ======================== //
 
 IceOstream &operator<<(IceOstream &Str, IceType T) {

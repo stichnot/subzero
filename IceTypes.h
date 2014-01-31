@@ -26,6 +26,7 @@ enum IceTargetArch {
   IceTarget_ARM64,
 };
 
+uint32_t iceTypeWidth(IceType T);
 class IceOstream;
 IceOstream &operator<<(IceOstream &Str, IceType T);
 

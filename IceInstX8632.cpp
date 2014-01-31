@@ -38,6 +38,17 @@ IceInstTarget *IceTargetX8632::makeAssign(IceVariable *Dest, IceOperand *Src) {
   return new IceInstX8632Mov(Cfg, Dest, Src);
 }
 
+IceVariable *IceTargetX8632::getPhysicalRegister(unsigned RegNum) {
+  assert(RegNum < PhysicalRegisters.size());
+  IceVariable *Reg = PhysicalRegisters[RegNum];
+  if (Reg == NULL) {
+    Reg = Cfg->makeVariable(IceType_i32);
+    Reg->setRegNum(RegNum);
+    PhysicalRegisters[RegNum] = Reg;
+  }
+  return Reg;
+}
+
 IceInstList IceTargetX8632::lowerAlloca(const IceInst *Inst,
                                         const IceInst *Next,
                                         bool &DeleteNextInst) {
@@ -344,6 +355,13 @@ IceInstX8632Br::IceInstX8632Br(IceCfg *Cfg, IceCfgNode *TargetTrue,
     : IceInstTarget(Cfg), Condition(Condition), TargetTrue(TargetTrue),
       TargetFalse(TargetFalse) {}
 
+IceInstX8632Call::IceInstX8632Call(IceCfg *Cfg, IceVariable *Dest,
+                                   IceOperand *CallTarget, bool Tail)
+    : IceInstTarget(Cfg), CallTarget(CallTarget), Tail(Tail) {
+  if (Dest)
+    addDest(Dest);
+}
+
 IceInstX8632Icmp::IceInstX8632Icmp(IceCfg *Cfg, IceOperand *Src0,
                                    IceOperand *Src1)
     : IceInstTarget(Cfg) {
@@ -377,6 +395,11 @@ IceInstX8632Mov::IceInstX8632Mov(IceCfg *Cfg, IceVariable *Dest,
                                  IceOperand *Source)
     : IceInstTarget(Cfg) {
   addDest(Dest);
+  addSource(Source);
+}
+
+IceInstX8632Push::IceInstX8632Push(IceCfg *Cfg, IceOperand *Source)
+    : IceInstTarget(Cfg) {
   addSource(Source);
 }
 
@@ -500,6 +523,15 @@ void IceInstX8632Br::dump(IceOstream &Str) const {
       << getTargetFalse()->getName();
 }
 
+void IceInstX8632Call::dump(IceOstream &Str) const {
+  dumpDests(Str);
+  if (getDestSize())
+    Str << " = ";
+  if (Tail)
+    Str << "tail ";
+  Str << "call " << getCallTarget();
+}
+
 void IceInstX8632Icmp::dump(IceOstream &Str) const {
   Str << "cmp." << getSrc(0)->getType() << " ";
   dumpSources(Str);
@@ -531,6 +563,11 @@ void IceInstX8632Mov::dump(IceOstream &Str) const {
   Str << "mov." << getDest(0)->getType() << " ";
   dumpDests(Str);
   Str << ", ";
+  dumpSources(Str);
+}
+
+void IceInstX8632Push::dump(IceOstream &Str) const {
+  Str << "push." << getSrc(0)->getType() << " ";
   dumpSources(Str);
 }
 
@@ -626,8 +663,67 @@ IceInstList IceTargetX8632S::lowerBr(const IceInst *Inst, const IceInst *Next,
 
 IceInstList IceTargetX8632S::lowerCall(const IceInst *Inst, const IceInst *Next,
                                        bool &DeleteNextInst) {
+  // TODO: what to do about tailcalls?
   IceInstList Expansion;
-  assert(0); // TODO: implement
+  IceInstTarget *NewInst;
+  // Generate a sequence of push instructions, pushing right to left,
+  // keeping track of stack offsets in case a push involves a stack
+  // operand and we are using an esp-based frame.
+  uint32_t StackOffset = 0;
+  for (unsigned NumArgs = Inst->getSrcSize(), i = 0; i < NumArgs; ++i) {
+    IceOperand *Arg = Inst->getSrc(NumArgs - i - 1);
+    assert(Arg);
+    NewInst = new IceInstX8632Push(Cfg, Arg);
+    // TODO: Where in the Cfg is StackOffset tracked?  It is needed
+    // for instructions that push esp-based stack variables as
+    // arguments.
+    Expansion.push_back(NewInst);
+    StackOffset += iceTypeWidth(Arg->getType());
+  }
+  // Generate the call instruction.  Assign its result to a temporary
+  // with high register allocation weight.
+  IceVariable *Dest = Inst->getDest(0);
+  IceVariable *Reg = NULL;
+  if (Dest) {
+    Reg = Cfg->makeVariable(Dest->getType());
+    Reg->setWeightInfinite();
+    // TODO: Reg_eax is only for 32-bit integer results.  For floating
+    // point, we need the appropriate FP register.  For 64-bit
+    // integer, here (finally) is a possible motivation for having
+    // multiple Dest variables.  Alternatively, insert a fake
+    // instruction with the edx Dest.
+    Reg->setRegNum(Reg_eax);
+  }
+  const IceInstCall *CallInst = llvm::cast<const IceInstCall>(Inst);
+  NewInst = new IceInstX8632Call(Cfg, Reg, CallInst->getCallTarget(),
+                                 CallInst->isTail());
+  Expansion.push_back(NewInst);
+
+  // Insert some sort of register-kill pseudo instruction.
+  IceVarList KilledRegs;
+  KilledRegs.push_back(Cfg->getTarget()->getPhysicalRegister(Reg_eax));
+  KilledRegs.push_back(Cfg->getTarget()->getPhysicalRegister(Reg_ecx));
+  KilledRegs.push_back(Cfg->getTarget()->getPhysicalRegister(Reg_edx));
+  IceInst *Kill = new IceInstKill(Cfg, KilledRegs);
+  Expansion.push_back(Kill);
+
+  // Generate Dest=Reg assignment.
+  if (Dest) {
+    Dest->setPreferredRegister(Reg, false);
+    NewInst = new IceInstX8632Mov(Cfg, Dest, Reg);
+    Expansion.push_back(NewInst);
+  }
+
+  // Add the appropriate offset to esp.
+  if (StackOffset) {
+    IceVariable *Esp = Cfg->getTarget()->getPhysicalRegister(Reg_esp);
+    NewInst =
+        new IceInstX8632Arithmetic(Cfg, IceInstX8632Arithmetic::Add, Esp,
+                                   Cfg->getConstant(IceType_i32, StackOffset));
+    NewInst->setDisallowDead();
+    Expansion.push_back(NewInst);
+  }
+
   return Expansion;
 }
 

@@ -14,9 +14,11 @@
 
 class IceTargetX8632 : public IceTargetLowering {
 public:
-  IceTargetX8632(IceCfg *Cfg) : IceTargetLowering(Cfg) {}
+  IceTargetX8632(IceCfg *Cfg)
+      : IceTargetLowering(Cfg), PhysicalRegisters(IceVarList(Reg_NUM)) {}
   virtual IceRegManager *makeRegManager(IceCfgNode *Node);
   virtual IceInstTarget *makeAssign(IceVariable *Dest, IceOperand *Src);
+  virtual IceVariable *getPhysicalRegister(unsigned RegNum);
   virtual IceString *getRegNames(void) const { return RegNames; }
   virtual llvm::SmallBitVector getRegisterMask(void) const;
   enum Registers {
@@ -62,6 +64,7 @@ protected:
                                   bool &DeleteNextInst);
 
 private:
+  IceVarList PhysicalRegisters;
   static IceString RegNames[];
 };
 
@@ -154,6 +157,18 @@ private:
   IceCfgNode *TargetFalse;
 };
 
+class IceInstX8632Call : public IceInstTarget {
+public:
+  IceInstX8632Call(IceCfg *Cfg, IceVariable *Dest, IceOperand *CallTarget,
+                   bool Tail);
+  IceOperand *getCallTarget(void) const { return CallTarget; }
+  virtual void dump(IceOstream &Str) const;
+
+private:
+  IceOperand *CallTarget;
+  const bool Tail;
+};
+
 class IceInstX8632Icmp : public IceInstTarget {
 public:
   IceInstX8632Icmp(IceCfg *Cfg, IceOperand *Src1, IceOperand *Src2);
@@ -188,6 +203,12 @@ public:
   virtual void dump(IceOstream &Str) const;
 
 private:
+};
+
+class IceInstX8632Push : public IceInstTarget {
+public:
+  IceInstX8632Push(IceCfg *Cfg, IceOperand *Source);
+  virtual void dump(IceOstream &Str) const;
 };
 
 class IceInstX8632Ret : public IceInstTarget {

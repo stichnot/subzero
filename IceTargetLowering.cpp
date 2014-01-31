@@ -54,6 +54,12 @@ IceInstList IceTargetLowering::lower(const IceInst *Inst, const IceInst *Next,
   case IceInst::Icmp:
     Expansion = lowerIcmp(Inst, Next, DeleteNextInst);
     break;
+  case IceInst::Kill:
+    // Register kills are inserted only during lowering.  They are
+    // represented at the high level for the purpose of liveness
+    // analysis.
+    assert(0);
+    break;
   case IceInst::Load:
     Expansion = lowerLoad(Inst, Next, DeleteNextInst);
     break;

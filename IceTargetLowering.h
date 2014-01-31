@@ -18,6 +18,7 @@ public:
                     bool &DeleteNextInst);
   virtual IceRegManager *makeRegManager(IceCfgNode *Node) { return NULL; }
   virtual IceInstTarget *makeAssign(IceVariable *Dest, IceOperand *Src) = 0;
+  virtual IceVariable *getPhysicalRegister(unsigned RegNum) = 0;
   virtual IceString *getRegNames(void) const = 0;
   // TODO: Configure which registers to allow, e.g. caller-save,
   // callee-save, all, all minus one, etc.

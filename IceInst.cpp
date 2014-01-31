@@ -11,7 +11,7 @@
 #include "IceRegManager.h"
 
 IceInst::IceInst(IceCfg *Cfg, IceInstType Kind)
-    : Kind(Kind), Deleted(false), Dead(false) {
+    : Kind(Kind), Deleted(false), Dead(false), DisallowDead(false) {
   Number = Cfg->newInstNumber();
 }
 
@@ -245,6 +245,8 @@ void IceInst::liveness(IceLiveness Mode, int InstNumber, llvm::BitVector &Live,
                        std::vector<int> &LiveBegin, std::vector<int> &LiveEnd) {
   if (isDeleted())
     return;
+  if (llvm::isa<IceInstKill>(this))
+    return;
 
   // For lightweight liveness, do the simple calculation and return.
   if (Mode == IceLiveness_LREndLightweight) {
@@ -269,7 +271,7 @@ void IceInst::liveness(IceLiveness Mode, int InstNumber, llvm::BitVector &Live,
   // instruction as dead, which also means not marking its source
   // operands as live.
   // Don't delete a dest-less instruction.
-  Dead = !Dests.empty();
+  Dead = !DisallowDead && !Dests.empty();
   for (IceVarList::const_iterator I = Dests.begin(), E = Dests.end(); I != E;
        ++I) {
     if (*I) {
@@ -390,6 +392,15 @@ IceInstIcmp::IceInstIcmp(IceCfg *Cfg, IceICond Condition, IceVariable *Dest,
   addDest(Dest);
   addSource(Source1);
   addSource(Source2);
+}
+
+IceInstKill::IceInstKill(IceCfg *Cfg, const IceVarList &KilledRegs)
+    : IceInst(Cfg, IceInst::Kill) {
+  for (IceVarList::const_iterator I = KilledRegs.begin(), E = KilledRegs.end();
+       I != E; ++I) {
+    IceVariable *Var = *I;
+    addSource(Var);
+  }
 }
 
 IceInstLoad::IceInstLoad(IceCfg *Cfg, IceVariable *Dest, IceOperand *SourceAddr)
@@ -711,6 +722,11 @@ void IceInstIcmp::dump(IceOstream &Str) const {
     break;
   }
   Str << " " << getSrc(0)->getType() << " ";
+  dumpSources(Str);
+}
+
+void IceInstKill::dump(IceOstream &Str) const {
+  Str << "kill.pseudo ";
   dumpSources(Str);
 }
 
