@@ -22,7 +22,7 @@ IceTargetLowering *IceTargetLowering::createLowering(IceTargetArch Target,
   if (Target == IceTarget_ARM64)
     return new IceTargetARM64(Cfg);
 #endif
-  assert(0);
+  assert("Unsupported Target" && 0);
   return NULL;
 }
 

@@ -344,6 +344,14 @@ cl::list<IceVerbose> VerboseList(
                clEnumValN(IceV_None, "none", "No verbosity"), clEnumValEnd));
 cl::opt<bool> DisableTranslation("notranslate",
                                  cl::desc("Disable Subzero translation"));
+cl::opt<IceTargetArch> TargetArch(
+    "target", cl::desc("Target architecture:"), cl::init(IceTarget_X8632),
+    cl::values(clEnumValN(IceTarget_X8632, "x8632", "x86-32"),
+               clEnumValN(IceTarget_X8632_old, "x8632_old",
+                          "x86-32 old version"),
+               clEnumValN(IceTarget_X8664, "x8664", "x86-64"),
+               clEnumValN(IceTarget_ARM32, "arm32", "ARM32"),
+               clEnumValN(IceTarget_ARM64, "arm64", "ARM64"), clEnumValEnd));
 cl::opt<std::string> IRFilename(cl::Positional, cl::desc("<IR file>"),
                                 cl::Required);
 
@@ -369,7 +377,7 @@ int main(int argc, char **argv) {
       Cfg->Str.setVerbose(VerboseMask);
     Cfg->dump();
     if (!DisableTranslation)
-      Cfg->translate();
+      Cfg->translate(TargetArch);
   }
 
   return 0;
