@@ -23,9 +23,10 @@ file and translate it into ICE.  It then invokes ICE's translate method to lower
 it to target-specific machine code, dumping the IR at various stages of the
 translation.
 
-The test is run as follows::
+The program can be run as follows::
 
     ../llvm2ice ./ir_samples/<file>.ll
+    ../llvm2ice ./tests_lit/llvm2ice_tests/<file>.ll
 
 At this time, ``llvm2ice`` accepts a few arguments:
 
