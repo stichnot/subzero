@@ -18,6 +18,7 @@
 #include "llvm/IR/LLVMContext.h"
 #include "llvm/IR/Module.h"
 #include "llvm/IRReader/IRReader.h"
+#include "llvm/Support/CommandLine.h"
 #include "llvm/Support/ErrorHandling.h"
 #include "llvm/Support/raw_ostream.h"
 #include "llvm/Support/SourceMgr.h"
@@ -328,7 +329,23 @@ private:
   IceValueTranslation<const BasicBlock *> LabelTranslation;
 };
 
+cl::list<IceVerbose> VerboseList(
+    "verbose", cl::CommaSeparated, cl::desc("Verbose options:"),
+    cl::values(clEnumValN(IceV_Instructions, "inst", "Instructions"),
+               clEnumValN(IceV_Deleted, "del", "Deleted"),
+               clEnumValN(IceV_InstNumbers, "instnum", "Instruction Numbers"),
+               clEnumValN(IceV_Preds, "pred", "Predecessors"),
+               clEnumValN(IceV_Succs, "succ", "Successors"),
+               clEnumValN(IceV_Liveness, "live", "Liveness"),
+               clEnumValN(IceV_RegManager, "rmgr", "Register manager"),
+               clEnumValN(IceV_RegOrigins, "orig", "Register origins"),
+               clEnumValN(IceV_LinearScan, "regalloc", "Linear scan"),
+               clEnumValN(IceV_All, "all", "All options"), clEnumValEnd));
+cl::opt<std::string> IRFilename(cl::Positional, cl::desc("<IR file>"),
+                                cl::Required);
+
 int main(int argc, char **argv) {
+  cl::ParseCommandLineOptions(argc, argv);
   if (argc < 2) {
     errs() << "Usage: " << argv[0] << " <IR file>\n";
     return 1;
@@ -336,15 +353,21 @@ int main(int argc, char **argv) {
 
   // Parse the input LLVM IR file into a module.
   SMDiagnostic Err;
-  Module *Mod = ParseIRFile(argv[1], Err, getGlobalContext());
+  Module *Mod = ParseIRFile(IRFilename, Err, getGlobalContext());
   if (!Mod) {
     Err.print(argv[0], errs());
     return 1;
   }
 
+  IceVerboseMask VerboseMask = IceV_None;
+  for (unsigned i = 0; i != VerboseList.size(); ++i)
+    VerboseMask |= VerboseList[i];
+
   for (Module::const_iterator I = Mod->begin(), E = Mod->end(); I != E; ++I) {
     LLVM2ICEConverter FunctionConverter;
     IceCfg *Cfg = FunctionConverter.convertFunction(I);
+    if (!VerboseList.empty())
+      Cfg->Str.setVerbose(VerboseMask);
     Cfg->dump();
     Cfg->translate();
   }
