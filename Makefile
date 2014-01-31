@@ -68,11 +68,16 @@ llvm2ice.o: llvm2ice.cpp *.h
 IceTest.o: IceTest.cpp *.h
 	$(CXX) -c $(CXXFLAGS) $< -o $@
 
+# TODO: Be more precise than "*.h" here and elsewhere.
 $(OBJS): %.o: %.cpp *.h
 	$(CXX) -c $(CXXFLAGS) $< -o $@
 
 check: llvm2ice
 	$(LLVM_SRC_PATH)/utils/lit/lit.py -sv tests_lit
+
+# TODO: Fix the use of wildcards.
+format:
+	$(LLVM_BIN_PATH)/clang-format -style=LLVM -i Ice*.h Ice*.cpp llvm2ice.cpp
 
 clean:
 	rm -f llvm2ice subzerotest *.o
