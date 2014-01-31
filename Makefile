@@ -47,12 +47,9 @@ OBJS= \
 	IceTypes.o
 
 # Keep all the first target so it's the default.
-all: subzerotest llvm2ice
+all: llvm2ice
 
 .PHONY: all
-
-subzerotest: $(OBJS) IceTest.o
-	$(CXX) $(LDFLAGS) -o $@ $^
 
 llvm2ice: $(OBJS) PNaClABITypeChecker.o llvm2ice.o
 	$(CXX) $(LDFLAGS) -o $@ $^ $(LLVM_LDFLAGS)
@@ -80,4 +77,4 @@ format:
 	$(LLVM_BIN_PATH)/clang-format -style=LLVM -i Ice*.h Ice*.cpp llvm2ice.cpp
 
 clean:
-	rm -f llvm2ice subzerotest *.o
+	rm -f llvm2ice *.o

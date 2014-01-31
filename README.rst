@@ -13,28 +13,7 @@ point to the appropriate directories in the LLVM source and build directories.
 These can be set as environment variables, or you can modify the top-level
 Makefile.
 
-Run ``make`` at the top level to build targets ``subzerotest`` and ``llvm2ice``.
-
-``subzerotest``
----------------
-
-Note: ``subzerotest`` is deprecated; use ``llvm2ice`` instead.  The
-``subzerotest`` equivalent inputs can be found in::
-
-    tests_lit/llvm2ice_tests/simple-cond.ll
-    tests_lit/llvm2ice_tests/simple-loop.ll
-
-The ``subzerotest`` program uses ``IceTest.cpp`` as a driver.  It
-hand-constructs the ICE IR for a small number of tests and runs the various
-translation phases on the IR, dumping the IR at various points.
-
-The test is run as follows::
-
-    ./subzerotest cond
-    ./subzerotest loop
-
-The ``cond`` test is a simple if-then-else conditional, and the ``loop`` test is
-a simple loop that sums the elements of an array.
+Run ``make`` at the top level to build the main target ``llvm2ice``.
 
 ``llvm2ice``
 ------------
