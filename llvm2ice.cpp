@@ -340,7 +340,8 @@ cl::list<IceVerbose> VerboseList(
                clEnumValN(IceV_RegManager, "rmgr", "Register manager"),
                clEnumValN(IceV_RegOrigins, "orig", "Register origins"),
                clEnumValN(IceV_LinearScan, "regalloc", "Linear scan"),
-               clEnumValN(IceV_All, "all", "All options"), clEnumValEnd));
+               clEnumValN(IceV_All, "all", "All options"),
+               clEnumValN(IceV_None, "none", "No verbosity"), clEnumValEnd));
 cl::opt<std::string> IRFilename(cl::Positional, cl::desc("<IR file>"),
                                 cl::Required);
 
