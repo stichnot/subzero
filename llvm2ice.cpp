@@ -342,6 +342,8 @@ cl::list<IceVerbose> VerboseList(
                clEnumValN(IceV_LinearScan, "regalloc", "Linear scan"),
                clEnumValN(IceV_All, "all", "All options"),
                clEnumValN(IceV_None, "none", "No verbosity"), clEnumValEnd));
+cl::opt<bool> DisableTranslation("notranslate",
+                                 cl::desc("Disable Subzero translation"));
 cl::opt<std::string> IRFilename(cl::Positional, cl::desc("<IR file>"),
                                 cl::Required);
 
@@ -366,7 +368,8 @@ int main(int argc, char **argv) {
     if (!VerboseList.empty())
       Cfg->Str.setVerbose(VerboseMask);
     Cfg->dump();
-    Cfg->translate();
+    if (!DisableTranslation)
+      Cfg->translate();
   }
 
   return 0;
