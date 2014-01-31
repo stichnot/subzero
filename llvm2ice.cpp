@@ -169,6 +169,8 @@ private:
       return convertICmpInstruction(cast<ICmpInst>(Inst));
     case Instruction::Load:
       return convertLoadInstruction(cast<LoadInst>(Inst));
+    case Instruction::Store:
+      return convertStoreInstruction(cast<StoreInst>(Inst));
     case Instruction::ZExt:
       return convertCastInstruction(cast<ZExtInst>(Inst), IceInstCast::Zext);
     case Instruction::Add:
@@ -223,6 +225,14 @@ private:
     assert(Src->getType() == IceType_i32 && "Expecting loads only from i32");
     IceVariable *Dest = mapValueToIceVar(Inst);
     return new IceInstLoad(Cfg, Dest, Src);
+  }
+
+  IceInst *convertStoreInstruction(const StoreInst *Inst) {
+    IceOperand *Addr = convertOperand(Inst, 1);
+    assert(Addr->getType() == IceType_i32 && "Expecting stores only from i32");
+    IceOperand *Val = convertOperand(Inst, 0);
+    IceType Type = convertType(Inst->getOperand(0)->getType());
+    return new IceInstStore(Cfg, Type, Val, Addr);
   }
 
   IceInst *convertArithInstruction(const Instruction *Inst,

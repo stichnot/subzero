@@ -311,15 +311,18 @@ public:
 private:
 };
 
-// TODO: implement
-// Put SourceData as Srcs[0] and SourceAddr as Srcs[1]
+// SourceData as Srcs[0] and SourceAddr as Srcs[1]
 class IceInstStore : public IceInst {
 public:
   IceInstStore(IceCfg *Cfg, IceType Type, IceOperand *SourceAddr,
                IceOperand *SourceData);
+  IceType getType() const { return Type; }
+  void setType(IceType type) { Type = type; }
+  virtual void dump(IceOstream &Str) const;
   static bool classof(const IceInst *Inst) { return Inst->getKind() == Store; }
 
 private:
+  IceType Type;
 };
 
 // TODO: implement
