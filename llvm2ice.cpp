@@ -346,10 +346,6 @@ cl::opt<std::string> IRFilename(cl::Positional, cl::desc("<IR file>"),
 
 int main(int argc, char **argv) {
   cl::ParseCommandLineOptions(argc, argv);
-  if (argc < 2) {
-    errs() << "Usage: " << argv[0] << " <IR file>\n";
-    return 1;
-  }
 
   // Parse the input LLVM IR file into a module.
   SMDiagnostic Err;
