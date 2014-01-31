@@ -15,6 +15,8 @@ def shellcmd(command, echo=True):
 def find_llvm_bin():
     if os.path.exists(os.path.expandvars('$LLVMSVN/clang')):
         return os.path.expandvars('$LLVMSVN')
+    elif os.path.exists(os.path.expandvars('$LLVM_BIN_PATH/clang')):
+        return os.path.expandvars('$LLVM_BIN_PATH')
     else:
         return ''
 
@@ -35,12 +37,14 @@ if __name__ == '__main__':
 
     tempdir = tempfile.mkdtemp()
 
-    cname = sys.argv[1]; basename = os.path.splitext(cname)[0]
-    llname = os.path.join(tempdir, basename + '.ll')
-    optllname = basename + '-opt.ll'
+    for cname in args.cfile:
+        basename = os.path.splitext(cname)[0]
+        llname = os.path.join(tempdir, basename + '.ll')
+        optllname = basename + '-opt.ll'
 
-    shellcmd(toolpath('clang') + ' -cc1 -O3 -emit-llvm {0} -o {1}'.format(
-        cname, llname))
-    shellcmd(toolpath('opt') + ' -O3 -S {0} > {1}'.format(llname, optllname))
+        shellcmd(toolpath('clang') + ' -cc1 -O3 -emit-llvm {0} -o {1}'.format(
+            cname, llname))
+        shellcmd(toolpath('opt') + ' -O3 -S {0} > {1}'.format(
+            llname, optllname))
 
 
