@@ -90,7 +90,7 @@ IceOstream &operator<<(IceOstream &Str, const IceInst *I);
 class IceInstAlloca : public IceInst {
 public:
   IceInstAlloca(IceCfg *Cfg, uint32_t Size, uint32_t Align)
-      : IceInst(Cfg, Alloca), Size(Size), Align(Align) {}
+      : IceInst(Cfg, IceInst::Alloca), Size(Size), Align(Align) {}
   virtual void dump(IceOstream &Str) const;
   static bool classof(const IceInst *Inst) { return Inst->getKind() == Alloca; }
 
@@ -169,7 +169,7 @@ class IceInstCall : public IceInst {
 public:
   IceInstCall(IceCfg *Cfg, IceVariable *Dest, IceOperand *CallTarget,
               bool Tail = false)
-      : IceInst(Cfg, Call), CallTarget(CallTarget), Tail(Tail) {
+      : IceInst(Cfg, IceInst::Call), CallTarget(CallTarget), Tail(Tail) {
     addDest(Dest);
   }
   void addArg(IceOperand *Arg) { addSource(Arg); }
@@ -344,7 +344,7 @@ public:
   static bool classof(const IceInst *Inst) { return Inst->getKind() == Target; }
 
 protected:
-  IceInstTarget(IceCfg *Cfg) : IceInst(Cfg, Target), RegState(NULL) {}
+  IceInstTarget(IceCfg *Cfg) : IceInst(Cfg, IceInst::Target), RegState(NULL) {}
   const IceRegManager *RegState; // used only for debugging/dumping
 private:
 };

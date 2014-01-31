@@ -321,7 +321,7 @@ void IceInst::liveness(IceLiveness Mode, int InstNumber, llvm::BitVector &Live,
 IceInstArithmetic::IceInstArithmetic(IceCfg *Cfg, IceArithmetic Op,
                                      IceVariable *Dest, IceOperand *Source1,
                                      IceOperand *Source2)
-    : IceInst(Cfg, Arithmetic), Op(Op) {
+    : IceInst(Cfg, IceInst::Arithmetic), Op(Op) {
   addDest(Dest);
   addSource(Source1);
   addSource(Source2);
@@ -343,7 +343,7 @@ bool IceInstArithmetic::isCommutative(void) const {
 }
 
 IceInstAssign::IceInstAssign(IceCfg *Cfg, IceVariable *Dest, IceOperand *Source)
-    : IceInst(Cfg, Assign) {
+    : IceInst(Cfg, IceInst::Assign) {
   addDest(Dest);
   addSource(Source);
 }
@@ -380,14 +380,14 @@ IceInstConversion::IceInstConversion(IceCfg *Cfg, IceConvert Conversion,
 
 IceInstIcmp::IceInstIcmp(IceCfg *Cfg, IceICond Condition, IceVariable *Dest,
                          IceOperand *Source1, IceOperand *Source2)
-    : IceInst(Cfg, Icmp), Condition(Condition) {
+    : IceInst(Cfg, IceInst::Icmp), Condition(Condition) {
   addDest(Dest);
   addSource(Source1);
   addSource(Source2);
 }
 
 IceInstLoad::IceInstLoad(IceCfg *Cfg, IceVariable *Dest, IceOperand *SourceAddr)
-    : IceInst(Cfg, Load) {
+    : IceInst(Cfg, IceInst::Load) {
   addDest(Dest);
   addSource(SourceAddr);
 }
