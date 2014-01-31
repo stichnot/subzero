@@ -330,18 +330,20 @@ private:
 };
 
 cl::list<IceVerbose> VerboseList(
-    "verbose", cl::CommaSeparated, cl::desc("Verbose options:"),
-    cl::values(clEnumValN(IceV_Instructions, "inst", "Instructions"),
-               clEnumValN(IceV_Deleted, "del", "Deleted"),
-               clEnumValN(IceV_InstNumbers, "instnum", "Instruction Numbers"),
-               clEnumValN(IceV_Preds, "pred", "Predecessors"),
-               clEnumValN(IceV_Succs, "succ", "Successors"),
-               clEnumValN(IceV_Liveness, "live", "Liveness"),
-               clEnumValN(IceV_RegManager, "rmgr", "Register manager"),
-               clEnumValN(IceV_RegOrigins, "orig", "Register origins"),
-               clEnumValN(IceV_LinearScan, "regalloc", "Linear scan"),
-               clEnumValN(IceV_All, "all", "All options"),
-               clEnumValN(IceV_None, "none", "No verbosity"), clEnumValEnd));
+    "verbose", cl::CommaSeparated,
+    cl::desc("Verbose options (can be comma-separated):"),
+    cl::values(
+        clEnumValN(IceV_Instructions, "inst", "Print basic instructions"),
+        clEnumValN(IceV_Deleted, "del", "Include deleted instructions"),
+        clEnumValN(IceV_InstNumbers, "instnum", "Print instruction numbers"),
+        clEnumValN(IceV_Preds, "pred", "Show predecessors"),
+        clEnumValN(IceV_Succs, "succ", "Show successors"),
+        clEnumValN(IceV_Liveness, "live", "Liveness information"),
+        clEnumValN(IceV_RegManager, "rmgr", "Register manager status"),
+        clEnumValN(IceV_RegOrigins, "orig", "Physical register origins"),
+        clEnumValN(IceV_LinearScan, "regalloc", "Linear scan details"),
+        clEnumValN(IceV_All, "all", "Use all verbose options"),
+        clEnumValN(IceV_None, "none", "No verbosity"), clEnumValEnd));
 cl::opt<bool> DisableTranslation("notranslate",
                                  cl::desc("Disable Subzero translation"));
 cl::opt<IceTargetArch> TargetArch(
