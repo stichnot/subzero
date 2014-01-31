@@ -42,8 +42,8 @@ protected:
                               bool &DeleteNextInst);
   virtual IceInstList lowerCall(const IceInst *Inst, const IceInst *Next,
                                 bool &DeleteNextInst);
-  virtual IceInstList lowerConversion(const IceInst *Inst, const IceInst *Next,
-                                      bool &DeleteNextInst);
+  virtual IceInstList lowerCast(const IceInst *Inst, const IceInst *Next,
+                                bool &DeleteNextInst);
   virtual IceInstList lowerFcmp(const IceInst *Inst, const IceInst *Next,
                                 bool &DeleteNextInst);
   virtual IceInstList lowerIcmp(const IceInst *Inst, const IceInst *Next,
@@ -83,8 +83,8 @@ protected:
                               bool &DeleteNextInst);
   virtual IceInstList lowerCall(const IceInst *Inst, const IceInst *Next,
                                 bool &DeleteNextInst);
-  virtual IceInstList lowerConversion(const IceInst *Inst, const IceInst *Next,
-                                      bool &DeleteNextInst);
+  virtual IceInstList lowerCast(const IceInst *Inst, const IceInst *Next,
+                                bool &DeleteNextInst);
   virtual IceInstList lowerFcmp(const IceInst *Inst, const IceInst *Next,
                                 bool &DeleteNextInst);
   virtual IceInstList lowerIcmp(const IceInst *Inst, const IceInst *Next,

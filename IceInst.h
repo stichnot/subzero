@@ -19,7 +19,7 @@ public:
     Assign, // not part of LLVM/PNaCl bitcode
     Br,
     Call,
-    Conversion,
+    Cast,
     Fcmp,
     Icmp,
     Load,
@@ -184,9 +184,9 @@ private:
 };
 
 // TODO: implement
-class IceInstConversion : public IceInst {
+class IceInstCast : public IceInst {
 public:
-  enum IceConvert {
+  enum IceCastKind {
     // Ordered by http://llvm.org/docs/LangRef.html#conversion-operations
     Trunc,
     Zext,
@@ -201,15 +201,13 @@ public:
     Inttoptr,
     Bitcast,
   };
-  IceInstConversion(IceCfg *Cfg, IceConvert Conversion, IceVariable *Dest,
-                    IceOperand *Source);
+  IceInstCast(IceCfg *Cfg, IceCastKind CastKind, IceVariable *Dest,
+              IceOperand *Source);
   virtual void dump(IceOstream &Str) const;
-  static bool classof(const IceInst *Inst) {
-    return Inst->getKind() == Conversion;
-  }
+  static bool classof(const IceInst *Inst) { return Inst->getKind() == Cast; }
 
 private:
-  IceConvert ConversionKind;
+  IceCastKind CastKind;
 };
 
 // TODO: implement

@@ -170,7 +170,7 @@ private:
     case Instruction::Load:
       return convertLoadInstruction(cast<LoadInst>(Inst));
     case Instruction::ZExt:
-      return convertZExtInstruction(cast<ZExtInst>(Inst));
+      return convertCastInstruction(cast<ZExtInst>(Inst), IceInstCast::Zext);
     case Instruction::Add:
       return convertArithInstruction(Inst, IceInstArithmetic::Add);
     case Instruction::Sub:
@@ -272,10 +272,11 @@ private:
     }
   }
 
-  IceInst *convertZExtInstruction(const ZExtInst *Inst) {
+  IceInst *convertCastInstruction(const Instruction *Inst,
+                                  IceInstCast::IceCastKind CastKind) {
     IceOperand *Src = convertOperand(Inst, 0);
     IceVariable *Dest = mapValueToIceVar(Inst);
-    return new IceInstConversion(Cfg, IceInstConversion::Zext, Dest, Src);
+    return new IceInstCast(Cfg, CastKind, Dest, Src);
   }
 
   IceInst *convertICmpInstruction(const ICmpInst *Inst) {

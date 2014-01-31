@@ -45,8 +45,8 @@ IceInstList IceTargetLowering::lower(const IceInst *Inst, const IceInst *Next,
   case IceInst::Call:
     Expansion = lowerCall(Inst, Next, DeleteNextInst);
     break;
-  case IceInst::Conversion:
-    Expansion = lowerConversion(Inst, Next, DeleteNextInst);
+  case IceInst::Cast:
+    Expansion = lowerCast(Inst, Next, DeleteNextInst);
     break;
   case IceInst::Fcmp:
     Expansion = lowerFcmp(Inst, Next, DeleteNextInst);

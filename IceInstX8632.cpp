@@ -149,9 +149,8 @@ IceInstList IceTargetX8632::lowerCall(const IceInst *Inst, const IceInst *Next,
   return Expansion;
 }
 
-IceInstList IceTargetX8632::lowerConversion(const IceInst *Inst,
-                                            const IceInst *Next,
-                                            bool &DeleteNextInst) {
+IceInstList IceTargetX8632::lowerCast(const IceInst *Inst, const IceInst *Next,
+                                      bool &DeleteNextInst) {
   IceInstList Expansion;
   assert(0); // TODO: implement
   return Expansion;
@@ -607,9 +606,8 @@ IceInstList IceTargetX8632S::lowerCall(const IceInst *Inst, const IceInst *Next,
   return Expansion;
 }
 
-IceInstList IceTargetX8632S::lowerConversion(const IceInst *Inst,
-                                             const IceInst *Next,
-                                             bool &DeleteNextInst) {
+IceInstList IceTargetX8632S::lowerCast(const IceInst *Inst, const IceInst *Next,
+                                       bool &DeleteNextInst) {
   IceInstList Expansion;
   assert(0); // TODO: implement
   return Expansion;

@@ -371,9 +371,9 @@ IceNodeList IceInstBr::getTerminatorEdges(void) const {
   return OutEdges;
 }
 
-IceInstConversion::IceInstConversion(IceCfg *Cfg, IceConvert Conversion,
-                                     IceVariable *Dest, IceOperand *Source)
-    : IceInst(Cfg, IceInst::Conversion), ConversionKind(Conversion) {
+IceInstCast::IceInstCast(IceCfg *Cfg, IceCastKind CastKind, IceVariable *Dest,
+                         IceOperand *Source)
+    : IceInst(Cfg, IceInst::Cast), CastKind(CastKind) {
   addDest(Dest);
   addSource(Source);
 }
@@ -645,16 +645,16 @@ void IceInstCall::dump(IceOstream &Str) const {
   Str << ")";
 }
 
-void IceInstConversion::dump(IceOstream &Str) const {
+void IceInstCast::dump(IceOstream &Str) const {
   dumpDests(Str);
   Str << " = ";
-  switch (ConversionKind) {
-    default:
-      Str << "UNKNOWN";
-      break;
-    case Zext:
-      Str << "zext";
-      break;
+  switch (CastKind) {
+  default:
+    Str << "UNKNOWN";
+    break;
+  case Zext:
+    Str << "zext";
+    break;
   }
   Str << " " << getSrc(0)->getType() << " ";
   dumpSources(Str);

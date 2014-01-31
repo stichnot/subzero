@@ -35,8 +35,8 @@ protected:
                               bool &DeleteNextInst) = 0;
   virtual IceInstList lowerCall(const IceInst *Inst, const IceInst *Next,
                                 bool &DeleteNextInst) = 0;
-  virtual IceInstList lowerConversion(const IceInst *Inst, const IceInst *Next,
-                                      bool &DeleteNextInst) = 0;
+  virtual IceInstList lowerCast(const IceInst *Inst, const IceInst *Next,
+                                bool &DeleteNextInst) = 0;
   virtual IceInstList lowerFcmp(const IceInst *Inst, const IceInst *Next,
                                 bool &DeleteNextInst) = 0;
   virtual IceInstList lowerIcmp(const IceInst *Inst, const IceInst *Next,
