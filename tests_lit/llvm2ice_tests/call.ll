@@ -42,3 +42,20 @@ entry:
 }
 
 declare i32 @redirect_target(i32) #2
+
+define void @call_void(i32 %n) #1 {
+; CHECK: define internal void call_void
+entry:
+  %cmp2 = icmp sgt i32 %n, 0
+  br i1 %cmp2, label %if.then, label %if.end
+
+if.then:                                          ; preds = %entry, %if.then
+  %n.tr3 = phi i32 [ %call.i, %if.then ], [ %n, %entry ]
+  %sub = add nsw i32 %n.tr3, -1
+  %call.i = tail call i32 @redirect_target(i32 %sub) #3
+  %cmp = icmp sgt i32 %call.i, 0
+  br i1 %cmp, label %if.then, label %if.end
+
+if.end:                                           ; preds = %if.then, %entry
+  ret void
+}
