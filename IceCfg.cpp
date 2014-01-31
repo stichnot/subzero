@@ -93,7 +93,13 @@ IceCfgNode *IceCfg::makeNode(uint32_t LabelIndex, IceString Name) {
 }
 
 IceConstant *IceCfg::getConstant(IceType Type, int32_t ConstantInt32) {
-  return new IceConstant(ConstantInt32);
+  return new IceConstantInteger(ConstantInt32);
+}
+
+IceConstant *IceCfg::getConstant(IceType Type, const void *Handle,
+                                 const IceString &Name) {
+  // TODO: look up from the constant pool.
+  return new IceConstantRelocatable(Type, Handle, Name);
 }
 
 IceVariable *IceCfg::getVariable(uint32_t Index) const {

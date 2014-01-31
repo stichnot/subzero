@@ -180,32 +180,10 @@ void IceVariable::dump(IceOstream &Str) const {
 
 void IceOperand::dump(IceOstream &Str) const { Str << "IceOperand<?>"; }
 
-void IceConstant::dump(IceOstream &Str) const {
-  switch (Type) {
-  case IceType_i1:
-    Str << Value.I1;
-    break;
-  case IceType_i8:
-    Str << Value.I8;
-    break;
-  case IceType_i16:
-    Str << Value.I16;
-    break;
-  case IceType_i32:
-    Str << Value.I32;
-    break;
-  case IceType_i64:
-    Str << Value.I64;
-    break;
-  case IceType_f32:
-    Str << Value.F32;
-    break;
-  case IceType_f64:
-    Str << Value.F64;
-    break;
-  case IceType_void:
-    break;
-  }
+void IceConstantInteger::dump(IceOstream &Str) const { Str << IntValue; }
+
+void IceConstantRelocatable::dump(IceOstream &Str) const {
+  Str << Name << "(CP=" << CPIndex << ")";
 }
 
 void IceLiveRange::dump(IceOstream &Str) const {

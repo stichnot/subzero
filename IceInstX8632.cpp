@@ -664,7 +664,7 @@ IceInstList IceTargetX8632S::lowerLoad(const IceInst *Inst, const IceInst *Next,
   IceOperand *Src1 = Inst->getSrc(1); // Index - could be NULL
   IceOperand *Src2 = Inst->getSrc(2); // Shift - constant
   IceOperand *Src3 = Inst->getSrc(3); // Offset - constant
-  assert(Src0 != NULL && llvm::isa<IceVariable>(Src0));
+  assert(Src0 != NULL /* && llvm::isa<IceVariable>(Src0)*/);
   assert(Src1 == NULL || llvm::isa<IceVariable>(Src1));
   assert(Src2 == NULL || llvm::isa<IceConstant>(Src2));
   assert(Src3 == NULL || llvm::isa<IceConstant>(Src3));

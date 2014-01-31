@@ -28,6 +28,10 @@ public:
   // constant pool.
   IceConstant *getConstant(IceType Type, const void *ConstantBits);
   IceConstant *getConstant(IceType Type, int32_t ConstantInt32);
+  // Returns a symbolic constant.  For now, Handle would refer to
+  // something LLVM-specific to facilitate linking.
+  IceConstant *getConstant(IceType Type, const void *Handle,
+                           const IceString &Name = "");
   IceVariable *getVariable(uint32_t Index) const;
   IceVariable *makeVariable(IceType Type, uint32_t Index = -1,
                             const IceString &Name = "");

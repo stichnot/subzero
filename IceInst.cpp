@@ -74,8 +74,8 @@ void IceInst::findAddressOpt(IceCfg *Cfg, const IceCfgNode *Node) {
   IceOpList NewOperands;
   NewOperands.push_back(Base);
   NewOperands.push_back(Index);
-  NewOperands.push_back(new IceConstant(Shift));
-  NewOperands.push_back(new IceConstant(Offset));
+  NewOperands.push_back(new IceConstantInteger(Shift));
+  NewOperands.push_back(new IceConstantInteger(Offset));
   replaceOperands(Node, Srcs.size() - 1, NewOperands);
   // TODO: See if liveness information can be incrementally corrected
   // without a whole new liveness analysis pass.
@@ -135,8 +135,8 @@ void IceInst::doAddressOpt(IceVariable *&Base, IceVariable *&Index, int &Shift,
     IceVariable *IndexVariable0 =
         llvm::dyn_cast_or_null<IceVariable>(IndexOperand0);
     IceOperand *IndexOperand1 = IndexInst ? IndexInst->getSrc(1) : NULL;
-    IceConstant *IndexConstant1 =
-        llvm::dyn_cast_or_null<IceConstant>(IndexOperand1);
+    IceConstantInteger *IndexConstant1 =
+        llvm::dyn_cast_or_null<IceConstantInteger>(IndexOperand1);
     if (IndexInst && llvm::isa<IceInstArithmetic>(IndexInst) &&
         (llvm::cast<IceInstArithmetic>(IndexInst)->getOp() ==
          IceInstArithmetic::Mul) &&

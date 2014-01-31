@@ -134,9 +134,15 @@ private:
     if (const Constant *Const = dyn_cast<Constant>(Op)) {
       // For now only constant integers are supported.
       // TODO: support all kinds of constants
-      const ConstantInt *CI = cast<ConstantInt>(Const);
-      return Cfg->getConstant(IceType_i32,
-                              static_cast<uint32_t>(CI->getZExtValue()));
+      if (const GlobalValue *GV = dyn_cast<GlobalValue>(Const)) {
+        return Cfg->getConstant(IceType_i32, GV, GV->getName());
+      } else if (const ConstantInt *CI = cast<ConstantInt>(Const)) {
+        return Cfg->getConstant(IceType_i32,
+                                static_cast<uint32_t>(CI->getZExtValue()));
+      } else {
+        assert(0 && "Unhandled constant type");
+        return NULL;
+      }
     } else {
       return mapValueToIceVar(Inst->getOperand(OpNum));
     }

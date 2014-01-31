@@ -30,6 +30,7 @@ public:
     Constant,
     ConstantInteger,
     ConstantFloat,
+    ConstantRelocatable,
     Constant_Num,
     Variable,
     VariableVirtualRegister,
@@ -58,28 +59,53 @@ IceOstream &operator<<(IceOstream &Str, const IceOperand *O);
 // TODO: handle symbolic constants.
 class IceConstant : public IceOperand {
 public:
-  IceConstant(int32_t IntValue) : IceOperand(Constant, IceType_i32) {
-    Value.I32 = IntValue;
-  }
-  uint32_t getIntValue(void) const { return Value.I32; }
-  virtual void dump(IceOstream &Str) const;
+  virtual void dump(IceOstream &Str) const = 0;
 
   static bool classof(const IceOperand *Operand) {
     OperandKind Kind = Operand->getKind();
     return Kind >= Constant && Kind <= Constant_Num;
   }
 
+protected:
+  IceConstant(OperandKind Kind, IceType Type) : IceOperand(Kind, Type) {}
+};
+
+class IceConstantInteger : public IceConstant {
+public:
+  IceConstantInteger(int32_t IntValue)
+      : IceConstant(ConstantInteger, IceType_i32), IntValue(IntValue) {}
+  uint32_t getIntValue(void) const { return IntValue; }
+  virtual void dump(IceOstream &Str) const;
+
+  static bool classof(const IceOperand *Operand) {
+    OperandKind Kind = Operand->getKind();
+    return Kind == ConstantInteger;
+  }
+
 private:
-  union {
-    uint8_t I1;
-    uint8_t I8;
-    uint16_t I16;
-    uint32_t I32;
-    uint64_t I64;
-    // TODO: don't store FP constants as float/double due to NaN issues
-    float F32;
-    double F64;
-  } Value;
+  const uint32_t IntValue;
+};
+
+class IceConstantRelocatable : public IceConstant {
+public:
+  IceConstantRelocatable(IceType Type, const void *Handle,
+                         const IceString &Name = "")
+      : IceConstant(ConstantRelocatable, Type), CPIndex(0), Handle(Handle),
+        Name(Name) {}
+  uint32_t getCPIndex(void) const { return CPIndex; }
+  const void *getHandle(void) const { return Handle; }
+  IceString getName(void) const { return Name; }
+  virtual void dump(IceOstream &Str) const;
+
+  static bool classof(const IceOperand *Operand) {
+    OperandKind Kind = Operand->getKind();
+    return Kind == ConstantRelocatable;
+  }
+
+private:
+  const uint32_t CPIndex;   // index into ICE constant pool
+  const void *const Handle; // opaque handle e.g. to LLVM
+  const IceString Name;     // optional for debug/dump
 };
 
 class IceRegWeight {
