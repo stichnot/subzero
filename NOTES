@@ -1,0 +1,42 @@
+Memory management for ICE objects
+=================================
+
+ICE instructions, operands, etc. are small objects, and hordes of them are
+created during compilation. It makes sense to provide efficient memory
+allocation for these objects, because we only deallocate them when a function is
+done translating. So a function (Cfg in Subzero parlance) should maintain an
+arena allocator which provides memory for the ICE objects contained within it.
+The simplest and fastest allocation strategy can be used for this arena - a
+"bump pointer" allocator that doesn't worry about deallocating and recycling,
+until it's completely killed (when the function is done translating and we
+have a buffer of object code instead).
+
+Challenges
+----------
+
+With an allocator per function, we no longer can simply allocate ICE objects
+with the new operator:
+
+    IceInstPhi *IcePhi = new IceInstPhi(...)
+
+Rather, we'll have to use placement new. Something like:
+
+    IceInstPhi *IcePhi = new (CfgAllocator) IceInstPhi(...)
+
+In addition, using containers within ICE instructions, variables and operands
+is problematic because containers need heap allocation. So the containers will
+have to support custom allocators, and not all containers do (STL custom
+allocator support, in particular, is considered somewhat broken by design and
+not very suitable for this). In general, objects allocated with any kind of
+custom allocator need to henceforth use this allocator for their own allocation
+needs.
+
+Moreover, instruction, operand & variable objects should be as lightweight as
+possible and containers usually take non-trivial amounts of space even when
+empty.
+
+Lessons from LLVM's MI layer
+----------------------------
+
+TODO(eliben): summarize here
+
