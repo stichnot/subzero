@@ -34,13 +34,10 @@ public:
   int getNumber(void) const { return Number; }
   void renumber(IceCfg *Cfg);
   IceInstType getKind(void) const { return Kind; }
-  IceVariable *getDest(unsigned I) const {
-    return I < Dests.size() ? Dests[I] : NULL;
-  }
+  IceVariable *getDest(void) const { return Dest; }
   IceOperand *getSrc(unsigned I) const {
     return I < Srcs.size() ? Srcs[I] : NULL;
   }
-  unsigned getDestSize(void) const { return Dests.size(); }
   unsigned getSrcSize(void) const { return Srcs.size(); }
   virtual IceNodeList getTerminatorEdges(void) const {
     assert(0);
@@ -68,7 +65,7 @@ public:
   virtual void dump(IceOstream &Str) const;
   virtual void dumpExtras(IceOstream &Str) const;
   void dumpSources(IceOstream &Str) const;
-  void dumpDests(IceOstream &Str) const;
+  void dumpDest(IceOstream &Str) const;
 
 protected:
   IceInst(IceCfg *Cfg, IceInstType Kind);
@@ -84,9 +81,7 @@ protected:
   // dead after liveness analysis, but shouldn't be deleted because of
   // their "hidden" side effects.
   bool DisallowDead;
-  // TODO: Is there any good reason to allow multiple Dest vars?
-  // Maybe x86 idiv which produces div/rem at once?  sincos intrinsic?
-  IceVarList Dests;
+  IceVariable *Dest;
   IceOpList Srcs;
   llvm::SmallBitVector LiveRangesEnded; // size is Srcs.size()
 };

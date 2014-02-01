@@ -68,7 +68,7 @@ IceInstList IceTargetX8632::lowerArithmetic(const IceInst *Inst,
   // register requires killing all operands available in all
   // virtual registers, except that "ecx=r1" doesn't need to kill
   // operands available in r1.
-  IceVariable *Dest = Inst->getDest(0);
+  IceVariable *Dest = Inst->getDest();
   IceOperand *Src0 = Inst->getSrc(0);
   IceOperand *Src1 = Inst->getSrc(1);
   IceVariable *Reg;
@@ -112,7 +112,7 @@ IceInstList IceTargetX8632::lowerAssign(const IceInst *Inst,
   IceInstList Expansion;
   IceOpList Prefer;
   IceVarList Avoid;
-  IceVariable *Dest = Inst->getDest(0);
+  IceVariable *Dest = Inst->getDest();
   IceOperand *Src0 = Inst->getSrc(0);
   IceVariable *Reg;
   IceInstTarget *NewInst;
@@ -183,7 +183,7 @@ IceInstList IceTargetX8632::lowerIcmp(const IceInst *Inst, const IceInst *Next,
   // For now, require that the following instruction is a branch
   // based on the last use of this instruction's Dest operand.
   // TODO: Fix this.
-  if (llvm::isa<IceInstBr>(Next) && Inst->getDest(0) == Next->getSrc(0)) {
+  if (llvm::isa<IceInstBr>(Next) && Inst->getDest() == Next->getSrc(0)) {
     const IceInstIcmp *InstIcmp = llvm::cast<IceInstIcmp>(Inst);
     const IceInstBr *NextBr = llvm::cast<IceInstBr>(Next);
     // This is basically identical to an Arithmetic instruction,
@@ -229,7 +229,7 @@ IceInstList IceTargetX8632::lowerLoad(const IceInst *Inst, const IceInst *Next,
                                       bool &DeleteNextInst) {
   IceInstList Expansion;
   IceInstTarget *NewInst;
-  IceVariable *Dest = Inst->getDest(0);
+  IceVariable *Dest = Inst->getDest();
   IceOperand *Src0 = Inst->getSrc(0); // Base
   IceOperand *Src1 = Inst->getSrc(1); // Index - could be NULL
   IceOperand *Src2 = Inst->getSrc(2); // Shift - constant
@@ -404,7 +404,7 @@ IceInstX8632Push::IceInstX8632Push(IceCfg *Cfg, IceOperand *Source)
 }
 
 bool IceInstX8632Mov::isRedundantAssign(void) const {
-  int DestRegNum = getDest(0)->getRegNum();
+  int DestRegNum = getDest()->getRegNum();
   if (DestRegNum < 0)
     return false;
   IceVariable *Src = llvm::dyn_cast<IceVariable>(getSrc(0));
@@ -481,7 +481,7 @@ void IceInstX8632Arithmetic::dump(IceOstream &Str) const {
     Str << "invalid";
     break;
   }
-  Str << "." << getDest(0)->getType() << " ";
+  Str << "." << getDest()->getType() << " ";
   dumpSources(Str);
 }
 
@@ -524,8 +524,8 @@ void IceInstX8632Br::dump(IceOstream &Str) const {
 }
 
 void IceInstX8632Call::dump(IceOstream &Str) const {
-  dumpDests(Str);
-  if (getDestSize())
+  dumpDest(Str);
+  if (getDest())
     Str << " = ";
   if (Tail)
     Str << "tail ";
@@ -538,8 +538,8 @@ void IceInstX8632Icmp::dump(IceOstream &Str) const {
 }
 
 void IceInstX8632Load::dump(IceOstream &Str) const {
-  Str << "mov." << getDest(0)->getType() << " ";
-  dumpDests(Str);
+  Str << "mov." << getDest()->getType() << " ";
+  dumpDest(Str);
   Str << ", [";
   dumpSources(Str);
   Str << "]";
@@ -560,8 +560,8 @@ void IceInstX8632Store::dump(IceOstream &Str) const {
 }
 
 void IceInstX8632Mov::dump(IceOstream &Str) const {
-  Str << "mov." << getDest(0)->getType() << " ";
-  dumpDests(Str);
+  Str << "mov." << getDest()->getType() << " ";
+  dumpDest(Str);
   Str << ", ";
   dumpSources(Str);
 }
@@ -611,7 +611,7 @@ IceInstList IceTargetX8632S::lowerArithmetic(const IceInst *Inst,
   IceInstList Expansion;
   // TODO: Several instructions require specific physical registers,
   // namely div, rem, shift.
-  IceVariable *Dest = Inst->getDest(0);
+  IceVariable *Dest = Inst->getDest();
   IceOperand *Src0 = Inst->getSrc(0);
   IceOperand *Src1 = Inst->getSrc(1);
   IceVariable *Reg;
@@ -639,7 +639,7 @@ IceInstList IceTargetX8632S::lowerAssign(const IceInst *Inst,
                                          const IceInst *Next,
                                          bool &DeleteNextInst) {
   IceInstList Expansion;
-  IceVariable *Dest = Inst->getDest(0);
+  IceVariable *Dest = Inst->getDest();
   IceOperand *Src0 = Inst->getSrc(0);
   IceVariable *Reg;
   IceInstTarget *NewInst;
@@ -682,7 +682,7 @@ IceInstList IceTargetX8632S::lowerCall(const IceInst *Inst, const IceInst *Next,
   }
   // Generate the call instruction.  Assign its result to a temporary
   // with high register allocation weight.
-  IceVariable *Dest = Inst->getDest(0);
+  IceVariable *Dest = Inst->getDest();
   IceVariable *Reg = NULL;
   if (Dest) {
     Reg = Cfg->makeVariable(Dest->getType());
@@ -748,7 +748,7 @@ IceInstList IceTargetX8632S::lowerIcmp(const IceInst *Inst, const IceInst *Next,
   // For now, require that the following instruction is a branch
   // based on the last use of this instruction's Dest operand.
   // TODO: Fix this.
-  if (llvm::isa<IceInstBr>(Next) && Inst->getDest(0) == Next->getSrc(0)) {
+  if (llvm::isa<IceInstBr>(Next) && Inst->getDest() == Next->getSrc(0)) {
     const IceInstIcmp *InstIcmp = llvm::cast<IceInstIcmp>(Inst);
     const IceInstBr *NextBr = llvm::cast<IceInstBr>(Next);
     // This is basically identical to an Arithmetic instruction,
@@ -778,7 +778,7 @@ IceInstList IceTargetX8632S::lowerLoad(const IceInst *Inst, const IceInst *Next,
                                        bool &DeleteNextInst) {
   IceInstList Expansion;
   IceInstTarget *NewInst;
-  IceVariable *Dest = Inst->getDest(0);
+  IceVariable *Dest = Inst->getDest();
   IceOperand *Src0 = Inst->getSrc(0); // Base
   IceOperand *Src1 = Inst->getSrc(1); // Index - could be NULL
   IceOperand *Src2 = Inst->getSrc(2); // Shift - constant

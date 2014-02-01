@@ -190,7 +190,7 @@ private:
 class IceInstX8632Store : public IceInstTarget {
 public:
   IceInstX8632Store(IceCfg *Cfg, IceOperand *Value, IceOperand *Base,
-                   IceOperand *Index, IceOperand *Shift, IceOperand *Offset);
+                    IceOperand *Index, IceOperand *Shift, IceOperand *Offset);
   virtual void dump(IceOstream &Str) const;
 
 private:

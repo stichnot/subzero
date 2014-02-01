@@ -145,7 +145,8 @@ void IceCfgNode::placePhiStores(void) {
       assert(Operand);
       if (Operand == NULL)
         continue;
-      IceVariable *Dest = (*I2)->getDest(0);
+      IceVariable *Dest = (*I2)->getDest();
+      assert(Dest);
       IceInstAssign *NewInst = new IceInstAssign(Cfg, Dest, Operand);
       if (IceVariable *Src = llvm::dyn_cast<IceVariable>(Operand)) {
         Dest->setPreferredRegister(Src, false);

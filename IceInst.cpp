@@ -11,7 +11,7 @@
 #include "IceRegManager.h"
 
 IceInst::IceInst(IceCfg *Cfg, IceInstType Kind)
-    : Kind(Kind), Deleted(false), Dead(false), DisallowDead(false) {
+    : Kind(Kind), Deleted(false), Dead(false), DisallowDead(false), Dest(NULL) {
   Number = Cfg->newInstNumber();
 }
 
@@ -28,10 +28,8 @@ void IceInst::deleteIfDead(void) {
 
 void IceInst::updateVars(IceCfgNode *Node) {
   // update variables in Dests
-  for (IceVarList::const_iterator I = Dests.begin(), E = Dests.end(); I != E;
-       ++I) {
-    (*I)->setDefinition(this, Node);
-  }
+  if (Dest)
+    Dest->setDefinition(this, Node);
   for (IceOpList::const_iterator I = Srcs.begin(), E = Srcs.end(); I != E;
        ++I) {
     if (*I == NULL)
@@ -40,10 +38,10 @@ void IceInst::updateVars(IceCfgNode *Node) {
   }
 }
 
-void IceInst::addDest(IceVariable *Dest) {
-  Dests.push_back(Dest);
-  // TODO: Multi-dest instructions need more testing.
-  assert(Dests.size() == 1);
+void IceInst::addDest(IceVariable *NewDest) {
+  assert(Dest == NULL);
+  assert(NewDest);
+  Dest = NewDest;
 }
 
 void IceInst::addSource(IceOperand *Source) {
@@ -271,18 +269,17 @@ void IceInst::liveness(IceLiveness Mode, int InstNumber, llvm::BitVector &Live,
   // instruction as dead, which also means not marking its source
   // operands as live.
   // Don't delete a dest-less instruction.
-  Dead = !DisallowDead && !Dests.empty();
-  for (IceVarList::const_iterator I = Dests.begin(), E = Dests.end(); I != E;
-       ++I) {
-    if (*I) {
-      unsigned VarNum = (*I)->getIndex();
-      if (Live[VarNum]) {
-        Dead = false;
-        Live[VarNum] = false;
-        LiveBegin[VarNum] = InstNumber;
-      }
+  Dead = true;
+  if (Dest) {
+    unsigned VarNum = Dest->getIndex();
+    if (Live[VarNum]) {
+      Dead = false;
+      Live[VarNum] = false;
+      LiveBegin[VarNum] = InstNumber;
     }
   }
+  if (Dest == NULL || DisallowDead)
+    Dead = false;
   // TODO: Make sure it's OK to delete the instruction and its
   // potential side effects.
   if (Dead)
@@ -441,12 +438,10 @@ IceOperand *IceInstPhi::getArgument(IceCfgNode *Label) const {
 // Change "a=phi(...)" to "a_phi=phi(...)" and return a new
 // instruction "a=a_phi".
 IceInst *IceInstPhi::lower(IceCfg *Cfg, IceCfgNode *Node) {
-  assert(Dests.size() == 1);
-  IceVariable *Dest = getDest(0);
+  assert(Dest);
   IceString PhiName = Dest->getName() + "_phi";
   IceVariable *NewSrc = Cfg->makeVariable(Dest->getType(), -1, PhiName);
-  Dests.clear();
-  addDest(NewSrc);
+  Dest = NewSrc;
   IceInstAssign *NewInst = new IceInstAssign(Cfg, Dest, NewSrc);
   Dest->setPreferredRegister(NewSrc, false);
   NewSrc->setPreferredRegister(Dest, false);
@@ -524,7 +519,7 @@ IceOstream &operator<<(IceOstream &Str, const IceInst *I) {
 }
 
 void IceInst::dump(IceOstream &Str) const {
-  dumpDests(Str);
+  dumpDest(Str);
   Str << " =~ ";
   dumpSources(Str);
 }
@@ -564,22 +559,18 @@ void IceInst::dumpSources(IceOstream &Str) const {
   }
 }
 
-void IceInst::dumpDests(IceOstream &Str) const {
-  for (IceVarList::const_iterator I = Dests.begin(), E = Dests.end(); I != E;
-       ++I) {
-    if (I != Dests.begin())
-      Str << " ";
-    Str << *I;
-  }
+void IceInst::dumpDest(IceOstream &Str) const {
+  if (Dest)
+    Str << Dest;
 }
 
 void IceInstAlloca::dump(IceOstream &Str) const {
-  dumpDests(Str);
+  dumpDest(Str);
   Str << " = alloca " << IceType_i8 << ", i32 " << Size << ", align " << Align;
 }
 
 void IceInstArithmetic::dump(IceOstream &Str) const {
-  dumpDests(Str);
+  dumpDest(Str);
   Str << " = ";
   switch (Op) {
   case Add:
@@ -640,18 +631,18 @@ void IceInstArithmetic::dump(IceOstream &Str) const {
     Str << "invalid";
     break;
   }
-  Str << " " << getDest(0)->getType() << " ";
+  Str << " " << getDest()->getType() << " ";
   dumpSources(Str);
 }
 
 void IceInstAssign::dump(IceOstream &Str) const {
-  dumpDests(Str);
-  Str << " = " << getDest(0)->getType() << " ";
+  dumpDest(Str);
+  Str << " = " << getDest()->getType() << " ";
   dumpSources(Str);
 }
 
 void IceInstBr::dump(IceOstream &Str) const {
-  dumpDests(Str);
+  dumpDest(Str);
   Str << "br ";
   if (getTargetTrue()) {
     Str << "i1 " << Srcs[0] << ", label %" << getTargetTrue()->getName()
@@ -661,7 +652,7 @@ void IceInstBr::dump(IceOstream &Str) const {
 }
 
 void IceInstCall::dump(IceOstream &Str) const {
-  dumpDests(Str);
+  dumpDest(Str);
   Str << " = ";
   if (Tail)
     Str << "tail ";
@@ -671,7 +662,7 @@ void IceInstCall::dump(IceOstream &Str) const {
 }
 
 void IceInstCast::dump(IceOstream &Str) const {
-  dumpDests(Str);
+  dumpDest(Str);
   Str << " = ";
   switch (CastKind) {
   default:
@@ -683,11 +674,11 @@ void IceInstCast::dump(IceOstream &Str) const {
   }
   Str << " " << getSrc(0)->getType() << " ";
   dumpSources(Str);
-  Str << " to " << getDest(0)->getType();
+  Str << " to " << getDest()->getType();
 }
 
 void IceInstIcmp::dump(IceOstream &Str) const {
-  dumpDests(Str);
+  dumpDest(Str);
   Str << " = icmp ";
   switch (Condition) {
   case Eq:
@@ -731,8 +722,8 @@ void IceInstKill::dump(IceOstream &Str) const {
 }
 
 void IceInstLoad::dump(IceOstream &Str) const {
-  dumpDests(Str);
-  IceType Type = getDest(0)->getType();
+  dumpDest(Str);
+  IceType Type = getDest()->getType();
   Str << " = load " << Type << "* ";
   dumpSources(Str);
   Str << ", align ";
@@ -768,8 +759,8 @@ void IceInstStore::dump(IceOstream &Str) const {
 }
 
 void IceInstPhi::dump(IceOstream &Str) const {
-  dumpDests(Str);
-  Str << " = phi " << getDest(0)->getType() << " ";
+  dumpDest(Str);
+  Str << " = phi " << getDest()->getType() << " ";
   IceNodeList::const_iterator EdgeIter = Labels.begin(), EdgeEnd = Labels.end();
   for (IceOpList::const_iterator I = Srcs.begin(), E = Srcs.end();
        I != E && EdgeIter != EdgeEnd; ++I, ++EdgeIter) {

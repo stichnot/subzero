@@ -38,7 +38,7 @@ void IceRegManagerEntry::load(IceInst *Inst) {
 // Available sets must be killed.
 void IceRegManagerEntry::store(IceInst *Inst) {
   // TODO: Kill all Available sets when necessary.
-  IceVariable *Variable = Inst->getDest(0);
+  IceVariable *Variable = Inst->getDest();
   assert(Variable);
   Available.push_back(Variable);
 }
@@ -133,7 +133,7 @@ bool IceRegManager::registerContains(const IceVariable *Reg,
 }
 
 void IceRegManager::notifyLoad(IceInst *Inst, bool IsAssign) {
-  IceVariable *Reg = Inst->getDest(0);
+  IceVariable *Reg = Inst->getDest();
   IceRegManagerEntry *Entry = NULL;
   for (QueueType::iterator I = Queue.begin(), E = Queue.end(); I != E; ++I) {
     if ((*I)->getVar() == Reg) {
@@ -149,7 +149,7 @@ void IceRegManager::notifyLoad(IceInst *Inst, bool IsAssign) {
 
 void IceRegManager::notifyStore(IceInst *Inst) {
   IceVariable *Reg = llvm::cast<IceVariable>(Inst->getSrc(0));
-  IceVariable *Variable = Inst->getDest(0);
+  IceVariable *Variable = Inst->getDest();
   assert(Variable);
   IceRegManagerEntry *Entry = NULL;
   for (QueueType::iterator I = Queue.begin(), E = Queue.end(); I != E; ++I) {
