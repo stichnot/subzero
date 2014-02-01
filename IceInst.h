@@ -43,7 +43,6 @@ public:
     assert(0);
     return IceNodeList();
   }
-  virtual bool isRedundantAssign(void) const { return false; }
   bool isDeleted(void) const { return Deleted; }
   bool isLastUse(unsigned SrcIndex) const { return LiveRangesEnded[SrcIndex]; }
   // If an instruction is deleted as a result of replacing it with
@@ -66,6 +65,9 @@ public:
   virtual void dumpExtras(IceOstream &Str) const;
   void dumpSources(IceOstream &Str) const;
   void dumpDest(IceOstream &Str) const;
+  // isRedundantAssign() is only used for dumping, so (for now) it's
+  // OK that it's virtual.
+  virtual bool isRedundantAssign(void) const { return false; }
 
 protected:
   IceInst(IceCfg *Cfg, IceInstType Kind);
