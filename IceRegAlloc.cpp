@@ -70,10 +70,13 @@ void IceLinearScan::scan(const llvm::SmallBitVector &RegMask) {
     // precolored.  Future processed live ranges won't evict that
     // register because the live range has infinite weight.
     if (Cur.Var->getRegNum() >= 0) {
-      Cur.Var->setRegNumTmp(Cur.Var->getRegNum());
+      int RegNum = Cur.Var->getRegNum();
+      Cur.Var->setRegNumTmp(RegNum);
       if (Cfg->Str.isVerbose(IceV_LinearScan))
         Cfg->Str << "Precoloring  " << Cur << "\n";
-      Handled.push_back(Cur);
+      Active.push_back(Cur);
+      assert(RegUses[RegNum] >= 0);
+      ++RegUses[RegNum];
       continue;
     }
 
@@ -129,8 +132,8 @@ void IceLinearScan::scan(const llvm::SmallBitVector &RegMask) {
         // Increment Item in RegUses[].
         int RegNum = Item.Var->getRegNumTmp();
         assert(RegNum >= 0);
-        ++RegUses[RegNum];
         assert(RegUses[RegNum] >= 0);
+        ++RegUses[RegNum];
       }
     }
 
