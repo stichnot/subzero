@@ -406,10 +406,9 @@ IceInstLoad::IceInstLoad(IceCfg *Cfg, IceVariable *Dest, IceOperand *SourceAddr)
   addSource(SourceAddr);
 }
 
-IceInstStore::IceInstStore(IceCfg *Cfg, IceType Type, IceOperand *Val,
+IceInstStore::IceInstStore(IceCfg *Cfg, IceType StoreType, IceOperand *Val,
                            IceOperand *Addr)
-    : IceInst(Cfg, IceInst::Store) {
-  setType(Type);
+    : IceInst(Cfg, IceInst::Store), Type(StoreType) {
   addSource(Val);
   addSource(Addr);
 }

@@ -380,10 +380,11 @@ IceInstX8632Load::IceInstX8632Load(IceCfg *Cfg, IceVariable *Dest,
   addSource(Src3);
 }
 
-IceInstX8632Store::IceInstX8632Store(IceCfg *Cfg, IceOperand *Value,
-                                     IceOperand *Base, IceOperand *Index,
-                                     IceOperand *Shift, IceOperand *Offset)
-    : IceInstTarget(Cfg) {
+IceInstX8632Store::IceInstX8632Store(IceCfg *Cfg, IceType StoreType,
+                                     IceOperand *Value, IceOperand *Base,
+                                     IceOperand *Index, IceOperand *Shift,
+                                     IceOperand *Offset)
+    : IceInstTarget(Cfg), Type(StoreType) {
   addSource(Value);
   addSource(Base);
   addSource(Index);
@@ -546,7 +547,7 @@ void IceInstX8632Load::dump(IceOstream &Str) const {
 }
 
 void IceInstX8632Store::dump(IceOstream &Str) const {
-  Str << "mov." << getSrc(0)->getType() << " ";
+  Str << "mov." << getType() << " ";
   Str << "[";
   Str << getSrc(1);
   Str << ", ";
@@ -851,6 +852,7 @@ IceInstList IceTargetX8632S::lowerStore(const IceInst *Inst,
   IceInstList Expansion;
 
   IceInstTarget *NewInst;
+  const IceInstStore *Store = llvm::dyn_cast<IceInstStore>(Inst);
   IceOperand *Value = Inst->getSrc(0);
   IceOperand *Src1 = Inst->getSrc(1); // Base
   IceOperand *Src2 = Inst->getSrc(2); // Index - could be NULL
@@ -882,7 +884,9 @@ IceInstList IceTargetX8632S::lowerStore(const IceInst *Inst,
     NewInst = new IceInstX8632Mov(Cfg, Reg2, Src2);
     Expansion.push_back(NewInst);
   }
-  NewInst = new IceInstX8632Store(Cfg, Reg0, Reg1, Reg2, Src3, Src4);
+  
+  IceType Type = Store->getType();
+  NewInst = new IceInstX8632Store(Cfg, Type, Reg0, Reg1, Reg2, Src3, Src4);
   Expansion.push_back(NewInst);
 
   return Expansion;
