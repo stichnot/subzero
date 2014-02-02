@@ -791,7 +791,7 @@ void IceInstFakeDef::dump(IceOstream &Str) const {
 }
 
 void IceInstFakeUse::dump(IceOstream &Str) const {
-  Str << " = use.pseudo ";
+  Str << "use.pseudo ";
   dumpSources(Str);
 }
 
