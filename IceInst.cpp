@@ -11,7 +11,7 @@
 #include "IceRegManager.h"
 
 IceInst::IceInst(IceCfg *Cfg, IceInstType Kind)
-    : Kind(Kind), Deleted(false), Dead(false), DisallowDead(false), Dest(NULL) {
+    : Kind(Kind), Deleted(false), Dead(false), Dest(NULL) {
   Number = Cfg->newInstNumber();
 }
 
@@ -265,23 +265,16 @@ void IceInst::liveness(IceLiveness Mode, int InstNumber, llvm::BitVector &Live,
     return;
   }
 
-  // TODO: if all dest operands are dead, consider marking the entire
-  // instruction as dead, which also means not marking its source
-  // operands as live.
-  // Don't delete a dest-less instruction.
-  Dead = true;
+  Dead = false;
   if (Dest) {
     unsigned VarNum = Dest->getIndex();
     if (Live[VarNum]) {
-      Dead = false;
       Live[VarNum] = false;
       LiveBegin[VarNum] = InstNumber;
+    } else {
+      Dead = true;
     }
   }
-  if (Dest == NULL || DisallowDead)
-    Dead = false;
-  // TODO: Make sure it's OK to delete the instruction and its
-  // potential side effects.
   if (Dead)
     return;
   // Phi arguments only get added to Live in the predecessor node, but

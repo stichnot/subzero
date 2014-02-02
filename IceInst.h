@@ -52,7 +52,6 @@ public:
   // the new instructions because of the cascading deletes from
   // reference counting.
   void setDeleted(void);
-  void setDisallowDead(void) { DisallowDead = true; }
   void deleteIfDead(void);
   void updateVars(IceCfgNode *Node);
   void findAddressOpt(IceCfg *Cfg, const IceCfgNode *Node);
@@ -81,10 +80,6 @@ protected:
   bool Deleted;
   // Dead means pending deletion after liveness analysis converges.
   bool Dead;
-  // Some instructions, e.g. stack pointer adjustments, may appear
-  // dead after liveness analysis, but shouldn't be deleted because of
-  // their "hidden" side effects.
-  bool DisallowDead;
   IceVariable *Dest;
   IceOpList Srcs;
   llvm::SmallBitVector LiveRangesEnded; // size is Srcs.size()

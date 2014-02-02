@@ -671,6 +671,10 @@ IceInstList IceTargetX8632S::lowerCall(const IceInst *Inst, const IceInst *Next,
   // keeping track of stack offsets in case a push involves a stack
   // operand and we are using an esp-based frame.
   uint32_t StackOffset = 0;
+  // TODO: If for some reason the call instruction gets dead-code
+  // eliminated after lowering, we would need to ensure that the
+  // pre-call push instructions and the post-call esp adjustment get
+  // eliminated as well.
   for (unsigned NumArgs = Inst->getSrcSize(), i = 0; i < NumArgs; ++i) {
     IceOperand *Arg = Inst->getSrc(NumArgs - i - 1);
     assert(Arg);
@@ -731,7 +735,6 @@ IceInstList IceTargetX8632S::lowerCall(const IceInst *Inst, const IceInst *Next,
     NewInst =
         new IceInstX8632Arithmetic(Cfg, IceInstX8632Arithmetic::Add, Esp,
                                    Cfg->getConstant(IceType_i32, StackOffset));
-    NewInst->setDisallowDead();
     Expansion.push_back(NewInst);
   }
 
@@ -845,6 +848,14 @@ IceInstList IceTargetX8632S::lowerRet(const IceInst *Inst, const IceInst *Next,
   }
   NewInst = new IceInstX8632Ret(Cfg, Reg);
   Expansion.push_back(NewInst);
+  // Add a fake use of esp to make sure esp stays alive for the entire
+  // function.  Otherwise post-call esp adjustments get dead-code
+  // eliminated.  TODO: Are there more places where the fake use
+  // should be inserted?  E.g. "void f(int n){while(1) g(n);}" may not
+  // have a ret instruction.
+  IceVariable *Esp = Cfg->getTarget()->getPhysicalRegister(Reg_esp);
+  IceInst *FakeUse = new IceInstFakeUse(Cfg, Esp);
+  Expansion.push_back(FakeUse);
   return Expansion;
 }
 
