@@ -905,7 +905,7 @@ IceInstList IceTargetX8632S::lowerStore(const IceInst *Inst,
     NewInst = new IceInstX8632Mov(Cfg, Reg2, Src2);
     Expansion.push_back(NewInst);
   }
-  
+
   IceType Type = Store->getType();
   NewInst = new IceInstX8632Store(Cfg, Type, Reg0, Reg1, Reg2, Src3, Src4);
   Expansion.push_back(NewInst);

@@ -478,7 +478,7 @@ void IceInstTarget::setRegState(const IceRegManager *State) {
 }
 
 IceInstFakeDef::IceInstFakeDef(IceCfg *Cfg, IceVariable *Dest, IceVariable *Src)
-  : IceInst(Cfg, IceInst::FakeDef) {
+    : IceInst(Cfg, IceInst::FakeDef) {
   assert(Dest);
   addDest(Dest);
   if (Src)
@@ -486,7 +486,7 @@ IceInstFakeDef::IceInstFakeDef(IceCfg *Cfg, IceVariable *Dest, IceVariable *Src)
 }
 
 IceInstFakeUse::IceInstFakeUse(IceCfg *Cfg, IceVariable *Src)
-  : IceInst(Cfg, IceInst::FakeUse) {
+    : IceInst(Cfg, IceInst::FakeUse) {
   assert(Src);
   addSource(Src);
 }

@@ -28,10 +28,10 @@ public:
     Select,
     Store,
     Switch,
-    FakeDef, // not part of LLVM/PNaCl bitcode
-    FakeUse, // not part of LLVM/PNaCl bitcode
+    FakeDef,  // not part of LLVM/PNaCl bitcode
+    FakeUse,  // not part of LLVM/PNaCl bitcode
     FakeKill, // not part of LLVM/PNaCl bitcode
-    Target // target-specific low-level ICE
+    Target    // target-specific low-level ICE
   };
   int getNumber(void) const { return Number; }
   void renumber(IceCfg *Cfg);
@@ -348,21 +348,27 @@ class IceInstFakeDef : public IceInst {
 public:
   IceInstFakeDef(IceCfg *Cfg, IceVariable *Dest, IceVariable *Src = NULL);
   virtual void dump(IceOstream &Str) const;
-  static bool classof(const IceInst *Inst) { return Inst->getKind() == FakeDef; }
+  static bool classof(const IceInst *Inst) {
+    return Inst->getKind() == FakeDef;
+  }
 };
 
 class IceInstFakeUse : public IceInst {
 public:
   IceInstFakeUse(IceCfg *Cfg, IceVariable *Src);
   virtual void dump(IceOstream &Str) const;
-  static bool classof(const IceInst *Inst) { return Inst->getKind() == FakeUse; }
+  static bool classof(const IceInst *Inst) {
+    return Inst->getKind() == FakeUse;
+  }
 };
 
 class IceInstFakeKill : public IceInst {
 public:
   IceInstFakeKill(IceCfg *Cfg, const IceVarList &KilledRegs);
   virtual void dump(IceOstream &Str) const;
-  static bool classof(const IceInst *Inst) { return Inst->getKind() == FakeKill; }
+  static bool classof(const IceInst *Inst) {
+    return Inst->getKind() == FakeKill;
+  }
 };
 
 class IceInstTarget : public IceInst {
