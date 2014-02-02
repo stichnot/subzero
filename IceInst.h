@@ -275,13 +275,6 @@ private:
   IceICond Condition;
 };
 
-class IceInstFakeKill : public IceInst {
-public:
-  IceInstFakeKill(IceCfg *Cfg, const IceVarList &KilledRegs);
-  virtual void dump(IceOstream &Str) const;
-  static bool classof(const IceInst *Inst) { return Inst->getKind() == FakeKill; }
-};
-
 class IceInstLoad : public IceInst {
 public:
   IceInstLoad(IceCfg *Cfg, IceVariable *Dest, IceOperand *SourceAddr);
@@ -354,6 +347,13 @@ public:
   static bool classof(const IceInst *Inst) { return Inst->getKind() == Switch; }
 
 private:
+};
+
+class IceInstFakeKill : public IceInst {
+public:
+  IceInstFakeKill(IceCfg *Cfg, const IceVarList &KilledRegs);
+  virtual void dump(IceOstream &Str) const;
+  static bool classof(const IceInst *Inst) { return Inst->getKind() == FakeKill; }
 };
 
 class IceInstTarget : public IceInst {

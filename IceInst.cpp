@@ -391,15 +391,6 @@ IceInstIcmp::IceInstIcmp(IceCfg *Cfg, IceICond Condition, IceVariable *Dest,
   addSource(Source2);
 }
 
-IceInstFakeKill::IceInstFakeKill(IceCfg *Cfg, const IceVarList &KilledRegs)
-    : IceInst(Cfg, IceInst::FakeKill) {
-  for (IceVarList::const_iterator I = KilledRegs.begin(), E = KilledRegs.end();
-       I != E; ++I) {
-    IceVariable *Var = *I;
-    addSource(Var);
-  }
-}
-
 IceInstLoad::IceInstLoad(IceCfg *Cfg, IceVariable *Dest, IceOperand *SourceAddr)
     : IceInst(Cfg, IceInst::Load) {
   addDest(Dest);
@@ -491,6 +482,15 @@ IceInstRet::IceInstRet(IceCfg *Cfg, IceOperand *Source) : IceInst(Cfg, Ret) {
 
 void IceInstTarget::setRegState(const IceRegManager *State) {
   RegState = new IceRegManager(*State);
+}
+
+IceInstFakeKill::IceInstFakeKill(IceCfg *Cfg, const IceVarList &KilledRegs)
+    : IceInst(Cfg, IceInst::FakeKill) {
+  for (IceVarList::const_iterator I = KilledRegs.begin(), E = KilledRegs.end();
+       I != E; ++I) {
+    IceVariable *Var = *I;
+    addSource(Var);
+  }
 }
 
 // ======================== Dump routines ======================== //
