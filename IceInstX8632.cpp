@@ -689,10 +689,11 @@ IceInstList IceTargetX8632S::lowerCall(const IceInst *Inst, const IceInst *Next,
     Reg = Cfg->makeVariable(Dest->getType());
     Reg->setWeightInfinite();
     // TODO: Reg_eax is only for 32-bit integer results.  For floating
-    // point, we need the appropriate FP register.  For 64-bit
-    // integer, here (finally) is a possible motivation for having
-    // multiple Dest variables.  Alternatively, insert a fake
-    // instruction with the edx Dest.
+    // point, we need the appropriate FP register.  For a 64-bit
+    // integer result, after the Kill instruction add a
+    // "tmp:edx=FakeDef(Reg)" instruction for a call that can be
+    // dead-code eliminated, and "tmp:edx=FakeDef()" for a call that
+    // can't be eliminated.
     Reg->setRegNum(Reg_eax);
   }
   const IceInstCall *CallInst = llvm::cast<const IceInstCall>(Inst);
@@ -707,6 +708,15 @@ IceInstList IceTargetX8632S::lowerCall(const IceInst *Inst, const IceInst *Next,
   KilledRegs.push_back(Cfg->getTarget()->getPhysicalRegister(Reg_edx));
   IceInst *Kill = new IceInstFakeKill(Cfg, KilledRegs);
   Expansion.push_back(Kill);
+
+  // Generate a FakeUse to keep the call live if necessary.
+  bool HasSideEffects = true;
+  // TODO: set HasSideEffects=false if it's a known intrinsic without
+  // side effects.
+  if (HasSideEffects && Reg) {
+    IceInst *FakeUse = new IceInstFakeUse(Cfg, Reg);
+    Expansion.push_back(FakeUse);
+  }
 
   // Generate Dest=Reg assignment.
   if (Dest) {
