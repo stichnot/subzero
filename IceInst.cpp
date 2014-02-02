@@ -540,7 +540,7 @@ void IceInst::dumpExtras(IceOstream &Str) const {
          ++I, ++Index) {
       if (*I == NULL)
         continue;
-      if (LiveRangesEnded[Index]) {
+      if (isLastUse(Index)) {
         if (First)
           Str << " // LIVEEND={";
         else
