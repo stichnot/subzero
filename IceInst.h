@@ -349,6 +349,20 @@ public:
 private:
 };
 
+class IceInstFakeDef : public IceInst {
+public:
+  IceInstFakeDef(IceCfg *Cfg, IceVariable *Dest, IceVariable *Src = NULL);
+  virtual void dump(IceOstream &Str) const;
+  static bool classof(const IceInst *Inst) { return Inst->getKind() == FakeDef; }
+};
+
+class IceInstFakeUse : public IceInst {
+public:
+  IceInstFakeUse(IceCfg *Cfg, IceVariable *Src);
+  virtual void dump(IceOstream &Str) const;
+  static bool classof(const IceInst *Inst) { return Inst->getKind() == FakeUse; }
+};
+
 class IceInstFakeKill : public IceInst {
 public:
   IceInstFakeKill(IceCfg *Cfg, const IceVarList &KilledRegs);

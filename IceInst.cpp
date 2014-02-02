@@ -484,6 +484,20 @@ void IceInstTarget::setRegState(const IceRegManager *State) {
   RegState = new IceRegManager(*State);
 }
 
+IceInstFakeDef::IceInstFakeDef(IceCfg *Cfg, IceVariable *Dest, IceVariable *Src)
+  : IceInst(Cfg, IceInst::FakeDef) {
+  assert(Dest);
+  addDest(Dest);
+  if (Src)
+    addSource(Src);
+}
+
+IceInstFakeUse::IceInstFakeUse(IceCfg *Cfg, IceVariable *Src)
+  : IceInst(Cfg, IceInst::FakeUse) {
+  assert(Src);
+  addSource(Src);
+}
+
 IceInstFakeKill::IceInstFakeKill(IceCfg *Cfg, const IceVarList &KilledRegs)
     : IceInst(Cfg, IceInst::FakeKill) {
   for (IceVarList::const_iterator I = KilledRegs.begin(), E = KilledRegs.end();
@@ -715,11 +729,6 @@ void IceInstIcmp::dump(IceOstream &Str) const {
   dumpSources(Str);
 }
 
-void IceInstFakeKill::dump(IceOstream &Str) const {
-  Str << "kill.pseudo ";
-  dumpSources(Str);
-}
-
 void IceInstLoad::dump(IceOstream &Str) const {
   dumpDest(Str);
   IceType Type = getDest()->getType();
@@ -772,6 +781,22 @@ void IceInstPhi::dump(IceOstream &Str) const {
 void IceInstRet::dump(IceOstream &Str) const {
   IceType Type = Srcs.empty() ? IceType_void : getSrc(0)->getType();
   Str << "ret " << Type << " ";
+  dumpSources(Str);
+}
+
+void IceInstFakeDef::dump(IceOstream &Str) const {
+  dumpDest(Str);
+  Str << " = def.pseudo ";
+  dumpSources(Str);
+}
+
+void IceInstFakeUse::dump(IceOstream &Str) const {
+  Str << " = use.pseudo ";
+  dumpSources(Str);
+}
+
+void IceInstFakeKill::dump(IceOstream &Str) const {
+  Str << "kill.pseudo ";
   dumpSources(Str);
 }
 
