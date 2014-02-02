@@ -705,7 +705,7 @@ IceInstList IceTargetX8632S::lowerCall(const IceInst *Inst, const IceInst *Next,
   KilledRegs.push_back(Cfg->getTarget()->getPhysicalRegister(Reg_eax));
   KilledRegs.push_back(Cfg->getTarget()->getPhysicalRegister(Reg_ecx));
   KilledRegs.push_back(Cfg->getTarget()->getPhysicalRegister(Reg_edx));
-  IceInst *Kill = new IceInstKill(Cfg, KilledRegs);
+  IceInst *Kill = new IceInstFakeKill(Cfg, KilledRegs);
   Expansion.push_back(Kill);
 
   // Generate Dest=Reg assignment.

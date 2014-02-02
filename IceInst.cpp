@@ -243,7 +243,7 @@ void IceInst::liveness(IceLiveness Mode, int InstNumber, llvm::BitVector &Live,
                        std::vector<int> &LiveBegin, std::vector<int> &LiveEnd) {
   if (isDeleted())
     return;
-  if (llvm::isa<IceInstKill>(this))
+  if (llvm::isa<IceInstFakeKill>(this))
     return;
 
   // For lightweight liveness, do the simple calculation and return.
@@ -391,8 +391,8 @@ IceInstIcmp::IceInstIcmp(IceCfg *Cfg, IceICond Condition, IceVariable *Dest,
   addSource(Source2);
 }
 
-IceInstKill::IceInstKill(IceCfg *Cfg, const IceVarList &KilledRegs)
-    : IceInst(Cfg, IceInst::Kill) {
+IceInstFakeKill::IceInstFakeKill(IceCfg *Cfg, const IceVarList &KilledRegs)
+    : IceInst(Cfg, IceInst::FakeKill) {
   for (IceVarList::const_iterator I = KilledRegs.begin(), E = KilledRegs.end();
        I != E; ++I) {
     IceVariable *Var = *I;
@@ -715,7 +715,7 @@ void IceInstIcmp::dump(IceOstream &Str) const {
   dumpSources(Str);
 }
 
-void IceInstKill::dump(IceOstream &Str) const {
+void IceInstFakeKill::dump(IceOstream &Str) const {
   Str << "kill.pseudo ";
   dumpSources(Str);
 }

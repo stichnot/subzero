@@ -22,13 +22,15 @@ public:
     Cast,
     Fcmp,
     Icmp,
-    Kill, // not part of LLVM/PNaCl bitcode
     Load,
     Phi,
     Ret,
     Select,
     Store,
     Switch,
+    FakeDef, // not part of LLVM/PNaCl bitcode
+    FakeUse, // not part of LLVM/PNaCl bitcode
+    FakeKill, // not part of LLVM/PNaCl bitcode
     Target // target-specific low-level ICE
   };
   int getNumber(void) const { return Number; }
@@ -273,11 +275,11 @@ private:
   IceICond Condition;
 };
 
-class IceInstKill : public IceInst {
+class IceInstFakeKill : public IceInst {
 public:
-  IceInstKill(IceCfg *Cfg, const IceVarList &KilledRegs);
+  IceInstFakeKill(IceCfg *Cfg, const IceVarList &KilledRegs);
   virtual void dump(IceOstream &Str) const;
-  static bool classof(const IceInst *Inst) { return Inst->getKind() == Kill; }
+  static bool classof(const IceInst *Inst) { return Inst->getKind() == FakeKill; }
 };
 
 class IceInstLoad : public IceInst {

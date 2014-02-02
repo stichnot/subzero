@@ -305,7 +305,7 @@ void IceCfgNode::livenessPostprocess(IceLiveness Mode) {
     // destinations get in this block?
     assert(Inst->getNumber() > LastInstNum);
     LastInstNum = Inst->getNumber();
-    if (Mode == IceLiveness_RangesFull && llvm::isa<IceInstKill>(Inst)) {
+    if (Mode == IceLiveness_RangesFull && llvm::isa<IceInstFakeKill>(Inst)) {
       unsigned NumSrcs = Inst->getSrcSize();
       for (unsigned i = 0; i < NumSrcs; ++i) {
         IceVariable *Var = llvm::cast<IceVariable>(Inst->getSrc(i));
