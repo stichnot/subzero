@@ -305,12 +305,18 @@ void IceCfgNode::livenessPostprocess(IceLiveness Mode) {
     // destinations get in this block?
     assert(Inst->getNumber() > LastInstNum);
     LastInstNum = Inst->getNumber();
-    if (Mode == IceLiveness_RangesFull && llvm::isa<IceInstFakeKill>(Inst)) {
-      unsigned NumSrcs = Inst->getSrcSize();
-      for (unsigned i = 0; i < NumSrcs; ++i) {
-        IceVariable *Var = llvm::cast<IceVariable>(Inst->getSrc(i));
-        int InstNumber = Inst->getNumber();
-        Var->addLiveRange(InstNumber, InstNumber, 1);
+    // Create fake live ranges for a Kill instruction, but only if the
+    // linked instruction is still alive.
+    if (Mode == IceLiveness_RangesFull) {
+      if (IceInstFakeKill *Kill = llvm::dyn_cast<IceInstFakeKill>(Inst)) {
+        if (!Kill->getLinked()->isDeleted()) {
+          unsigned NumSrcs = Inst->getSrcSize();
+          for (unsigned i = 0; i < NumSrcs; ++i) {
+            IceVariable *Var = llvm::cast<IceVariable>(Inst->getSrc(i));
+            int InstNumber = Inst->getNumber();
+            Var->addLiveRange(InstNumber, InstNumber, 1);
+          }
+        }
       }
     }
   }

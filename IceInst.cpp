@@ -491,8 +491,9 @@ IceInstFakeUse::IceInstFakeUse(IceCfg *Cfg, IceVariable *Src)
   addSource(Src);
 }
 
-IceInstFakeKill::IceInstFakeKill(IceCfg *Cfg, const IceVarList &KilledRegs)
-    : IceInst(Cfg, IceInst::FakeKill) {
+IceInstFakeKill::IceInstFakeKill(IceCfg *Cfg, const IceVarList &KilledRegs,
+                                 const IceInst *Linked)
+    : IceInst(Cfg, IceInst::FakeKill), Linked(Linked) {
   for (IceVarList::const_iterator I = KilledRegs.begin(), E = KilledRegs.end();
        I != E; ++I) {
     IceVariable *Var = *I;
@@ -789,6 +790,8 @@ void IceInstFakeUse::dump(IceOstream &Str) const {
 }
 
 void IceInstFakeKill::dump(IceOstream &Str) const {
+  if (Linked->isDeleted())
+    Str << "// ";
   Str << "kill.pseudo ";
   dumpSources(Str);
 }

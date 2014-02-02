@@ -147,19 +147,23 @@ range is created that begins and ends in that instruction.  The
 ``IceInstFakeKill`` instruction is inserted after the ``call`` instruction.  For
 example::
 
-    NewInst = new IceInstX8632Call(Cfg, ... );
+    CallInst = new IceInstX8632Call(Cfg, ... );
     IceVarList KilledRegs;
     KilledRegs.push_back(eax);
     KilledRegs.push_back(ecx);
     KilledRegs.push_back(edx);
-    NewInst = new IceInstFakeKill(Cfg, KilledRegs);
+    NewInst = new IceInstFakeKill(Cfg, KilledRegs, CallInst);
+
+The last argument to the ``IceInstFakeKill`` constructor links it to the
+previous call instruction, such that if its linked instruction is dead-code
+eliminated, the ``IceInstFakeKill`` instruction is eliminated as well.
 
 The killed register arguments need to be assigned a physical register via
 ``IceVarList::setRegNum()`` for this to be effective.  To avoid a massive
 proliferation of ``IceVariable`` temporaries, the ``Cfg`` caches one precolored
 ``IceVariable`` for each physical register::
 
-    NewInst = new IceInstX8632Call(Cfg, ... );
+    CallInst = new IceInstX8632Call(Cfg, ... );
     IceVarList KilledRegs;
     IceVariable *eax = Cfg->getTarget()->getPhysicalRegister(Reg_eax);
     IceVariable *ecx = Cfg->getTarget()->getPhysicalRegister(Reg_ecx);
@@ -167,17 +171,13 @@ proliferation of ``IceVariable`` temporaries, the ``Cfg`` caches one precolored
     KilledRegs.push_back(eax);
     KilledRegs.push_back(ecx);
     KilledRegs.push_back(edx);
-    NewInst = new IceInstFakeKill(Cfg, KilledRegs);
+    NewInst = new IceInstFakeKill(Cfg, KilledRegs, CallInst);
 
 On first glance, it seems unnecessary to explicitly kill the register that
 returns the ``call`` return value.  However, if for some reason the ``call``
 result ends up being unused, dead-code elimination could remove dead assignments
 and incorrectly expose the return value register to a register allocation
 assignment spanning the call, which would be incorrect.
-
-The ``IceInstFakeKill`` instruction is "linked" to the previous instruction (the
-``call`` instruction in this case), such that if its linked instruction is
-dead-code eliminated, the ``IceInstFakeKill`` instruction is eliminated as well.
 
 Instructions producing multiple values
 --------------------------------------
@@ -193,9 +193,9 @@ pseudo-instruction.  Its destination can be precolored to the appropriate
 physical register.  For example, a ``call`` returning a 64-bit result in
 ``edx:eax``::
 
-    NewInst = new IceInstX8632Call(Cfg, RegLow, ... );
+    CallInst = new IceInstX8632Call(Cfg, RegLow, ... );
     ...
-    NewInst = new IceInstFakeKill(Cfg, KilledRegs);
+    NewInst = new IceInstFakeKill(Cfg, KilledRegs, CallInst);
     IceVariable *RegHigh = Cfg->makeVariable(IceType_i32);
     RegHigh->setRegNum(Reg_edx);
     NewInst = new IceInstFakeDef(Cfg, RegHigh);
@@ -223,12 +223,12 @@ result::
 
     IceVariable *Reg = Cfg->makeVariable(IceType_i32);
     Reg->setRegNum(Reg_eax);
-    NewInst = new IceInstX8632Call(Cfg, Reg, ... );
+    CallInst = new IceInstX8632Call(Cfg, Reg, ... );
     IceVarList KilledRegs;
     KilledRegs.push_back(eax);
     KilledRegs.push_back(ecx);
     KilledRegs.push_back(edx);
-    NewInst = new IceInstFakeKill(Cfg, KilledRegs);
+    NewInst = new IceInstFakeKill(Cfg, KilledRegs, CallInst);
     NewInst = new IceInstFakeUse(Cfg, Reg);
     NewInst = new IceInstX8632Mov(Cfg, Result, Reg);
 

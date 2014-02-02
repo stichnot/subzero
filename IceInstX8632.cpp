@@ -704,13 +704,14 @@ IceInstList IceTargetX8632S::lowerCall(const IceInst *Inst, const IceInst *Next,
   NewInst = new IceInstX8632Call(Cfg, Reg, CallInst->getCallTarget(),
                                  CallInst->isTail());
   Expansion.push_back(NewInst);
+  IceInst *NewCall = NewInst;
 
   // Insert some sort of register-kill pseudo instruction.
   IceVarList KilledRegs;
   KilledRegs.push_back(Cfg->getTarget()->getPhysicalRegister(Reg_eax));
   KilledRegs.push_back(Cfg->getTarget()->getPhysicalRegister(Reg_ecx));
   KilledRegs.push_back(Cfg->getTarget()->getPhysicalRegister(Reg_edx));
-  IceInst *Kill = new IceInstFakeKill(Cfg, KilledRegs);
+  IceInst *Kill = new IceInstFakeKill(Cfg, KilledRegs, NewCall);
   Expansion.push_back(Kill);
 
   // Generate a FakeUse to keep the call live if necessary.

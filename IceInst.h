@@ -364,11 +364,17 @@ public:
 
 class IceInstFakeKill : public IceInst {
 public:
-  IceInstFakeKill(IceCfg *Cfg, const IceVarList &KilledRegs);
+  IceInstFakeKill(IceCfg *Cfg, const IceVarList &KilledRegs,
+                  const IceInst *Linked);
+  const IceInst *getLinked(void) const { return Linked; }
   virtual void dump(IceOstream &Str) const;
   static bool classof(const IceInst *Inst) {
     return Inst->getKind() == FakeKill;
   }
+
+private:
+  // This instruction is ignored if Linked->isDeleted() is true.
+  const IceInst *Linked;
 };
 
 class IceInstTarget : public IceInst {
