@@ -302,13 +302,31 @@ void IceInst::liveness(IceLiveness Mode, int InstNumber, llvm::BitVector &Live,
         LiveRangesEnded[Index] = true;
         if (!IsPhi) {
           Live[VarNum] = true;
-          LiveEnd[VarNum] = InstNumber;
-          if (Index == 1 && getKind() == Arithmetic) {
-            // TODO: Do the same for target-specific Arithmetic
-            // instructions, and also optimize for commutativity.
-            // Also, consider moving this special logic into
-            // IceCfgNode::livenessPostprocess().
-            LiveEnd[VarNum] = InstNumber /* + 1*/;
+          // For a variable in SSA form, its live range can end at
+          // most once in a basic block.  However, after lowering to
+          // two-address instructions, we end up with sequences like
+          // "t=b;t+=c;a=t" where t's live range begins and ends
+          // twice.  ICE only allows a variable to have a single
+          // liveness interval in a basic block (except for blocks
+          // where a variable is live-in and live-out but there is a
+          // gap in the middle, and except for the special
+          // IceInstFakeKill instruction that can appear multiple
+          // times in the same block).  Therefore, this lowered
+          // sequence needs to represent a single conservative live
+          // range for t.  Since the instructions are being traversed
+          // backwards, we make sure LiveEnd is only set once by
+          // setting it only when LiveEnd[VarNum]==0.  Note that it's
+          // OK to set LiveBegin multiple times because of the
+          // backwards traversal.
+          if (LiveEnd[VarNum] == 0) {
+            LiveEnd[VarNum] = InstNumber;
+            if (Index == 1 && getKind() == Arithmetic) {
+              // TODO: Do the same for target-specific Arithmetic
+              // instructions, and also optimize for commutativity.
+              // Also, consider moving this special logic into
+              // IceCfgNode::livenessPostprocess().
+              LiveEnd[VarNum] = InstNumber /* + 1*/;
+            }
           }
         }
       }
