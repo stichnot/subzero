@@ -621,6 +621,7 @@ IceInstList IceTargetX8632S::lowerArithmetic(const IceInst *Inst,
   Reg = Cfg->makeVariable(Dest->getType());
   Reg->setWeightInfinite();
   Reg->setPreferredRegister(llvm::dyn_cast<IceVariable>(Src0), false);
+  Dest->setPreferredRegister(Reg, false);
   NewInst = new IceInstX8632Mov(Cfg, Reg, Src0);
   Expansion.push_back(NewInst);
   NewInst = new IceInstX8632Arithmetic(
