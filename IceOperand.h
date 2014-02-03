@@ -72,9 +72,9 @@ protected:
 
 class IceConstantInteger : public IceConstant {
 public:
-  IceConstantInteger(int32_t IntValue)
-      : IceConstant(ConstantInteger, IceType_i32), IntValue(IntValue) {}
-  uint32_t getIntValue(void) const { return IntValue; }
+  IceConstantInteger(IceType Type, uint64_t IntValue)
+      : IceConstant(ConstantInteger, Type), IntValue(IntValue) {}
+  uint64_t getIntValue(void) const { return IntValue; }
   virtual void dump(IceOstream &Str) const;
 
   static bool classof(const IceOperand *Operand) {
@@ -83,7 +83,7 @@ public:
   }
 
 private:
-  const uint32_t IntValue;
+  const uint64_t IntValue;
 };
 
 class IceConstantRelocatable : public IceConstant {

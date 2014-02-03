@@ -144,8 +144,8 @@ private:
       if (const GlobalValue *GV = dyn_cast<GlobalValue>(Const)) {
         return Cfg->getConstant(IceType_i32, GV, GV->getName());
       } else if (const ConstantInt *CI = cast<ConstantInt>(Const)) {
-        return Cfg->getConstant(IceType_i32,
-                                static_cast<uint32_t>(CI->getZExtValue()));
+        return Cfg->getConstant(convertIntegerType(CI->getType()),
+                                CI->getZExtValue());
       } else {
         assert(0 && "Unhandled constant type");
         return NULL;

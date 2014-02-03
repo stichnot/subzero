@@ -73,8 +73,8 @@ void IceInst::findAddressOpt(IceCfg *Cfg, const IceCfgNode *Node) {
   IceOpList NewOperands;
   NewOperands.push_back(Base);
   NewOperands.push_back(Index);
-  NewOperands.push_back(new IceConstantInteger(Shift));
-  NewOperands.push_back(new IceConstantInteger(Offset));
+  NewOperands.push_back(new IceConstantInteger(IceType_i32, Shift));
+  NewOperands.push_back(new IceConstantInteger(IceType_i32, Offset));
   replaceOperands(Node, Srcs.size() - 1, NewOperands);
   // TODO: See if liveness information can be incrementally corrected
   // without a whole new liveness analysis pass.

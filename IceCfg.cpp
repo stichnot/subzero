@@ -92,8 +92,8 @@ IceCfgNode *IceCfg::makeNode(uint32_t LabelIndex, IceString Name) {
   return Nodes[LabelIndex];
 }
 
-IceConstant *IceCfg::getConstant(IceType Type, int32_t ConstantInt32) {
-  return new IceConstantInteger(ConstantInt32);
+IceConstant *IceCfg::getConstant(IceType Type, uint64_t ConstantInt64) {
+  return new IceConstantInteger(Type, ConstantInt64);
 }
 
 IceConstant *IceCfg::getConstant(IceType Type, const void *Handle,
