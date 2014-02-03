@@ -88,14 +88,8 @@ IceInstList IceTargetX8632::lowerArithmetic(const IceInst *Inst,
     RegManager->notifyLoad(NewInst);
     NewInst->setRegState(RegManager);
   }
-  // TODO: Use a virtual register instead of Src1 if Src1 is
-  // available in a virtual register.
-  // TODO: De-uglify this.
   NewInst = new IceInstX8632Arithmetic(
-      Cfg,
-      (IceInstX8632Arithmetic::IceX8632Arithmetic)llvm::cast<IceInstArithmetic>(
-          Inst)->getOp(),
-      Reg, Src1);
+      Cfg, llvm::cast<IceInstArithmetic>(Inst)->getOp(), Reg, Src1);
   Expansion.push_back(NewInst);
   RegManager->notifyLoad(NewInst, false);
   NewInst->setRegState(RegManager);
@@ -339,11 +333,25 @@ IceInstList IceTargetX8632::lowerSwitch(const IceInst *Inst,
   return Expansion;
 }
 
-IceInstX8632Arithmetic::IceInstX8632Arithmetic(IceCfg *Cfg,
-                                               IceX8632Arithmetic Op,
+IceInstX8632Arithmetic::IceInstX8632Arithmetic(IceCfg *Cfg, OpKind Op,
                                                IceVariable *Dest,
                                                IceOperand *Source)
     : IceInstTarget(Cfg), Op(Op) {
+  // This forces a compile-time error if a new enum value gets added
+  // to IceInstArithmetic::OpKind without also adding it to
+  // IceInstX8632Arithmetic::OpKind.
+  IceStaticAssert<(int)Invalid ==
+                  (int)IceInstArithmetic::OpKind_NUM>::IceAssert();
+  addDest(Dest);
+  addSource(Dest);
+  addSource(Source);
+}
+
+IceInstX8632Arithmetic::IceInstX8632Arithmetic(IceCfg *Cfg,
+                                               IceInstArithmetic::OpKind Op,
+                                               IceVariable *Dest,
+                                               IceOperand *Source)
+    : IceInstTarget(Cfg), Op(static_cast<OpKind>(Op)) {
   addDest(Dest);
   addSource(Dest);
   addSource(Source);
@@ -624,9 +632,8 @@ IceInstList IceTargetX8632S::lowerArithmetic(const IceInst *Inst,
   NewInst = new IceInstX8632Mov(Cfg, Reg, Src0);
   Expansion.push_back(NewInst);
   NewInst = new IceInstX8632Arithmetic(
-      Cfg,
-      (IceInstX8632Arithmetic::IceX8632Arithmetic)llvm::cast<IceInstArithmetic>(
-          Inst)->getOp(),
+      Cfg, (IceInstX8632Arithmetic::OpKind)llvm::cast<IceInstArithmetic>(Inst)
+               ->getOp(),
       Reg, Src1);
   Expansion.push_back(NewInst);
   NewInst = new IceInstX8632Mov(Cfg, Dest, Reg);

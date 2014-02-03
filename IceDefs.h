@@ -160,4 +160,12 @@ inline IceOstream &operator<<(IceOstream &Str, double D) {
 // thread-safe.
 extern IceOstream *GlobalStr;
 
+// The following templates enable a compile-time static assert.
+// empty default template
+template <bool b> struct IceStaticAssert {};
+// template specialized on true
+template <> struct IceStaticAssert<true> {
+  static void IceAssert() {}
+};
+
 #endif // _IceDefs_h

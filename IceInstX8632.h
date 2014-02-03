@@ -111,36 +111,37 @@ private:
 // Two-address arithmetic instructions.
 class IceInstX8632Arithmetic : public IceInstTarget {
 public:
-  enum IceX8632Arithmetic { // copied from IceInstArithmetic
-    // Ordered by http://llvm.org/docs/LangRef.html#binary-operations
-    Add,
-    Fadd,
-    Sub,
-    Fsub,
-    Mul,
-    Fmul,
-    Udiv,
-    Sdiv,
-    Fdiv,
-    Urem,
-    Srem,
-    Frem,
-    // Ordered by http://llvm.org/docs/LangRef.html#bitwise-binary-operations
-    Shl,
-    Lshr,
-    Ashr,
-    And,
-    Or,
-    Xor,
-    Invalid, };
-  IceInstX8632Arithmetic(IceCfg *Cfg, IceX8632Arithmetic Op, IceVariable *Dest,
+  enum OpKind {
+    Add = IceInstArithmetic::Add,
+    Fadd = IceInstArithmetic::Fadd,
+    Sub = IceInstArithmetic::Sub,
+    Fsub = IceInstArithmetic::Fsub,
+    Mul = IceInstArithmetic::Mul,
+    Fmul = IceInstArithmetic::Fmul,
+    Udiv = IceInstArithmetic::Udiv,
+    Sdiv = IceInstArithmetic::Sdiv,
+    Fdiv = IceInstArithmetic::Fdiv,
+    Urem = IceInstArithmetic::Urem,
+    Srem = IceInstArithmetic::Srem,
+    Frem = IceInstArithmetic::Frem,
+    Shl = IceInstArithmetic::Shl,
+    Lshr = IceInstArithmetic::Lshr,
+    Ashr = IceInstArithmetic::Ashr,
+    And = IceInstArithmetic::And,
+    Or = IceInstArithmetic::Or,
+    Xor = IceInstArithmetic::Xor,
+    Invalid /* = IceInstArithmetic::OpKind_NUM*/,
+  };
+  IceInstX8632Arithmetic(IceCfg *Cfg, OpKind Op, IceVariable *Dest,
                          IceOperand *Source);
-  IceX8632Arithmetic getOp(void) const { return Op; }
+  IceInstX8632Arithmetic(IceCfg *Cfg, IceInstArithmetic::OpKind Op,
+                         IceVariable *Dest, IceOperand *Source);
+  OpKind getOp(void) const { return Op; }
   bool isCommutative(void) const;
   virtual void dump(IceOstream &Str) const;
 
 private:
-  const IceX8632Arithmetic Op;
+  const OpKind Op;
 };
 
 class IceInstX8632Br : public IceInstTarget {

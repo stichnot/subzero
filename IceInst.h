@@ -122,7 +122,7 @@ public:
     And,
     Or,
     Xor,
-    Invalid,
+    OpKind_NUM,
   };
   IceInstArithmetic(IceCfg *Cfg, OpKind Op, IceVariable *Dest,
                     IceOperand *Source1, IceOperand *Source2);
