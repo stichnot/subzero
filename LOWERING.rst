@@ -90,6 +90,22 @@ different ``IceVariable``, using ``IceVariable::setPreferredRegister()``::
     NewInst = new IceInstX8632Mov(Cfg, Reg, Src);
     NewInst = new IceInstX8632Mov(Cfg, Dst, Reg);
 
+The usefulness of ``setPreferredRegister()`` is tied into the implementation of
+the register allocator.  ICE uses linear-scan register allocation, which sorts
+live ranges by starting point and assigns registers in that order.  Using
+``B->setPreferredRegister(A)`` only helps when ``A`` has already been assigned a
+register by the time ``B`` is being considered.  For an assignment ``B=A``, this
+is usually a safe assumption because ``B``'s live range begins at this
+instruction but ``A``'s live range must have started earlier.  (There may be
+exceptions for variables that are no longer in SSA form.)  But
+``A->setPreferredRegister(B)`` is unlikely to help unless ``B`` has been
+precolored.  In summary, generally the best practice is to use a pattern like::
+
+    NewInst = new IceInstX8632Mov(Cfg, Dst, Src);
+    Dst->setPreferredRegister(Src);
+    //Src->setPreferredRegister(Dst); -- unlikely to have any effect
+
+
 Disabling live-range interference
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
