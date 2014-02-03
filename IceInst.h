@@ -101,7 +101,7 @@ private:
 
 class IceInstArithmetic : public IceInst {
 public:
-  enum IceArithmetic {
+  enum OpKind {
     // Ordered by http://llvm.org/docs/LangRef.html#binary-operations
     Add,
     Fadd,
@@ -124,9 +124,9 @@ public:
     Xor,
     Invalid,
   };
-  IceInstArithmetic(IceCfg *Cfg, IceArithmetic Op, IceVariable *Dest,
+  IceInstArithmetic(IceCfg *Cfg, OpKind Op, IceVariable *Dest,
                     IceOperand *Source1, IceOperand *Source2);
-  IceArithmetic getOp(void) const { return Op; }
+  OpKind getOp(void) const { return Op; }
   bool isCommutative(void) const;
   virtual void dump(IceOstream &Str) const;
   static bool classof(const IceInst *Inst) {
@@ -134,7 +134,7 @@ public:
   }
 
 private:
-  const IceArithmetic Op;
+  const OpKind Op;
 };
 
 class IceInstAssign : public IceInst {

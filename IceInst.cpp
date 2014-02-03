@@ -334,7 +334,7 @@ void IceInst::liveness(IceLiveness Mode, int InstNumber, llvm::BitVector &Live,
   }
 }
 
-IceInstArithmetic::IceInstArithmetic(IceCfg *Cfg, IceArithmetic Op,
+IceInstArithmetic::IceInstArithmetic(IceCfg *Cfg, OpKind Op,
                                      IceVariable *Dest, IceOperand *Source1,
                                      IceOperand *Source2)
     : IceInst(Cfg, IceInst::Arithmetic), Op(Op) {

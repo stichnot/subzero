@@ -237,7 +237,7 @@ private:
   }
 
   IceInst *convertArithInstruction(const Instruction *Inst,
-                                   IceInstArithmetic::IceArithmetic Opcode) {
+                                   IceInstArithmetic::OpKind Opcode) {
     const BinaryOperator *BinOp = cast<BinaryOperator>(Inst);
     IceOperand *Src0 = convertOperand(Inst, 0);
     IceOperand *Src1 = convertOperand(Inst, 1);
