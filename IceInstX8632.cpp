@@ -49,7 +49,7 @@ IceVariable *IceTargetX8632::getPhysicalRegister(unsigned RegNum) {
   return Reg;
 }
 
-IceInstList IceTargetX8632::lowerAlloca(const IceInst *Inst,
+IceInstList IceTargetX8632::lowerAlloca(const IceInstAlloca *Inst,
                                         const IceInst *Next,
                                         bool &DeleteNextInst) {
   IceInstList Expansion;
@@ -57,7 +57,7 @@ IceInstList IceTargetX8632::lowerAlloca(const IceInst *Inst,
   return Expansion;
 }
 
-IceInstList IceTargetX8632::lowerArithmetic(const IceInst *Inst,
+IceInstList IceTargetX8632::lowerArithmetic(const IceInstArithmetic *Inst,
                                             const IceInst *Next,
                                             bool &DeleteNextInst) {
   IceInstList Expansion;
@@ -88,8 +88,7 @@ IceInstList IceTargetX8632::lowerArithmetic(const IceInst *Inst,
     RegManager->notifyLoad(NewInst);
     NewInst->setRegState(RegManager);
   }
-  NewInst = new IceInstX8632Arithmetic(
-      Cfg, llvm::cast<IceInstArithmetic>(Inst)->getOp(), Reg, Src1);
+  NewInst = new IceInstX8632Arithmetic(Cfg, Inst->getOp(), Reg, Src1);
   Expansion.push_back(NewInst);
   RegManager->notifyLoad(NewInst, false);
   NewInst->setRegState(RegManager);
@@ -100,7 +99,7 @@ IceInstList IceTargetX8632::lowerArithmetic(const IceInst *Inst,
   return Expansion;
 }
 
-IceInstList IceTargetX8632::lowerAssign(const IceInst *Inst,
+IceInstList IceTargetX8632::lowerAssign(const IceInstAssign *Inst,
                                         const IceInst *Next,
                                         bool &DeleteNextInst) {
   IceInstList Expansion;
@@ -140,35 +139,39 @@ IceInstList IceTargetX8632::lowerAssign(const IceInst *Inst,
   return Expansion;
 }
 
-IceInstList IceTargetX8632::lowerBr(const IceInst *Inst, const IceInst *Next,
+IceInstList IceTargetX8632::lowerBr(const IceInstBr *Inst, const IceInst *Next,
                                     bool &DeleteNextInst) {
   IceInstList Expansion;
   // assert(0); // TODO: implement
   return Expansion;
 }
 
-IceInstList IceTargetX8632::lowerCall(const IceInst *Inst, const IceInst *Next,
+IceInstList IceTargetX8632::lowerCall(const IceInstCall *Inst,
+                                      const IceInst *Next,
                                       bool &DeleteNextInst) {
   IceInstList Expansion;
   assert(0); // TODO: implement
   return Expansion;
 }
 
-IceInstList IceTargetX8632::lowerCast(const IceInst *Inst, const IceInst *Next,
+IceInstList IceTargetX8632::lowerCast(const IceInstCast *Inst,
+                                      const IceInst *Next,
                                       bool &DeleteNextInst) {
   IceInstList Expansion;
   assert(0); // TODO: implement
   return Expansion;
 }
 
-IceInstList IceTargetX8632::lowerFcmp(const IceInst *Inst, const IceInst *Next,
+IceInstList IceTargetX8632::lowerFcmp(const IceInstFcmp *Inst,
+                                      const IceInst *Next,
                                       bool &DeleteNextInst) {
   IceInstList Expansion;
   assert(0); // TODO: implement
   return Expansion;
 }
 
-IceInstList IceTargetX8632::lowerIcmp(const IceInst *Inst, const IceInst *Next,
+IceInstList IceTargetX8632::lowerIcmp(const IceInstIcmp *Inst,
+                                      const IceInst *Next,
                                       bool &DeleteNextInst) {
   IceInstList Expansion;
   IceInstTarget *NewInst;
@@ -178,7 +181,6 @@ IceInstList IceTargetX8632::lowerIcmp(const IceInst *Inst, const IceInst *Next,
   // based on the last use of this instruction's Dest operand.
   // TODO: Fix this.
   if (llvm::isa<IceInstBr>(Next) && Inst->getDest() == Next->getSrc(0)) {
-    const IceInstIcmp *InstIcmp = llvm::cast<IceInstIcmp>(Inst);
     const IceInstBr *NextBr = llvm::cast<IceInstBr>(Next);
     // This is basically identical to an Arithmetic instruction,
     // except there is no Dest variable to store.
@@ -210,7 +212,7 @@ IceInstList IceTargetX8632::lowerIcmp(const IceInst *Inst, const IceInst *Next,
     NewInst->setRegState(RegManager);
     NewInst =
         new IceInstX8632Br(Cfg, NextBr->getTargetTrue(),
-                           NextBr->getTargetFalse(), InstIcmp->getCondition());
+                           NextBr->getTargetFalse(), Inst->getCondition());
     Expansion.push_back(NewInst);
     DeleteNextInst = true;
   } else {
@@ -219,7 +221,8 @@ IceInstList IceTargetX8632::lowerIcmp(const IceInst *Inst, const IceInst *Next,
   return Expansion;
 }
 
-IceInstList IceTargetX8632::lowerLoad(const IceInst *Inst, const IceInst *Next,
+IceInstList IceTargetX8632::lowerLoad(const IceInstLoad *Inst,
+                                      const IceInst *Next,
                                       bool &DeleteNextInst) {
   IceInstList Expansion;
   IceInstTarget *NewInst;
@@ -279,14 +282,16 @@ IceInstList IceTargetX8632::lowerLoad(const IceInst *Inst, const IceInst *Next,
   return Expansion;
 }
 
-IceInstList IceTargetX8632::lowerPhi(const IceInst *Inst, const IceInst *Next,
+IceInstList IceTargetX8632::lowerPhi(const IceInstPhi *Inst,
+                                     const IceInst *Next,
                                      bool &DeleteNextInst) {
   IceInstList Expansion;
   assert(0); // TODO: implement if necessary
   return Expansion;
 }
 
-IceInstList IceTargetX8632::lowerRet(const IceInst *Inst, const IceInst *Next,
+IceInstList IceTargetX8632::lowerRet(const IceInstRet *Inst,
+                                     const IceInst *Next,
                                      bool &DeleteNextInst) {
   IceInstList Expansion;
   IceInstTarget *NewInst;
@@ -310,7 +315,7 @@ IceInstList IceTargetX8632::lowerRet(const IceInst *Inst, const IceInst *Next,
   return Expansion;
 }
 
-IceInstList IceTargetX8632::lowerSelect(const IceInst *Inst,
+IceInstList IceTargetX8632::lowerSelect(const IceInstSelect *inst,
                                         const IceInst *Next,
                                         bool &DeleteNextInst) {
   IceInstList Expansion;
@@ -318,14 +323,15 @@ IceInstList IceTargetX8632::lowerSelect(const IceInst *Inst,
   return Expansion;
 }
 
-IceInstList IceTargetX8632::lowerStore(const IceInst *Inst, const IceInst *Next,
+IceInstList IceTargetX8632::lowerStore(const IceInstStore *Inst,
+                                       const IceInst *Next,
                                        bool &DeleteNextInst) {
   IceInstList Expansion;
   assert(0); // TODO: implement
   return Expansion;
 }
 
-IceInstList IceTargetX8632::lowerSwitch(const IceInst *Inst,
+IceInstList IceTargetX8632::lowerSwitch(const IceInstSwitch *Inst,
                                         const IceInst *Next,
                                         bool &DeleteNextInst) {
   IceInstList Expansion;
@@ -605,7 +611,7 @@ IceInstTarget *IceTargetX8632S::makeAssign(IceVariable *Dest, IceOperand *Src) {
   return new IceInstX8632Mov(Cfg, Dest, Src);
 }
 
-IceInstList IceTargetX8632S::lowerAlloca(const IceInst *Inst,
+IceInstList IceTargetX8632S::lowerAlloca(const IceInstAlloca *Inst,
                                          const IceInst *Next,
                                          bool &DeleteNextInst) {
   IceInstList Expansion;
@@ -613,7 +619,7 @@ IceInstList IceTargetX8632S::lowerAlloca(const IceInst *Inst,
   return Expansion;
 }
 
-IceInstList IceTargetX8632S::lowerArithmetic(const IceInst *Inst,
+IceInstList IceTargetX8632S::lowerArithmetic(const IceInstArithmetic *Inst,
                                              const IceInst *Next,
                                              bool &DeleteNextInst) {
   IceInstList Expansion;
@@ -631,17 +637,14 @@ IceInstList IceTargetX8632S::lowerArithmetic(const IceInst *Inst,
   Dest->setPreferredRegister(Reg, false);
   NewInst = new IceInstX8632Mov(Cfg, Reg, Src0);
   Expansion.push_back(NewInst);
-  NewInst = new IceInstX8632Arithmetic(
-      Cfg, (IceInstX8632Arithmetic::OpKind)llvm::cast<IceInstArithmetic>(Inst)
-               ->getOp(),
-      Reg, Src1);
+  NewInst = new IceInstX8632Arithmetic(Cfg, Inst->getOp(), Reg, Src1);
   Expansion.push_back(NewInst);
   NewInst = new IceInstX8632Mov(Cfg, Dest, Reg);
   Expansion.push_back(NewInst);
   return Expansion;
 }
 
-IceInstList IceTargetX8632S::lowerAssign(const IceInst *Inst,
+IceInstList IceTargetX8632S::lowerAssign(const IceInstAssign *Inst,
                                          const IceInst *Next,
                                          bool &DeleteNextInst) {
   IceInstList Expansion;
@@ -660,14 +663,15 @@ IceInstList IceTargetX8632S::lowerAssign(const IceInst *Inst,
   return Expansion;
 }
 
-IceInstList IceTargetX8632S::lowerBr(const IceInst *Inst, const IceInst *Next,
+IceInstList IceTargetX8632S::lowerBr(const IceInstBr *Inst, const IceInst *Next,
                                      bool &DeleteNextInst) {
   IceInstList Expansion;
   // assert(0); // TODO: implement
   return Expansion;
 }
 
-IceInstList IceTargetX8632S::lowerCall(const IceInst *Inst, const IceInst *Next,
+IceInstList IceTargetX8632S::lowerCall(const IceInstCall *Inst,
+                                       const IceInst *Next,
                                        bool &DeleteNextInst) {
   // TODO: what to do about tailcalls?
   IceInstList Expansion;
@@ -705,9 +709,8 @@ IceInstList IceTargetX8632S::lowerCall(const IceInst *Inst, const IceInst *Next,
     // can't be eliminated.
     Reg->setRegNum(Reg_eax);
   }
-  const IceInstCall *CallInst = llvm::cast<const IceInstCall>(Inst);
-  NewInst = new IceInstX8632Call(Cfg, Reg, CallInst->getCallTarget(),
-                                 CallInst->isTail());
+  NewInst =
+      new IceInstX8632Call(Cfg, Reg, Inst->getCallTarget(), Inst->isTail());
   Expansion.push_back(NewInst);
   IceInst *NewCall = NewInst;
 
@@ -747,21 +750,24 @@ IceInstList IceTargetX8632S::lowerCall(const IceInst *Inst, const IceInst *Next,
   return Expansion;
 }
 
-IceInstList IceTargetX8632S::lowerCast(const IceInst *Inst, const IceInst *Next,
+IceInstList IceTargetX8632S::lowerCast(const IceInstCast *Inst,
+                                       const IceInst *Next,
                                        bool &DeleteNextInst) {
   IceInstList Expansion;
   assert(0); // TODO: implement
   return Expansion;
 }
 
-IceInstList IceTargetX8632S::lowerFcmp(const IceInst *Inst, const IceInst *Next,
+IceInstList IceTargetX8632S::lowerFcmp(const IceInstFcmp *Inst,
+                                       const IceInst *Next,
                                        bool &DeleteNextInst) {
   IceInstList Expansion;
   assert(0); // TODO: implement
   return Expansion;
 }
 
-IceInstList IceTargetX8632S::lowerIcmp(const IceInst *Inst, const IceInst *Next,
+IceInstList IceTargetX8632S::lowerIcmp(const IceInstIcmp *Inst,
+                                       const IceInst *Next,
                                        bool &DeleteNextInst) {
   IceInstList Expansion;
   IceInstTarget *NewInst;
@@ -769,7 +775,6 @@ IceInstList IceTargetX8632S::lowerIcmp(const IceInst *Inst, const IceInst *Next,
   // based on the last use of this instruction's Dest operand.
   // TODO: Fix this.
   if (llvm::isa<IceInstBr>(Next) && Inst->getDest() == Next->getSrc(0)) {
-    const IceInstIcmp *InstIcmp = llvm::cast<IceInstIcmp>(Inst);
     const IceInstBr *NextBr = llvm::cast<IceInstBr>(Next);
     // This is basically identical to an Arithmetic instruction,
     // except there is no Dest variable to store.
@@ -785,7 +790,7 @@ IceInstList IceTargetX8632S::lowerIcmp(const IceInst *Inst, const IceInst *Next,
     Expansion.push_back(NewInst);
     NewInst =
         new IceInstX8632Br(Cfg, NextBr->getTargetTrue(),
-                           NextBr->getTargetFalse(), InstIcmp->getCondition());
+                           NextBr->getTargetFalse(), Inst->getCondition());
     Expansion.push_back(NewInst);
     DeleteNextInst = true;
   } else {
@@ -794,7 +799,8 @@ IceInstList IceTargetX8632S::lowerIcmp(const IceInst *Inst, const IceInst *Next,
   return Expansion;
 }
 
-IceInstList IceTargetX8632S::lowerLoad(const IceInst *Inst, const IceInst *Next,
+IceInstList IceTargetX8632S::lowerLoad(const IceInstLoad *Inst,
+                                       const IceInst *Next,
                                        bool &DeleteNextInst) {
   IceInstList Expansion;
   IceInstTarget *NewInst;
@@ -832,14 +838,16 @@ IceInstList IceTargetX8632S::lowerLoad(const IceInst *Inst, const IceInst *Next,
   return Expansion;
 }
 
-IceInstList IceTargetX8632S::lowerPhi(const IceInst *Inst, const IceInst *Next,
+IceInstList IceTargetX8632S::lowerPhi(const IceInstPhi *Inst,
+                                      const IceInst *Next,
                                       bool &DeleteNextInst) {
   IceInstList Expansion;
   assert(0); // TODO: implement if necessary
   return Expansion;
 }
 
-IceInstList IceTargetX8632S::lowerRet(const IceInst *Inst, const IceInst *Next,
+IceInstList IceTargetX8632S::lowerRet(const IceInstRet *Inst,
+                                      const IceInst *Next,
                                       bool &DeleteNextInst) {
   IceInstList Expansion;
   IceInstTarget *NewInst;
@@ -865,7 +873,7 @@ IceInstList IceTargetX8632S::lowerRet(const IceInst *Inst, const IceInst *Next,
   return Expansion;
 }
 
-IceInstList IceTargetX8632S::lowerSelect(const IceInst *Inst,
+IceInstList IceTargetX8632S::lowerSelect(const IceInstSelect *Inst,
                                          const IceInst *Next,
                                          bool &DeleteNextInst) {
   IceInstList Expansion;
@@ -873,7 +881,7 @@ IceInstList IceTargetX8632S::lowerSelect(const IceInst *Inst,
   return Expansion;
 }
 
-IceInstList IceTargetX8632S::lowerStore(const IceInst *Inst,
+IceInstList IceTargetX8632S::lowerStore(const IceInstStore *Inst,
                                         const IceInst *Next,
                                         bool &DeleteNextInst) {
   IceInstList Expansion;
@@ -917,7 +925,7 @@ IceInstList IceTargetX8632S::lowerStore(const IceInst *Inst,
   return Expansion;
 }
 
-IceInstList IceTargetX8632S::lowerSwitch(const IceInst *Inst,
+IceInstList IceTargetX8632S::lowerSwitch(const IceInstSwitch *Inst,
                                          const IceInst *Next,
                                          bool &DeleteNextInst) {
   IceInstList Expansion;

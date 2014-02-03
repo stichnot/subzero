@@ -29,66 +29,34 @@ IceTargetLowering *IceTargetLowering::createLowering(IceTargetArch Target,
 IceInstList IceTargetLowering::lower(const IceInst *Inst, const IceInst *Next,
                                      bool &DeleteNextInst) {
   IceInstList Expansion;
-  switch (Inst->getKind()) {
-  case IceInst::Alloca:
-    Expansion = lowerAlloca(Inst, Next, DeleteNextInst);
-    break;
-  case IceInst::Arithmetic:
-    Expansion = lowerArithmetic(Inst, Next, DeleteNextInst);
-    break;
-  case IceInst::Assign:
-    Expansion = lowerAssign(Inst, Next, DeleteNextInst);
-    break;
-  case IceInst::Br:
-    Expansion = lowerBr(Inst, Next, DeleteNextInst);
-    break;
-  case IceInst::Call:
-    Expansion = lowerCall(Inst, Next, DeleteNextInst);
-    break;
-  case IceInst::Cast:
-    Expansion = lowerCast(Inst, Next, DeleteNextInst);
-    break;
-  case IceInst::Fcmp:
-    Expansion = lowerFcmp(Inst, Next, DeleteNextInst);
-    break;
-  case IceInst::Icmp:
-    Expansion = lowerIcmp(Inst, Next, DeleteNextInst);
-    break;
-  case IceInst::Load:
-    Expansion = lowerLoad(Inst, Next, DeleteNextInst);
-    break;
-  case IceInst::Phi:
-    // Phi lowering happens elsewhere; it involves more than just a
-    // local expansion of instructions; and Phis aren't included in
-    // the normal instruction list.
+  if (const IceInstAlloca *I = llvm::dyn_cast<const IceInstAlloca>(Inst))
+    Expansion = lowerAlloca(I, Next, DeleteNextInst);
+  else if (const IceInstArithmetic *I =
+               llvm::dyn_cast<const IceInstArithmetic>(Inst))
+    Expansion = lowerArithmetic(I, Next, DeleteNextInst);
+  else if (const IceInstAssign *I = llvm::dyn_cast<const IceInstAssign>(Inst))
+    Expansion = lowerAssign(I, Next, DeleteNextInst);
+  else if (const IceInstBr *I = llvm::dyn_cast<const IceInstBr>(Inst))
+    Expansion = lowerBr(I, Next, DeleteNextInst);
+  else if (const IceInstCall *I = llvm::dyn_cast<const IceInstCall>(Inst))
+    Expansion = lowerCall(I, Next, DeleteNextInst);
+  else if (const IceInstCast *I = llvm::dyn_cast<const IceInstCast>(Inst))
+    Expansion = lowerCast(I, Next, DeleteNextInst);
+  else if (const IceInstFcmp *I = llvm::dyn_cast<const IceInstFcmp>(Inst))
+    Expansion = lowerFcmp(I, Next, DeleteNextInst);
+  else if (const IceInstIcmp *I = llvm::dyn_cast<const IceInstIcmp>(Inst))
+    Expansion = lowerIcmp(I, Next, DeleteNextInst);
+  else if (const IceInstLoad *I = llvm::dyn_cast<const IceInstLoad>(Inst))
+    Expansion = lowerLoad(I, Next, DeleteNextInst);
+  else if (const IceInstRet *I = llvm::dyn_cast<const IceInstRet>(Inst))
+    Expansion = lowerRet(I, Next, DeleteNextInst);
+  else if (const IceInstSelect *I = llvm::dyn_cast<const IceInstSelect>(Inst))
+    Expansion = lowerSelect(I, Next, DeleteNextInst);
+  else if (const IceInstStore *I = llvm::dyn_cast<const IceInstStore>(Inst))
+    Expansion = lowerStore(I, Next, DeleteNextInst);
+  else if (const IceInstSwitch *I = llvm::dyn_cast<const IceInstSwitch>(Inst))
+    Expansion = lowerSwitch(I, Next, DeleteNextInst);
+  else
     assert(0);
-    break;
-  case IceInst::Ret:
-    Expansion = lowerRet(Inst, Next, DeleteNextInst);
-    break;
-  case IceInst::Select:
-    Expansion = lowerSelect(Inst, Next, DeleteNextInst);
-    break;
-  case IceInst::Store:
-    Expansion = lowerStore(Inst, Next, DeleteNextInst);
-    break;
-  case IceInst::Switch:
-    Expansion = lowerSwitch(Inst, Next, DeleteNextInst);
-    break;
-  case IceInst::FakeDef:
-  case IceInst::FakeUse:
-  case IceInst::FakeKill:
-    // "Fake" defs, uses, and register kills are inserted only during
-    // lowering.  They are represented at the high level for the
-    // purpose of liveness analysis.
-    assert(0);
-    break;
-  case IceInst::Target:
-    // We're creating target instructions out of high-level
-    // instructions, so we should never see a Target instruction
-    // here.
-    assert(0);
-    break;
-  }
   return Expansion;
 }

@@ -10,6 +10,8 @@
 #include "IceDefs.h"
 #include "IceTypes.h"
 
+#include "IceInst.h" // for the names of the IceInst subtypes
+
 class IceTargetLowering {
 public:
   static IceTargetLowering *createLowering(IceTargetArch Target, IceCfg *Cfg);
@@ -26,33 +28,38 @@ public:
 
 protected:
   IceTargetLowering(IceCfg *Cfg) : Cfg(Cfg) {}
-  virtual IceInstList lowerAlloca(const IceInst *Inst, const IceInst *Next,
+  virtual IceInstList lowerAlloca(const IceInstAlloca *Inst,
+                                  const IceInst *Next,
                                   bool &DeleteNextInst) = 0;
-  virtual IceInstList lowerArithmetic(const IceInst *Inst, const IceInst *Next,
+  virtual IceInstList lowerArithmetic(const IceInstArithmetic *Inst,
+                                      const IceInst *Next,
                                       bool &DeleteNextInst) = 0;
-  virtual IceInstList lowerAssign(const IceInst *Inst, const IceInst *Next,
+  virtual IceInstList lowerAssign(const IceInstAssign *Inst,
+                                  const IceInst *Next,
                                   bool &DeleteNextInst) = 0;
-  virtual IceInstList lowerBr(const IceInst *Inst, const IceInst *Next,
+  virtual IceInstList lowerBr(const IceInstBr *Inst, const IceInst *Next,
                               bool &DeleteNextInst) = 0;
-  virtual IceInstList lowerCall(const IceInst *Inst, const IceInst *Next,
+  virtual IceInstList lowerCall(const IceInstCall *Inst, const IceInst *Next,
                                 bool &DeleteNextInst) = 0;
-  virtual IceInstList lowerCast(const IceInst *Inst, const IceInst *Next,
+  virtual IceInstList lowerCast(const IceInstCast *Inst, const IceInst *Next,
                                 bool &DeleteNextInst) = 0;
-  virtual IceInstList lowerFcmp(const IceInst *Inst, const IceInst *Next,
+  virtual IceInstList lowerFcmp(const IceInstFcmp *Inst, const IceInst *Next,
                                 bool &DeleteNextInst) = 0;
-  virtual IceInstList lowerIcmp(const IceInst *Inst, const IceInst *Next,
+  virtual IceInstList lowerIcmp(const IceInstIcmp *Inst, const IceInst *Next,
                                 bool &DeleteNextInst) = 0;
-  virtual IceInstList lowerLoad(const IceInst *Inst, const IceInst *Next,
+  virtual IceInstList lowerLoad(const IceInstLoad *Inst, const IceInst *Next,
                                 bool &DeleteNextInst) = 0;
-  virtual IceInstList lowerPhi(const IceInst *Inst, const IceInst *Next,
+  virtual IceInstList lowerPhi(const IceInstPhi *Inst, const IceInst *Next,
                                bool &DeleteNextInst) = 0;
-  virtual IceInstList lowerRet(const IceInst *Inst, const IceInst *Next,
+  virtual IceInstList lowerRet(const IceInstRet *Inst, const IceInst *Next,
                                bool &DeleteNextInst) = 0;
-  virtual IceInstList lowerSelect(const IceInst *Inst, const IceInst *Next,
+  virtual IceInstList lowerSelect(const IceInstSelect *Inst,
+                                  const IceInst *Next,
                                   bool &DeleteNextInst) = 0;
-  virtual IceInstList lowerStore(const IceInst *Inst, const IceInst *Next,
+  virtual IceInstList lowerStore(const IceInstStore *Inst, const IceInst *Next,
                                  bool &DeleteNextInst) = 0;
-  virtual IceInstList lowerSwitch(const IceInst *Inst, const IceInst *Next,
+  virtual IceInstList lowerSwitch(const IceInstSwitch *Inst,
+                                  const IceInst *Next,
                                   bool &DeleteNextInst) = 0;
   IceCfg *const Cfg;
   IceRegManager *RegManager;
