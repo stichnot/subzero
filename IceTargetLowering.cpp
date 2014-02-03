@@ -28,35 +28,34 @@ IceTargetLowering *IceTargetLowering::createLowering(IceTargetArch Target,
 
 IceInstList IceTargetLowering::lower(const IceInst *Inst, const IceInst *Next,
                                      bool &DeleteNextInst) {
-  IceInstList Expansion;
   if (const IceInstAlloca *I = llvm::dyn_cast<const IceInstAlloca>(Inst))
-    Expansion = lowerAlloca(I, Next, DeleteNextInst);
-  else if (const IceInstArithmetic *I =
-               llvm::dyn_cast<const IceInstArithmetic>(Inst))
-    Expansion = lowerArithmetic(I, Next, DeleteNextInst);
-  else if (const IceInstAssign *I = llvm::dyn_cast<const IceInstAssign>(Inst))
-    Expansion = lowerAssign(I, Next, DeleteNextInst);
-  else if (const IceInstBr *I = llvm::dyn_cast<const IceInstBr>(Inst))
-    Expansion = lowerBr(I, Next, DeleteNextInst);
-  else if (const IceInstCall *I = llvm::dyn_cast<const IceInstCall>(Inst))
-    Expansion = lowerCall(I, Next, DeleteNextInst);
-  else if (const IceInstCast *I = llvm::dyn_cast<const IceInstCast>(Inst))
-    Expansion = lowerCast(I, Next, DeleteNextInst);
-  else if (const IceInstFcmp *I = llvm::dyn_cast<const IceInstFcmp>(Inst))
-    Expansion = lowerFcmp(I, Next, DeleteNextInst);
-  else if (const IceInstIcmp *I = llvm::dyn_cast<const IceInstIcmp>(Inst))
-    Expansion = lowerIcmp(I, Next, DeleteNextInst);
-  else if (const IceInstLoad *I = llvm::dyn_cast<const IceInstLoad>(Inst))
-    Expansion = lowerLoad(I, Next, DeleteNextInst);
-  else if (const IceInstRet *I = llvm::dyn_cast<const IceInstRet>(Inst))
-    Expansion = lowerRet(I, Next, DeleteNextInst);
-  else if (const IceInstSelect *I = llvm::dyn_cast<const IceInstSelect>(Inst))
-    Expansion = lowerSelect(I, Next, DeleteNextInst);
-  else if (const IceInstStore *I = llvm::dyn_cast<const IceInstStore>(Inst))
-    Expansion = lowerStore(I, Next, DeleteNextInst);
-  else if (const IceInstSwitch *I = llvm::dyn_cast<const IceInstSwitch>(Inst))
-    Expansion = lowerSwitch(I, Next, DeleteNextInst);
-  else
-    assert(0);
-  return Expansion;
+    return lowerAlloca(I, Next, DeleteNextInst);
+  if (const IceInstArithmetic *I =
+          llvm::dyn_cast<const IceInstArithmetic>(Inst))
+    return lowerArithmetic(I, Next, DeleteNextInst);
+  if (const IceInstAssign *I = llvm::dyn_cast<const IceInstAssign>(Inst))
+    return lowerAssign(I, Next, DeleteNextInst);
+  if (const IceInstBr *I = llvm::dyn_cast<const IceInstBr>(Inst))
+    return lowerBr(I, Next, DeleteNextInst);
+  if (const IceInstCall *I = llvm::dyn_cast<const IceInstCall>(Inst))
+    return lowerCall(I, Next, DeleteNextInst);
+  if (const IceInstCast *I = llvm::dyn_cast<const IceInstCast>(Inst))
+    return lowerCast(I, Next, DeleteNextInst);
+  if (const IceInstFcmp *I = llvm::dyn_cast<const IceInstFcmp>(Inst))
+    return lowerFcmp(I, Next, DeleteNextInst);
+  if (const IceInstIcmp *I = llvm::dyn_cast<const IceInstIcmp>(Inst))
+    return lowerIcmp(I, Next, DeleteNextInst);
+  if (const IceInstLoad *I = llvm::dyn_cast<const IceInstLoad>(Inst))
+    return lowerLoad(I, Next, DeleteNextInst);
+  if (const IceInstRet *I = llvm::dyn_cast<const IceInstRet>(Inst))
+    return lowerRet(I, Next, DeleteNextInst);
+  if (const IceInstSelect *I = llvm::dyn_cast<const IceInstSelect>(Inst))
+    return lowerSelect(I, Next, DeleteNextInst);
+  if (const IceInstStore *I = llvm::dyn_cast<const IceInstStore>(Inst))
+    return lowerStore(I, Next, DeleteNextInst);
+  if (const IceInstSwitch *I = llvm::dyn_cast<const IceInstSwitch>(Inst))
+    return lowerSwitch(I, Next, DeleteNextInst);
+
+  assert(0);
+  return IceInstList();
 }
