@@ -619,8 +619,6 @@ IceInstList IceTargetX8632S::lowerArithmetic(const IceInst *Inst,
   IceInstTarget *NewInst;
   // a=b+c ==> t=b; t+=c; a=t
   Reg = Cfg->makeVariable(Dest->getType());
-  // TODO: Change this and other uses of the arbitrary constant "100"
-  // to properly encode and deal with "infinite" weight.
   Reg->setWeightInfinite();
   Reg->setPreferredRegister(llvm::dyn_cast<IceVariable>(Src0), false);
   NewInst = new IceInstX8632Mov(Cfg, Reg, Src0);
