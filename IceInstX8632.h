@@ -189,14 +189,11 @@ private:
 
 class IceInstX8632Store : public IceInstTarget {
 public:
-  IceInstX8632Store(IceCfg *Cfg, IceType StoreType, IceOperand *Value,
-                    IceOperand *Base, IceOperand *Index, IceOperand *Shift,
-                    IceOperand *Offset);
-  IceType getType() const { return Type; }
+  IceInstX8632Store(IceCfg *Cfg, IceOperand *Value, IceOperand *Base,
+                    IceOperand *Index, IceOperand *Shift, IceOperand *Offset);
   virtual void dump(IceOstream &Str) const;
 
 private:
-  IceType Type;
 };
 
 class IceInstX8632Mov : public IceInstTarget {

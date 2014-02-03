@@ -319,17 +319,11 @@ private:
 // SourceData as Srcs[0] and SourceAddr as Srcs[1]
 class IceInstStore : public IceInst {
 public:
-  IceInstStore(IceCfg *Cfg, IceType Type, IceOperand *SourceAddr,
-               IceOperand *SourceData);
+  IceInstStore(IceCfg *Cfg, IceOperand *SourceAddr, IceOperand *SourceData);
   virtual void dump(IceOstream &Str) const;
-  IceType getType() const { return Type; }
   static bool classof(const IceInst *Inst) { return Inst->getKind() == Store; }
 
 private:
-  // Store types cannot be inferred directly from the data type being stored
-  // (currently?) because the SourceData type is normalized to i32.
-  // TODO(stichnot,sehr): are store types needed?
-  IceType Type;
 };
 
 // TODO: implement

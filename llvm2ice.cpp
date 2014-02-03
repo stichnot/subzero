@@ -233,8 +233,7 @@ private:
     IceOperand *Addr = convertOperand(Inst, 1);
     assert(Addr->getType() == IceType_i32 && "Expecting stores only from i32");
     IceOperand *Val = convertOperand(Inst, 0);
-    IceType Type = convertType(Inst->getOperand(0)->getType());
-    return new IceInstStore(Cfg, Type, Val, Addr);
+    return new IceInstStore(Cfg, Val, Addr);
   }
 
   IceInst *convertArithInstruction(const Instruction *Inst,

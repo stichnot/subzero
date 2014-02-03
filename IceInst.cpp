@@ -408,9 +408,8 @@ IceInstLoad::IceInstLoad(IceCfg *Cfg, IceVariable *Dest, IceOperand *SourceAddr)
   addSource(SourceAddr);
 }
 
-IceInstStore::IceInstStore(IceCfg *Cfg, IceType StoreType, IceOperand *Val,
-                           IceOperand *Addr)
-    : IceInst(Cfg, IceInst::Store), Type(StoreType) {
+IceInstStore::IceInstStore(IceCfg *Cfg, IceOperand *Val, IceOperand *Addr)
+    : IceInst(Cfg, IceInst::Store) {
   addSource(Val);
   addSource(Addr);
 }
@@ -761,7 +760,7 @@ void IceInstLoad::dump(IceOstream &Str) const {
 }
 
 void IceInstStore::dump(IceOstream &Str) const {
-  IceType Type = getType();
+  IceType Type = getSrc(0)->getType();
   Str << " store " << Type << "* ";
   dumpSources(Str);
   Str << ", align ";
