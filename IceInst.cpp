@@ -94,17 +94,13 @@ void IceInst::doAddressOpt(IceVariable *&Base, IceVariable *&Index, int &Shift,
   // TODO: limit to single-dest instructions (though should be
   // unnecessary for Vanilla ICE).
   while (true) {
-    const IceInst *BaseInst = Base->getDefinition();
-    // Base has no reaching definition (e.g., from a parameter)
-    if (BaseInst == NULL)
-      break;
-
     // Base is Base=Var ==>
     //   set Base=Var
-    IceOperand *BaseOperand0 = BaseInst->getSrc(0);
+    const IceInst *BaseInst = Base->getDefinition();
+    IceOperand *BaseOperand0 = BaseInst ? BaseInst->getSrc(0) : NULL;
     IceVariable *BaseVariable0 =
         llvm::dyn_cast_or_null<IceVariable>(BaseOperand0);
-    if (llvm::isa<IceInstAssign>(BaseInst) && BaseVariable0 &&
+    if (BaseInst && llvm::isa<IceInstAssign>(BaseInst) && BaseVariable0 &&
         // TODO: ensure BaseVariable0 stays single-BB
         true) {
       Base = BaseVariable0;
@@ -116,10 +112,10 @@ void IceInst::doAddressOpt(IceVariable *&Base, IceVariable *&Index, int &Shift,
 
     // Index==NULL && Base is Base=Var1+Var2 ==>
     //   set Base=Var1, Index=Var2, Shift=0
-    IceOperand *BaseOperand1 = BaseInst->getSrc(1);
+    IceOperand *BaseOperand1 = BaseInst ? BaseInst->getSrc(1) : NULL;
     IceVariable *BaseVariable1 =
         llvm::dyn_cast_or_null<IceVariable>(BaseOperand1);
-    if (Index == NULL && llvm::isa<IceInstArithmetic>(BaseInst) &&
+    if (Index == NULL && BaseInst && llvm::isa<IceInstArithmetic>(BaseInst) &&
         (llvm::cast<IceInstArithmetic>(BaseInst)->getOp() ==
          IceInstArithmetic::Add) &&
         BaseVariable0 && BaseVariable1 &&
@@ -215,7 +211,7 @@ void IceInst::replaceOperands(const IceCfgNode *Node, unsigned Index,
   // Increment the reference counts of the new operands.
   for (IceOpList::const_iterator I = NewOperands.begin(), E = NewOperands.end();
        I != E; ++I) {
-    // Address optimization may produce NULL operands, which have no uses
+    // Address optimization may produce NULL operands.
     if (*I)
       (*I)->setUse(this, Node);
   }
@@ -437,10 +433,11 @@ IceOperand *IceInstPhi::getArgument(IceCfgNode *Label) const {
 // Change "a=phi(...)" to "a_phi=phi(...)" and return a new
 // instruction "a=a_phi".
 IceInst *IceInstPhi::lower(IceCfg *Cfg, IceCfgNode *Node) {
-  assert(Dest);
+  assert(getDest());
+  IceVariable *Dest = getDest();
   IceString PhiName = Dest->getName() + "_phi";
   IceVariable *NewSrc = Cfg->makeVariable(Dest->getType(), -1, PhiName);
-  Dest = NewSrc;
+  this->Dest = NewSrc;
   IceInstAssign *NewInst = new IceInstAssign(Cfg, Dest, NewSrc);
   Dest->setPreferredRegister(NewSrc, false);
   NewSrc->setPreferredRegister(Dest, false);
