@@ -110,42 +110,6 @@ protected:
 private:
 };
 
-// Two-address arithmetic instructions.
-class IceInstX8632Arithmetic : public IceInstTarget {
-public:
-  enum OpKind {
-    Add = IceInstArithmetic::Add,
-    Fadd = IceInstArithmetic::Fadd,
-    Sub = IceInstArithmetic::Sub,
-    Fsub = IceInstArithmetic::Fsub,
-    Mul = IceInstArithmetic::Mul,
-    Fmul = IceInstArithmetic::Fmul,
-    Udiv = IceInstArithmetic::Udiv,
-    Sdiv = IceInstArithmetic::Sdiv,
-    Fdiv = IceInstArithmetic::Fdiv,
-    Urem = IceInstArithmetic::Urem,
-    Srem = IceInstArithmetic::Srem,
-    Frem = IceInstArithmetic::Frem,
-    Shl = IceInstArithmetic::Shl,
-    Lshr = IceInstArithmetic::Lshr,
-    Ashr = IceInstArithmetic::Ashr,
-    And = IceInstArithmetic::And,
-    Or = IceInstArithmetic::Or,
-    Xor = IceInstArithmetic::Xor,
-    Invalid /* = IceInstArithmetic::OpKind_NUM*/,
-  };
-  IceInstX8632Arithmetic(IceCfg *Cfg, OpKind Op, IceVariable *Dest,
-                         IceOperand *Source);
-  IceInstX8632Arithmetic(IceCfg *Cfg, IceInstArithmetic::OpKind Op,
-                         IceVariable *Dest, IceOperand *Source);
-  OpKind getOp(void) const { return Op; }
-  bool isCommutative(void) const;
-  virtual void dump(IceOstream &Str) const;
-
-private:
-  const OpKind Op;
-};
-
 class IceInstX8632Br : public IceInstTarget {
 public:
   IceInstX8632Br(IceCfg *Cfg, IceCfgNode *TargetTrue, IceCfgNode *TargetFalse,
@@ -170,6 +134,81 @@ public:
 private:
   IceOperand *CallTarget;
   const bool Tail;
+};
+
+class IceInstX8632Add : public IceInstTarget {
+public:
+  IceInstX8632Add(IceCfg *Cfg, IceVariable *Dest, IceOperand *Source);
+  virtual void dump(IceOstream &Str) const;
+};
+
+class IceInstX8632Sub : public IceInstTarget {
+public:
+  IceInstX8632Sub(IceCfg *Cfg, IceVariable *Dest, IceOperand *Source);
+  virtual void dump(IceOstream &Str) const;
+};
+
+class IceInstX8632And : public IceInstTarget {
+public:
+  IceInstX8632And(IceCfg *Cfg, IceVariable *Dest, IceOperand *Source);
+  virtual void dump(IceOstream &Str) const;
+};
+
+class IceInstX8632Or : public IceInstTarget {
+public:
+  IceInstX8632Or(IceCfg *Cfg, IceVariable *Dest, IceOperand *Source);
+  virtual void dump(IceOstream &Str) const;
+};
+
+class IceInstX8632Xor : public IceInstTarget {
+public:
+  IceInstX8632Xor(IceCfg *Cfg, IceVariable *Dest, IceOperand *Source);
+  virtual void dump(IceOstream &Str) const;
+};
+
+class IceInstX8632Imul : public IceInstTarget {
+public:
+  IceInstX8632Imul(IceCfg *Cfg, IceVariable *Dest, IceOperand *Source);
+  virtual void dump(IceOstream &Str) const;
+};
+
+class IceInstX8632Idiv : public IceInstTarget {
+public:
+  IceInstX8632Idiv(IceCfg *Cfg, IceVariable *Dest, IceOperand *Source,
+                   IceVariable *Other);
+  virtual void dump(IceOstream &Str) const;
+};
+
+class IceInstX8632Div : public IceInstTarget {
+public:
+  IceInstX8632Div(IceCfg *Cfg, IceVariable *Dest, IceOperand *Source,
+                  IceVariable *Other);
+  virtual void dump(IceOstream &Str) const;
+};
+
+class IceInstX8632Shl : public IceInstTarget {
+public:
+  IceInstX8632Shl(IceCfg *Cfg, IceVariable *Dest, IceOperand *Source);
+  virtual void dump(IceOstream &Str) const;
+};
+
+class IceInstX8632Shr : public IceInstTarget {
+public:
+  IceInstX8632Shr(IceCfg *Cfg, IceVariable *Dest, IceOperand *Source);
+  virtual void dump(IceOstream &Str) const;
+};
+
+class IceInstX8632Sar : public IceInstTarget {
+public:
+  IceInstX8632Sar(IceCfg *Cfg, IceVariable *Dest, IceOperand *Source);
+  virtual void dump(IceOstream &Str) const;
+};
+
+// Sign-extend eax into edx
+class IceInstX8632Cdq : public IceInstTarget {
+public:
+  IceInstX8632Cdq(IceCfg *Cfg, IceVariable *Dest, IceVariable *Source);
+  virtual void dump(IceOstream &Str) const;
 };
 
 class IceInstX8632Icmp : public IceInstTarget {
