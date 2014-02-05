@@ -158,10 +158,9 @@ IceOstream &operator<<(IceOstream &Str, const IceLiveRange &L);
 class IceVariable : public IceOperand {
 public:
   IceVariable(IceType Type, uint32_t Index, const IceString &Name)
-      : IceOperand(Variable, Type), VarIndex(Index), Name(Name),
-        DefInst(NULL), DefOrUseNode(NULL), IsArgument(false),
-        IsMultiblockLife(false), RegNum(-1),
-        RegNumTmp(-1), Weight(1), RegisterPreference(NULL),
+      : IceOperand(Variable, Type), VarIndex(Index), Name(Name), DefInst(NULL),
+        DefOrUseNode(NULL), IsArgument(false), IsMultiblockLife(false),
+        RegNum(-1), RegNumTmp(-1), Weight(1), RegisterPreference(NULL),
         AllowRegisterOverlap(false) {}
   virtual void setUse(const IceInst *Inst, const IceCfgNode *Node);
   uint32_t getIndex(void) const { return VarIndex; }

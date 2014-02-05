@@ -11,7 +11,7 @@
 #include "IceRegManager.h"
 
 IceInst::IceInst(IceCfg *Cfg, IceInstType Kind)
-  : Kind(Kind), Deleted(false), Dead(false), Dest(NULL), LiveRangesEnded(0) {
+    : Kind(Kind), Deleted(false), Dead(false), Dest(NULL), LiveRangesEnded(0) {
   Number = Cfg->newInstNumber();
 }
 
@@ -42,9 +42,7 @@ void IceInst::addDest(IceVariable *NewDest) {
   Dest = NewDest;
 }
 
-void IceInst::addSource(IceOperand *Source) {
-  Srcs.push_back(Source);
-}
+void IceInst::addSource(IceOperand *Source) { Srcs.push_back(Source); }
 
 void IceInst::doAddressOpt(IceVariable *&Base, IceVariable *&Index, int &Shift,
                            int32_t &Offset) const {
@@ -54,7 +52,7 @@ void IceInst::doAddressOpt(IceVariable *&Base, IceVariable *&Index, int &Shift,
   // blocks, then don't go further.  Alternatively (?), never consider
   // a transformation that would change a variable that is currently
   // *not* live across basic block boundaries into one that *is*.
-  if (Base->isMultiblockLife()/* || Base->getUseCount() > 1*/)
+  if (Base->isMultiblockLife() /* || Base->getUseCount() > 1*/)
     return;
 
   while (true) {
