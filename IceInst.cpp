@@ -168,28 +168,6 @@ void IceInst::doAddressOpt(IceVariable *&Base, IceVariable *&Index, int &Shift,
   }
 }
 
-void IceInst::replaceOperands(const IceCfgNode *Node, unsigned Index,
-                              const IceOpList &NewOperands) {
-  // Snapshot and remove the old operand.
-  IceOperand *OldOperand = Srcs[Index];
-  Srcs.erase(Srcs.begin() + Index);
-  // Copy in the new operands.
-  Srcs.insert(Srcs.begin() + Index, NewOperands.begin(), NewOperands.end());
-  // Increment the reference counts of the new operands.
-  for (IceOpList::const_iterator I = NewOperands.begin(), E = NewOperands.end();
-       I != E; ++I) {
-    // Address optimization may produce NULL operands.
-    if (*I)
-      (*I)->setUse(this, Node);
-  }
-
-  // Decrement the reference count of the old operand, and fully or
-  // partially delete the defining instruction if the reference count
-  // reaches 0, doing a cascading decrement/delete etc.
-  OldOperand->removeUse();
-  LiveRangesEnded.resize(Srcs.size());
-}
-
 void IceInst::removeUse(IceVariable *Variable) {
   if (isDeleted())
     return;

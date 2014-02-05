@@ -56,8 +56,6 @@ public:
   void updateVars(IceCfgNode *Node);
   void doAddressOpt(IceVariable *&Base, IceVariable *&Index, int &Shift,
                     int32_t &Offset) const;
-  void replaceOperands(const IceCfgNode *Node, unsigned Index,
-                       const IceOpList &NewOperands);
   virtual void removeUse(IceVariable *Variable);
   void liveness(IceLiveness Mode, int InstNumber, llvm::BitVector &Live,
                 std::vector<int> &LiveBegin, std::vector<int> &LiveEnd);
