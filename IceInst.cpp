@@ -647,8 +647,14 @@ void IceInstCast::dump(IceOstream &Str) const {
   default:
     Str << "UNKNOWN";
     break;
+  case Sext:
+    Str << "sext";
+    break;
   case Zext:
     Str << "zext";
+    break;
+  case Trunc:
+    Str << "trunc";
     break;
   }
   Str << " " << getSrc(0)->getType() << " ";

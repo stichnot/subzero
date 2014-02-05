@@ -175,6 +175,10 @@ private:
       return convertStoreInstruction(cast<StoreInst>(Inst));
     case Instruction::ZExt:
       return convertCastInstruction(cast<ZExtInst>(Inst), IceInstCast::Zext);
+    case Instruction::SExt:
+      return convertCastInstruction(cast<SExtInst>(Inst), IceInstCast::Sext);
+    case Instruction::Trunc:
+      return convertCastInstruction(cast<TruncInst>(Inst), IceInstCast::Trunc);
     case Instruction::Add:
       return convertArithInstruction(Inst, IceInstArithmetic::Add);
     case Instruction::Sub:

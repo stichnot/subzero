@@ -13,6 +13,21 @@
 IceString IceTargetX8632::RegNames[] = { "eax", "ecx", "edx", "ebx",
                                          "esp", "ebp", "esi", "edi", };
 
+const char* OpcodeTypeFromIceType(IceType type) {
+  switch(type) {
+  default:
+    return "U";
+  case IceType_i8:
+    return "b";
+  case IceType_i16:
+    return "w";
+  case IceType_i32:
+    return "l";
+  case IceType_i64:
+    return "q";
+  }
+}
+
 llvm::SmallBitVector IceTargetX8632::getRegisterMask(void) const {
   llvm::SmallBitVector Mask(Reg_NUM);
   Mask[Reg_eax] = true;
@@ -490,6 +505,20 @@ IceInstX8632Mov::IceInstX8632Mov(IceCfg *Cfg, IceVariable *Dest,
   addSource(Source);
 }
 
+IceInstX8632Movsx::IceInstX8632Movsx(IceCfg *Cfg, IceVariable *Dest,
+                                     IceOperand *Source)
+    : IceInstTarget(Cfg, 1) {
+  addDest(Dest);
+  addSource(Source);
+}
+
+IceInstX8632Movzx::IceInstX8632Movzx(IceCfg *Cfg, IceVariable *Dest,
+                                     IceOperand *Source)
+    : IceInstTarget(Cfg, 1) {
+  addDest(Dest);
+  addSource(Source);
+}
+
 IceInstX8632Push::IceInstX8632Push(IceCfg *Cfg, IceOperand *Source)
     : IceInstTarget(Cfg, 1) {
   addSource(Source);
@@ -662,6 +691,24 @@ void IceInstX8632Store::dump(IceOstream &Str) const {
 
 void IceInstX8632Mov::dump(IceOstream &Str) const {
   Str << "mov." << getDest()->getType() << " ";
+  dumpDest(Str);
+  Str << ", ";
+  dumpSources(Str);
+}
+
+void IceInstX8632Movsx::dump(IceOstream &Str) const {
+  Str << "movs" << OpcodeTypeFromIceType(getSrc(0)->getType());
+  Str << OpcodeTypeFromIceType(getDest()->getType());
+  Str << " ";
+  dumpDest(Str);
+  Str << ", ";
+  dumpSources(Str);
+}
+
+void IceInstX8632Movzx::dump(IceOstream &Str) const {
+  Str << "movz" << OpcodeTypeFromIceType(getSrc(0)->getType());
+  Str << OpcodeTypeFromIceType(getDest()->getType());
+  Str << " ";
   dumpDest(Str);
   Str << ", ";
   dumpSources(Str);
@@ -1000,7 +1047,35 @@ IceInstList IceTargetX8632S::lowerCast(const IceInstCast *Inst,
                                        const IceInst *Next,
                                        bool &DeleteNextInst) {
   IceInstList Expansion;
-  Cfg->setError("Cast lowering unimplemented");
+  IceInstCast::IceCastKind CastKind = Inst->getCastKind();
+  IceVariable *Dest = Inst->getDest();
+  IceOperand *Src0 = Inst->getSrc(0);
+  IceVariable *Reg;
+  IceInstTarget *NewInst;
+  // cast a=b ==> t=b; mov[sz]x a=t; (link t->b)
+  Reg = Cfg->makeVariable(Src0->getType());
+  Reg->setWeightInfinite();
+  Reg->setPreferredRegister(llvm::dyn_cast<IceVariable>(Src0), true);
+  NewInst = new IceInstX8632Mov(Cfg, Reg, Src0);
+  Expansion.push_back(NewInst);
+  switch (CastKind) {
+  default:
+    assert(0); // TODO: implement other sorts of casts.
+    break;
+  case IceInstCast::Sext:
+    NewInst = new IceInstX8632Movsx(Cfg, Dest, Reg);
+    break;
+  case IceInstCast::Zext:
+    NewInst = new IceInstX8632Movzx(Cfg, Dest, Reg);
+    break;
+  case IceInstCast::Trunc:
+    // It appears that Trunc is purely used to cast down from one integral type
+    // to a smaller integral type.  In the generated code this does not seem
+    // to be needed.  Treat these as vanilla moves.
+    NewInst = new IceInstX8632Mov(Cfg, Dest, Reg);
+    break;
+  }
+  Expansion.push_back(NewInst);
   return Expansion;
 }
 

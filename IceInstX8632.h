@@ -247,6 +247,22 @@ public:
 private:
 };
 
+class IceInstX8632Movsx : public IceInstTarget {
+public:
+  IceInstX8632Movsx(IceCfg *Cfg, IceVariable *Dest, IceOperand *Source);
+  virtual void dump(IceOstream &Str) const;
+
+private:
+};
+
+class IceInstX8632Movzx : public IceInstTarget {
+public:
+  IceInstX8632Movzx(IceCfg *Cfg, IceVariable *Dest, IceOperand *Source);
+  virtual void dump(IceOstream &Str) const;
+
+private:
+};
+
 class IceInstX8632Push : public IceInstTarget {
 public:
   IceInstX8632Push(IceCfg *Cfg, IceOperand *Source);

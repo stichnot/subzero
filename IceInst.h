@@ -213,6 +213,7 @@ public:
   };
   IceInstCast(IceCfg *Cfg, IceCastKind CastKind, IceVariable *Dest,
               IceOperand *Source);
+  IceCastKind getCastKind() const { return CastKind; }
   virtual void dump(IceOstream &Str) const;
   static bool classof(const IceInst *Inst) { return Inst->getKind() == Cast; }
 
