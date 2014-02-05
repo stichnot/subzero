@@ -12,7 +12,7 @@ entry:
 
 ; CHECK:        entry:
 ; CHECK-NEXT:       %v1.asptr = i32 %v1
-; CHECK-NEXT:       %{{[0-9_]+}} = load i32* %v1.asptr
+; CHECK-NEXT:       %{{[0-9_]+}} = load i32* {{.*}}, align 1
 
   %v2.asptr = inttoptr i32 %v2 to i32*
   %1 = load i32* %v2.asptr, align 1

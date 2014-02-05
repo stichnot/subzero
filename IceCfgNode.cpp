@@ -90,17 +90,6 @@ void IceCfgNode::registerEdges(void) {
   }
 }
 
-void IceCfgNode::findAddressOpt(void) {
-  // No need to check the Phi instructions.
-  IceInstList::const_iterator I = Insts.begin(), E = Insts.end();
-  while (I != E) {
-    IceInst *Inst = *I++;
-    if (Inst->isDeleted())
-      continue;
-    Inst->findAddressOpt(Cfg, this);
-  }
-}
-
 static IceInst *getNextInst(IceInstList::iterator I,
                             const IceInstList::iterator &E) {
   while (I != E && (*I)->isDeleted())

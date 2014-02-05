@@ -7,7 +7,7 @@ entry:
   ret void
 
 ; CHECK:      %ptr64 = i32 %addr_arg
-; CHECK-NEXT:  %iv = load i64* %ptr64, align 1
+; CHECK-NEXT:  %iv = load i64* {{.*}}, align 1
 ; CHECK-NEXT:  ret void
 }
 
@@ -18,7 +18,7 @@ entry:
   ret void
 
 ; CHECK:       %ptr32 = i32 %addr_arg
-; CHECK-NEXT:  %iv = load i32* %ptr32, align 1
+; CHECK-NEXT:  %iv = load i32* {{.*}}, align 1
 ; CHECK-NEXT:  ret void
 }
 
@@ -29,7 +29,7 @@ entry:
   ret void
 
 ; CHECK:       %ptr16 = i32 %addr_arg
-; CHECK-NEXT:  %iv = load i16* %ptr16, align 1
+; CHECK-NEXT:  %iv = load i16* {{.*}}, align 1
 ; CHECK-NEXT:  ret void
 }
 
@@ -40,6 +40,6 @@ entry:
   ret void
 
 ; CHECK:       %ptr8 = i32 %addr_arg
-; CHECK-NEXT:  %iv = load i8* %ptr8, align 1
+; CHECK-NEXT:  %iv = load i8* {{.*}}, align 1
 ; CHECK-NEXT:  ret void
 }

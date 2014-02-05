@@ -20,7 +20,6 @@ public:
   void renumberInstructions(void);
   void splitEdge(IceCfgNode *From, IceCfgNode *To);
   void registerEdges(void);
-  void findAddressOpt(void);
   void placePhiLoads(void);
   void placePhiStores(void);
   void deletePhis(void);

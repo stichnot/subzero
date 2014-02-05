@@ -49,39 +49,8 @@ void IceInst::addSource(IceOperand *Source) {
   LiveRangesEnded.resize(Srcs.size());
 }
 
-void IceInst::findAddressOpt(IceCfg *Cfg, const IceCfgNode *Node) {
-  if (!llvm::isa<IceInstLoad>(this) && !llvm::isa<IceInstStore>(this))
-    return;
-  IceVariable *Base = llvm::dyn_cast<IceVariable>(Srcs.back());
-  IceVariable *BaseOrig = Base;
-  if (Base == NULL)
-    return;
-  IceVariable *Index = NULL;
-  int Shift = 0;
-  int32_t Offset = 0; // TODO: is int32_t appropriate?
-  doAddressOpt(Base, Index, Shift, Offset);
-  if (Base == BaseOrig)
-    return;
-
-  if (Cfg->Str.isVerbose())
-    Cfg->Str << "Found AddressOpt opportunity: BaseOrig=" << BaseOrig
-             << " Base=" << Base << " Index=" << Index << " Shift=" << Shift
-             << " Offset=" << Offset << "\n";
-
-  // Replace Srcs.back() with Base+Index+Shift+Offset, updating
-  // reference counts and deleting resulting dead instructions.
-  IceOpList NewOperands;
-  NewOperands.push_back(Base);
-  NewOperands.push_back(Index);
-  NewOperands.push_back(new IceConstantInteger(IceType_i32, Shift));
-  NewOperands.push_back(new IceConstantInteger(IceType_i32, Offset));
-  replaceOperands(Node, Srcs.size() - 1, NewOperands);
-  // TODO: See if liveness information can be incrementally corrected
-  // without a whole new liveness analysis pass.
-}
-
 void IceInst::doAddressOpt(IceVariable *&Base, IceVariable *&Index, int &Shift,
-                           int32_t &Offset) {
+                           int32_t &Offset) const {
   if (Base == NULL) // shouldn't happen
     return;
   // If the Base has more than one use or is live across multiple
@@ -400,12 +369,46 @@ IceInstIcmp::IceInstIcmp(IceCfg *Cfg, IceICond Condition, IceVariable *Dest,
 IceInstLoad::IceInstLoad(IceCfg *Cfg, IceVariable *Dest, IceOperand *SourceAddr)
     : IceInst(Cfg, IceInst::Load) {
   addDest(Dest);
+  IceVariable *Index = NULL;
+  int Shift = 0;
+  int32_t Offset = 0;
+  if (IceVariable *Base = llvm::dyn_cast<IceVariable>(SourceAddr)) {
+    doAddressOpt(Base, Index, Shift, Offset);
+    if (Base != SourceAddr) {
+      if (Cfg->Str.isVerbose())
+        Cfg->Str << "Found AddressOpt opportunity: BaseOrig=" << SourceAddr
+                 << " Base=" << Base << " Index=" << Index << " Shift=" << Shift
+                 << " Offset=" << Offset << "\n";
+      addSource(Base);
+      addSource(Index);
+      addSource(new IceConstantInteger(IceType_i32, Shift));
+      addSource(new IceConstantInteger(IceType_i32, Offset));
+      return;
+    }
+  }
   addSource(SourceAddr);
 }
 
 IceInstStore::IceInstStore(IceCfg *Cfg, IceOperand *Val, IceOperand *Addr)
     : IceInst(Cfg, IceInst::Store) {
   addSource(Val);
+  IceVariable *Index = NULL;
+  int Shift = 0;
+  int32_t Offset = 0;
+  if (IceVariable *Base = llvm::dyn_cast<IceVariable>(Addr)) {
+    doAddressOpt(Base, Index, Shift, Offset);
+    if (Base != Addr) {
+      if (Cfg->Str.isVerbose())
+        Cfg->Str << "Found AddressOpt opportunity: BaseOrig=" << Addr
+                 << " Base=" << Base << " Index=" << Index << " Shift=" << Shift
+                 << " Offset=" << Offset << "\n";
+      addSource(Base);
+      addSource(Index);
+      addSource(new IceConstantInteger(IceType_i32, Shift));
+      addSource(new IceConstantInteger(IceType_i32, Offset));
+      return;
+    }
+  }
   addSource(Addr);
 }
 
@@ -571,8 +574,6 @@ void IceInst::dumpExtras(IceOstream &Str) const {
 void IceInst::dumpSources(IceOstream &Str) const {
   for (IceOpList::const_iterator I = Srcs.begin(), E = Srcs.end(); I != E;
        ++I) {
-    if (*I == NULL)
-      continue;
     if (I != Srcs.begin())
       Str << ", ";
     Str << *I;
@@ -757,7 +758,7 @@ void IceInstLoad::dump(IceOstream &Str) const {
 
 void IceInstStore::dump(IceOstream &Str) const {
   IceType Type = getSrc(0)->getType();
-  Str << " store " << Type << "* ";
+  Str << "store " << Type << "* ";
   dumpSources(Str);
   Str << ", align ";
   switch (Type) {

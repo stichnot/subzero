@@ -54,9 +54,8 @@ public:
   void setDeleted(void);
   void deleteIfDead(void);
   void updateVars(IceCfgNode *Node);
-  void findAddressOpt(IceCfg *Cfg, const IceCfgNode *Node);
   void doAddressOpt(IceVariable *&Base, IceVariable *&Index, int &Shift,
-                    int32_t &Offset);
+                    int32_t &Offset) const;
   void replaceOperands(const IceCfgNode *Node, unsigned Index,
                        const IceOpList &NewOperands);
   virtual void removeUse(IceVariable *Variable);

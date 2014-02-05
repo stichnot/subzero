@@ -77,7 +77,6 @@ private:
   // TODO: record whether there is an alloca (frame ptr optimization)
   void makeTarget(IceTargetArch Arch);
   void renumberInstructions(void);
-  void findAddressOpt(void);
   void markLastUses(void);
   void placePhiLoads(void);
   void placePhiStores(void);

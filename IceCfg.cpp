@@ -160,13 +160,6 @@ void IceCfg::registerEdges(void) {
   }
 }
 
-void IceCfg::findAddressOpt(void) {
-  for (IceNodeList::iterator I = LNodes.begin(), E = LNodes.end(); I != E;
-       ++I) {
-    (*I)->findAddressOpt();
-  }
-}
-
 void IceCfg::placePhiLoads(void) {
   for (IceNodeList::iterator I = LNodes.begin(), E = LNodes.end(); I != E;
        ++I) {
@@ -284,9 +277,6 @@ void IceCfg::regAlloc(void) {
 }
 
 // Proposed pass list:
-//   findAddressOpt()
-//   liveness(IceLiveness_LREndLightweight) to clean up address opt
-//     Actually no point running this if we're going to do full liveness
 //   liveness(IceLiveness_RangesFull) to prepare for linear-scan
 //   regAlloc()
 //     Run once for each class of register (i64, i32, f32/64, i1?)
@@ -313,19 +303,11 @@ void IceCfg::translate(IceTargetArch TargetArch) {
     Str << "================ Initial CFG ================\n";
   dump();
 
-  // TODO: If we're anyway planning to do full liveness analysis
-  // (including dead store elimination) after lowering, and we're
-  // using global register allocation and not the local register
-  // manager, then findAddressOpt() should be done as part of
-  // lowering.
-  findAddressOpt();
-  if (hasError())
-    return;
   liveness(IceLiveness_RangesFull);
   if (hasError())
     return;
   if (Str.isVerbose())
-    Str << "================ After x86 address opt ================\n";
+    Str << "================ After liveness analysis ================\n";
   dump();
 
   placePhiLoads();

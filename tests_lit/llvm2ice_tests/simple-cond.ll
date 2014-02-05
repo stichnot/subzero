@@ -23,3 +23,5 @@ if.end:
 ; CHECK: %result.0 = phi i32 [ %sub, %if.then ], [ %{{[0-9_]+}}, %if.else ]
   ret i32 %result.0
 }
+
+; CHECK-NOT: ICE translation error
