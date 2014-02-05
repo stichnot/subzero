@@ -551,9 +551,10 @@ void IceInstX8632Br::dump(IceOstream &Str) const {
 }
 
 void IceInstX8632Call::dump(IceOstream &Str) const {
-  dumpDest(Str);
-  if (getDest())
+  if (getDest()) {
+    dumpDest(Str);
     Str << " = ";
+  }
   if (Tail)
     Str << "tail ";
   Str << "call " << getCallTarget();

@@ -649,8 +649,10 @@ void IceInstBr::dump(IceOstream &Str) const {
 }
 
 void IceInstCall::dump(IceOstream &Str) const {
-  dumpDest(Str);
-  Str << " = ";
+  if (getDest()) {
+    dumpDest(Str);
+    Str << " = ";
+  }
   if (Tail)
     Str << "tail ";
   Str << "call " << getCallTarget() << "(";
