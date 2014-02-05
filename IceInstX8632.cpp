@@ -781,7 +781,9 @@ IceInstList IceTargetX8632S::lowerArithmetic(const IceInstArithmetic *Inst,
   case IceInstArithmetic::Fmul:
   case IceInstArithmetic::Fdiv:
   case IceInstArithmetic::Frem:
-    assert(0); // TODO: implement
+    // TODO: implement
+    Cfg->setError("FP arithmetic lowering not implemented");
+    return Expansion;
     break;
   case IceInstArithmetic::OpKind_NUM:
     assert(0);
@@ -867,7 +869,9 @@ IceInstList IceTargetX8632S::lowerArithmetic(const IceInstArithmetic *Inst,
   case IceInstArithmetic::Fmul:
   case IceInstArithmetic::Fdiv:
   case IceInstArithmetic::Frem:
-    assert(0); // TODO: implement
+    // TODO: implement
+    Cfg->setError("FP arithmetic lowering not implemented");
+    return Expansion;
     break;
   case IceInstArithmetic::OpKind_NUM:
     assert(0);
@@ -904,7 +908,7 @@ IceInstList IceTargetX8632S::lowerAssign(const IceInstAssign *Inst,
 IceInstList IceTargetX8632S::lowerBr(const IceInstBr *Inst, const IceInst *Next,
                                      bool &DeleteNextInst) {
   IceInstList Expansion;
-  // assert(0); // TODO: implement
+  Cfg->setError("Conditional branch lowering unimplemented");
   return Expansion;
 }
 
@@ -991,7 +995,7 @@ IceInstList IceTargetX8632S::lowerCast(const IceInstCast *Inst,
                                        const IceInst *Next,
                                        bool &DeleteNextInst) {
   IceInstList Expansion;
-  assert(0); // TODO: implement
+  Cfg->setError("Cast lowering unimplemented");
   return Expansion;
 }
 
@@ -999,7 +1003,7 @@ IceInstList IceTargetX8632S::lowerFcmp(const IceInstFcmp *Inst,
                                        const IceInst *Next,
                                        bool &DeleteNextInst) {
   IceInstList Expansion;
-  assert(0); // TODO: implement
+  Cfg->setError("Fcmp lowering unimplemented");
   return Expansion;
 }
 
@@ -1031,7 +1035,7 @@ IceInstList IceTargetX8632S::lowerIcmp(const IceInstIcmp *Inst,
     Expansion.push_back(NewInst);
     DeleteNextInst = true;
   } else {
-    assert(0);
+    Cfg->setError("Icmp lowering without subsequent Br unimplemented");
   }
   return Expansion;
 }
@@ -1079,7 +1083,7 @@ IceInstList IceTargetX8632S::lowerPhi(const IceInstPhi *Inst,
                                       const IceInst *Next,
                                       bool &DeleteNextInst) {
   IceInstList Expansion;
-  assert(0); // TODO: implement if necessary
+  Cfg->setError("Phi lowering not implemented");
   return Expansion;
 }
 
@@ -1114,7 +1118,7 @@ IceInstList IceTargetX8632S::lowerSelect(const IceInstSelect *Inst,
                                          const IceInst *Next,
                                          bool &DeleteNextInst) {
   IceInstList Expansion;
-  assert(0); // TODO: implement
+  Cfg->setError("Select lowering not implemented");
   return Expansion;
 }
 
@@ -1166,6 +1170,6 @@ IceInstList IceTargetX8632S::lowerSwitch(const IceInstSwitch *Inst,
                                          const IceInst *Next,
                                          bool &DeleteNextInst) {
   IceInstList Expansion;
-  assert(0); // TODO: implement
+  Cfg->setError("Switch lowering not implemented");
   return Expansion;
 }

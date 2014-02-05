@@ -16,8 +16,8 @@
 IceOstream *GlobalStr;
 
 IceCfg::IceCfg(void)
-    : Str(std::cout, this), Type(IceType_void), Target(NULL), Entry(NULL),
-      NextInstNumber(1) {
+    : Str(std::cout, this), HasError(false), ErrorMessage(""),
+      Type(IceType_void), Target(NULL), Entry(NULL), NextInstNumber(1) {
   GlobalStr = &Str;
 }
 
@@ -27,9 +27,18 @@ IceCfg::~IceCfg() {
   // using arena-based allocation.
 }
 
+void IceCfg::setError(const IceString &Message) {
+  HasError = true;
+  ErrorMessage = Message;
+  if (Str.isVerbose()) {
+    Str << "ICE translation error: " << ErrorMessage << "\n";
+  }
+}
+
 void IceCfg::makeTarget(IceTargetArch Arch) {
   Target = IceTargetLowering::createLowering(Arch, this);
-  RegisterNames = Target->getRegNames();
+  if (Target)
+    RegisterNames = Target->getRegNames();
 }
 
 void IceCfg::addArg(IceVariable *Arg) {
@@ -180,7 +189,10 @@ void IceCfg::deletePhis(void) {
 }
 
 void IceCfg::genCode(void) {
-  assert(Target && "IceCfg::makeTarget() wasn't called.");
+  if (Target == NULL) {
+    setError("IceCfg::makeTarget() wasn't called.");
+    return;
+  }
   for (IceNodeList::iterator I = LNodes.begin(), E = LNodes.end(); I != E;
        ++I) {
     (*I)->genCode();
@@ -266,8 +278,6 @@ void IceCfg::liveness(IceLiveness Mode) {
 }
 
 void IceCfg::regAlloc(void) {
-  // TODO: This is just testing for a machine with 8 registers, 3 of
-  // which are made available for register allocation.
   IceLinearScan LinearScan(this);
   llvm::SmallBitVector RegMask = getTarget()->getRegisterMask();
   LinearScan.scan(RegMask);
@@ -296,6 +306,9 @@ void IceCfg::regAlloc(void) {
 //   At some point, lower phis
 void IceCfg::translate(IceTargetArch TargetArch) {
   makeTarget(TargetArch);
+  if (hasError())
+    return;
+
   if (Str.isVerbose())
     Str << "================ Initial CFG ================\n";
   dump();
@@ -306,27 +319,47 @@ void IceCfg::translate(IceTargetArch TargetArch) {
   // manager, then findAddressOpt() should be done as part of
   // lowering.
   findAddressOpt();
+  if (hasError())
+    return;
   liveness(IceLiveness_RangesFull);
+  if (hasError())
+    return;
   if (Str.isVerbose())
     Str << "================ After x86 address opt ================\n";
   dump();
 
   placePhiLoads();
+  if (hasError())
+    return;
   placePhiStores();
+  if (hasError())
+    return;
   deletePhis();
+  if (hasError())
+    return;
   renumberInstructions();
+  if (hasError())
+    return;
   if (Str.isVerbose())
     Str << "================ After Phi lowering ================\n";
   dump();
 
   genCode();
+  if (hasError())
+    return;
   renumberInstructions();
+  if (hasError())
+    return;
   liveness(IceLiveness_RangesFull);
+  if (hasError())
+    return;
   if (Str.isVerbose())
     Str << "================ After initial x8632 codegen ================\n";
   dump();
 
   regAlloc();
+  if (hasError())
+    return;
   if (Str.isVerbose())
     Str << "================ After linear scan regalloc ================\n";
   dump();

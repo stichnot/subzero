@@ -14,6 +14,9 @@ class IceCfg {
 public:
   IceCfg(void);
   ~IceCfg();
+  bool hasError(void) const { return HasError; }
+  IceString getError(void) const { return ErrorMessage; }
+  void setError(const IceString &Message);
   void setName(const IceString &FunctionName) { Name = FunctionName; }
   void setReturnType(IceType ReturnType) { Type = ReturnType; }
   IceTargetLowering *getTarget(void) const { return Target; }
@@ -47,6 +50,8 @@ public:
   mutable IceOstream Str;
 
 private:
+  bool HasError;
+  IceString ErrorMessage;
   IceString Name; // function name
   IceType Type;   // return type
   IceTargetLowering *Target;

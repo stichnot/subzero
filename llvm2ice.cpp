@@ -414,8 +414,12 @@ int main(int argc, char **argv) {
     if (!VerboseList.empty())
       Cfg->Str.setVerbose(VerboseMask);
     Cfg->dump();
-    if (!DisableTranslation)
+    if (!DisableTranslation) {
       Cfg->translate(TargetArch);
+      if (Cfg->hasError()) {
+        errs() << "ICE translation error: " << Cfg->getError() << "\n";
+      }
+    }
   }
 
   return 0;

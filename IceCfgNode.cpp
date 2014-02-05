@@ -16,9 +16,14 @@ IceCfgNode::IceCfgNode(IceCfg *Cfg, uint32_t LabelIndex, IceString Name)
 
 void IceCfgNode::appendInst(IceInst *Inst) {
   if (IceInstPhi *Phi = llvm::dyn_cast<IceInstPhi>(Inst)) {
-    assert(!ArePhiLoadsPlaced);
-    assert(!ArePhiStoresPlaced);
-    assert(Insts.empty());
+    if (ArePhiLoadsPlaced || ArePhiStoresPlaced) {
+      Cfg->setError("Phi instruction added after phi lowering");
+      return;
+    }
+    if (!Insts.empty()) {
+      Cfg->setError("Phi instruction added to the middle of a block");
+      return;
+    }
     Phis.push_back(Phi);
   } else {
     Insts.push_back(Inst);
@@ -106,7 +111,10 @@ static IceInst *getNextInst(IceInstList::iterator I,
 }
 
 void IceCfgNode::placePhiLoads(void) {
-  assert(!ArePhiLoadsPlaced);
+  if (ArePhiLoadsPlaced) {
+    Cfg->setError("placePhiLoads() called more than once");
+    return;
+  }
   ArePhiLoadsPlaced = true;
   // Create the phi version of each destination and add it to the phi
   // instruction's Srcs list.
@@ -127,8 +135,14 @@ void IceCfgNode::placePhiLoads(void) {
 }
 
 void IceCfgNode::placePhiStores(void) {
-  assert(ArePhiLoadsPlaced);
-  assert(!ArePhiStoresPlaced);
+  if (ArePhiStoresPlaced) {
+    Cfg->setError("placePhiStores() called more than once");
+    return;
+  }
+  if (!ArePhiLoadsPlaced) {
+    Cfg->setError("placePhiStores() must be called after placePhiLoads()");
+    return;
+  }
   ArePhiStoresPlaced = true;
 
   IceInstList NewPhiStores;

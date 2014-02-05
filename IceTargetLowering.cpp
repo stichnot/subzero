@@ -3,6 +3,7 @@
  * be found in the LICENSE file.
  */
 
+#include "IceCfg.h" // setError()
 #include "IceTargetLowering.h"
 #include "IceInstX8632.h"
 
@@ -22,7 +23,7 @@ IceTargetLowering *IceTargetLowering::createLowering(IceTargetArch Target,
   if (Target == IceTarget_ARM64)
     return new IceTargetARM64(Cfg);
 #endif
-  assert("Unsupported Target" && 0);
+  Cfg->setError("Unsupported target");
   return NULL;
 }
 
@@ -56,6 +57,6 @@ IceInstList IceTargetLowering::lower(const IceInst *Inst, const IceInst *Next,
   if (const IceInstSwitch *I = llvm::dyn_cast<const IceInstSwitch>(Inst))
     return lowerSwitch(I, Next, DeleteNextInst);
 
-  assert(0);
+  Cfg->setError("Can't lower unsupported instruction type");
   return IceInstList();
 }
