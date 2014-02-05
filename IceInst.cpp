@@ -10,9 +10,13 @@
 #include "IceOperand.h"
 #include "IceRegManager.h"
 
-IceInst::IceInst(IceCfg *Cfg, IceInstType Kind)
-    : Kind(Kind), Deleted(false), Dead(false), Dest(NULL), LiveRangesEnded(0) {
+IceInst::IceInst(IceCfg *Cfg, IceInstType Kind, unsigned MaxSrcs)
+    : Kind(Kind), MaxSrcs(MaxSrcs), NumSrcs(0), Deleted(false), Dead(false),
+      Dest(NULL), LiveRangesEnded(0) {
   Number = Cfg->newInstNumber();
+  Srcs = new IceOperand *[MaxSrcs];
+  for (unsigned i = 0; i < MaxSrcs; ++i)
+    Srcs[i] = NULL;
 }
 
 void IceInst::renumber(IceCfg *Cfg) {
@@ -28,11 +32,9 @@ void IceInst::updateVars(IceCfgNode *Node) {
   // update variables in Dests
   if (Dest)
     Dest->setDefinition(this, Node);
-  for (IceOpList::const_iterator I = Srcs.begin(), E = Srcs.end(); I != E;
-       ++I) {
-    if (*I == NULL)
-      continue;
-    (*I)->setUse(this, Node);
+  for (unsigned I = 0; I < getSrcSize(); ++I) {
+    if (Srcs[I])
+      Srcs[I]->setUse(this, Node);
   }
 }
 
@@ -42,7 +44,10 @@ void IceInst::addDest(IceVariable *NewDest) {
   Dest = NewDest;
 }
 
-void IceInst::addSource(IceOperand *Source) { Srcs.push_back(Source); }
+void IceInst::addSource(IceOperand *Source) {
+  assert(NumSrcs < MaxSrcs);
+  Srcs[NumSrcs++] = Source;
+}
 
 void IceInst::doAddressOpt(IceVariable *&Base, IceVariable *&Index, int &Shift,
                            int32_t &Offset) const {
@@ -172,18 +177,16 @@ void IceInst::liveness(IceLiveness Mode, int InstNumber, llvm::BitVector &Live,
 
   // For lightweight liveness, do the simple calculation and return.
   if (Mode == IceLiveness_LREndLightweight) {
-    unsigned OpNum = 0;
     resetLastUses();
-    for (IceOpList::const_iterator I = Srcs.begin(), E = Srcs.end(); I != E;
-         ++I, ++OpNum) {
-      if (IceVariable *Var = llvm::dyn_cast_or_null<IceVariable>(*I)) {
+    for (unsigned I = 0; I < getSrcSize(); ++I) {
+      if (IceVariable *Var = llvm::dyn_cast_or_null<IceVariable>(Srcs[I])) {
         if (Var->isMultiblockLife())
           continue;
         uint32_t Index = Var->getIndex();
         if (Live[Index])
           continue;
         Live[Index] = true;
-        setLastUse(OpNum);
+        setLastUse(I);
       }
     }
     return;
@@ -204,7 +207,6 @@ void IceInst::liveness(IceLiveness Mode, int InstNumber, llvm::BitVector &Live,
   // Phi arguments only get added to Live in the predecessor node, but
   // we still need to update LiveRangesEnded.
   bool IsPhi = llvm::isa<IceInstPhi>(this);
-  unsigned Index = 0;
   resetLastUses();
   // TODO: For a 3-address arithmetic instruction on a 2-address
   // architecture, we need to indicate that the latter source
@@ -217,12 +219,11 @@ void IceInst::liveness(IceLiveness Mode, int InstNumber, llvm::BitVector &Live,
   // c's live range ends, b's live range does not end, and the
   // operator is commutable, we can reduce register pressure by
   // commuting the operation.
-  for (IceOpList::const_iterator I = Srcs.begin(), E = Srcs.end(); I != E;
-       ++I, ++Index) {
-    if (IceVariable *Var = llvm::dyn_cast_or_null<IceVariable>(*I)) {
+  for (unsigned I = 0; I < getSrcSize(); ++I) {
+    if (IceVariable *Var = llvm::dyn_cast_or_null<IceVariable>(Srcs[I])) {
       uint32_t VarNum = Var->getIndex();
       if (!Live[VarNum]) {
-        setLastUse(Index);
+        setLastUse(I);
         if (!IsPhi) {
           Live[VarNum] = true;
           // For a variable in SSA form, its live range can end at
@@ -243,7 +244,7 @@ void IceInst::liveness(IceLiveness Mode, int InstNumber, llvm::BitVector &Live,
           // backwards traversal.
           if (LiveEnd[VarNum] == 0) {
             LiveEnd[VarNum] = InstNumber;
-            if (Index == 1 && getKind() == Arithmetic) {
+            if (I == 1 && getKind() == Arithmetic) {
               // TODO: Do the same for target-specific Arithmetic
               // instructions, and also optimize for commutativity.
               // Also, consider moving this special logic into
@@ -259,7 +260,7 @@ void IceInst::liveness(IceLiveness Mode, int InstNumber, llvm::BitVector &Live,
 
 IceInstArithmetic::IceInstArithmetic(IceCfg *Cfg, OpKind Op, IceVariable *Dest,
                                      IceOperand *Source1, IceOperand *Source2)
-    : IceInst(Cfg, IceInst::Arithmetic), Op(Op) {
+    : IceInst(Cfg, IceInst::Arithmetic, 2), Op(Op) {
   addDest(Dest);
   addSource(Source1);
   addSource(Source2);
@@ -281,7 +282,7 @@ bool IceInstArithmetic::isCommutative(void) const {
 }
 
 IceInstAssign::IceInstAssign(IceCfg *Cfg, IceVariable *Dest, IceOperand *Source)
-    : IceInst(Cfg, IceInst::Assign) {
+    : IceInst(Cfg, IceInst::Assign, 1) {
   addDest(Dest);
   addSource(Source);
 }
@@ -291,7 +292,7 @@ IceInstAssign::IceInstAssign(IceCfg *Cfg, IceVariable *Dest, IceOperand *Source)
 // there is at most one edge from one node to another.
 IceInstBr::IceInstBr(IceCfg *Cfg, IceOperand *Source, IceCfgNode *TargetTrue,
                      IceCfgNode *TargetFalse)
-    : IceInst(Cfg, IceInst::Br), TargetFalse(TargetFalse),
+    : IceInst(Cfg, IceInst::Br, 1), TargetFalse(TargetFalse),
       TargetTrue(TargetTrue) {
   if (TargetTrue != TargetFalse) {
     addSource(Source);
@@ -299,7 +300,7 @@ IceInstBr::IceInstBr(IceCfg *Cfg, IceOperand *Source, IceCfgNode *TargetTrue,
 }
 
 IceInstBr::IceInstBr(IceCfg *Cfg, IceCfgNode *Target)
-    : IceInst(Cfg, IceInst::Br), TargetFalse(Target), TargetTrue(NULL) {}
+    : IceInst(Cfg, IceInst::Br, 0), TargetFalse(Target), TargetTrue(NULL) {}
 
 IceNodeList IceInstBr::getTerminatorEdges(void) const {
   IceNodeList OutEdges;
@@ -311,21 +312,21 @@ IceNodeList IceInstBr::getTerminatorEdges(void) const {
 
 IceInstCast::IceInstCast(IceCfg *Cfg, IceCastKind CastKind, IceVariable *Dest,
                          IceOperand *Source)
-    : IceInst(Cfg, IceInst::Cast), CastKind(CastKind) {
+    : IceInst(Cfg, IceInst::Cast, 1), CastKind(CastKind) {
   addDest(Dest);
   addSource(Source);
 }
 
 IceInstIcmp::IceInstIcmp(IceCfg *Cfg, IceICond Condition, IceVariable *Dest,
                          IceOperand *Source1, IceOperand *Source2)
-    : IceInst(Cfg, IceInst::Icmp), Condition(Condition) {
+    : IceInst(Cfg, IceInst::Icmp, 2), Condition(Condition) {
   addDest(Dest);
   addSource(Source1);
   addSource(Source2);
 }
 
 IceInstLoad::IceInstLoad(IceCfg *Cfg, IceVariable *Dest, IceOperand *SourceAddr)
-    : IceInst(Cfg, IceInst::Load) {
+    : IceInst(Cfg, IceInst::Load, 4) {
   addDest(Dest);
   IceVariable *Index = NULL;
   int Shift = 0;
@@ -348,7 +349,7 @@ IceInstLoad::IceInstLoad(IceCfg *Cfg, IceVariable *Dest, IceOperand *SourceAddr)
 }
 
 IceInstStore::IceInstStore(IceCfg *Cfg, IceOperand *Val, IceOperand *Addr)
-    : IceInst(Cfg, IceInst::Store) {
+    : IceInst(Cfg, IceInst::Store, 5) {
   addSource(Val);
   IceVariable *Index = NULL;
   int Shift = 0;
@@ -370,7 +371,8 @@ IceInstStore::IceInstStore(IceCfg *Cfg, IceOperand *Val, IceOperand *Addr)
   addSource(Addr);
 }
 
-IceInstPhi::IceInstPhi(IceCfg *Cfg, IceVariable *Dest) : IceInst(Cfg, Phi) {
+IceInstPhi::IceInstPhi(IceCfg *Cfg, unsigned MaxSrcs, IceVariable *Dest)
+    : IceInst(Cfg, Phi, MaxSrcs) {
   addDest(Dest);
 }
 
@@ -380,12 +382,12 @@ void IceInstPhi::addArgument(IceOperand *Source, IceCfgNode *Label) {
 }
 
 IceOperand *IceInstPhi::getArgument(IceCfgNode *Label) const {
-  assert(Labels.size() == Srcs.size());
+  assert(Labels.size() == getSrcSize());
   IceNodeList::const_iterator EdgeIter = Labels.begin(), EdgeEnd = Labels.end();
-  for (IceOpList::const_iterator I = Srcs.begin(), E = Srcs.end();
-       I != E && EdgeIter != EdgeEnd; ++I, ++EdgeIter) {
+  for (unsigned I = 0; I < getSrcSize() && EdgeIter != EdgeEnd;
+       ++I, ++EdgeIter) {
     if (*EdgeIter == Label)
-      return *I;
+      return Srcs[I];
   }
   assert(0);
   return NULL;
@@ -402,17 +404,16 @@ IceInst *IceInstPhi::lower(IceCfg *Cfg, IceCfgNode *Node) {
   IceInstAssign *NewInst = new IceInstAssign(Cfg, Dest, NewSrc);
   Dest->setPreferredRegister(NewSrc, false);
   NewSrc->setPreferredRegister(Dest, false);
-  // NewInst->updateVars(Node);
   Dest->replaceDefinition(NewInst, Node);
   return NewInst;
 }
 
 IceOperand *IceInstPhi::getOperandForTarget(IceCfgNode *Target) const {
   IceNodeList::const_iterator EdgeIter = Labels.begin(), EdgeEnd = Labels.end();
-  for (IceOpList::const_iterator I = Srcs.begin(), E = Srcs.end();
-       I != E && EdgeIter != EdgeEnd; ++I, ++EdgeIter) {
+  for (unsigned I = 0; I < getSrcSize() && EdgeIter != EdgeEnd;
+       ++I, ++EdgeIter) {
     if (*EdgeIter == Target)
-      return *I;
+      return Srcs[I];
   }
   return NULL;
 }
@@ -425,14 +426,13 @@ void IceInstPhi::livenessPhiOperand(llvm::BitVector &Live, IceCfgNode *Target) {
   if (isDeleted() || Dead)
     return;
   IceNodeList::const_iterator EdgeIter = Labels.begin(), EdgeEnd = Labels.end();
-  uint32_t Index = 0;
-  for (IceOpList::const_iterator I = Srcs.begin(), E = Srcs.end();
-       I != E && EdgeIter != EdgeEnd; ++I, ++EdgeIter, ++Index) {
+  for (uint32_t I = 0; I < getSrcSize() && EdgeIter != EdgeEnd;
+       ++EdgeIter, ++I) {
     if (*EdgeIter == Target) {
-      if (IceVariable *Var = llvm::dyn_cast_or_null<IceVariable>(*I)) {
+      if (IceVariable *Var = llvm::dyn_cast_or_null<IceVariable>(Srcs[I])) {
         uint32_t SrcIndex = Var->getIndex();
         if (!Live[SrcIndex]) {
-          setLastUse(Index);
+          setLastUse(I);
           Live[SrcIndex] = true;
         }
       }
@@ -442,7 +442,8 @@ void IceInstPhi::livenessPhiOperand(llvm::BitVector &Live, IceCfgNode *Target) {
   assert(0);
 }
 
-IceInstRet::IceInstRet(IceCfg *Cfg, IceOperand *Source) : IceInst(Cfg, Ret) {
+IceInstRet::IceInstRet(IceCfg *Cfg, IceOperand *Source)
+    : IceInst(Cfg, Ret, Source ? 1 : 0) {
   if (Source)
     addSource(Source);
 }
@@ -452,7 +453,7 @@ void IceInstTarget::setRegState(const IceRegManager *State) {
 }
 
 IceInstFakeDef::IceInstFakeDef(IceCfg *Cfg, IceVariable *Dest, IceVariable *Src)
-    : IceInst(Cfg, IceInst::FakeDef) {
+    : IceInst(Cfg, IceInst::FakeDef, Src ? 1 : 0) {
   assert(Dest);
   addDest(Dest);
   if (Src)
@@ -460,14 +461,14 @@ IceInstFakeDef::IceInstFakeDef(IceCfg *Cfg, IceVariable *Dest, IceVariable *Src)
 }
 
 IceInstFakeUse::IceInstFakeUse(IceCfg *Cfg, IceVariable *Src)
-    : IceInst(Cfg, IceInst::FakeUse) {
+    : IceInst(Cfg, IceInst::FakeUse, 1) {
   assert(Src);
   addSource(Src);
 }
 
 IceInstFakeKill::IceInstFakeKill(IceCfg *Cfg, const IceVarList &KilledRegs,
                                  const IceInst *Linked)
-    : IceInst(Cfg, IceInst::FakeKill), Linked(Linked) {
+    : IceInst(Cfg, IceInst::FakeKill, KilledRegs.size()), Linked(Linked) {
   for (IceVarList::const_iterator I = KilledRegs.begin(), E = KilledRegs.end();
        I != E; ++I) {
     IceVariable *Var = *I;
@@ -510,17 +511,15 @@ void IceInst::dumpExtras(IceOstream &Str) const {
   // Print "LIVEEND={a,b,c}" for all source operands whose live ranges
   // are known to end at this instruction.
   if (Str.isVerbose(IceV_Liveness)) {
-    unsigned Index = 0;
-    for (IceOpList::const_iterator I = Srcs.begin(), E = Srcs.end(); I != E;
-         ++I, ++Index) {
-      if (*I == NULL)
+    for (unsigned I = 0; I < getSrcSize(); ++I) {
+      if (Srcs[I] == NULL)
         continue;
-      if (isLastUse(Index)) {
+      if (isLastUse(I)) {
         if (First)
           Str << " // LIVEEND={";
         else
           Str << ",";
-        Str << *I;
+        Str << Srcs[I];
         First = false;
       }
     }
@@ -530,11 +529,10 @@ void IceInst::dumpExtras(IceOstream &Str) const {
 }
 
 void IceInst::dumpSources(IceOstream &Str) const {
-  for (IceOpList::const_iterator I = Srcs.begin(), E = Srcs.end(); I != E;
-       ++I) {
-    if (I != Srcs.begin())
+  for (unsigned I = 0; I < getSrcSize(); ++I) {
+    if (I > 0)
       Str << ", ";
-    Str << *I;
+    Str << Srcs[I];
   }
 }
 
@@ -738,16 +736,16 @@ void IceInstPhi::dump(IceOstream &Str) const {
   dumpDest(Str);
   Str << " = phi " << getDest()->getType() << " ";
   IceNodeList::const_iterator EdgeIter = Labels.begin(), EdgeEnd = Labels.end();
-  for (IceOpList::const_iterator I = Srcs.begin(), E = Srcs.end();
-       I != E && EdgeIter != EdgeEnd; ++I, ++EdgeIter) {
-    if (I != Srcs.begin())
+  for (unsigned I = 0; I < getSrcSize() && EdgeIter != EdgeEnd;
+       ++I, ++EdgeIter) {
+    if (I > 0)
       Str << ", ";
-    Str << "[ " << *I << ", %" << (*EdgeIter)->getName() << " ]";
+    Str << "[ " << Srcs[I] << ", %" << (*EdgeIter)->getName() << " ]";
   }
 }
 
 void IceInstRet::dump(IceOstream &Str) const {
-  IceType Type = Srcs.empty() ? IceType_void : getSrc(0)->getType();
+  IceType Type = getSrcSize() == 0 ? IceType_void : getSrc(0)->getType();
   Str << "ret " << Type << " ";
   dumpSources(Str);
 }

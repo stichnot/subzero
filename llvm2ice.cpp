@@ -246,8 +246,9 @@ private:
   }
 
   IceInst *convertPHINodeInstruction(const PHINode *Inst) {
-    IceInstPhi *IcePhi = new IceInstPhi(Cfg, mapValueToIceVar(Inst));
-    for (unsigned N = 0, E = Inst->getNumIncomingValues(); N != E; ++N) {
+    unsigned NumValues = Inst->getNumIncomingValues();
+    IceInstPhi *IcePhi = new IceInstPhi(Cfg, NumValues, mapValueToIceVar(Inst));
+    for (unsigned N = 0, E = NumValues; N != E; ++N) {
       IcePhi->addArgument(convertOperand(Inst, N),
                           mapBasicBlockToNode(Inst->getIncomingBlock(N)));
     }
@@ -337,9 +338,9 @@ private:
   IceInst *convertCallInstruction(const CallInst *Inst) {
     IceVariable *Dest = mapValueToIceVar(Inst);
     IceOperand *CallTarget = convertValue(Inst->getCalledValue());
-    IceInstCall *NewInst =
-        new IceInstCall(Cfg, Dest, CallTarget, Inst->isTailCall());
     unsigned NumArgs = Inst->getNumArgOperands();
+    IceInstCall *NewInst =
+        new IceInstCall(Cfg, NumArgs, Dest, CallTarget, Inst->isTailCall());
     for (unsigned i = 0; i < NumArgs; ++i) {
       NewInst->addArg(convertOperand(Inst, i));
     }

@@ -38,9 +38,9 @@ public:
   IceInstType getKind(void) const { return Kind; }
   IceVariable *getDest(void) const { return Dest; }
   IceOperand *getSrc(unsigned I) const {
-    return I < Srcs.size() ? Srcs[I] : NULL;
+    return I < getSrcSize() ? Srcs[I] : NULL;
   }
-  unsigned getSrcSize(void) const { return Srcs.size(); }
+  unsigned getSrcSize(void) const { return NumSrcs; }
   virtual IceNodeList getTerminatorEdges(void) const {
     assert(0);
     return IceNodeList();
@@ -71,7 +71,7 @@ public:
   virtual bool isRedundantAssign(void) const { return false; }
 
 protected:
-  IceInst(IceCfg *Cfg, IceInstType Kind);
+  IceInst(IceCfg *Cfg, IceInstType Kind, unsigned MaxSrcs);
   void addDest(IceVariable *Dest);
   void addSource(IceOperand *Src);
   void setLastUse(unsigned SrcIndex) {
@@ -81,13 +81,15 @@ protected:
   void resetLastUses(void) { LiveRangesEnded = 0; }
 
   const IceInstType Kind;
+  const unsigned MaxSrcs; // only used for assert
+  unsigned NumSrcs;
   int Number; // the instruction number for describing live ranges
   // Deleted means irrevocably deleted.
   bool Deleted;
   // Dead means pending deletion after liveness analysis converges.
   bool Dead;
   IceVariable *Dest;
-  IceOpList Srcs;
+  IceOperand **Srcs;        // TODO: possibly delete[] in destructor
   uint32_t LiveRangesEnded; // only first 32 src operands tracked, sorry
 };
 
@@ -96,7 +98,7 @@ IceOstream &operator<<(IceOstream &Str, const IceInst *I);
 class IceInstAlloca : public IceInst {
 public:
   IceInstAlloca(IceCfg *Cfg, uint32_t Size, uint32_t Align)
-      : IceInst(Cfg, IceInst::Alloca), Size(Size), Align(Align) {}
+      : IceInst(Cfg, IceInst::Alloca, 0), Size(Size), Align(Align) {}
   virtual void dump(IceOstream &Str) const;
   static bool classof(const IceInst *Inst) { return Inst->getKind() == Alloca; }
 
@@ -172,9 +174,10 @@ private:
 
 class IceInstCall : public IceInst {
 public:
-  IceInstCall(IceCfg *Cfg, IceVariable *Dest, IceOperand *CallTarget,
-              bool Tail = false)
-      : IceInst(Cfg, IceInst::Call), CallTarget(CallTarget), Tail(Tail) {
+  IceInstCall(IceCfg *Cfg, unsigned MaxSrcs, IceVariable *Dest,
+              IceOperand *CallTarget, bool Tail = false)
+      : IceInst(Cfg, IceInst::Call, MaxSrcs), CallTarget(CallTarget),
+        Tail(Tail) {
     if (Dest)
       addDest(Dest);
   }
@@ -185,6 +188,7 @@ public:
   static bool classof(const IceInst *Inst) { return Inst->getKind() == Call; }
 
 private:
+  // TODO: Shouldn't CallTarget be one of the operands?
   IceOperand *CallTarget;
   const bool Tail;
 };
@@ -282,7 +286,7 @@ private:
 
 class IceInstPhi : public IceInst {
 public:
-  IceInstPhi(IceCfg *Cfg, IceVariable *Dest);
+  IceInstPhi(IceCfg *Cfg, unsigned MaxSrcs, IceVariable *Dest);
   void addArgument(IceOperand *Source, IceCfgNode *Label);
   IceOperand *getArgument(IceCfgNode *Label) const;
   IceInst *lower(IceCfg *Cfg, IceCfgNode *Node);
@@ -380,7 +384,8 @@ public:
   static bool classof(const IceInst *Inst) { return Inst->getKind() == Target; }
 
 protected:
-  IceInstTarget(IceCfg *Cfg) : IceInst(Cfg, IceInst::Target), RegState(NULL) {}
+  IceInstTarget(IceCfg *Cfg, unsigned MaxSrcs)
+      : IceInst(Cfg, IceInst::Target, MaxSrcs), RegState(NULL) {}
   const IceRegManager *RegState; // used only for debugging/dumping
 private:
 };
