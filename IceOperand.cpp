@@ -59,10 +59,11 @@ void IceLiveRange::addSegment(int Start, int End) {
     RangeType::iterator FirstDelete = Next;
     RangeType::iterator Prev = Next;
     bool hasPrev = (Next != Range.begin());
+    bool hasNext = (Next != Range.end());
     if (hasPrev)
       --Prev;
     // See if Element and Next should be joined.
-    if (End == Next->first) {
+    if (hasNext && End == Next->first) {
       Element.second = Next->second;
       ++Next;
     }
