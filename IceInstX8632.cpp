@@ -777,7 +777,8 @@ IceInstList IceTargetX8632S::lowerArithmetic(const IceInstArithmetic *Inst,
   case IceInstArithmetic::Shl:
   case IceInstArithmetic::Lshr:
   case IceInstArithmetic::Ashr:
-    Reg2InEcx = true;
+    if (!llvm::isa<IceConstant>(Src1))
+      Reg2InEcx = true;
     break;
   case IceInstArithmetic::Fadd:
   case IceInstArithmetic::Fsub:
