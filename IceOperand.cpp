@@ -15,7 +15,6 @@ bool operator<=(const IceRegWeight &A, const IceRegWeight &B) {
 }
 
 void IceVariable::setUse(const IceInst *Inst, const IceCfgNode *Node) {
-  ++UseCount;
   if (llvm::isa<IceInstPhi>(Inst) ||
       (DefOrUseNode != NULL && DefOrUseNode != Node)) {
     IsMultiblockLife = true;
@@ -23,22 +22,9 @@ void IceVariable::setUse(const IceInst *Inst, const IceCfgNode *Node) {
   DefOrUseNode = Node;
 }
 
-void IceVariable::removeUse(void) {
-  if (!canAutoDelete())
-    return;
-  --UseCount;
-  if (UseCount)
-    return;
-  IceInst *Definition = getDefinition();
-  if (Definition == NULL)
-    return;
-  Definition->removeUse(this);
-}
-
 void IceVariable::setDefinition(IceInst *Inst, const IceCfgNode *Node) {
   if (DefInst || IsArgument) {
     DefInst = Inst;
-    IsMultiDef = true;
     return;
   }
   if (DefOrUseNode != NULL && DefOrUseNode != Node) {

@@ -192,30 +192,6 @@ void IceCfg::genCode(void) {
   }
 }
 
-// This is a simple dead code elimination based on reference counting.
-// If the use count of a variable is zero, then its defining
-// instruction can be deleted.  That instruction's source operand
-// reference counts can then be decremented, possibly leading to
-// cascading deletes.  This is currently too aggressive and might
-// delete instructions with side effects.  There are no callers for
-// now, but the code is left for reference.
-void IceCfg::simpleDCE(void) {
-  for (IceVarList::const_iterator I = Variables.begin(), E = Variables.end();
-       I != E; ++I) {
-    IceVariable *Var = *I;
-    if (Var == NULL)
-      continue;
-    if (Str.isVerbose(IceV_Liveness)) {
-      Str << "Var=" << Var << ", UseCount=" << Var->getUseCount() << "\n";
-    }
-    if (Var->getUseCount())
-      continue;
-    IceInst *Inst = Var->getDefinition();
-    if (Inst && !Inst->isDeleted())
-      Inst->setDeleted();
-  }
-}
-
 void IceCfg::liveness(IceLiveness Mode) {
   if (Mode == IceLiveness_LREndLightweight) {
     for (IceNodeList::iterator I = LNodes.begin(), E = LNodes.end(); I != E;
@@ -373,7 +349,6 @@ void IceCfg::dump(void) const {
       if (!Var)
         continue;
       Str << "//"
-          << " uses=" << Var->getUseCount()
           << " multiblock=" << Var->isMultiblockLife() << " "
           << " weight=" << Var->getWeight() << " " << Var
           << " LIVE=" << Var->getLiveRange() << "\n";

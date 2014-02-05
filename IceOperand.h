@@ -40,8 +40,6 @@ public:
   IceType getType(void) const { return Type; }
   OperandKind getKind(void) const { return Kind; }
   virtual void setUse(const IceInst *Inst, const IceCfgNode *Node) {}
-  virtual void removeUse(void) {}
-  virtual uint32_t getUseCount(void) const { return 0; }
   virtual void dump(IceOstream &Str) const;
 
 protected:
@@ -160,14 +158,12 @@ IceOstream &operator<<(IceOstream &Str, const IceLiveRange &L);
 class IceVariable : public IceOperand {
 public:
   IceVariable(IceType Type, uint32_t Index, const IceString &Name)
-      : IceOperand(Variable, Type), VarIndex(Index), Name(Name), UseCount(0),
-        DefInst(NULL), DefOrUseNode(NULL), IsMultiDef(false), IsArgument(false),
-        IsMultiblockLife(false), AllowAutoDelete(true), RegNum(-1),
+      : IceOperand(Variable, Type), VarIndex(Index), Name(Name),
+        DefInst(NULL), DefOrUseNode(NULL), IsArgument(false),
+        IsMultiblockLife(false), RegNum(-1),
         RegNumTmp(-1), Weight(1), RegisterPreference(NULL),
         AllowRegisterOverlap(false) {}
   virtual void setUse(const IceInst *Inst, const IceCfgNode *Node);
-  virtual void removeUse(void);
-  virtual uint32_t getUseCount(void) const { return UseCount; }
   uint32_t getIndex(void) const { return VarIndex; }
   IceInst *getDefinition(void) const { return DefInst; }
   void setDefinition(IceInst *Inst, const IceCfgNode *Node);
@@ -180,8 +176,6 @@ public:
     // are no back-edges to the entry node, then it doesn't have a
     // multi-block lifetime.
   }
-  void setNoAutoDelete(void) { AllowAutoDelete = false; }
-  bool canAutoDelete(void) const { return AllowAutoDelete; }
   void setRegNum(int NewRegNum) {
     assert(RegNum < 0 ||
            RegNum == NewRegNum); // shouldn't set it more than once
@@ -223,18 +217,14 @@ public:
 private:
   const uint32_t VarIndex;
   const IceString Name;
-  // decorations
-  uint32_t UseCount;
   // TODO: A Phi instruction lowers into several assignment
   // instructions with the same dest.  These should all be tracked
   // here so that they can all be deleted when this variable's use
   // count reaches zero.
   IceInst *DefInst;
   const IceCfgNode *DefOrUseNode; // for detecting IsMultiblockLife
-  bool IsMultiDef;
   bool IsArgument;
   bool IsMultiblockLife;
-  bool AllowAutoDelete;
   int RegNum;          // Allocated register; -1 for no allocation
   int RegNumTmp;       // Tentative assignment during register allocation
   IceRegWeight Weight; // Register allocation priority

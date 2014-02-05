@@ -19,8 +19,6 @@ void IceInst::renumber(IceCfg *Cfg) {
   Number = isDeleted() ? -1 : Cfg->getNewInstNumber(Number);
 }
 
-void IceInst::setDeleted(void) { removeUse(NULL); }
-
 void IceInst::deleteIfDead(void) {
   if (Dead)
     setDeleted();
@@ -57,7 +55,7 @@ void IceInst::doAddressOpt(IceVariable *&Base, IceVariable *&Index, int &Shift,
   // blocks, then don't go further.  Alternatively (?), never consider
   // a transformation that would change a variable that is currently
   // *not* live across basic block boundaries into one that *is*.
-  if (Base->isMultiblockLife() || Base->getUseCount() > 1)
+  if (Base->isMultiblockLife()/* || Base->getUseCount() > 1*/)
     return;
 
   while (true) {
@@ -165,18 +163,6 @@ void IceInst::doAddressOpt(IceVariable *&Base, IceVariable *&Index, int &Shift,
     // TODO: consider overflow issues with respect to Offset.
     // TODO: handle symbolic constants.
     break;
-  }
-}
-
-void IceInst::removeUse(IceVariable *Variable) {
-  if (isDeleted())
-    return;
-  Deleted = true;
-  for (IceOpList::const_iterator I = Srcs.begin(), E = Srcs.end(); I != E;
-       ++I) {
-    if (*I == NULL)
-      continue;
-    (*I)->removeUse();
   }
 }
 

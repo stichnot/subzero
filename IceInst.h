@@ -51,12 +51,11 @@ public:
   // equivalent instructions, only call setDeleted() *after* inserting
   // the new instructions because of the cascading deletes from
   // reference counting.
-  void setDeleted(void);
+  void setDeleted(void) { Deleted = true; }
   void deleteIfDead(void);
   void updateVars(IceCfgNode *Node);
   void doAddressOpt(IceVariable *&Base, IceVariable *&Index, int &Shift,
                     int32_t &Offset) const;
-  virtual void removeUse(IceVariable *Variable);
   void liveness(IceLiveness Mode, int InstNumber, llvm::BitVector &Live,
                 std::vector<int> &LiveBegin, std::vector<int> &LiveEnd);
   virtual void dump(IceOstream &Str) const;
@@ -172,10 +171,6 @@ public:
   void addArg(IceOperand *Arg) { addSource(Arg); }
   IceOperand *getCallTarget(void) const { return CallTarget; }
   bool isTail(void) const { return Tail; }
-  virtual void removeUse(IceVariable *Variable) {
-    assert(Variable == NULL);
-    Deleted = true;
-  }
   virtual void dump(IceOstream &Str) const;
   static bool classof(const IceInst *Inst) { return Inst->getKind() == Call; }
 
