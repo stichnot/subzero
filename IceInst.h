@@ -46,7 +46,11 @@ public:
     return IceNodeList();
   }
   bool isDeleted(void) const { return Deleted; }
-  bool isLastUse(unsigned SrcIndex) const { return LiveRangesEnded[SrcIndex]; }
+  bool isLastUse(unsigned SrcIndex) const {
+    if (SrcIndex >= 8 * sizeof(LiveRangesEnded))
+      return false;
+    return LiveRangesEnded & (1u << SrcIndex);
+  }
   // If an instruction is deleted as a result of replacing it with
   // equivalent instructions, only call setDeleted() *after* inserting
   // the new instructions because of the cascading deletes from
@@ -70,6 +74,12 @@ protected:
   IceInst(IceCfg *Cfg, IceInstType Kind);
   void addDest(IceVariable *Dest);
   void addSource(IceOperand *Src);
+  void setLastUse(unsigned SrcIndex) {
+    if (SrcIndex < 8 * sizeof(LiveRangesEnded))
+      LiveRangesEnded |= (1u << SrcIndex);
+  }
+  void resetLastUses(void) { LiveRangesEnded = 0; }
+
   const IceInstType Kind;
   int Number; // the instruction number for describing live ranges
   // Deleted means irrevocably deleted.
@@ -78,7 +88,7 @@ protected:
   bool Dead;
   IceVariable *Dest;
   IceOpList Srcs;
-  llvm::SmallBitVector LiveRangesEnded; // size is Srcs.size()
+  uint32_t LiveRangesEnded; // only first 32 src operands tracked, sorry
 };
 
 IceOstream &operator<<(IceOstream &Str, const IceInst *I);

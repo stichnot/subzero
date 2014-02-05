@@ -11,7 +11,7 @@
 #include "IceRegManager.h"
 
 IceInst::IceInst(IceCfg *Cfg, IceInstType Kind)
-    : Kind(Kind), Deleted(false), Dead(false), Dest(NULL) {
+  : Kind(Kind), Deleted(false), Dead(false), Dest(NULL), LiveRangesEnded(0) {
   Number = Cfg->newInstNumber();
 }
 
@@ -44,7 +44,6 @@ void IceInst::addDest(IceVariable *NewDest) {
 
 void IceInst::addSource(IceOperand *Source) {
   Srcs.push_back(Source);
-  LiveRangesEnded.resize(Srcs.size());
 }
 
 void IceInst::doAddressOpt(IceVariable *&Base, IceVariable *&Index, int &Shift,
@@ -175,8 +174,8 @@ void IceInst::liveness(IceLiveness Mode, int InstNumber, llvm::BitVector &Live,
 
   // For lightweight liveness, do the simple calculation and return.
   if (Mode == IceLiveness_LREndLightweight) {
-    int OpNum = 0;
-    LiveRangesEnded.reset();
+    unsigned OpNum = 0;
+    resetLastUses();
     for (IceOpList::const_iterator I = Srcs.begin(), E = Srcs.end(); I != E;
          ++I, ++OpNum) {
       if (IceVariable *Var = llvm::dyn_cast_or_null<IceVariable>(*I)) {
@@ -186,7 +185,7 @@ void IceInst::liveness(IceLiveness Mode, int InstNumber, llvm::BitVector &Live,
         if (Live[Index])
           continue;
         Live[Index] = true;
-        LiveRangesEnded[OpNum] = true;
+        setLastUse(OpNum);
       }
     }
     return;
@@ -207,9 +206,8 @@ void IceInst::liveness(IceLiveness Mode, int InstNumber, llvm::BitVector &Live,
   // Phi arguments only get added to Live in the predecessor node, but
   // we still need to update LiveRangesEnded.
   bool IsPhi = llvm::isa<IceInstPhi>(this);
-  assert(LiveRangesEnded.size() == Srcs.size());
-  int Index = 0;
-  LiveRangesEnded.reset();
+  unsigned Index = 0;
+  resetLastUses();
   // TODO: For a 3-address arithmetic instruction on a 2-address
   // architecture, we need to indicate that the latter source
   // operand's live range *does* overlap with the dest operand's live
@@ -226,7 +224,7 @@ void IceInst::liveness(IceLiveness Mode, int InstNumber, llvm::BitVector &Live,
     if (IceVariable *Var = llvm::dyn_cast_or_null<IceVariable>(*I)) {
       uint32_t VarNum = Var->getIndex();
       if (!Live[VarNum]) {
-        LiveRangesEnded[Index] = true;
+        setLastUse(Index);
         if (!IsPhi) {
           Live[VarNum] = true;
           // For a variable in SSA form, its live range can end at
@@ -436,7 +434,7 @@ void IceInstPhi::livenessPhiOperand(llvm::BitVector &Live, IceCfgNode *Target) {
       if (IceVariable *Var = llvm::dyn_cast_or_null<IceVariable>(*I)) {
         uint32_t SrcIndex = Var->getIndex();
         if (!Live[SrcIndex]) {
-          LiveRangesEnded[Index] = true;
+          setLastUse(Index);
           Live[SrcIndex] = true;
         }
       }
