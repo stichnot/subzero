@@ -908,7 +908,8 @@ IceInstList IceTargetX8632S::lowerAssign(const IceInstAssign *Inst,
 IceInstList IceTargetX8632S::lowerBr(const IceInstBr *Inst, const IceInst *Next,
                                      bool &DeleteNextInst) {
   IceInstList Expansion;
-  Cfg->setError("Conditional branch lowering unimplemented");
+  if (Inst->getTargetTrue())
+    Cfg->setError("Conditional branch lowering unimplemented");
   return Expansion;
 }
 
