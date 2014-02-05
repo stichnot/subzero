@@ -6,3 +6,5 @@ entry:
   ret void
 ; CHECK: %ptr = i32 %addr_arg
 }
+
+; CHECK-NOT: ICE translation error

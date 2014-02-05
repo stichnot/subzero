@@ -43,3 +43,5 @@ entry:
 ; CHECK-NEXT:  store i8* 1, {{.*}}, align 1
 ; CHECK-NEXT:  ret void
 }
+
+; CHECK-NOT: ICE translation error

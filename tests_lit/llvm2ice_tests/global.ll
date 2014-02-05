@@ -16,3 +16,5 @@ entry:
   %0 = load i32* @extern_global, align 4
   ret i32 %0
 }
+
+; CHECK-NOT: ICE translation error

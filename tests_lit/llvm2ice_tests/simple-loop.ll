@@ -25,3 +25,5 @@ for.end:
   %sum.0.lcssa = phi i32 [ 0, %entry ], [ %add, %for.body ]
   ret i32 %sum.0.lcssa
 }
+
+; CHECK-NOT: ICE translation error

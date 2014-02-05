@@ -17,3 +17,5 @@ entry:
 ; CHECK-NEXT:  %r5 = add i64 %r4, 8
 ; CHECK-NEXT:  ret i64 %r5
 }
+
+; CHECK-NOT: ICE translation error

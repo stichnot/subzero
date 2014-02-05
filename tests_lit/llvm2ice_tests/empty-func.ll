@@ -8,4 +8,4 @@ entry:
 ; CHECK-NEXT: ret void
 }
 
-
+; CHECK-NOT: ICE translation error

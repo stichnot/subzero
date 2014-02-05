@@ -9,3 +9,5 @@ entry:
 ; CHECK-NEXT:       %c = zext i32 %arg to i64
 ; CHECK-NEXT:       ret i64 %c
 }
+
+; CHECK-NOT: ICE translation error

@@ -14,3 +14,5 @@ Unequal:
 ; CHECK: Unequal:
 ; CHECK:  ret i32 %bar
 }
+
+; CHECK-NOT: ICE translation error

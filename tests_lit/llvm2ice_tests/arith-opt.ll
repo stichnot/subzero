@@ -103,3 +103,5 @@ entry:
 ; CHECK: call Use
   ret i32 %rem
 }
+
+; CHECK-NOT: ICE translation error

@@ -9,3 +9,5 @@ entry:
 }
 
 declare void @use(i1 zeroext) #1
+
+; CHECK-NOT: ICE translation error

@@ -11,3 +11,5 @@ entry:
 ; CHECK-NEXT:   %r2 = icmp slt i64 %foo, %bar
 ; CHECK-NEXT:   ret void 
 }
+
+; CHECK-NOT: ICE translation error

@@ -48,3 +48,5 @@ entry:
 ; CHECK:        %sub12 = sub i32 %sub, %mul11
 ; CHECK-NEXT:       ret i32 %sub12
 }
+
+; CHECK-NOT: ICE translation error

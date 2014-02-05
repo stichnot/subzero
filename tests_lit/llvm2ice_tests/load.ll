@@ -43,3 +43,5 @@ entry:
 ; CHECK-NEXT:  %iv = load i8* {{.*}}, align 1
 ; CHECK-NEXT:  ret void
 }
+
+; CHECK-NOT: ICE translation error

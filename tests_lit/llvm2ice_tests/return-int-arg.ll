@@ -13,3 +13,5 @@ entry:
   ret i32 %c
 ; CHECK: ret i32 %c
 }
+
+; CHECK-NOT: ICE translation error

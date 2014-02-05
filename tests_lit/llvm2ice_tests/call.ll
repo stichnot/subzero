@@ -59,3 +59,5 @@ if.then:                                          ; preds = %entry, %if.then
 if.end:                                           ; preds = %if.then, %entry
   ret void
 }
+
+; CHECK-NOT: ICE translation error

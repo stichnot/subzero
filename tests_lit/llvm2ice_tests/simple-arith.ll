@@ -8,3 +8,5 @@ entry:
 ; CHECK: %add = add i64 %arg2, %arg1
 ; CHECK-NEXT: ret i64 %add
 }
+
+; CHECK-NOT: ICE translation error
