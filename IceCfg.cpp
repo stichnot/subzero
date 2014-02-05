@@ -143,7 +143,7 @@ int IceCfg::getNewInstNumber(int OldNumber) {
 
 void IceCfg::renumberInstructions(void) {
   InstNumberRemapping.resize(NextInstNumber);
-  NextInstNumber = 0;
+  NextInstNumber = 1;
   for (IceNodeList::iterator I = LNodes.begin(), E = LNodes.end(); I != E;
        ++I) {
     (*I)->renumberInstructions();
