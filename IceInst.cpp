@@ -60,8 +60,6 @@ void IceInst::doAddressOpt(IceVariable *&Base, IceVariable *&Index, int &Shift,
   if (Base->isMultiblockLife() || Base->getUseCount() > 1)
     return;
 
-  // TODO: limit to single-dest instructions (though should be
-  // unnecessary for Vanilla ICE).
   while (true) {
     // Base is Base=Var ==>
     //   set Base=Var

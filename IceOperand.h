@@ -56,7 +56,6 @@ IceOstream &operator<<(IceOstream &Str, const IceOperand *O);
 
 // TODO: better design of a minimal per-module constant pool,
 // including synchronized access for parallel translation.
-// TODO: handle symbolic constants.
 class IceConstant : public IceOperand {
 public:
   virtual void dump(IceOstream &Str) const = 0;

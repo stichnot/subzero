@@ -700,7 +700,8 @@ IceInstList IceTargetX8632S::lowerAlloca(const IceInstAlloca *Inst,
                                          const IceInst *Next,
                                          bool &DeleteNextInst) {
   IceInstList Expansion;
-  assert(0); // TODO: implement
+  // TODO: implement
+  Cfg->setError("Alloca lowering not implemented");
   return Expansion;
 }
 

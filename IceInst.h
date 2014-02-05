@@ -163,7 +163,6 @@ private:
   IceCfgNode *const TargetTrue; // NULL if unconditional branch
 };
 
-// TODO: implement
 class IceInstCall : public IceInst {
 public:
   IceInstCall(IceCfg *Cfg, IceVariable *Dest, IceOperand *CallTarget,
