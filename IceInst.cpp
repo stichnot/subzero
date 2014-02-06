@@ -20,7 +20,7 @@ IceInst::IceInst(IceCfg *Cfg, IceInstType Kind, unsigned MaxSrcs)
 }
 
 void IceInst::renumber(IceCfg *Cfg) {
-  Number = isDeleted() ? -1 : Cfg->getNewInstNumber(Number);
+  Number = isDeleted() ? -1 : Cfg->newInstNumber();
 }
 
 void IceInst::deleteIfDead(void) {

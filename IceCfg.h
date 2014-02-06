@@ -41,7 +41,6 @@ public:
   const IceVarList &getVariables(void) const { return Variables; }
   unsigned getNumVariables(void) const { return Variables.size(); }
   int newInstNumber(void);
-  int getNewInstNumber(int OldNumber);
 
   IceString physicalRegName(int Reg) const { return RegisterNames[Reg]; }
   void translate(IceTargetArch TargetArch = IceTarget_X8632);
@@ -66,7 +65,6 @@ private:
   IceNodeList LNodes; // linearized node list; Entry should be first
   IceVarList Variables;
   IceVarList Args; // densely packed vector, subset of Variables
-  std::vector<int> InstNumberRemapping;
 
   int NextInstNumber;
   // TODO: This goes away when we get target-specific operands with

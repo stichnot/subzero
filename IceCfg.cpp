@@ -134,23 +134,12 @@ int IceCfg::newInstNumber(void) {
   return Result;
 }
 
-int IceCfg::getNewInstNumber(int OldNumber) {
-  assert((int)InstNumberRemapping.size() > OldNumber);
-  int NewNumber = newInstNumber();
-  InstNumberRemapping[OldNumber] = NewNumber;
-  return NewNumber;
-}
-
 void IceCfg::renumberInstructions(void) {
-  InstNumberRemapping.resize(NextInstNumber);
   NextInstNumber = 1;
   for (IceNodeList::iterator I = LNodes.begin(), E = LNodes.end(); I != E;
        ++I) {
     (*I)->renumberInstructions();
   }
-  // TODO: Update live ranges and any other data structures that rely
-  // on the instruction number, before clearing the remap table.
-  InstNumberRemapping.clear();
 }
 
 void IceCfg::registerEdges(void) {
