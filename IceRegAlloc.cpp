@@ -260,6 +260,10 @@ void IceLinearScan::scan(const llvm::SmallBitVector &RegMask) {
         // don't allocate any register to it, and move it to the
         // Handled state.
         Handled.push_back(Cur);
+        if (Cur.range().getWeight().isInf()) {
+          Cfg->setError("Unable to find a physical register for an "
+                        "infinite-weight live range");
+        }
       } else {
         // Evict all live ranges in Active that register number
         // MinWeightIndex is assigned to.
