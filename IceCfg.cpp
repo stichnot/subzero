@@ -273,24 +273,6 @@ void IceCfg::genFrame(void) {
   // instruction.
 }
 
-// Proposed pass list:
-//   liveness(IceLiveness_RangesFull) to prepare for linear-scan
-//   regAlloc()
-//     Run once for each class of register (i64, i32, f32/64, i1?)
-//     Limit to callee-save registers and multi-block lifetime
-//       Nothing should be pre-colored yet
-//     How to avoid going crazy with callee-save registers?
-//     Keep track of which registers actually used
-//   genCode()
-//     But don't lower phi instructions yet?
-//     Use local register manager to make use of addressing modes,
-//     commutativity, etc.  Guarantee register assignment of new
-//     temporaries by giving eventual live ranges high weight.
-//   renumberInstructions()
-//   liveness(IceLiveness_RangesFull) to prepare for linear-scan
-//   regAlloc()
-//     Unleash all caller-saves plus the callee-saves already used
-//   At some point, lower phis
 void IceCfg::translate(IceTargetArch TargetArch) {
   makeTarget(TargetArch);
   if (hasError())
