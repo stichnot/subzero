@@ -65,8 +65,6 @@ private:
   IceNodeList Nodes;  // node list
   IceNodeList LNodes; // linearized node list; Entry should be first
   IceVarList Variables;
-  std::vector<const IceInst *>
-  LastUses;        // instruction ending each variable's live range
   IceVarList Args; // densely packed vector, subset of Variables
   std::vector<int> InstNumberRemapping;
 
@@ -77,7 +75,6 @@ private:
   // TODO: record whether there is an alloca (frame ptr optimization)
   void makeTarget(IceTargetArch Arch);
   void renumberInstructions(void);
-  void markLastUses(void);
   void placePhiLoads(void);
   void placePhiStores(void);
   void deletePhis(void);
