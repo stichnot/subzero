@@ -13,8 +13,8 @@
 IceString IceTargetX8632::RegNames[] = { "eax", "ecx", "edx", "ebx",
                                          "esp", "ebp", "esi", "edi", };
 
-const char* OpcodeTypeFromIceType(IceType type) {
-  switch(type) {
+const char *OpcodeTypeFromIceType(IceType type) {
+  switch (type) {
   default:
     return "U";
   case IceType_i8:
