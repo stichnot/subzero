@@ -1060,7 +1060,8 @@ IceInstList IceTargetX8632S::lowerCast(const IceInstCast *Inst,
   Expansion.push_back(NewInst);
   switch (CastKind) {
   default:
-    assert(0); // TODO: implement other sorts of casts.
+    // TODO: implement other sorts of casts.
+    Cfg->setError("Cast type not yet supported");
     break;
   case IceInstCast::Sext:
     NewInst = new IceInstX8632Movsx(Cfg, Dest, Reg);
