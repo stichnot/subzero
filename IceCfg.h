@@ -82,6 +82,7 @@ private:
   void placePhiStores(void);
   void deletePhis(void);
   void genCode(void);
+  void genFrame(void);
   void liveness(IceLiveness Mode);
   void regAlloc(void);
 };

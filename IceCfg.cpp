@@ -252,6 +252,27 @@ void IceCfg::regAlloc(void) {
   LinearScan.scan(RegMask);
 }
 
+// Compute the stack frame layout.
+void IceCfg::genFrame(void) {
+  // Determine stack frame offsets for each IceVariable without a
+  // register assignment.  This can be done as one variable per stack
+  // slot.  Or, do coalescing by running the register allocator again
+  // with an infinite set of registers (as a side effect, this gives
+  // variables a second chance at physical register assignment).
+
+  // Generate the prolog.  Push callee-save registers used, including
+  // the old frame pointer.  Adjust the stack pointer.  For each
+  // register-allocated stack argument, generate a "reg=arg"
+  // instruction in the prolog.  TODO: args passed in registers will
+  // need spilling to their home slots or register permutation (the
+  // IceRegManager code may have some permutation logic to leverage).
+
+  // Generate one epilog for each Ret instruction.  Taking care not to
+  // destroy the return value in a register, reset the stack pointer
+  // and pop callee-save registers.  Generate the target "ret"
+  // instruction.
+}
+
 // Proposed pass list:
 //   liveness(IceLiveness_RangesFull) to prepare for linear-scan
 //   regAlloc()
@@ -320,6 +341,13 @@ void IceCfg::translate(IceTargetArch TargetArch) {
     return;
   if (Str.isVerbose())
     Str << "================ After linear scan regalloc ================\n";
+  dump();
+
+  genFrame();
+  if (hasError())
+    return;
+  if (Str.isVerbose())
+    Str << "================ After stack frame mapping ================\n";
   dump();
 
   Str.setVerbose(IceV_Instructions);
