@@ -15,12 +15,21 @@
 class IceTargetX8632 : public IceTargetLowering {
 public:
   IceTargetX8632(IceCfg *Cfg)
-      : IceTargetLowering(Cfg), PhysicalRegisters(IceVarList(Reg_NUM)) {}
+      : IceTargetLowering(Cfg), IsEbpBasedFrame(false), FrameSizeLocals(0),
+        PhysicalRegisters(IceVarList(Reg_NUM)) {}
   virtual IceRegManager *makeRegManager(IceCfgNode *Node);
   virtual IceInstTarget *makeAssign(IceVariable *Dest, IceOperand *Src);
   virtual IceVariable *getPhysicalRegister(unsigned RegNum);
   virtual IceString *getRegNames(void) const { return RegNames; }
-  virtual llvm::SmallBitVector getRegisterMask(void) const;
+  virtual llvm::SmallBitVector
+  getRegisterSet(RegSetMask Include = RegMask_All,
+                 RegSetMask Exclude = RegMask_None) const;
+  virtual bool hasFramePointer(void) const { return IsEbpBasedFrame; }
+  virtual unsigned getFrameOrStackReg(void) const {
+    return IsEbpBasedFrame ? Reg_ebp : Reg_esp;
+  }
+  virtual void addProlog(IceCfgNode *Node);
+  virtual void addEpilog(IceCfgNode *Node);
   enum Registers {
     Reg_eax = 0,
     Reg_ecx = 1,
@@ -64,6 +73,11 @@ protected:
   virtual IceInstList lowerSwitch(const IceInstSwitch *Inst,
                                   const IceInst *Next, bool &DeleteNextInst);
 
+  bool IsEbpBasedFrame;
+  int FrameSizeLocals;
+  int LocalsSizeBytes;
+  llvm::SmallBitVector RegsUsed;
+
 private:
   IceVarList PhysicalRegisters;
   static IceString RegNames[];
@@ -74,7 +88,9 @@ public:
   IceTargetX8632S(IceCfg *Cfg) : IceTargetX8632(Cfg) {}
   virtual IceRegManager *makeRegManager(IceCfgNode *Node) { return NULL; }
   virtual IceInstTarget *makeAssign(IceVariable *Dest, IceOperand *Src);
-  virtual llvm::SmallBitVector getRegisterMask(void) const;
+  virtual llvm::SmallBitVector
+  getRegisterSet(RegSetMask Include = RegMask_All,
+                 RegSetMask Exclude = RegMask_None) const;
 
 protected:
   virtual IceInstList lowerAlloca(const IceInstAlloca *Inst,
@@ -261,6 +277,12 @@ public:
   virtual void dump(IceOstream &Str) const;
 
 private:
+};
+
+class IceInstX8632Pop : public IceInstTarget {
+public:
+  IceInstX8632Pop(IceCfg *Cfg, IceVariable *Dest);
+  virtual void dump(IceOstream &Str) const;
 };
 
 class IceInstX8632Push : public IceInstTarget {

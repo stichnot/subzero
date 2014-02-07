@@ -12,7 +12,9 @@
 class IceCfgNode {
 public:
   IceCfgNode(IceCfg *Cfg, uint32_t LabelIndex, IceString Name = "");
+  IceInstList &getInsts(void) { return Insts; }
   void appendInst(IceInst *Inst);
+  void insertInsts(IceInstList::iterator Location, const IceInstList &NewInsts);
   uint32_t getIndex(void) const { return NameIndex; }
   IceString getName(void) const;
   const IceNodeList &getInEdges(void) const { return InEdges; }
@@ -55,7 +57,6 @@ private:
   // first and last RegManager objects on the list for computing
   // preferences.
   IceRegManager *RegManager;
-  void insertInsts(IceInstList::iterator Location, const IceInstList &NewInsts);
 };
 
 #endif // _IceCfgNode_h

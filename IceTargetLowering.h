@@ -22,12 +22,28 @@ public:
   virtual IceInstTarget *makeAssign(IceVariable *Dest, IceOperand *Src) = 0;
   virtual IceVariable *getPhysicalRegister(unsigned RegNum) = 0;
   virtual IceString *getRegNames(void) const = 0;
-  // TODO: Configure which registers to allow, e.g. caller-save,
-  // callee-save, all, all minus one, etc.
-  virtual llvm::SmallBitVector getRegisterMask(void) const = 0;
+  virtual bool hasFramePointer(void) const { return false; }
+  virtual unsigned getFrameOrStackReg(void) const = 0;
+  bool hasComputedFrame(void) const { return HasComputedFrame; }
+
+  enum RegSet {
+    RegMask_None = 0,
+    RegMask_CallerSave = 1 << 0,
+    RegMask_CalleeSave = 1 << 1,
+    RegMask_StackPointer = 1 << 2,
+    RegMask_FramePointer = 1 << 3,
+    RegMask_All = ~RegMask_None
+  };
+  typedef uint32_t RegSetMask;
+  virtual llvm::SmallBitVector
+  getRegisterSet(RegSetMask Include = RegMask_All,
+                 RegSetMask Exclude = RegMask_None) const = 0;
+  virtual void addProlog(IceCfgNode *Node) = 0;
+  virtual void addEpilog(IceCfgNode *Node) = 0;
 
 protected:
-  IceTargetLowering(IceCfg *Cfg) : Cfg(Cfg) {}
+  IceTargetLowering(IceCfg *Cfg)
+      : Cfg(Cfg), RegManager(NULL), HasComputedFrame(false) {}
   virtual IceInstList lowerAlloca(const IceInstAlloca *Inst,
                                   const IceInst *Next,
                                   bool &DeleteNextInst) = 0;
@@ -63,6 +79,7 @@ protected:
                                   bool &DeleteNextInst) = 0;
   IceCfg *const Cfg;
   IceRegManager *RegManager;
+  bool HasComputedFrame;
 };
 
 #endif // _IceTargetLowering_h

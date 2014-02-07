@@ -28,13 +28,14 @@ const char *OpcodeTypeFromIceType(IceType type) {
   }
 }
 
-llvm::SmallBitVector IceTargetX8632::getRegisterMask(void) const {
+llvm::SmallBitVector IceTargetX8632::getRegisterSet(RegSetMask Include,
+                                                    RegSetMask Exclude) const {
+  // TODO: implement Include/Exclude logic.
   llvm::SmallBitVector Mask(Reg_NUM);
   Mask[Reg_eax] = true;
   Mask[Reg_ecx] = true;
   Mask[Reg_edx] = true;
   Mask[Reg_ebx] = true;
-  // TODO: Disable ebp if Cfg has an alloca.
   Mask[Reg_ebp] = true;
   Mask[Reg_esi] = true;
   Mask[Reg_edi] = true;
@@ -64,10 +65,183 @@ IceVariable *IceTargetX8632::getPhysicalRegister(unsigned RegNum) {
   return Reg;
 }
 
+void IceTargetX8632::addProlog(IceCfgNode *Node) {
+  IceInstList Expansion;
+  int InArgsSizeBytes = 0;
+  int RetIpSizeBytes = 4;
+  int PreservedRegsSizeBytes = 0;
+  int LocalsSizeBytes = 0;
+
+  // Determine stack frame offsets for each IceVariable without a
+  // register assignment.  This can be done as one variable per stack
+  // slot.  Or, do coalescing by running the register allocator again
+  // with an infinite set of registers (as a side effect, this gives
+  // variables a second chance at physical register assignment).
+
+  llvm::SmallBitVector CalleeSaves =
+      getRegisterSet(IceTargetLowering::RegMask_CalleeSave);
+
+  // Prepass.  Compute RegsUsed, PreservedRegsSizeBytes, and
+  // LocalsSizeBytes.
+  RegsUsed = llvm::SmallBitVector(CalleeSaves.size());
+  const IceVarList &Variables = Cfg->getVariables();
+  const IceVarList &Args = Cfg->getArgs();
+  for (IceVarList::const_iterator I = Variables.begin(), E = Variables.end();
+       I != E; ++I) {
+    IceVariable *Var = *I;
+    if (!Var)
+      continue;
+    if (Var->getRegNum() >= 0) {
+      RegsUsed[Var->getRegNum()] = true;
+      continue;
+    }
+    if (Var->getIsArg())
+      continue;
+    if (Var->getLiveRange().isEmpty())
+      continue;
+    LocalsSizeBytes += 4;
+  }
+
+  // Add push instructions for preserved registers.
+  for (unsigned i = 0; i < CalleeSaves.size(); ++i) {
+    if (CalleeSaves[i] && RegsUsed[i]) {
+      PreservedRegsSizeBytes += 4;
+      Expansion.push_back(new IceInstX8632Push(Cfg, getPhysicalRegister(i)));
+    }
+  }
+
+  // Generate "push ebp; mov ebp, esp"
+  if (IsEbpBasedFrame) {
+    assert((RegsUsed & getRegisterSet(IceTargetLowering::RegMask_FramePointer))
+               .count() == 0);
+    PreservedRegsSizeBytes += 4;
+    Expansion.push_back(
+        new IceInstX8632Push(Cfg, getPhysicalRegister(Reg_ebp)));
+    Expansion.push_back(new IceInstX8632Mov(Cfg, getPhysicalRegister(Reg_ebp),
+                                            getPhysicalRegister(Reg_esp)));
+  }
+
+  // Generate "sub esp, LocalsSizeBytes"
+  if (LocalsSizeBytes)
+    Expansion.push_back(
+        new IceInstX8632Sub(Cfg, getPhysicalRegister(Reg_esp),
+                            Cfg->getConstant(IceType_i32, LocalsSizeBytes)));
+
+  // Fill in stack offsets for locals.
+  int NextStackOffset = 0;
+  for (IceVarList::const_iterator I = Variables.begin(), E = Variables.end();
+       I != E; ++I) {
+    IceVariable *Var = *I;
+    if (!Var)
+      continue;
+    if (Var->getRegNum() >= 0) {
+      RegsUsed[Var->getRegNum()] = true;
+      continue;
+    }
+    if (Var->getIsArg())
+      continue;
+    if (Var->getLiveRange().isEmpty())
+      continue;
+    NextStackOffset += 4;
+    if (IsEbpBasedFrame)
+      Var->setStackOffset(-NextStackOffset);
+    else
+      Var->setStackOffset(LocalsSizeBytes - NextStackOffset);
+  }
+  LocalsSizeBytes = NextStackOffset;
+  this->FrameSizeLocals = NextStackOffset;
+  this->HasComputedFrame = true;
+
+  // Fill in stack offsets for args, and copy args into registers for
+  // those that were register-allocated.  Args are pushed right to
+  // left, so Arg[0] is closest to the stack/frame pointer.
+  //
+  // TODO: Make this right for different width args, calling
+  // conventions, etc.  For one thing, args passed in registers will
+  // need to be copied/shuffled to their home registers (the
+  // IceRegManager code may have some permutation logic to leverage),
+  // and if they have no home register, home space will need to be
+  // allocated on the stack to copy into.
+  for (unsigned i = 0; i < Args.size(); ++i) {
+    IceVariable *Arg = Args[i];
+    if (IsEbpBasedFrame)
+      Arg->setStackOffset(PreservedRegsSizeBytes + RetIpSizeBytes + 4 * i);
+    else
+      Arg->setStackOffset(LocalsSizeBytes + PreservedRegsSizeBytes +
+                          RetIpSizeBytes + 4 * i);
+    if (Arg->getRegNum() >= 0)
+      Expansion.push_back(new IceInstX8632Load(
+          Cfg, Arg, getPhysicalRegister(getFrameOrStackReg()), NULL, NULL,
+          Cfg->getConstant(IceType_i32, Arg->getStackOffset())));
+    InArgsSizeBytes += 4;
+  }
+
+  // TODO: If esp is adjusted during out-arg writing for a Call, any
+  // accesses to stack variables need to have their esp or ebp offsets
+  // adjusted accordingly.  This should be tracked by the assembler or
+  // emitter.
+
+  if (Cfg->Str.isVerbose(IceV_Frame)) {
+    Cfg->Str << "LocalsSizeBytes=" << LocalsSizeBytes << "\n"
+             << "PreservedRegsSizeBytes=" << PreservedRegsSizeBytes << "\n";
+  }
+
+  Node->insertInsts(Node->getInsts().begin(), Expansion);
+}
+
+void IceTargetX8632::addEpilog(IceCfgNode *Node) {
+  // TODO: Fix this hack.  We need to know if Node's last instruction
+  // is an x86 "ret" instruction, and add the epilog right before.
+  // Until we can test target instruction kind, we'll check all
+  // instructions for the (deleted) Vanilla ICE Ret instruction, and
+  // if found, assume the last instruction is IceInstX8632Ret.
+  IceInstList Expansion;
+  IceInstList &Insts = Node->getInsts();
+  IceInstList::iterator I, E;
+  for (I = Insts.begin(), E = Insts.end(); I != E; ++I) {
+    if (llvm::isa<IceInstRet>(*I))
+      break;
+  }
+  if (I == E)
+    return;
+  I = E;
+  --I; // points to "use.pseudo esp"
+  --I; // points to "ret"
+
+  if (IsEbpBasedFrame) {
+    // mov esp, ebp
+    Expansion.push_back(new IceInstX8632Mov(Cfg, getPhysicalRegister(Reg_esp),
+                                            getPhysicalRegister(Reg_ebp)));
+    // pop ebp
+    Expansion.push_back(new IceInstX8632Pop(Cfg, getPhysicalRegister(Reg_ebp)));
+  } else {
+    // add esp, FrameSizeLocals
+    if (LocalsSizeBytes)
+      Expansion.push_back(
+          new IceInstX8632Add(Cfg, getPhysicalRegister(Reg_esp),
+                              Cfg->getConstant(IceType_i32, FrameSizeLocals)));
+  }
+
+  // Add pop instructions for preserved registers.
+  llvm::SmallBitVector CalleeSaves =
+      getRegisterSet(IceTargetLowering::RegMask_CalleeSave);
+  for (unsigned i = 0; i < CalleeSaves.size(); ++i) {
+    unsigned j = CalleeSaves.size() - i - 1;
+    if (j == Reg_ebp && IsEbpBasedFrame)
+      continue;
+    if (CalleeSaves[j] && RegsUsed[j]) {
+      Expansion.push_back(new IceInstX8632Pop(Cfg, getPhysicalRegister(j)));
+    }
+  }
+
+  Node->insertInsts(I, Expansion);
+}
+
 IceInstList IceTargetX8632::lowerAlloca(const IceInstAlloca *Inst,
                                         const IceInst *Next,
                                         bool &DeleteNextInst) {
   IceInstList Expansion;
+  IsEbpBasedFrame = true;
   assert(0); // TODO: implement
   return Expansion;
 }
@@ -519,6 +693,11 @@ IceInstX8632Movzx::IceInstX8632Movzx(IceCfg *Cfg, IceVariable *Dest,
   addSource(Source);
 }
 
+IceInstX8632Pop::IceInstX8632Pop(IceCfg *Cfg, IceVariable *Dest)
+    : IceInstTarget(Cfg, 1) {
+  addDest(Dest);
+}
+
 IceInstX8632Push::IceInstX8632Push(IceCfg *Cfg, IceOperand *Source)
     : IceInstTarget(Cfg, 1) {
   addSource(Source);
@@ -714,6 +893,11 @@ void IceInstX8632Movzx::dump(IceOstream &Str) const {
   dumpSources(Str);
 }
 
+void IceInstX8632Pop::dump(IceOstream &Str) const {
+  dumpDest(Str);
+  Str << " = pop." << getDest()->getType() << " ";
+}
+
 void IceInstX8632Push::dump(IceOstream &Str) const {
   Str << "push." << getSrc(0)->getType() << " ";
   dumpSources(Str);
@@ -727,17 +911,23 @@ void IceInstX8632Ret::dump(IceOstream &Str) const {
 
 ////////////////////////////////////////////////////////////////
 
-llvm::SmallBitVector IceTargetX8632S::getRegisterMask(void) const {
-  llvm::SmallBitVector Mask(Reg_NUM);
-  Mask[Reg_eax] = true;
-  Mask[Reg_ecx] = true;
-  Mask[Reg_edx] = true;
-  Mask[Reg_ebx] = true;
-  // TODO: Disable ebp if Cfg has an alloca.
-  Mask[Reg_ebp] = true;
-  Mask[Reg_esi] = true;
-  Mask[Reg_edi] = true;
-  return Mask;
+llvm::SmallBitVector IceTargetX8632S::getRegisterSet(RegSetMask Include,
+                                                     RegSetMask Exclude) const {
+  llvm::SmallBitVector Registers(Reg_NUM);
+  bool Scratch = Include & ~Exclude & RegMask_CallerSave;
+  bool Preserved = Include & ~Exclude & RegMask_CalleeSave;
+  Registers[Reg_eax] = Scratch;
+  Registers[Reg_ecx] = Scratch;
+  Registers[Reg_edx] = Scratch;
+  Registers[Reg_ebx] = Preserved;
+  Registers[Reg_esp] = Include & ~Exclude & RegMask_StackPointer;
+  // ebp counts as both preserved and frame pointer
+  Registers[Reg_ebp] = Include & (RegMask_CalleeSave | RegMask_FramePointer);
+  if (Exclude & (RegMask_CalleeSave | RegMask_FramePointer))
+    Registers[Reg_ebp] = false;
+  Registers[Reg_esi] = Preserved;
+  Registers[Reg_edi] = Preserved;
+  return Registers;
 }
 
 IceInstTarget *IceTargetX8632S::makeAssign(IceVariable *Dest, IceOperand *Src) {
@@ -749,6 +939,7 @@ IceInstList IceTargetX8632S::lowerAlloca(const IceInstAlloca *Inst,
                                          const IceInst *Next,
                                          bool &DeleteNextInst) {
   IceInstList Expansion;
+  IsEbpBasedFrame = true;
   // TODO: implement
   Cfg->setError("Alloca lowering not implemented");
   return Expansion;

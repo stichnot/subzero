@@ -17,6 +17,7 @@ public:
   bool hasError(void) const { return HasError; }
   IceString getError(void) const { return ErrorMessage; }
   void setError(const IceString &Message);
+  bool hasComputedFrame(void) const;
   void setName(const IceString &FunctionName) { Name = FunctionName; }
   void setReturnType(IceType ReturnType) { Type = ReturnType; }
   IceTargetLowering *getTarget(void) const { return Target; }
@@ -39,6 +40,7 @@ public:
   IceVariable *makeVariable(IceType Type, uint32_t Index = -1,
                             const IceString &Name = "");
   const IceVarList &getVariables(void) const { return Variables; }
+  const IceVarList &getArgs(void) const { return Args; }
   unsigned getNumVariables(void) const { return Variables.size(); }
   int newInstNumber(void);
 
@@ -70,7 +72,6 @@ private:
   // TODO: This goes away when we get target-specific operands with
   // their own dump() methods.
   IceString *RegisterNames;
-  // TODO: record whether there is an alloca (frame ptr optimization)
   void makeTarget(IceTargetArch Arch);
   void renumberInstructions(void);
   void placePhiLoads(void);

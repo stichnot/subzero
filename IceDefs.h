@@ -61,6 +61,7 @@ enum IceVerbose {
   IceV_RegManager = 1 << 6,
   IceV_RegOrigins = 1 << 7,
   IceV_LinearScan = 1 << 8,
+  IceV_Frame = 1 << 9,
   IceV_All = ~IceV_None
 };
 typedef uint32_t IceVerboseMask;

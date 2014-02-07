@@ -139,6 +139,7 @@ public:
   void addSegment(int Start, int End);
   bool endsBefore(const IceLiveRange &Other) const;
   bool overlaps(const IceLiveRange &Other) const;
+  bool isEmpty(void) const { return Range.empty(); }
   IceRegWeight getWeight(void) const { return Weight; }
   void setWeight(const IceRegWeight &NewWeight) { Weight = NewWeight; }
   void addWeight(uint32_t Delta) { Weight.addWeight(Delta); }
@@ -160,14 +161,15 @@ public:
   IceVariable(IceType Type, uint32_t Index, const IceString &Name)
       : IceOperand(Variable, Type), VarIndex(Index), Name(Name), DefInst(NULL),
         DefOrUseNode(NULL), IsArgument(false), IsMultiblockLife(false),
-        RegNum(-1), RegNumTmp(-1), Weight(1), RegisterPreference(NULL),
-        AllowRegisterOverlap(false) {}
+        StackOffset(0), RegNum(-1), RegNumTmp(-1), Weight(1),
+        RegisterPreference(NULL), AllowRegisterOverlap(false) {}
   virtual void setUse(const IceInst *Inst, const IceCfgNode *Node);
   uint32_t getIndex(void) const { return VarIndex; }
   IceInst *getDefinition(void) const { return DefInst; }
   void setDefinition(IceInst *Inst, const IceCfgNode *Node);
   void replaceDefinition(IceInst *Inst, const IceCfgNode *Node);
   // TODO: consider initializing IsArgument in the ctor.
+  bool getIsArg(void) const { return IsArgument; }
   void setIsArg(void) { IsArgument = true; }
   bool isMultiblockLife(void) const {
     return IsMultiblockLife | IsArgument;
@@ -183,6 +185,8 @@ public:
   int getRegNum(void) const { return RegNum; }
   void setRegNumTmp(int NewRegNum) { RegNumTmp = NewRegNum; }
   int getRegNumTmp(void) const { return RegNumTmp; }
+  void setStackOffset(int Offset) { StackOffset = Offset; }
+  int getStackOffset(void) const { return StackOffset; }
   void setWeight(uint32_t NewWeight) { Weight = NewWeight; }
   void setWeightInfinite(void) { Weight = IceRegWeight::Inf; }
   IceRegWeight getWeight(void) const { return Weight; }
@@ -224,7 +228,9 @@ private:
   const IceCfgNode *DefOrUseNode; // for detecting IsMultiblockLife
   bool IsArgument;
   bool IsMultiblockLife;
-  int RegNum;          // Allocated register; -1 for no allocation
+  int
+  StackOffset; // Canonical location on stack (only if RegNum==-1 || IsArgument)
+  int RegNum;  // Allocated register; -1 for no allocation
   int RegNumTmp;       // Tentative assignment during register allocation
   IceRegWeight Weight; // Register allocation priority
   IceVariable *RegisterPreference;

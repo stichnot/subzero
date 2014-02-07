@@ -35,6 +35,10 @@ void IceCfg::setError(const IceString &Message) {
   }
 }
 
+bool IceCfg::hasComputedFrame(void) const {
+  return getTarget() && getTarget()->hasComputedFrame();
+}
+
 void IceCfg::makeTarget(IceTargetArch Arch) {
   Target = IceTargetLowering::createLowering(Arch, this);
   if (Target)
@@ -237,29 +241,24 @@ void IceCfg::liveness(IceLiveness Mode) {
 
 void IceCfg::regAlloc(void) {
   IceLinearScan LinearScan(this);
-  llvm::SmallBitVector RegMask = getTarget()->getRegisterMask();
+  IceTargetLowering::RegSetMask RegInclude = 0, RegExclude = 0;
+  RegInclude |= IceTargetLowering::RegMask_CallerSave;
+  RegInclude |= IceTargetLowering::RegMask_CalleeSave;
+  RegExclude |= IceTargetLowering::RegMask_StackPointer;
+  if (getTarget() && getTarget()->hasFramePointer())
+    RegExclude |= IceTargetLowering::RegMask_FramePointer;
+  llvm::SmallBitVector RegMask =
+      getTarget()->getRegisterSet(RegInclude, RegExclude);
   LinearScan.scan(RegMask);
 }
 
 // Compute the stack frame layout.
 void IceCfg::genFrame(void) {
-  // Determine stack frame offsets for each IceVariable without a
-  // register assignment.  This can be done as one variable per stack
-  // slot.  Or, do coalescing by running the register allocator again
-  // with an infinite set of registers (as a side effect, this gives
-  // variables a second chance at physical register assignment).
-
-  // Generate the prolog.  Push callee-save registers used, including
-  // the old frame pointer.  Adjust the stack pointer.  For each
-  // register-allocated stack argument, generate a "reg=arg"
-  // instruction in the prolog.  TODO: args passed in registers will
-  // need spilling to their home slots or register permutation (the
-  // IceRegManager code may have some permutation logic to leverage).
-
-  // Generate one epilog for each Ret instruction.  Taking care not to
-  // destroy the return value in a register, reset the stack pointer
-  // and pop callee-save registers.  Generate the target "ret"
-  // instruction.
+  getTarget()->addProlog(Entry);
+  for (IceNodeList::iterator I = LNodes.begin(), E = LNodes.end(); I != E;
+       ++I) {
+    getTarget()->addEpilog(*I);
+  }
 }
 
 void IceCfg::translate(IceTargetArch TargetArch) {

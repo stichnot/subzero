@@ -6,6 +6,7 @@
 #include "IceCfg.h"
 #include "IceInst.h"
 #include "IceOperand.h"
+#include "IceTargetLowering.h" // dumping stack/frame pointer register
 
 bool operator<(const IceRegWeight &A, const IceRegWeight &B) {
   return A.getWeight() < B.getWeight();
@@ -156,12 +157,25 @@ IceOstream &operator<<(IceOstream &Str, const IceOperand *O) {
 }
 
 void IceVariable::dump(IceOstream &Str) const {
-  if (Str.isVerbose(IceV_RegOrigins) || RegNum < 0)
+  if (Str.isVerbose(IceV_RegOrigins) ||
+      (RegNum < 0 && !Str.Cfg->hasComputedFrame()))
     Str << "%" << getName();
   if (RegNum >= 0) {
     if (Str.isVerbose(IceV_RegOrigins))
       Str << ":";
     Str << Str.Cfg->physicalRegName(RegNum);
+  } else if (Str.Cfg->hasComputedFrame()) {
+    if (Str.isVerbose(IceV_RegOrigins))
+      Str << ":";
+    Str << "["
+        << Str.Cfg->physicalRegName(Str.Cfg->getTarget()->getFrameOrStackReg());
+    int Offset = getStackOffset();
+    if (Offset) {
+      if (Offset > 0)
+        Str << "+";
+      Str << Offset;
+    }
+    Str << "]";
   }
 }
 
