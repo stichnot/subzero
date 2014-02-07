@@ -11,6 +11,9 @@ The simplest and fastest allocation strategy can be used for this arena - a
 until it's completely killed (when the function is done translating and we
 have a buffer of object code instead).
 
+From a performance point of view, it is very desirable for the objects most
+often created by Subzero to be arena-allocated.
+
 Challenges
 ----------
 
@@ -21,19 +24,64 @@ with the new operator:
 
 Rather, we'll have to use placement new. Something like:
 
-    IceInstPhi *IcePhi = new (CfgAllocator) IceInstPhi(...)
+    // Allocate memory
+    IceInstPhi *IcePhi = CfgAllocator.Allocate<IceInstPhi>();
+    // Use placement new to construct the object
+    new (IcePhi) IceInstPhi(...)
 
-In addition, using containers within ICE instructions, variables and operands
-is problematic because containers need heap allocation. So the containers will
-have to support custom allocators, and not all containers do (STL custom
-allocator support, in particular, is considered somewhat broken by design and
-not very suitable for this). In general, objects allocated with any kind of
-custom allocator need to henceforth use this allocator for their own allocation
-needs.
+With this scheme, destructors have to be invoked manually before deallocation.
+This adds bookkeeping costs. On the other hand, if we can ensure that the types
+allocated in the arena are PODs or only hold other types that are allocated in
+the same arena, we may forego destructors altogether and make deallocation very
+fast.
 
-Moreover, instruction, operand & variable objects should be as lightweight as
-possible and containers usually take non-trivial amounts of space even when
-empty.
+This means there's a significant restriction on what arena-allocated objects
+may contain. They must not hold resources other than memory (i.e. no sockets,
+mutexes or other handlers requiring orderly release). They must not hold
+heap-allocated objects; this includes STL containers (and most LLVM data
+structures), which all use the heap by default. While STL containers support
+custom allocators, this is commonly considered broken (though perhaps better to
+some degree in C++11). So whatever containers are held by arena-allocated
+objects must be arena-allocated themselves.
+
+Existing LLVM tools for arena allocation
+----------------------------------------
+
+Basic arena allocation tools
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+The LLVM Support/Allocator.h header provides a number of tools for arena
+allocation. BumpPtrAllocator is a generic allocator that uses the simple
+bump-pointer technique to provide fast allocation. BumpPtrAllocator does not
+handle object destruction - it just releases the whole arena when cleared or
+destroyed.
+
+SpecificBumpPtrAllocator is wrapper around BumpPtrAllocator. It's a class
+template instantiated by the handled object type. This makes allocation calls
+somewhat cleaner. More importantly, since SpecificBumpPtrAllocator knows the
+type of the objects it allocates, it can call destructors when releasing the
+arena.
+
+Recycling allocators
+~~~~~~~~~~~~~~~~~~~~
+
+The Recycler class template (in Support/Recycler.h) is another wrapper around
+allocators. It keeps a free list of memory chunks populated upon deallocation.
+Then new allocations are requested, they can be satisfied from this free list
+before the memory request gets passed to the allocator. With certain allocation
+and deallocation patterns, Recycler can save memory.
+
+ArrayRecycler does the same for arrays allocated with a BumpPtrAllocator.
+
+Allocator-supporting containers
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Some of the containers provided by LLVM support can be specialized with an
+allocator type (at compile time, as a template parameter). These containers then
+perform all their memory management through an allocator.
+
+At this time, the containers that support allocators are: StringMap, StringSet,
+ScopedHashTable, ImmutableSet, ImmutableList.
 
 Lessons from LLVM's MI layer
 ----------------------------
