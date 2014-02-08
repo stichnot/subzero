@@ -39,7 +39,6 @@ public:
   };
   IceType getType(void) const { return Type; }
   OperandKind getKind(void) const { return Kind; }
-  virtual void setUse(const IceInst *Inst, const IceCfgNode *Node) {}
   virtual void dump(IceOstream &Str) const;
 
 protected:
@@ -163,7 +162,7 @@ public:
         DefOrUseNode(NULL), IsArgument(false), IsMultiblockLife(false),
         StackOffset(0), RegNum(-1), RegNumTmp(-1), Weight(1),
         RegisterPreference(NULL), AllowRegisterOverlap(false) {}
-  virtual void setUse(const IceInst *Inst, const IceCfgNode *Node);
+  void setUse(const IceInst *Inst, const IceCfgNode *Node);
   uint32_t getIndex(void) const { return Number; }
   IceInst *getDefinition(void) const { return DefInst; }
   void setDefinition(IceInst *Inst, const IceCfgNode *Node);
