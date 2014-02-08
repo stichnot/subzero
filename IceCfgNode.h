@@ -15,7 +15,7 @@ public:
   IceInstList &getInsts(void) { return Insts; }
   void appendInst(IceInst *Inst);
   void insertInsts(IceInstList::iterator Location, const IceInstList &NewInsts);
-  uint32_t getIndex(void) const { return NameIndex; }
+  uint32_t getIndex(void) const { return Number; }
   IceString getName(void) const;
   // The HasReturn flag indicates that this node contains a return
   // instruction and therefore needs an epilog.
@@ -36,7 +36,7 @@ public:
 
 private:
   IceCfg *const Cfg;
-  const uint32_t NameIndex;               // label
+  const uint32_t Number;                  // label index
   IceString Name;                         // for dumping only
   IceNodeList OutEdges;                   // in no particular order
   IceNodeList InEdges;                    // in no particular order

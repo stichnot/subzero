@@ -159,12 +159,12 @@ IceOstream &operator<<(IceOstream &Str, const IceLiveRange &L);
 class IceVariable : public IceOperand {
 public:
   IceVariable(IceType Type, uint32_t Index, const IceString &Name)
-      : IceOperand(Variable, Type), VarIndex(Index), Name(Name), DefInst(NULL),
+      : IceOperand(Variable, Type), Number(Index), Name(Name), DefInst(NULL),
         DefOrUseNode(NULL), IsArgument(false), IsMultiblockLife(false),
         StackOffset(0), RegNum(-1), RegNumTmp(-1), Weight(1),
         RegisterPreference(NULL), AllowRegisterOverlap(false) {}
   virtual void setUse(const IceInst *Inst, const IceCfgNode *Node);
-  uint32_t getIndex(void) const { return VarIndex; }
+  uint32_t getIndex(void) const { return Number; }
   IceInst *getDefinition(void) const { return DefInst; }
   void setDefinition(IceInst *Inst, const IceCfgNode *Node);
   void replaceDefinition(IceInst *Inst, const IceCfgNode *Node);
@@ -218,7 +218,7 @@ public:
   }
 
 private:
-  const uint32_t VarIndex;
+  const uint32_t Number;
   const IceString Name;
   // TODO: A Phi instruction lowers into several assignment
   // instructions with the same dest.  These should all be tracked

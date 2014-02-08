@@ -10,8 +10,8 @@
 #include "IceRegManager.h"
 #include "IceTargetLowering.h"
 
-IceCfgNode::IceCfgNode(IceCfg *Cfg, uint32_t LabelIndex, IceString Name)
-    : Cfg(Cfg), NameIndex(LabelIndex), Name(Name), ArePhiLoadsPlaced(false),
+IceCfgNode::IceCfgNode(IceCfg *Cfg, uint32_t LabelNumber, IceString Name)
+    : Cfg(Cfg), Number(LabelNumber), Name(Name), ArePhiLoadsPlaced(false),
       ArePhiStoresPlaced(false), HasReturn(false), RegManager(NULL) {}
 
 void IceCfgNode::appendInst(IceInst *Inst) {
