@@ -18,8 +18,6 @@
       Symbolic
       Symbolic+Integer (e.g. address)
     Variable (stack or register - lvalue)
-      Virtual register (pre-colored)
-      Physical register
   load/store instructions can take a global (constant?)
   or maybe a TLS address
  */
