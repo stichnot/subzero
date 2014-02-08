@@ -90,6 +90,14 @@ void IceCfgNode::registerEdges(void) {
   }
 }
 
+// TODO: Make IceInstList into its own class that wraps the
+// std::list<IceInst*> and provides its own STL iterators.  Provide
+// normal iterators, plus an iterator that automatically skips deleted
+// instructions.  This way, target lowering can get full lookahead
+// instead of just one instruction lookahead.
+// IceTargetLowering::lower() would take Cur and End iterators instead
+// of Inst and Next IceInsts, for the purpose of pre-lowering peephole
+// optimizations such as compare/branch fusing or load/binop fusing.
 static IceInst *getNextInst(IceInstList::iterator I,
                             const IceInstList::iterator &E) {
   while (I != E && (*I)->isDeleted())
