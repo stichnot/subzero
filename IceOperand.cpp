@@ -179,7 +179,18 @@ void IceVariable::dump(IceOstream &Str) const {
   }
 }
 
-void IceOperand::dump(IceOstream &Str) const { Str << "IceOperand<?>"; }
+void IceOperand::dump(IceOstream &Str) const {
+  if (const IceConstantInteger *CI =
+          llvm::dyn_cast<const IceConstantInteger>(this))
+    CI->dump(Str);
+  else if (const IceConstantRelocatable *CR =
+               llvm::dyn_cast<const IceConstantRelocatable>(this))
+    CR->dump(Str);
+  else if (const IceVariable *V = llvm::dyn_cast<const IceVariable>(this))
+    V->dump(Str);
+  else
+    Str << "IceOperand<?>";
+}
 
 void IceConstantInteger::dump(IceOstream &Str) const { Str << IntValue; }
 

@@ -34,7 +34,7 @@ public:
   };
   IceType getType(void) const { return Type; }
   OperandKind getKind(void) const { return Kind; }
-  virtual void dump(IceOstream &Str) const;
+  void dump(IceOstream &Str) const;
 
 protected:
   IceOperand(OperandKind Kind, IceType Type) : Type(Type), Kind(Kind) {}
@@ -50,8 +50,6 @@ IceOstream &operator<<(IceOstream &Str, const IceOperand *O);
 // including synchronized access for parallel translation.
 class IceConstant : public IceOperand {
 public:
-  virtual void dump(IceOstream &Str) const = 0;
-
   static bool classof(const IceOperand *Operand) {
     OperandKind Kind = Operand->getKind();
     return Kind >= Constant && Kind <= Constant_Num;
@@ -66,7 +64,7 @@ public:
   IceConstantInteger(IceType Type, uint64_t IntValue)
       : IceConstant(ConstantInteger, Type), IntValue(IntValue) {}
   uint64_t getIntValue(void) const { return IntValue; }
-  virtual void dump(IceOstream &Str) const;
+  void dump(IceOstream &Str) const;
 
   static bool classof(const IceOperand *Operand) {
     OperandKind Kind = Operand->getKind();
@@ -86,7 +84,7 @@ public:
   uint32_t getCPIndex(void) const { return CPIndex; }
   const void *getHandle(void) const { return Handle; }
   IceString getName(void) const { return Name; }
-  virtual void dump(IceOstream &Str) const;
+  void dump(IceOstream &Str) const;
 
   static bool classof(const IceOperand *Operand) {
     OperandKind Kind = Operand->getKind();
@@ -204,7 +202,7 @@ public:
     LiveRange.setWeight(IceRegWeight::Inf);
   }
   IceString getName(void) const;
-  virtual void dump(IceOstream &Str) const;
+  void dump(IceOstream &Str) const;
 
   static bool classof(const IceOperand *Operand) {
     return Operand->getKind() == Variable;
