@@ -17,6 +17,10 @@ public:
   void insertInsts(IceInstList::iterator Location, const IceInstList &NewInsts);
   uint32_t getIndex(void) const { return NameIndex; }
   IceString getName(void) const;
+  // The HasReturn flag indicates that this node contains a return
+  // instruction and therefore needs an epilog.
+  void setHasReturn(void) { HasReturn = true; }
+  bool hasReturn(void) const { return HasReturn; }
   const IceNodeList &getInEdges(void) const { return InEdges; }
   const IceNodeList &getOutEdges(void) const { return OutEdges; }
   void renumberInstructions(void);
@@ -45,6 +49,7 @@ private:
   IceInstList Insts;                   // ordered list of non-phi instructions
   bool ArePhiLoadsPlaced;
   bool ArePhiStoresPlaced;
+  bool HasReturn;
   // TODO: Allow the block to have a list of RegManager objects.  A
   // mid-block call instruction kills all scratch registers at once
   // and there is no relationship between pre-and post-call

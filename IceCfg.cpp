@@ -255,9 +255,14 @@ void IceCfg::regAlloc(void) {
 // Compute the stack frame layout.
 void IceCfg::genFrame(void) {
   getTarget()->addProlog(Entry);
+  // TODO: Consider folding epilog generation into the final
+  // emission/assembly pass to avoid an extra iteration over the node
+  // list.  Or keep a separate list of exit nodes.
   for (IceNodeList::iterator I = LNodes.begin(), E = LNodes.end(); I != E;
        ++I) {
-    getTarget()->addEpilog(*I);
+    IceCfgNode *Node = *I;
+    if (Node->hasReturn())
+      getTarget()->addEpilog(Node);
   }
 }
 

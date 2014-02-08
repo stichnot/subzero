@@ -190,23 +190,15 @@ void IceTargetX8632::addProlog(IceCfgNode *Node) {
 }
 
 void IceTargetX8632::addEpilog(IceCfgNode *Node) {
-  // TODO: Fix this hack.  We need to know if Node's last instruction
-  // is an x86 "ret" instruction, and add the epilog right before.
-  // Until we can test target instruction kind, we'll check all
-  // instructions for the (deleted) Vanilla ICE Ret instruction, and
-  // if found, assume the last instruction is IceInstX8632Ret.
   IceInstList Expansion;
   IceInstList &Insts = Node->getInsts();
-  IceInstList::iterator I, E;
-  for (I = Insts.begin(), E = Insts.end(); I != E; ++I) {
-    if (llvm::isa<IceInstRet>(*I))
+  IceInstList::reverse_iterator RI, E;
+  for (RI = Insts.rbegin(), E = Insts.rend(); RI != E; ++RI) {
+    if (llvm::isa<IceInstX8632Ret>(*RI))
       break;
   }
-  if (I == E)
+  if (RI == E)
     return;
-  I = E;
-  --I; // points to "use.pseudo esp"
-  --I; // points to "ret"
 
   if (IsEbpBasedFrame) {
     // mov esp, ebp
@@ -234,7 +226,11 @@ void IceTargetX8632::addEpilog(IceCfgNode *Node) {
     }
   }
 
-  Node->insertInsts(I, Expansion);
+  // Convert the reverse_iterator position into its corresponding
+  // (forward) iterator position.
+  IceInstList::iterator InsertPoint = RI.base();
+  --InsertPoint;
+  Node->insertInsts(InsertPoint, Expansion);
 }
 
 IceInstList IceTargetX8632::lowerAlloca(const IceInstAlloca *Inst,
@@ -623,12 +619,13 @@ IceInstX8632Sar::IceInstX8632Sar(IceCfg *Cfg, IceVariable *Dest,
 IceInstX8632Br::IceInstX8632Br(IceCfg *Cfg, IceCfgNode *TargetTrue,
                                IceCfgNode *TargetFalse,
                                IceInstIcmp::IceICond Condition)
-    : IceInstX8632(Cfg, IceInstX8632::Br, 0), Condition(Condition), TargetTrue(TargetTrue),
-      TargetFalse(TargetFalse) {}
+    : IceInstX8632(Cfg, IceInstX8632::Br, 0), Condition(Condition),
+      TargetTrue(TargetTrue), TargetFalse(TargetFalse) {}
 
 IceInstX8632Call::IceInstX8632Call(IceCfg *Cfg, IceVariable *Dest,
                                    IceOperand *CallTarget, bool Tail)
-    : IceInstX8632(Cfg, IceInstX8632::Call, 0), CallTarget(CallTarget), Tail(Tail) {
+    : IceInstX8632(Cfg, IceInstX8632::Call, 0), CallTarget(CallTarget),
+      Tail(Tail) {
   // TODO: CallTarget should be another source operand.
   if (Dest)
     addDest(Dest);
@@ -714,7 +711,7 @@ bool IceInstX8632Mov::isRedundantAssign(void) const {
 }
 
 IceInstX8632Ret::IceInstX8632Ret(IceCfg *Cfg, IceVariable *Source)
-  : IceInstX8632(Cfg, IceInstX8632::Ret, Source ? 1 : 0) {
+    : IceInstX8632(Cfg, IceInstX8632::Ret, Source ? 1 : 0) {
   if (Source)
     addSource(Source);
 }

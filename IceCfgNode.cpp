@@ -12,7 +12,7 @@
 
 IceCfgNode::IceCfgNode(IceCfg *Cfg, uint32_t LabelIndex, IceString Name)
     : Cfg(Cfg), NameIndex(LabelIndex), Name(Name), ArePhiLoadsPlaced(false),
-      ArePhiStoresPlaced(false), RegManager(NULL) {}
+      ArePhiStoresPlaced(false), HasReturn(false), RegManager(NULL) {}
 
 void IceCfgNode::appendInst(IceInst *Inst) {
   if (IceInstPhi *Phi = llvm::dyn_cast<IceInstPhi>(Inst)) {
@@ -192,6 +192,8 @@ void IceCfgNode::genCode(void) {
     IceInst *Next = getNextInst(I, E);
     if (Inst->isDeleted())
       continue;
+    if (llvm::isa<IceInstRet>(Inst))
+      setHasReturn();
     bool DeleteNextInst = false;
     IceInstList NewInsts = Target->lower(Inst, Next, DeleteNextInst);
     insertInsts(I, NewInsts);

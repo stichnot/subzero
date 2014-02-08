@@ -32,7 +32,7 @@ public:
     FakeUse,  // not part of LLVM/PNaCl bitcode
     FakeKill, // not part of LLVM/PNaCl bitcode
     Target    // target-specific low-level ICE
-    // Anything >= Target is an IceInstTarget subclass.
+              // Anything >= Target is an IceInstTarget subclass.
   };
   int getNumber(void) const { return Number; }
   void renumber(IceCfg *Cfg);
@@ -387,7 +387,9 @@ public:
 
 protected:
   IceInstTarget(IceCfg *Cfg, IceInstType Kind, unsigned MaxSrcs)
-    : IceInst(Cfg, Kind, MaxSrcs), RegState(NULL) { assert(Kind >= Target); }
+      : IceInst(Cfg, Kind, MaxSrcs), RegState(NULL) {
+    assert(Kind >= Target);
+  }
   const IceRegManager *RegState; // used only for debugging/dumping
 private:
 };

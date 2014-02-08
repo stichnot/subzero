@@ -157,7 +157,8 @@ public:
   virtual void dump(IceOstream &Str) const;
 
 protected:
-  IceInstX8632(IceCfg *Cfg, IceInstTypeX8632 Kind, unsigned Maxsrcs) : IceInstTarget(Cfg, static_cast<IceInstType>(Kind), Maxsrcs) {}
+  IceInstX8632(IceCfg *Cfg, IceInstTypeX8632 Kind, unsigned Maxsrcs)
+      : IceInstTarget(Cfg, static_cast<IceInstType>(Kind), Maxsrcs) {}
   static bool isClassof(const IceInst *Inst, IceInstTypeX8632 MyKind) {
     return Inst->getKind() == static_cast<IceInstType>(MyKind);
   }
