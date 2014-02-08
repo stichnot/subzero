@@ -532,7 +532,7 @@ IceInstList IceTargetX8632::lowerSwitch(const IceInstSwitch *Inst,
 
 IceInstX8632Add::IceInstX8632Add(IceCfg *Cfg, IceVariable *Dest,
                                  IceOperand *Source)
-    : IceInstTarget(Cfg, 2) {
+    : IceInstX8632(Cfg, 2) {
   addDest(Dest);
   addSource(Dest);
   addSource(Source);
@@ -540,7 +540,7 @@ IceInstX8632Add::IceInstX8632Add(IceCfg *Cfg, IceVariable *Dest,
 
 IceInstX8632Sub::IceInstX8632Sub(IceCfg *Cfg, IceVariable *Dest,
                                  IceOperand *Source)
-    : IceInstTarget(Cfg, 2) {
+    : IceInstX8632(Cfg, 2) {
   addDest(Dest);
   addSource(Dest);
   addSource(Source);
@@ -548,7 +548,7 @@ IceInstX8632Sub::IceInstX8632Sub(IceCfg *Cfg, IceVariable *Dest,
 
 IceInstX8632And::IceInstX8632And(IceCfg *Cfg, IceVariable *Dest,
                                  IceOperand *Source)
-    : IceInstTarget(Cfg, 2) {
+    : IceInstX8632(Cfg, 2) {
   addDest(Dest);
   addSource(Dest);
   addSource(Source);
@@ -556,7 +556,7 @@ IceInstX8632And::IceInstX8632And(IceCfg *Cfg, IceVariable *Dest,
 
 IceInstX8632Or::IceInstX8632Or(IceCfg *Cfg, IceVariable *Dest,
                                IceOperand *Source)
-    : IceInstTarget(Cfg, 2) {
+    : IceInstX8632(Cfg, 2) {
   addDest(Dest);
   addSource(Dest);
   addSource(Source);
@@ -564,7 +564,7 @@ IceInstX8632Or::IceInstX8632Or(IceCfg *Cfg, IceVariable *Dest,
 
 IceInstX8632Xor::IceInstX8632Xor(IceCfg *Cfg, IceVariable *Dest,
                                  IceOperand *Source)
-    : IceInstTarget(Cfg, 2) {
+    : IceInstX8632(Cfg, 2) {
   addDest(Dest);
   addSource(Dest);
   addSource(Source);
@@ -572,7 +572,7 @@ IceInstX8632Xor::IceInstX8632Xor(IceCfg *Cfg, IceVariable *Dest,
 
 IceInstX8632Imul::IceInstX8632Imul(IceCfg *Cfg, IceVariable *Dest,
                                    IceOperand *Source)
-    : IceInstTarget(Cfg, 2) {
+    : IceInstX8632(Cfg, 2) {
   addDest(Dest);
   addSource(Dest);
   addSource(Source);
@@ -580,7 +580,7 @@ IceInstX8632Imul::IceInstX8632Imul(IceCfg *Cfg, IceVariable *Dest,
 
 IceInstX8632Idiv::IceInstX8632Idiv(IceCfg *Cfg, IceVariable *Dest,
                                    IceOperand *Source, IceVariable *Other)
-    : IceInstTarget(Cfg, 3) {
+    : IceInstX8632(Cfg, 3) {
   addDest(Dest);
   addSource(Dest);
   addSource(Source);
@@ -589,7 +589,7 @@ IceInstX8632Idiv::IceInstX8632Idiv(IceCfg *Cfg, IceVariable *Dest,
 
 IceInstX8632Div::IceInstX8632Div(IceCfg *Cfg, IceVariable *Dest,
                                  IceOperand *Source, IceVariable *Other)
-    : IceInstTarget(Cfg, 3) {
+    : IceInstX8632(Cfg, 3) {
   addDest(Dest);
   addSource(Dest);
   addSource(Source);
@@ -598,7 +598,7 @@ IceInstX8632Div::IceInstX8632Div(IceCfg *Cfg, IceVariable *Dest,
 
 IceInstX8632Shl::IceInstX8632Shl(IceCfg *Cfg, IceVariable *Dest,
                                  IceOperand *Source)
-    : IceInstTarget(Cfg, 2) {
+    : IceInstX8632(Cfg, 2) {
   addDest(Dest);
   addSource(Dest);
   addSource(Source);
@@ -606,7 +606,7 @@ IceInstX8632Shl::IceInstX8632Shl(IceCfg *Cfg, IceVariable *Dest,
 
 IceInstX8632Shr::IceInstX8632Shr(IceCfg *Cfg, IceVariable *Dest,
                                  IceOperand *Source)
-    : IceInstTarget(Cfg, 2) {
+    : IceInstX8632(Cfg, 2) {
   addDest(Dest);
   addSource(Dest);
   addSource(Source);
@@ -614,7 +614,7 @@ IceInstX8632Shr::IceInstX8632Shr(IceCfg *Cfg, IceVariable *Dest,
 
 IceInstX8632Sar::IceInstX8632Sar(IceCfg *Cfg, IceVariable *Dest,
                                  IceOperand *Source)
-    : IceInstTarget(Cfg, 2) {
+    : IceInstX8632(Cfg, 2) {
   addDest(Dest);
   addSource(Dest);
   addSource(Source);
@@ -623,12 +623,12 @@ IceInstX8632Sar::IceInstX8632Sar(IceCfg *Cfg, IceVariable *Dest,
 IceInstX8632Br::IceInstX8632Br(IceCfg *Cfg, IceCfgNode *TargetTrue,
                                IceCfgNode *TargetFalse,
                                IceInstIcmp::IceICond Condition)
-    : IceInstTarget(Cfg, 0), Condition(Condition), TargetTrue(TargetTrue),
+    : IceInstX8632(Cfg, 0), Condition(Condition), TargetTrue(TargetTrue),
       TargetFalse(TargetFalse) {}
 
 IceInstX8632Call::IceInstX8632Call(IceCfg *Cfg, IceVariable *Dest,
                                    IceOperand *CallTarget, bool Tail)
-    : IceInstTarget(Cfg, 0), CallTarget(CallTarget), Tail(Tail) {
+    : IceInstX8632(Cfg, 0), CallTarget(CallTarget), Tail(Tail) {
   // TODO: CallTarget should be another source operand.
   if (Dest)
     addDest(Dest);
@@ -636,7 +636,7 @@ IceInstX8632Call::IceInstX8632Call(IceCfg *Cfg, IceVariable *Dest,
 
 IceInstX8632Cdq::IceInstX8632Cdq(IceCfg *Cfg, IceVariable *Dest,
                                  IceVariable *Source)
-    : IceInstTarget(Cfg, 1) {
+    : IceInstX8632(Cfg, 1) {
   assert(Dest->getRegNum() == IceTargetX8632::Reg_edx);
   assert(Source->getRegNum() == IceTargetX8632::Reg_eax);
   addDest(Dest);
@@ -645,7 +645,7 @@ IceInstX8632Cdq::IceInstX8632Cdq(IceCfg *Cfg, IceVariable *Dest,
 
 IceInstX8632Icmp::IceInstX8632Icmp(IceCfg *Cfg, IceOperand *Src0,
                                    IceOperand *Src1)
-    : IceInstTarget(Cfg, 2) {
+    : IceInstX8632(Cfg, 2) {
   addSource(Src0);
   addSource(Src1);
 }
@@ -653,7 +653,7 @@ IceInstX8632Icmp::IceInstX8632Icmp(IceCfg *Cfg, IceOperand *Src0,
 IceInstX8632Load::IceInstX8632Load(IceCfg *Cfg, IceVariable *Dest,
                                    IceOperand *Src0, IceOperand *Src1,
                                    IceOperand *Src2, IceOperand *Src3)
-    : IceInstTarget(Cfg, 4) {
+    : IceInstX8632(Cfg, 4) {
   addDest(Dest);
   addSource(Src0);
   addSource(Src1);
@@ -664,7 +664,7 @@ IceInstX8632Load::IceInstX8632Load(IceCfg *Cfg, IceVariable *Dest,
 IceInstX8632Store::IceInstX8632Store(IceCfg *Cfg, IceOperand *Value,
                                      IceOperand *Base, IceOperand *Index,
                                      IceOperand *Shift, IceOperand *Offset)
-    : IceInstTarget(Cfg, 5) {
+    : IceInstX8632(Cfg, 5) {
   addSource(Value);
   addSource(Base);
   addSource(Index);
@@ -674,32 +674,32 @@ IceInstX8632Store::IceInstX8632Store(IceCfg *Cfg, IceOperand *Value,
 
 IceInstX8632Mov::IceInstX8632Mov(IceCfg *Cfg, IceVariable *Dest,
                                  IceOperand *Source)
-    : IceInstTarget(Cfg, 1) {
+    : IceInstX8632(Cfg, 1) {
   addDest(Dest);
   addSource(Source);
 }
 
 IceInstX8632Movsx::IceInstX8632Movsx(IceCfg *Cfg, IceVariable *Dest,
                                      IceOperand *Source)
-    : IceInstTarget(Cfg, 1) {
+    : IceInstX8632(Cfg, 1) {
   addDest(Dest);
   addSource(Source);
 }
 
 IceInstX8632Movzx::IceInstX8632Movzx(IceCfg *Cfg, IceVariable *Dest,
                                      IceOperand *Source)
-    : IceInstTarget(Cfg, 1) {
+    : IceInstX8632(Cfg, 1) {
   addDest(Dest);
   addSource(Source);
 }
 
 IceInstX8632Pop::IceInstX8632Pop(IceCfg *Cfg, IceVariable *Dest)
-    : IceInstTarget(Cfg, 1) {
+    : IceInstX8632(Cfg, 1) {
   addDest(Dest);
 }
 
 IceInstX8632Push::IceInstX8632Push(IceCfg *Cfg, IceOperand *Source)
-    : IceInstTarget(Cfg, 1) {
+    : IceInstX8632(Cfg, 1) {
   addSource(Source);
 }
 
@@ -714,12 +714,17 @@ bool IceInstX8632Mov::isRedundantAssign(void) const {
 }
 
 IceInstX8632Ret::IceInstX8632Ret(IceCfg *Cfg, IceVariable *Source)
-    : IceInstTarget(Cfg, Source ? 1 : 0) {
+    : IceInstX8632(Cfg, Source ? 1 : 0) {
   if (Source)
     addSource(Source);
 }
 
 // ======================== Dump routines ======================== //
+
+void IceInstX8632::dump(IceOstream &Str) const {
+  Str << "[X8632] ";
+  IceInst::dump(Str);
+}
 
 void IceInstX8632Br::dump(IceOstream &Str) const {
   Str << "br ";

@@ -126,7 +126,15 @@ protected:
 private:
 };
 
-class IceInstX8632Br : public IceInstTarget {
+class IceInstX8632 : public IceInstTarget {
+public:
+  virtual void dump(IceOstream &Str) const;
+
+protected:
+  IceInstX8632(IceCfg *Cfg, unsigned Maxsrcs) : IceInstTarget(Cfg, Maxsrcs) {}
+};
+
+class IceInstX8632Br : public IceInstX8632 {
 public:
   IceInstX8632Br(IceCfg *Cfg, IceCfgNode *TargetTrue, IceCfgNode *TargetFalse,
                  IceInstIcmp::IceICond Condition);
@@ -140,7 +148,7 @@ private:
   IceCfgNode *TargetFalse;
 };
 
-class IceInstX8632Call : public IceInstTarget {
+class IceInstX8632Call : public IceInstX8632 {
 public:
   IceInstX8632Call(IceCfg *Cfg, IceVariable *Dest, IceOperand *CallTarget,
                    bool Tail);
@@ -152,82 +160,82 @@ private:
   const bool Tail;
 };
 
-class IceInstX8632Add : public IceInstTarget {
+class IceInstX8632Add : public IceInstX8632 {
 public:
   IceInstX8632Add(IceCfg *Cfg, IceVariable *Dest, IceOperand *Source);
   virtual void dump(IceOstream &Str) const;
 };
 
-class IceInstX8632Sub : public IceInstTarget {
+class IceInstX8632Sub : public IceInstX8632 {
 public:
   IceInstX8632Sub(IceCfg *Cfg, IceVariable *Dest, IceOperand *Source);
   virtual void dump(IceOstream &Str) const;
 };
 
-class IceInstX8632And : public IceInstTarget {
+class IceInstX8632And : public IceInstX8632 {
 public:
   IceInstX8632And(IceCfg *Cfg, IceVariable *Dest, IceOperand *Source);
   virtual void dump(IceOstream &Str) const;
 };
 
-class IceInstX8632Or : public IceInstTarget {
+class IceInstX8632Or : public IceInstX8632 {
 public:
   IceInstX8632Or(IceCfg *Cfg, IceVariable *Dest, IceOperand *Source);
   virtual void dump(IceOstream &Str) const;
 };
 
-class IceInstX8632Xor : public IceInstTarget {
+class IceInstX8632Xor : public IceInstX8632 {
 public:
   IceInstX8632Xor(IceCfg *Cfg, IceVariable *Dest, IceOperand *Source);
   virtual void dump(IceOstream &Str) const;
 };
 
-class IceInstX8632Imul : public IceInstTarget {
+class IceInstX8632Imul : public IceInstX8632 {
 public:
   IceInstX8632Imul(IceCfg *Cfg, IceVariable *Dest, IceOperand *Source);
   virtual void dump(IceOstream &Str) const;
 };
 
-class IceInstX8632Idiv : public IceInstTarget {
+class IceInstX8632Idiv : public IceInstX8632 {
 public:
   IceInstX8632Idiv(IceCfg *Cfg, IceVariable *Dest, IceOperand *Source,
                    IceVariable *Other);
   virtual void dump(IceOstream &Str) const;
 };
 
-class IceInstX8632Div : public IceInstTarget {
+class IceInstX8632Div : public IceInstX8632 {
 public:
   IceInstX8632Div(IceCfg *Cfg, IceVariable *Dest, IceOperand *Source,
                   IceVariable *Other);
   virtual void dump(IceOstream &Str) const;
 };
 
-class IceInstX8632Shl : public IceInstTarget {
+class IceInstX8632Shl : public IceInstX8632 {
 public:
   IceInstX8632Shl(IceCfg *Cfg, IceVariable *Dest, IceOperand *Source);
   virtual void dump(IceOstream &Str) const;
 };
 
-class IceInstX8632Shr : public IceInstTarget {
+class IceInstX8632Shr : public IceInstX8632 {
 public:
   IceInstX8632Shr(IceCfg *Cfg, IceVariable *Dest, IceOperand *Source);
   virtual void dump(IceOstream &Str) const;
 };
 
-class IceInstX8632Sar : public IceInstTarget {
+class IceInstX8632Sar : public IceInstX8632 {
 public:
   IceInstX8632Sar(IceCfg *Cfg, IceVariable *Dest, IceOperand *Source);
   virtual void dump(IceOstream &Str) const;
 };
 
 // Sign-extend eax into edx
-class IceInstX8632Cdq : public IceInstTarget {
+class IceInstX8632Cdq : public IceInstX8632 {
 public:
   IceInstX8632Cdq(IceCfg *Cfg, IceVariable *Dest, IceVariable *Source);
   virtual void dump(IceOstream &Str) const;
 };
 
-class IceInstX8632Icmp : public IceInstTarget {
+class IceInstX8632Icmp : public IceInstX8632 {
 public:
   IceInstX8632Icmp(IceCfg *Cfg, IceOperand *Src1, IceOperand *Src2);
   virtual void dump(IceOstream &Str) const;
@@ -236,7 +244,7 @@ private:
 };
 
 // TODO: Are Load and Store really just Assigns?
-class IceInstX8632Load : public IceInstTarget {
+class IceInstX8632Load : public IceInstX8632 {
 public:
   IceInstX8632Load(IceCfg *Cfg, IceVariable *Dest, IceOperand *Base,
                    IceOperand *Index, IceOperand *Shift, IceOperand *Offset);
@@ -245,7 +253,7 @@ public:
 private:
 };
 
-class IceInstX8632Store : public IceInstTarget {
+class IceInstX8632Store : public IceInstX8632 {
 public:
   IceInstX8632Store(IceCfg *Cfg, IceOperand *Value, IceOperand *Base,
                     IceOperand *Index, IceOperand *Shift, IceOperand *Offset);
@@ -254,7 +262,7 @@ public:
 private:
 };
 
-class IceInstX8632Mov : public IceInstTarget {
+class IceInstX8632Mov : public IceInstX8632 {
 public:
   IceInstX8632Mov(IceCfg *Cfg, IceVariable *Dest, IceOperand *Source);
   virtual bool isRedundantAssign(void) const;
@@ -263,7 +271,7 @@ public:
 private:
 };
 
-class IceInstX8632Movsx : public IceInstTarget {
+class IceInstX8632Movsx : public IceInstX8632 {
 public:
   IceInstX8632Movsx(IceCfg *Cfg, IceVariable *Dest, IceOperand *Source);
   virtual void dump(IceOstream &Str) const;
@@ -271,7 +279,7 @@ public:
 private:
 };
 
-class IceInstX8632Movzx : public IceInstTarget {
+class IceInstX8632Movzx : public IceInstX8632 {
 public:
   IceInstX8632Movzx(IceCfg *Cfg, IceVariable *Dest, IceOperand *Source);
   virtual void dump(IceOstream &Str) const;
@@ -279,19 +287,19 @@ public:
 private:
 };
 
-class IceInstX8632Pop : public IceInstTarget {
+class IceInstX8632Pop : public IceInstX8632 {
 public:
   IceInstX8632Pop(IceCfg *Cfg, IceVariable *Dest);
   virtual void dump(IceOstream &Str) const;
 };
 
-class IceInstX8632Push : public IceInstTarget {
+class IceInstX8632Push : public IceInstX8632 {
 public:
   IceInstX8632Push(IceCfg *Cfg, IceOperand *Source);
   virtual void dump(IceOstream &Str) const;
 };
 
-class IceInstX8632Ret : public IceInstTarget {
+class IceInstX8632Ret : public IceInstX8632 {
 public:
   IceInstX8632Ret(IceCfg *Cfg, IceVariable *Source = NULL);
   virtual void dump(IceOstream &Str) const;
