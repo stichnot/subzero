@@ -33,9 +33,6 @@ public:
     ConstantRelocatable,
     Constant_Num,
     Variable,
-    VariableVirtualRegister,
-    VariablePhysicalRegister,
-    Variable_Num,
   };
   IceType getType(void) const { return Type; }
   OperandKind getKind(void) const { return Kind; }
@@ -212,8 +209,7 @@ public:
   virtual void dump(IceOstream &Str) const;
 
   static bool classof(const IceOperand *Operand) {
-    OperandKind Kind = Operand->getKind();
-    return Kind >= Variable && Kind <= Variable_Num;
+    return Operand->getKind() == Variable;
   }
 
 private:
