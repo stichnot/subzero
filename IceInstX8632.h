@@ -9,8 +9,40 @@
 
 #include "IceDefs.h"
 #include "IceInst.h"
+#include "IceOperand.h"
 
 #include "IceTargetLowering.h"
+
+class IceOperandX8632 : public IceOperand {
+public:
+  enum IceOperandTypeX8632 { __Start = IceOperand::Target, Mem, };
+  void dump(IceOstream &Str) const;
+
+protected:
+  IceOperandX8632(IceOperandTypeX8632 Kind, IceType Type)
+      : IceOperand(static_cast<OperandKind>(Kind), Type) {}
+};
+
+class IceOperandX8632Mem : public IceOperandX8632 {
+public:
+  IceOperandX8632Mem(IceVariable *Base, IceConstant *Offset,
+                     IceVariable *Index = NULL, unsigned Shift = 0);
+  IceVariable *getBase(void) const { return Base; }
+  IceConstant *getOffset(void) const { return Offset; }
+  IceVariable *getIndex(void) const { return Index; }
+  unsigned getShift(void) const { return Shift; }
+  virtual void dump(IceOstream &Str) const;
+
+  static bool classof(const IceOperand *Operand) {
+    return Operand->getKind() == static_cast<OperandKind>(Mem);
+  }
+
+private:
+  IceVariable *Base;
+  IceConstant *Offset;
+  IceVariable *Index;
+  unsigned Shift;
+};
 
 class IceTargetX8632 : public IceTargetLowering {
 public:
@@ -124,6 +156,10 @@ protected:
                                   const IceInst *Next, bool &DeleteNextInst);
 
 private:
+  // Lowers a memory operand and returns a new version containing just
+  // infinite-weight IceVariables.
+  IceOperandX8632Mem *lowerMemOp(IceInstList &Expansion,
+                                 IceOperandX8632Mem *Src);
 };
 
 class IceInstX8632 : public IceInstTarget {
@@ -299,10 +335,12 @@ public:
 private:
 };
 
+// This is essentially a "mov" instruction with an IceOperandX8632Mem
+// operand instead of IceVariable as the destination.  It's important
+// for liveness that there is no Dest operand.
 class IceInstX8632Store : public IceInstX8632 {
 public:
-  IceInstX8632Store(IceCfg *Cfg, IceOperand *Value, IceOperand *Base,
-                    IceOperand *Index, IceOperand *Shift, IceOperand *Offset);
+  IceInstX8632Store(IceCfg *Cfg, IceOperand *Value, IceOperandX8632Mem *Mem);
   virtual void dump(IceOstream &Str) const;
   static bool classof(const IceInst *Inst) { return isClassof(Inst, Store); }
 

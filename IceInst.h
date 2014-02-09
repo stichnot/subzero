@@ -47,10 +47,10 @@ public:
     return IceNodeList();
   }
   bool isDeleted(void) const { return Deleted; }
-  bool isLastUse(unsigned SrcIndex) const {
-    if (SrcIndex >= 8 * sizeof(LiveRangesEnded))
+  bool isLastUse(unsigned VarIndex) const {
+    if (VarIndex >= 8 * sizeof(LiveRangesEnded))
       return false;
-    return LiveRangesEnded & (1u << SrcIndex);
+    return LiveRangesEnded & (1u << VarIndex);
   }
   // If an instruction is deleted as a result of replacing it with
   // equivalent instructions, only call setDeleted() *after* inserting
@@ -59,8 +59,8 @@ public:
   void setDeleted(void) { Deleted = true; }
   void deleteIfDead(void);
   void updateVars(IceCfgNode *Node);
-  void doAddressOpt(IceVariable *&Base, IceVariable *&Index, int &Shift,
-                    int32_t &Offset) const;
+  static void doAddressOpt(IceVariable *&Base, IceVariable *&Index, int &Shift,
+                           int32_t &Offset);
   void liveness(IceLiveness Mode, int InstNumber, llvm::BitVector &Live,
                 std::vector<int> &LiveBegin, std::vector<int> &LiveEnd);
   virtual void dump(IceOstream &Str) const;
@@ -75,9 +75,9 @@ protected:
   IceInst(IceCfg *Cfg, IceInstType Kind, unsigned MaxSrcs);
   void addDest(IceVariable *Dest);
   void addSource(IceOperand *Src);
-  void setLastUse(unsigned SrcIndex) {
-    if (SrcIndex < 8 * sizeof(LiveRangesEnded))
-      LiveRangesEnded |= (1u << SrcIndex);
+  void setLastUse(unsigned VarIndex) {
+    if (VarIndex < 8 * sizeof(LiveRangesEnded))
+      LiveRangesEnded |= (1u << VarIndex);
   }
   void resetLastUses(void) { LiveRangesEnded = 0; }
 

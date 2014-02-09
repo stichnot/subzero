@@ -31,17 +31,25 @@ public:
     ConstantRelocatable,
     Constant_Num,
     Variable,
+    // Target-specific operand classes can use Target as their
+    // starting type.
+    Target
   };
   IceType getType(void) const { return Type; }
   OperandKind getKind(void) const { return Kind; }
-  void dump(IceOstream &Str) const;
+  const IceVariable *getVar(unsigned I) const {
+    assert(I < getNumVars());
+    return Vars[I];
+  }
+  unsigned getNumVars(void) const { return NumVars; }
+  virtual void dump(IceOstream &Str) const;
 
 protected:
   IceOperand(OperandKind Kind, IceType Type) : Type(Type), Kind(Kind) {}
   const IceType Type;
-
-private:
   const OperandKind Kind;
+  IceVariable **Vars;
+  unsigned NumVars;
 };
 
 IceOstream &operator<<(IceOstream &Str, const IceOperand *O);
@@ -50,13 +58,18 @@ IceOstream &operator<<(IceOstream &Str, const IceOperand *O);
 // including synchronized access for parallel translation.
 class IceConstant : public IceOperand {
 public:
+  virtual void dump(IceOstream &Str) const = 0;
+
   static bool classof(const IceOperand *Operand) {
     OperandKind Kind = Operand->getKind();
     return Kind >= Constant && Kind <= Constant_Num;
   }
 
 protected:
-  IceConstant(OperandKind Kind, IceType Type) : IceOperand(Kind, Type) {}
+  IceConstant(OperandKind Kind, IceType Type) : IceOperand(Kind, Type) {
+    Vars = NULL;
+    NumVars = 0;
+  }
 };
 
 class IceConstantInteger : public IceConstant {
@@ -64,7 +77,7 @@ public:
   IceConstantInteger(IceType Type, uint64_t IntValue)
       : IceConstant(ConstantInteger, Type), IntValue(IntValue) {}
   uint64_t getIntValue(void) const { return IntValue; }
-  void dump(IceOstream &Str) const;
+  virtual void dump(IceOstream &Str) const;
 
   static bool classof(const IceOperand *Operand) {
     OperandKind Kind = Operand->getKind();
@@ -84,7 +97,7 @@ public:
   uint32_t getCPIndex(void) const { return CPIndex; }
   const void *getHandle(void) const { return Handle; }
   IceString getName(void) const { return Name; }
-  void dump(IceOstream &Str) const;
+  virtual void dump(IceOstream &Str) const;
 
   static bool classof(const IceOperand *Operand) {
     OperandKind Kind = Operand->getKind();
@@ -154,7 +167,11 @@ public:
       : IceOperand(Variable, Type), Number(Index), Name(Name), DefInst(NULL),
         DefOrUseNode(NULL), IsArgument(false), IsMultiblockLife(false),
         StackOffset(0), RegNum(-1), RegNumTmp(-1), Weight(1),
-        RegisterPreference(NULL), AllowRegisterOverlap(false) {}
+        RegisterPreference(NULL), AllowRegisterOverlap(false) {
+    Vars = new IceVariable *[1];
+    Vars[0] = this;
+    NumVars = 1;
+  }
   void setUse(const IceInst *Inst, const IceCfgNode *Node);
   uint32_t getIndex(void) const { return Number; }
   IceInst *getDefinition(void) const { return DefInst; }
@@ -202,7 +219,7 @@ public:
     LiveRange.setWeight(IceRegWeight::Inf);
   }
   IceString getName(void) const;
-  void dump(IceOstream &Str) const;
+  virtual void dump(IceOstream &Str) const;
 
   static bool classof(const IceOperand *Operand) {
     return Operand->getKind() == Variable;

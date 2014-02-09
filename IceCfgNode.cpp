@@ -9,6 +9,7 @@
 #include "IceOperand.h"
 #include "IceRegManager.h"
 #include "IceTargetLowering.h"
+#include "IceInstX8632.h"
 
 IceCfgNode::IceCfgNode(IceCfg *Cfg, uint32_t LabelNumber, IceString Name)
     : Cfg(Cfg), Number(LabelNumber), Name(Name), ArePhiLoadsPlaced(false),
@@ -87,6 +88,38 @@ void IceCfgNode::registerEdges(void) {
        I != E; ++I) {
     IceCfgNode *Node = *I;
     Node->InEdges.push_back(this);
+  }
+}
+
+void IceCfgNode::findAddressOpt(void) {
+  // No need to check the Phi instructions.
+  IceInstList::iterator I = Insts.begin(), E = Insts.end();
+  while (I != E) {
+    IceInst *Inst = *I++;
+    if (Inst->isDeleted())
+      continue;
+    if (!llvm::isa<IceInstLoad>(Inst) && !llvm::isa<IceInstStore>(Inst))
+      continue;
+    IceInst *NewInst = NULL;
+    IceOperand *Addr = Inst->getSrc(Inst->getSrcSize() - 1);
+    if (IceVariable *Base = llvm::dyn_cast<IceVariable>(Addr)) {
+      IceVariable *Index = NULL;
+      int Shift = 0;
+      int32_t Offset = 0;
+      Inst->doAddressOpt(Base, Index, Shift, Offset);
+      if (Base != Addr) {
+        IceConstant *OffsetOp = Cfg->getConstant(IceType_i32, Offset);
+        IceOperandX8632Mem *Mem =
+            new IceOperandX8632Mem(Base, OffsetOp, Index, Shift);
+        IceVariable *Dest = Inst->getDest();
+        if (Dest) // Load instruction
+          NewInst = new IceInstLoad(Cfg, Dest, Mem);
+        else // Store instruction
+          NewInst = new IceInstStore(Cfg, Mem, Inst->getSrc(0));
+      }
+    }
+    if (NewInst)
+      Insts.insert(I, NewInst);
   }
 }
 

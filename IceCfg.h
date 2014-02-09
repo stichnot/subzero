@@ -74,6 +74,7 @@ private:
   IceString *RegisterNames;
   void makeTarget(IceTargetArch Arch);
   void renumberInstructions(void);
+  void findAddressOpt(void);
   void placePhiLoads(void);
   void placePhiStores(void);
   void deletePhis(void);

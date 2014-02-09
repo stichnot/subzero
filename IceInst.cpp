@@ -50,7 +50,7 @@ void IceInst::addSource(IceOperand *Source) {
 }
 
 void IceInst::doAddressOpt(IceVariable *&Base, IceVariable *&Index, int &Shift,
-                           int32_t &Offset) const {
+                           int32_t &Offset) {
   if (Base == NULL) // shouldn't happen
     return;
   // If the Base has more than one use or is live across multiple
@@ -178,15 +178,21 @@ void IceInst::liveness(IceLiveness Mode, int InstNumber, llvm::BitVector &Live,
   // For lightweight liveness, do the simple calculation and return.
   if (Mode == IceLiveness_LREndLightweight) {
     resetLastUses();
+    unsigned VarIndex = 0;
     for (unsigned I = 0; I < getSrcSize(); ++I) {
-      if (IceVariable *Var = llvm::dyn_cast_or_null<IceVariable>(Srcs[I])) {
+      IceOperand *Src = Srcs[I];
+      if (Src == NULL)
+        continue;
+      unsigned NumVars = Src->getNumVars();
+      for (unsigned J = 0; J < NumVars; ++J, ++VarIndex) {
+        const IceVariable *Var = Src->getVar(J);
         if (Var->isMultiblockLife())
           continue;
         uint32_t Index = Var->getIndex();
         if (Live[Index])
           continue;
         Live[Index] = true;
-        setLastUse(I);
+        setLastUse(VarIndex);
       }
     }
     return;
@@ -219,11 +225,17 @@ void IceInst::liveness(IceLiveness Mode, int InstNumber, llvm::BitVector &Live,
   // c's live range ends, b's live range does not end, and the
   // operator is commutable, we can reduce register pressure by
   // commuting the operation.
+  unsigned VarIndex = 0;
   for (unsigned I = 0; I < getSrcSize(); ++I) {
-    if (IceVariable *Var = llvm::dyn_cast_or_null<IceVariable>(Srcs[I])) {
+    IceOperand *Src = Srcs[I];
+    if (Src == NULL)
+      continue;
+    unsigned NumVars = Src->getNumVars();
+    for (unsigned J = 0; J < NumVars; ++J, ++VarIndex) {
+      const IceVariable *Var = Src->getVar(J);
       uint32_t VarNum = Var->getIndex();
       if (!Live[VarNum]) {
-        setLastUse(I);
+        setLastUse(VarIndex);
         if (!IsPhi) {
           Live[VarNum] = true;
           // For a variable in SSA form, its live range can end at
@@ -326,48 +338,14 @@ IceInstIcmp::IceInstIcmp(IceCfg *Cfg, IceICond Condition, IceVariable *Dest,
 }
 
 IceInstLoad::IceInstLoad(IceCfg *Cfg, IceVariable *Dest, IceOperand *SourceAddr)
-    : IceInst(Cfg, IceInst::Load, 4) {
+    : IceInst(Cfg, IceInst::Load, 1) {
   addDest(Dest);
-  IceVariable *Index = NULL;
-  int Shift = 0;
-  int32_t Offset = 0;
-  if (IceVariable *Base = llvm::dyn_cast<IceVariable>(SourceAddr)) {
-    doAddressOpt(Base, Index, Shift, Offset);
-    if (Base != SourceAddr) {
-      if (Cfg->Str.isVerbose())
-        Cfg->Str << "Found AddressOpt opportunity: BaseOrig=" << SourceAddr
-                 << " Base=" << Base << " Index=" << Index << " Shift=" << Shift
-                 << " Offset=" << Offset << "\n";
-      addSource(Base);
-      addSource(Index);
-      addSource(new IceConstantInteger(IceType_i32, Shift));
-      addSource(new IceConstantInteger(IceType_i32, Offset));
-      return;
-    }
-  }
   addSource(SourceAddr);
 }
 
 IceInstStore::IceInstStore(IceCfg *Cfg, IceOperand *Val, IceOperand *Addr)
-    : IceInst(Cfg, IceInst::Store, 5) {
+    : IceInst(Cfg, IceInst::Store, 2) {
   addSource(Val);
-  IceVariable *Index = NULL;
-  int Shift = 0;
-  int32_t Offset = 0;
-  if (IceVariable *Base = llvm::dyn_cast<IceVariable>(Addr)) {
-    doAddressOpt(Base, Index, Shift, Offset);
-    if (Base != Addr) {
-      if (Cfg->Str.isVerbose())
-        Cfg->Str << "Found AddressOpt opportunity: BaseOrig=" << Addr
-                 << " Base=" << Base << " Index=" << Index << " Shift=" << Shift
-                 << " Offset=" << Offset << "\n";
-      addSource(Base);
-      addSource(Index);
-      addSource(new IceConstantInteger(IceType_i32, Shift));
-      addSource(new IceConstantInteger(IceType_i32, Offset));
-      return;
-    }
-  }
   addSource(Addr);
 }
 
@@ -511,16 +489,22 @@ void IceInst::dumpExtras(IceOstream &Str) const {
   // Print "LIVEEND={a,b,c}" for all source operands whose live ranges
   // are known to end at this instruction.
   if (Str.isVerbose(IceV_Liveness)) {
+    unsigned VarIndex = 0;
     for (unsigned I = 0; I < getSrcSize(); ++I) {
-      if (Srcs[I] == NULL)
+      IceOperand *Src = Srcs[I];
+      if (Src == NULL)
         continue;
-      if (isLastUse(I)) {
-        if (First)
-          Str << " // LIVEEND={";
-        else
-          Str << ",";
-        Str << Srcs[I];
-        First = false;
+      unsigned NumVars = Src->getNumVars();
+      for (unsigned J = 0; J < NumVars; ++J, ++VarIndex) {
+        const IceVariable *Var = Src->getVar(J);
+        if (isLastUse(VarIndex)) {
+          if (First)
+            Str << " // LIVEEND={";
+          else
+            Str << ",";
+          Str << Var;
+          First = false;
+        }
       }
     }
     if (!First)

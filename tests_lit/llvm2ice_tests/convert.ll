@@ -24,13 +24,10 @@ define void @from_int8() nounwind {
   ret void
   ; CHECK: mov.i8 eax, [
   ; CHECK-NEXT: movsbw ecx, eax
-  ; CHECK-NEXT: mov.i32
   ; CHECK-NEXT: mov.i16 [
   ; CHECK-NEXT: movsbl ecx, eax
-  ; CHECK-NEXT: mov.i32
   ; CHECK-NEXT: mov.i32 [
   ; CHECK-NEXT: movsbq eax, eax
-  ; CHECK-NEXT: mov.i32
   ; CHECK-NEXT: mov.i64 [
 }
 
@@ -45,13 +42,10 @@ define void @from_int16() nounwind {
   ret void
   ; CHECK: mov.i16 eax, [
   ; CHECK-NEXT: mov.i8 ecx, eax
-  ; CHECK-NEXT: mov.i32
   ; CHECK-NEXT: mov.i8 [
   ; CHECK-NEXT: movswl ecx, eax
-  ; CHECK-NEXT: mov.i32
   ; CHECK-NEXT: mov.i32 [
   ; CHECK-NEXT: movswq eax, eax
-  ; CHECK-NEXT: mov.i32
   ; CHECK-NEXT: mov.i64 [
 }
 
@@ -66,13 +60,10 @@ define void @from_int32() nounwind {
   ret void
   ; CHECK: mov.i32 eax, [
   ; CHECK-NEXT: mov.i8 ecx, eax
-  ; CHECK-NEXT: mov.i32
   ; CHECK-NEXT: mov.i8 [
   ; CHECK-NEXT: mov.i16 ecx, eax
-  ; CHECK-NEXT: mov.i32
   ; CHECK-NEXT: mov.i16 [
   ; CHECK-NEXT: movslq eax, eax
-  ; CHECK-NEXT: mov.i32
   ; CHECK-NEXT: mov.i64 [
 }
 
@@ -87,12 +78,9 @@ define void @from_int64() nounwind {
   ret void
   ; CHECK: mov.i64 eax, [
   ; CHECK-NEXT: mov.i8 ecx, eax
-  ; CHECK-NEXT: mov.i32
   ; CHECK-NEXT: mov.i8 [
   ; CHECK-NEXT: mov.i16 ecx, eax
-  ; CHECK-NEXT: mov.i32
   ; CHECK-NEXT: mov.i16 [
-  ; CHECK-NEXT: mov.i32
   ; CHECK-NEXT: mov.i32 [
 }
 
@@ -107,13 +95,10 @@ define void @from_uint8() nounwind {
   ret void
   ; CHECK: mov.i8 eax, [
   ; CHECK-NEXT: movzbw ecx, eax
-  ; CHECK-NEXT: mov.i32
   ; CHECK-NEXT: mov.i16 [
   ; CHECK-NEXT: movzbl ecx, eax
-  ; CHECK-NEXT: mov.i32
   ; CHECK-NEXT: mov.i32 [
   ; CHECK-NEXT: movzbq eax, eax
-  ; CHECK-NEXT: mov.i32
   ; CHECK-NEXT: mov.i64 [
 }
 
@@ -128,13 +113,10 @@ define void @from_uint16() nounwind {
   ret void
   ; CHECK: mov.i16 eax, [
   ; CHECK-NEXT: mov.i8 ecx, eax
-  ; CHECK-NEXT: mov.i32
   ; CHECK-NEXT: mov.i8 [
   ; CHECK-NEXT: movzwl ecx, eax
-  ; CHECK-NEXT: mov.i32
   ; CHECK-NEXT: mov.i32 [
   ; CHECK-NEXT: movzwq eax, eax
-  ; CHECK-NEXT: mov.i32
   ; CHECK-NEXT: mov.i64 [
 }
 
@@ -149,13 +131,10 @@ define void @from_uint32() nounwind {
   ret void
   ; CHECK: mov.i32 eax, [
   ; CHECK-NEXT: mov.i8 ecx, eax
-  ; CHECK-NEXT: mov.i32
   ; CHECK-NEXT: mov.i8 [
   ; CHECK-NEXT: mov.i16 ecx, eax
-  ; CHECK-NEXT: mov.i32
   ; CHECK-NEXT: mov.i16 [
   ; CHECK-NEXT: movzlq eax, eax
-  ; CHECK-NEXT: mov.i32
   ; CHECK-NEXT: mov.i64 [
 }
 
@@ -170,11 +149,8 @@ define void @from_uint64() nounwind {
   ret void
   ; CHECK: mov.i64 eax, [
   ; CHECK-NEXT: mov.i8 ecx, eax
-  ; CHECK-NEXT: mov.i32
   ; CHECK-NEXT: mov.i8 [
   ; CHECK-NEXT: mov.i16 ecx, eax
-  ; CHECK-NEXT: mov.i32
   ; CHECK-NEXT: mov.i16 [
-  ; CHECK-NEXT: mov.i32
   ; CHECK-NEXT: mov.i32 [
 }

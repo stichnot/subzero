@@ -162,6 +162,7 @@ void IceTargetX8632::addProlog(IceCfgNode *Node) {
   // IceRegManager code may have some permutation logic to leverage),
   // and if they have no home register, home space will need to be
   // allocated on the stack to copy into.
+  IceVariable *FramePtr = getPhysicalRegister(getFrameOrStackReg());
   for (unsigned i = 0; i < Args.size(); ++i) {
     IceVariable *Arg = Args[i];
     if (IsEbpBasedFrame)
@@ -169,10 +170,11 @@ void IceTargetX8632::addProlog(IceCfgNode *Node) {
     else
       Arg->setStackOffset(LocalsSizeBytes + PreservedRegsSizeBytes +
                           RetIpSizeBytes + 4 * i);
-    if (Arg->getRegNum() >= 0)
-      Expansion.push_back(new IceInstX8632Load(
-          Cfg, Arg, getPhysicalRegister(getFrameOrStackReg()), NULL, NULL,
-          Cfg->getConstant(IceType_i32, Arg->getStackOffset())));
+    if (Arg->getRegNum() >= 0) {
+      IceOperandX8632Mem *Mem = new IceOperandX8632Mem(
+          FramePtr, Cfg->getConstant(IceType_i32, Arg->getStackOffset()));
+      Expansion.push_back(new IceInstX8632Mov(Cfg, Arg, Mem));
+    }
     InArgsSizeBytes += 4;
   }
 
@@ -526,6 +528,27 @@ IceInstList IceTargetX8632::lowerSwitch(const IceInstSwitch *Inst,
   return Expansion;
 }
 
+IceOperandX8632Mem::IceOperandX8632Mem(IceVariable *Base, IceConstant *Offset,
+                                       IceVariable *Index, unsigned Shift)
+    : IceOperandX8632(Mem, IceType_i32), Base(Base), Offset(Offset),
+      Index(Index), Shift(Shift) {
+  Vars = NULL;
+  NumVars = 0;
+  if (Base)
+    ++NumVars;
+  if (Index)
+    ++NumVars;
+  if (NumVars) {
+    Vars = new IceVariable *[NumVars];
+    unsigned I = 0;
+    if (Base)
+      Vars[I++] = Base;
+    if (Index)
+      Vars[I++] = Index;
+    assert(I == NumVars);
+  }
+}
+
 IceInstX8632Add::IceInstX8632Add(IceCfg *Cfg, IceVariable *Dest,
                                  IceOperand *Source)
     : IceInstX8632(Cfg, IceInstX8632::Add, 2) {
@@ -659,14 +682,10 @@ IceInstX8632Load::IceInstX8632Load(IceCfg *Cfg, IceVariable *Dest,
 }
 
 IceInstX8632Store::IceInstX8632Store(IceCfg *Cfg, IceOperand *Value,
-                                     IceOperand *Base, IceOperand *Index,
-                                     IceOperand *Shift, IceOperand *Offset)
-    : IceInstX8632(Cfg, IceInstX8632::Store, 5) {
+                                     IceOperandX8632Mem *Mem)
+    : IceInstX8632(Cfg, IceInstX8632::Store, 2) {
   addSource(Value);
-  addSource(Base);
-  addSource(Index);
-  addSource(Shift);
-  addSource(Offset);
+  addSource(Mem);
 }
 
 IceInstX8632Mov::IceInstX8632Mov(IceCfg *Cfg, IceVariable *Dest,
@@ -857,17 +876,8 @@ void IceInstX8632Load::dump(IceOstream &Str) const {
 }
 
 void IceInstX8632Store::dump(IceOstream &Str) const {
-  Str << "mov." << getSrc(0)->getType() << " ";
-  Str << "[";
-  Str << getSrc(1);
-  Str << ", ";
-  Str << getSrc(2);
-  Str << ", ";
-  Str << getSrc(3);
-  Str << ", ";
-  Str << getSrc(4);
-  Str << "], ";
-  Str << getSrc(0);
+  Str << "mov." << getSrc(0)->getType() << " " << getSrc(1) << ", "
+      << getSrc(0);
 }
 
 void IceInstX8632Mov::dump(IceOstream &Str) const {
@@ -909,6 +919,42 @@ void IceInstX8632Ret::dump(IceOstream &Str) const {
   IceType Type = (getSrcSize() == 0 ? IceType_void : getSrc(0)->getType());
   Str << "ret." << Type << " ";
   dumpSources(Str);
+}
+
+void IceOperandX8632::dump(IceOstream &Str) const {
+  Str << "<IceOperandX8632>";
+}
+
+void IceOperandX8632Mem::dump(IceOstream &Str) const {
+  bool Dumped = false;
+  Str << "[";
+  if (Base) {
+    Str << Base;
+    Dumped = true;
+  }
+  if (Index) {
+    assert(Base);
+    Str << "+";
+    if (Shift > 0)
+      Str << (1u << Shift) << "*";
+    Str << Index;
+    Dumped = true;
+  }
+  // Pretty-print the Offset.
+  bool OffsetIsZero = false;
+  bool OffsetIsNegative = false;
+  if (IceConstantInteger *CI = llvm::dyn_cast<IceConstantInteger>(Offset)) {
+    OffsetIsZero = (CI->getIntValue() == 0);
+    OffsetIsNegative = (static_cast<int64_t>(CI->getIntValue()) < 0);
+  }
+  if (!OffsetIsZero) { // Suppress if Offset is known to be 0
+    if (Dumped) {
+      if (!OffsetIsNegative) // Suppress if Offset is known to be negative
+        Str << "+";
+    }
+    Str << Offset;
+  }
+  Str << "]";
 }
 
 ////////////////////////////////////////////////////////////////
@@ -1321,36 +1367,25 @@ IceInstList IceTargetX8632S::lowerLoad(const IceInstLoad *Inst,
   IceInstList Expansion;
   IceInstTarget *NewInst;
   IceVariable *Dest = Inst->getDest();
-  IceOperand *Src0 = Inst->getSrc(0); // Base
-  IceOperand *Src1 = Inst->getSrc(1); // Index - could be NULL
-  IceOperand *Src2 = Inst->getSrc(2); // Shift - constant
-  IceOperand *Src3 = Inst->getSrc(3); // Offset - constant
-  assert(Src0 != NULL /* && llvm::isa<IceVariable>(Src0)*/);
-  assert(Src1 == NULL || llvm::isa<IceVariable>(Src1));
-  assert(Src2 == NULL || llvm::isa<IceConstant>(Src2));
-  assert(Src3 == NULL || llvm::isa<IceConstant>(Src3));
-  // dest=load[base,index,shift,offset] ==>
-  // t0=base; t1=index; t2=load[base,index,shift,offset]; dest=t2
-  IceVariable *Reg0 = Cfg->makeVariable(Src0->getType());
-  Reg0->setWeightInfinite();
-  Reg0->setPreferredRegister(llvm::dyn_cast<IceVariable>(Src0), true);
-  NewInst = new IceInstX8632Mov(Cfg, Reg0, Src0);
-  Expansion.push_back(NewInst);
-  IceVariable *Reg1 = NULL;
-  if (Src1) {
-    Reg1 = Cfg->makeVariable(Src1->getType());
-    Reg1->setWeightInfinite();
-    Reg1->setPreferredRegister(llvm::dyn_cast<IceVariable>(Src1), true);
-    NewInst = new IceInstX8632Mov(Cfg, Reg1, Src1);
-    Expansion.push_back(NewInst);
+  IceOperand *Src0 = Inst->getSrc(0);
+  IceOperandX8632Mem *NewSrc;
+  if (IceOperandX8632Mem *SrcOp = llvm::dyn_cast<IceOperandX8632Mem>(Src0)) {
+    NewSrc = lowerMemOp(Expansion, SrcOp);
+  } else {
+    IceVariable *Base = NULL;
+    IceConstant *Offset = llvm::dyn_cast<IceConstant>(Src0);
+    if (IceVariable *SrcVar = llvm::dyn_cast<IceVariable>(Src0)) {
+      IceVariable *Reg0 = Cfg->makeVariable(SrcVar->getType());
+      Reg0->setWeightInfinite();
+      Reg0->setPreferredRegister(SrcVar, true);
+      NewInst = new IceInstX8632Mov(Cfg, Reg0, SrcVar);
+      Expansion.push_back(NewInst);
+      Base = Reg0;
+    }
+    NewSrc = new IceOperandX8632Mem(Base, Offset);
   }
-  IceVariable *Reg2 = Cfg->makeVariable(Dest->getType());
-  Reg2->setWeightInfinite();
-  NewInst = new IceInstX8632Load(Cfg, Reg2, Reg0, Reg1, Src2, Src3);
+  NewInst = new IceInstX8632Mov(Cfg, Dest, NewSrc);
   Expansion.push_back(NewInst);
-  NewInst = new IceInstX8632Mov(Cfg, Dest, Reg2);
-  Expansion.push_back(NewInst);
-
   return Expansion;
 }
 
@@ -1405,37 +1440,30 @@ IceInstList IceTargetX8632S::lowerStore(const IceInstStore *Inst,
   IceInstTarget *NewInst;
   IceOperand *Value = Inst->getSrc(0);
   IceOperand *Src1 = Inst->getSrc(1); // Base
-  IceOperand *Src2 = Inst->getSrc(2); // Index - could be NULL
-  IceOperand *Src3 = Inst->getSrc(3); // Shift - constant
-  IceOperand *Src4 = Inst->getSrc(4); // Offset - constant
-  assert(Src1 != NULL /* && llvm::isa<IceVariable>(Src1)*/);
-  assert(Src2 == NULL || llvm::isa<IceVariable>(Src2));
-  assert(Src2 == NULL || llvm::isa<IceConstant>(Src3));
-  assert(Src4 == NULL || llvm::isa<IceConstant>(Src4));
-
-  // store val, [base,index,shift,offset] ==>
-  // t0=val; t1=base; t2=index; store[base,index,shift,offset]
+  IceOperandX8632Mem *NewSrc;
+  if (IceOperandX8632Mem *SrcOp = llvm::dyn_cast<IceOperandX8632Mem>(Src1)) {
+    NewSrc = lowerMemOp(Expansion, SrcOp);
+  } else {
+    IceVariable *Base = NULL;
+    IceConstant *Offset = llvm::dyn_cast<IceConstant>(Src1);
+    if (IceVariable *SrcVar = llvm::dyn_cast<IceVariable>(Src1)) {
+      IceVariable *Reg1 = Cfg->makeVariable(SrcVar->getType());
+      Reg1->setWeightInfinite();
+      Reg1->setPreferredRegister(SrcVar, true);
+      NewInst = new IceInstX8632Mov(Cfg, Reg1, SrcVar);
+      Expansion.push_back(NewInst);
+      Base = Reg1;
+    }
+    NewSrc = new IceOperandX8632Mem(Base, Offset);
+  }
+  // TODO: leave IceConstant unchanged.
   IceVariable *Reg0 = Cfg->makeVariable(Value->getType());
   Reg0->setWeightInfinite();
   Reg0->setPreferredRegister(llvm::dyn_cast<IceVariable>(Value), true);
   NewInst = new IceInstX8632Mov(Cfg, Reg0, Value);
   Expansion.push_back(NewInst);
 
-  IceVariable *Reg1 = Cfg->makeVariable(Src1->getType());
-  Reg1->setWeightInfinite();
-  Reg1->setPreferredRegister(llvm::dyn_cast<IceVariable>(Src1), true);
-  NewInst = new IceInstX8632Mov(Cfg, Reg1, Src1);
-  Expansion.push_back(NewInst);
-  IceVariable *Reg2 = NULL;
-  if (Src2) {
-    Reg2 = Cfg->makeVariable(Src2->getType());
-    Reg2->setWeightInfinite();
-    Reg2->setPreferredRegister(llvm::dyn_cast<IceVariable>(Src2), true);
-    NewInst = new IceInstX8632Mov(Cfg, Reg2, Src2);
-    Expansion.push_back(NewInst);
-  }
-
-  NewInst = new IceInstX8632Store(Cfg, Reg0, Reg1, Reg2, Src3, Src4);
+  NewInst = new IceInstX8632Store(Cfg, Reg0, NewSrc);
   Expansion.push_back(NewInst);
 
   return Expansion;
@@ -1447,4 +1475,29 @@ IceInstList IceTargetX8632S::lowerSwitch(const IceInstSwitch *Inst,
   IceInstList Expansion;
   Cfg->setError("Switch lowering not implemented");
   return Expansion;
+}
+
+IceOperandX8632Mem *IceTargetX8632S::lowerMemOp(IceInstList &Expansion,
+                                                IceOperandX8632Mem *Src) {
+  IceVariable *Base = Src->getBase();
+  IceVariable *Index = Src->getIndex();
+  IceVariable *RegBase = Base;
+  IceVariable *RegIndex = Index;
+  IceInst *NewInst;
+  if (Base) {
+    RegBase = Cfg->makeVariable(IceType_i32);
+    RegBase->setWeightInfinite();
+    RegBase->setPreferredRegister(Base, true);
+    NewInst = new IceInstX8632Mov(Cfg, RegBase, Base);
+    Expansion.push_back(NewInst);
+  }
+  if (Index) {
+    RegIndex = Cfg->makeVariable(IceType_i32);
+    RegIndex->setWeightInfinite();
+    RegIndex->setPreferredRegister(Index, true);
+    NewInst = new IceInstX8632Mov(Cfg, RegIndex, Index);
+    Expansion.push_back(NewInst);
+  }
+  return new IceOperandX8632Mem(RegBase, Src->getOffset(), RegIndex,
+                                Src->getShift());
 }

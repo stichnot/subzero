@@ -153,6 +153,13 @@ void IceCfg::registerEdges(void) {
   }
 }
 
+void IceCfg::findAddressOpt(void) {
+  for (IceNodeList::iterator I = LNodes.begin(), E = LNodes.end(); I != E;
+       ++I) {
+    (*I)->findAddressOpt();
+  }
+}
+
 void IceCfg::placePhiLoads(void) {
   for (IceNodeList::iterator I = LNodes.begin(), E = LNodes.end(); I != E;
        ++I) {
@@ -275,11 +282,18 @@ void IceCfg::translate(IceTargetArch TargetArch) {
     Str << "================ Initial CFG ================\n";
   dump();
 
+  findAddressOpt();
+  if (hasError())
+    return;
+  renumberInstructions();
+  if (hasError())
+    return;
+
   liveness(IceLiveness_RangesFull);
   if (hasError())
     return;
   if (Str.isVerbose())
-    Str << "================ After liveness analysis ================\n";
+    Str << "================ After x86 address opt ================\n";
   dump();
 
   placePhiLoads();
