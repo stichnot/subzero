@@ -1522,6 +1522,38 @@ IceInstList IceTargetX8632S::lowerLoad(const IceInstLoad *Inst,
     assert(Base || Offset);
     Src = new IceOperandX8632Mem(Type, Base, Offset);
   }
+  // Fuse this load with a subsequent Arithmetic instruction in the
+  // following situations:
+  //   a=[mem]; c=b+a ==> c=b+[mem] if last use of a and a not in b
+  //   a=[mem]; c=a+b ==> c=b+[mem] if commutative and above is true
+  //
+  // TODO: Clean up and test thoroughly.
+  //
+  // TODO: Why limit to Arithmetic instructions?  This could probably
+  // be applied to most any instruction type.
+  if (const IceInstArithmetic *Arith =
+          llvm::dyn_cast_or_null<const IceInstArithmetic>(Next)) {
+    IceVariable *DestLoad = Inst->getDest();
+    IceVariable *Src0Arith = llvm::dyn_cast<IceVariable>(Arith->getSrc(0));
+    IceVariable *Src1Arith = llvm::dyn_cast<IceVariable>(Arith->getSrc(1));
+    if (Src1Arith == DestLoad && Arith->isLastUse(1) && DestLoad != Src0Arith) {
+      // TODO: The "1" in isLastUse(1) won't be correct if
+      // Arith->getSrc(0) contains no IceVariables.
+      // TODO: This instruction leaks.
+      IceInstArithmetic *NewArith = new IceInstArithmetic(
+          Cfg, Arith->getOp(), Arith->getDest(), Arith->getSrc(0), Src);
+      DeleteNextInst = true;
+      return lowerArithmetic(NewArith, NULL, DeleteNextInst);
+    } else if (Src0Arith == DestLoad && Arith->isCommutative() &&
+               Arith->isLastUse(0) && DestLoad != Src1Arith) {
+      // TODO: This instruction leaks.
+      IceInstArithmetic *NewArith = new IceInstArithmetic(
+          Cfg, Arith->getOp(), Arith->getDest(), Arith->getSrc(1), Src);
+      DeleteNextInst = true;
+      return lowerArithmetic(NewArith, NULL, DeleteNextInst);
+    }
+  }
+
   // TODO: This instruction leaks.
   IceInstAssign *Assign = new IceInstAssign(Cfg, Inst->getDest(), Src);
   return lowerAssign(Assign, Next, DeleteNextInst);
