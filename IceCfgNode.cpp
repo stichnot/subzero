@@ -101,7 +101,15 @@ void IceCfgNode::findAddressOpt(void) {
     if (!llvm::isa<IceInstLoad>(Inst) && !llvm::isa<IceInstStore>(Inst))
       continue;
     IceInst *NewInst = NULL;
-    IceOperand *Addr = Inst->getSrc(Inst->getSrcSize() - 1);
+    IceOperand *Addr;
+    IceType Type;
+    if (llvm::isa<IceInstLoad>(Inst)) {
+      Addr = Inst->getSrc(0);
+      Type = Inst->getDest()->getType();
+    } else {
+      Addr = Inst->getSrc(1);
+      Type = Inst->getSrc(0)->getType();
+    }
     if (IceVariable *Base = llvm::dyn_cast<IceVariable>(Addr)) {
       IceVariable *Index = NULL;
       int Shift = 0;
@@ -110,7 +118,7 @@ void IceCfgNode::findAddressOpt(void) {
       if (Base != Addr) {
         IceConstant *OffsetOp = Cfg->getConstant(IceType_i32, Offset);
         IceOperandX8632Mem *Mem =
-            new IceOperandX8632Mem(Base, OffsetOp, Index, Shift);
+            new IceOperandX8632Mem(Type, Base, OffsetOp, Index, Shift);
         IceVariable *Dest = Inst->getDest();
         if (Dest) // Load instruction
           NewInst = new IceInstLoad(Cfg, Dest, Mem);

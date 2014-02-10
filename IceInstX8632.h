@@ -25,7 +25,7 @@ protected:
 
 class IceOperandX8632Mem : public IceOperandX8632 {
 public:
-  IceOperandX8632Mem(IceVariable *Base, IceConstant *Offset,
+  IceOperandX8632Mem(IceType Type, IceVariable *Base, IceConstant *Offset,
                      IceVariable *Index = NULL, unsigned Shift = 0);
   IceVariable *getBase(void) const { return Base; }
   IceConstant *getOffset(void) const { return Offset; }
@@ -158,10 +158,23 @@ protected:
   virtual IceInstList doAddressOptStore(const IceInstStore *Inst);
 
 private:
-  // Lowers a memory operand and returns a new version containing just
-  // infinite-weight IceVariables.
-  IceOperandX8632Mem *lowerMemOp(IceInstList &Expansion,
-                                 IceOperandX8632Mem *Src);
+  enum OperandLegalization {
+    Legal_None = 0,
+    Legal_Reg = 1 << 0,
+    Legal_Imm = 1 << 1,
+    Legal_Mem = 1 << 2, // includes [eax+4*ecx] as well as [esp+12]
+    Legal_All = ~Legal_None
+  };
+  typedef uint32_t LegalMask;
+  IceOperand *legalizeOperand(IceOperand *From, LegalMask Allowed,
+                              IceInstList &Insts, bool AllowOverlap = false,
+                              int RegNum = -1);
+  IceVariable *legalizeOperandToVar(IceOperand *From, IceInstList &Insts,
+                                    bool AllowOverlap = false,
+                                    int RegNum = -1) {
+    return llvm::cast<IceVariable>(
+        legalizeOperand(From, Legal_Reg, Insts, AllowOverlap, RegNum));
+  }
 };
 
 class IceInstX8632 : public IceInstTarget {
@@ -312,7 +325,7 @@ public:
 // Sign-extend eax into edx
 class IceInstX8632Cdq : public IceInstX8632 {
 public:
-  IceInstX8632Cdq(IceCfg *Cfg, IceVariable *Dest, IceVariable *Source);
+  IceInstX8632Cdq(IceCfg *Cfg, IceVariable *Dest, IceOperand *Source);
   virtual void dump(IceOstream &Str) const;
   static bool classof(const IceInst *Inst) { return isClassof(Inst, Cdq); }
 };

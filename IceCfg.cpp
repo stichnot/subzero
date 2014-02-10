@@ -192,7 +192,16 @@ void IceCfg::genCode(void) {
        ++I) {
     (*I)->doAddressOpt();
   }
-  // Note: Liveness may be incorrect after address mode optimization.
+  // Liveness may be incorrect after address mode optimization.
+  renumberInstructions();
+  if (hasError())
+    return;
+  liveness(IceLiveness_LREndFull);
+  if (hasError())
+    return;
+  if (Str.isVerbose())
+    Str << "================ After x86 address mode opt ================\n";
+  dump();
   for (IceNodeList::iterator I = LNodes.begin(), E = LNodes.end(); I != E;
        ++I) {
     (*I)->genCode();
@@ -287,13 +296,6 @@ void IceCfg::translate(IceTargetArch TargetArch) {
 
   if (Str.isVerbose())
     Str << "================ Initial CFG ================\n";
-  dump();
-
-  liveness(IceLiveness_RangesFull);
-  if (hasError())
-    return;
-  if (Str.isVerbose())
-    Str << "================ After liveness analysis ================\n";
   dump();
 
   placePhiLoads();
