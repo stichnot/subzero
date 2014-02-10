@@ -978,9 +978,17 @@ IceInstList IceTargetX8632S::lowerAlloca(const IceInstAlloca *Inst,
                                          const IceInst *Next,
                                          bool &DeleteNextInst) {
   IceInstList Expansion;
+  IceInst *NewInst;
   IsEbpBasedFrame = true;
-  // TODO: implement
-  Cfg->setError("Alloca lowering not implemented");
+  // TODO(sehr,stichnot): align allocated memory, keep stack aligned, minimize
+  // the number of adjustments of esp, etc.
+  IceVariable *Esp = Cfg->getTarget()->getPhysicalRegister(Reg_esp);
+  uint32_t Size = Inst->getSize();
+  NewInst = IceInstX8632Sub::create(Cfg, Esp,
+                                    Cfg->getConstant(IceType_i32, Size));
+  Expansion.push_back(NewInst);
+  NewInst = IceInstX8632Mov::create(Cfg, Inst->getDest(), Esp);
+  Expansion.push_back(NewInst);
   return Expansion;
 }
 

@@ -100,6 +100,8 @@ class IceInstAlloca : public IceInst {
 public:
   IceInstAlloca(IceCfg *Cfg, uint32_t Size, uint32_t Align, IceVariable *Dest)
       : IceInst(Cfg, IceInst::Alloca, 0, Dest), Size(Size), Align(Align) {}
+  uint32_t getSize() const { return Size; }
+  uint32_t getAlign() const { return Align; }
   virtual void dump(IceOstream &Str) const;
   static bool classof(const IceInst *Inst) { return Inst->getKind() == Alloca; }
 

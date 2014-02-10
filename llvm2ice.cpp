@@ -217,6 +217,8 @@ private:
       return convertArithInstruction(Inst, IceInstArithmetic::Xor);
     case Instruction::Call:
       return convertCallInstruction(cast<CallInst>(Inst));
+    case Instruction::Alloca:
+      return convertAllocaInstruction(cast<AllocaInst>(Inst));
     default:
       report_fatal_error(std::string("Invalid PNaCl instruction: ") +
                          LLVMObjectAsString(Inst));
@@ -350,6 +352,31 @@ private:
     for (unsigned i = 0; i < NumArgs; ++i) {
       NewInst->addArg(convertOperand(Inst, i));
     }
+    return NewInst;
+  }
+
+  IceInst *convertAllocaInstruction(const AllocaInst *Inst) {
+    // TODO(sehr,stichnot): Implement non-static allocas
+    assert(Inst->isStaticAlloca() && "Only static allocas are supported");
+
+    IceVariable *Dest = mapValueToIceVar(Inst);
+    Type *AllocaType = Inst->getAllocatedType();
+    uint32_t Size;
+    if (AllocaType->isArrayTy()) {
+      Type *ElementType = AllocaType->getArrayElementType();
+      uint32_t ElementSize = ElementType->getScalarSizeInBits() / 8;
+      assert(ElementSize && "Element size needs to be non-zero");
+      // TODO(sehr,stichnot): Implement variable-sized allocas
+      uint64_t ArrayCount = AllocaType->getArrayNumElements();
+      assert((uint64_t)(((uint32_t) -1) / ElementSize) > ArrayCount &&
+             "Integer overflow on allocation");
+      Size = (uint32_t) ElementSize * ArrayCount;
+    } else {
+      Size = AllocaType->getScalarSizeInBits() / 8;
+    }
+    uint32_t Align = Inst->getAlignment();
+
+    IceInstAlloca *NewInst = new IceInstAlloca(Cfg, Size, Align, Dest);
     return NewInst;
   }
 
