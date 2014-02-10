@@ -15,8 +15,6 @@ IceInst::IceInst(IceCfg *Cfg, IceInstType Kind, unsigned MaxSrcs)
       Dest(NULL), LiveRangesEnded(0) {
   Number = Cfg->newInstNumber();
   Srcs = new IceOperand *[MaxSrcs];
-  for (unsigned i = 0; i < MaxSrcs; ++i)
-    Srcs[i] = NULL;
 }
 
 void IceInst::renumber(IceCfg *Cfg) {
@@ -33,7 +31,7 @@ void IceInst::updateVars(IceCfgNode *Node) {
   if (Dest)
     Dest->setDefinition(this, Node);
   for (unsigned I = 0; I < getSrcSize(); ++I) {
-    if (IceVariable *Var = llvm::dyn_cast_or_null<IceVariable>(Srcs[I]))
+    if (IceVariable *Var = llvm::dyn_cast<IceVariable>(getSrc(I)))
       Var->setUse(this, Node);
   }
 }
@@ -45,6 +43,7 @@ void IceInst::addDest(IceVariable *NewDest) {
 }
 
 void IceInst::addSource(IceOperand *Source) {
+  assert(Source);
   assert(NumSrcs < MaxSrcs);
   Srcs[NumSrcs++] = Source;
 }
@@ -64,14 +63,16 @@ void IceInst::doAddressOpt(IceVariable *&Base, IceVariable *&Index, int &Shift,
     // Base is Base=Var ==>
     //   set Base=Var
     const IceInst *BaseInst = Base->getDefinition();
-    IceOperand *BaseOperand0 = BaseInst ? BaseInst->getSrc(0) : NULL;
-    IceVariable *BaseVariable0 =
-        llvm::dyn_cast_or_null<IceVariable>(BaseOperand0);
-    if (BaseInst && llvm::isa<IceInstAssign>(BaseInst) && BaseVariable0 &&
-        // TODO: ensure BaseVariable0 stays single-BB
-        true) {
-      Base = BaseVariable0;
-      continue;
+    IceVariable *BaseVariable0 = NULL;
+    if (const IceInstAssign *AssignInst = llvm::dyn_cast_or_null<const IceInstAssign>(BaseInst)) {
+      IceOperand *BaseOperand0 = AssignInst->getSrc(0);
+      BaseVariable0 = llvm::dyn_cast<IceVariable>(BaseOperand0);
+      if (BaseVariable0 &&
+          // TODO: ensure BaseVariable0 stays single-BB
+          true) {
+        Base = BaseVariable0;
+        continue;
+      }
     }
 
     // Index is Index=Var ==>
@@ -180,9 +181,7 @@ void IceInst::liveness(IceLiveness Mode, int InstNumber, llvm::BitVector &Live,
     resetLastUses();
     unsigned VarIndex = 0;
     for (unsigned I = 0; I < getSrcSize(); ++I) {
-      IceOperand *Src = Srcs[I];
-      if (Src == NULL)
-        continue;
+      IceOperand *Src = getSrc(I);
       unsigned NumVars = Src->getNumVars();
       for (unsigned J = 0; J < NumVars; ++J, ++VarIndex) {
         const IceVariable *Var = Src->getVar(J);
@@ -227,9 +226,7 @@ void IceInst::liveness(IceLiveness Mode, int InstNumber, llvm::BitVector &Live,
   // commuting the operation.
   unsigned VarIndex = 0;
   for (unsigned I = 0; I < getSrcSize(); ++I) {
-    IceOperand *Src = Srcs[I];
-    if (Src == NULL)
-      continue;
+    IceOperand *Src = getSrc(I);
     unsigned NumVars = Src->getNumVars();
     for (unsigned J = 0; J < NumVars; ++J, ++VarIndex) {
       const IceVariable *Var = Src->getVar(J);
@@ -365,7 +362,7 @@ IceOperand *IceInstPhi::getArgument(IceCfgNode *Label) const {
   for (unsigned I = 0; I < getSrcSize() && EdgeIter != EdgeEnd;
        ++I, ++EdgeIter) {
     if (*EdgeIter == Label)
-      return Srcs[I];
+      return getSrc(I);
   }
   assert(0);
   return NULL;
@@ -391,7 +388,7 @@ IceOperand *IceInstPhi::getOperandForTarget(IceCfgNode *Target) const {
   for (unsigned I = 0; I < getSrcSize() && EdgeIter != EdgeEnd;
        ++I, ++EdgeIter) {
     if (*EdgeIter == Target)
-      return Srcs[I];
+      return getSrc(I);
   }
   return NULL;
 }
@@ -407,7 +404,7 @@ void IceInstPhi::livenessPhiOperand(llvm::BitVector &Live, IceCfgNode *Target) {
   for (uint32_t I = 0; I < getSrcSize() && EdgeIter != EdgeEnd;
        ++EdgeIter, ++I) {
     if (*EdgeIter == Target) {
-      if (IceVariable *Var = llvm::dyn_cast_or_null<IceVariable>(Srcs[I])) {
+      if (IceVariable *Var = llvm::dyn_cast<IceVariable>(getSrc(I))) {
         uint32_t SrcIndex = Var->getIndex();
         if (!Live[SrcIndex]) {
           setLastUse(I);
@@ -491,9 +488,7 @@ void IceInst::dumpExtras(IceOstream &Str) const {
   if (Str.isVerbose(IceV_Liveness)) {
     unsigned VarIndex = 0;
     for (unsigned I = 0; I < getSrcSize(); ++I) {
-      IceOperand *Src = Srcs[I];
-      if (Src == NULL)
-        continue;
+      IceOperand *Src = getSrc(I);
       unsigned NumVars = Src->getNumVars();
       for (unsigned J = 0; J < NumVars; ++J, ++VarIndex) {
         const IceVariable *Var = Src->getVar(J);
@@ -516,7 +511,7 @@ void IceInst::dumpSources(IceOstream &Str) const {
   for (unsigned I = 0; I < getSrcSize(); ++I) {
     if (I > 0)
       Str << ", ";
-    Str << Srcs[I];
+    Str << getSrc(I);
   }
 }
 
@@ -606,7 +601,7 @@ void IceInstBr::dump(IceOstream &Str) const {
   dumpDest(Str);
   Str << "br ";
   if (getTargetTrue()) {
-    Str << "i1 " << Srcs[0] << ", label %" << getTargetTrue()->getName()
+    Str << "i1 " << getSrc(0) << ", label %" << getTargetTrue()->getName()
         << ", ";
   }
   Str << "label %" << getTargetFalse()->getName();
@@ -730,7 +725,7 @@ void IceInstPhi::dump(IceOstream &Str) const {
        ++I, ++EdgeIter) {
     if (I > 0)
       Str << ", ";
-    Str << "[ " << Srcs[I] << ", %" << (*EdgeIter)->getName() << " ]";
+    Str << "[ " << getSrc(I) << ", %" << (*EdgeIter)->getName() << " ]";
   }
 }
 

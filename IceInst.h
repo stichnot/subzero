@@ -39,7 +39,8 @@ public:
   IceInstType getKind(void) const { return Kind; }
   IceVariable *getDest(void) const { return Dest; }
   IceOperand *getSrc(unsigned I) const {
-    return I < getSrcSize() ? Srcs[I] : NULL;
+    assert(I < getSrcSize());
+    return Srcs[I];
   }
   unsigned getSrcSize(void) const { return NumSrcs; }
   virtual IceNodeList getTerminatorEdges(void) const {

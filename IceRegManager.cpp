@@ -24,11 +24,10 @@ IceRegManagerEntry::IceRegManagerEntry(const IceRegManagerEntry &Other,
 // is cleared and then set to contain the Operand.
 void IceRegManagerEntry::load(IceInst *Inst) {
   Available.clear();
-  IceOperand *Operand = NULL;
-  if (Inst)
-    Operand = Inst->getSrc(0);
-  if (Operand)
+  if (Inst) {
+    IceOperand *Operand = Inst->getSrc(0);
     Available.push_back(Operand);
+  }
 }
 
 // This virtual register is stored into a Variable, and the Variable

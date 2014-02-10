@@ -414,6 +414,7 @@ IceInstList IceTargetX8632::lowerIcmp(const IceInstIcmp *Inst,
 IceInstList IceTargetX8632::lowerLoad(const IceInstLoad *Inst,
                                       const IceInst *Next,
                                       bool &DeleteNextInst) {
+  assert(0 && "Remove support for 4-src Load instruction");
   IceInstList Expansion;
   IceInstTarget *NewInst;
   IceVariable *Dest = Inst->getDest();
@@ -1435,40 +1436,39 @@ static void computeAddressOpt(IceCfg *Cfg, IceVariable *&Base,
     // Index is Index=Var*Const && log2(Const)+Shift<=3 ==>
     //   Index=Var, Shift+=log2(Const)
     const IceInst *IndexInst = Index ? Index->getDefinition() : NULL;
-    IceOperand *IndexOperand0 = IndexInst ? IndexInst->getSrc(0) : NULL;
-    IceVariable *IndexVariable0 =
-        llvm::dyn_cast_or_null<IceVariable>(IndexOperand0);
-    IceOperand *IndexOperand1 = IndexInst ? IndexInst->getSrc(1) : NULL;
-    IceConstantInteger *IndexConstant1 =
-        llvm::dyn_cast_or_null<IceConstantInteger>(IndexOperand1);
-    if (IndexInst && llvm::isa<IceInstArithmetic>(IndexInst) &&
-        (llvm::cast<IceInstArithmetic>(IndexInst)->getOp() ==
-         IceInstArithmetic::Mul) &&
-        IndexVariable0 && IndexOperand1->getType() == IceType_i32 &&
-        IndexConstant1) {
-      uint32_t Mult = IndexConstant1->getIntValue();
-      uint32_t LogMult;
-      switch (Mult) {
-      case 1:
-        LogMult = 0;
-        break;
-      case 2:
-        LogMult = 1;
-        break;
-      case 4:
-        LogMult = 2;
-        break;
-      case 8:
-        LogMult = 3;
-        break;
-      default:
-        LogMult = 4;
-        break;
-      }
-      if (Shift + LogMult <= 3) {
-        Index = IndexVariable0;
-        Shift += LogMult;
-        continue;
+    if (const IceInstArithmetic *ArithInst = llvm::dyn_cast_or_null<IceInstArithmetic>(IndexInst)) {
+      IceOperand *IndexOperand0 = ArithInst->getSrc(0);
+      IceVariable *IndexVariable0 = llvm::dyn_cast<IceVariable>(IndexOperand0);
+      IceOperand *IndexOperand1 = ArithInst->getSrc(1);
+      IceConstantInteger *IndexConstant1 =
+        llvm::dyn_cast<IceConstantInteger>(IndexOperand1);
+      if (ArithInst->getOp() == IceInstArithmetic::Mul &&
+          IndexVariable0 && IndexOperand1->getType() == IceType_i32 &&
+          IndexConstant1) {
+        uint32_t Mult = IndexConstant1->getIntValue();
+        uint32_t LogMult;
+        switch (Mult) {
+        case 1:
+          LogMult = 0;
+          break;
+        case 2:
+          LogMult = 1;
+          break;
+        case 4:
+          LogMult = 2;
+          break;
+        case 8:
+          LogMult = 3;
+          break;
+        default:
+          LogMult = 4;
+          break;
+        }
+        if (Shift + LogMult <= 3) {
+          Index = IndexVariable0;
+          Shift += LogMult;
+          continue;
+        }
       }
     }
 
@@ -1592,9 +1592,9 @@ IceInstList IceTargetX8632S::lowerRet(const IceInstRet *Inst,
                                       bool &DeleteNextInst) {
   IceInstList Expansion;
   IceInstTarget *NewInst;
-  IceOperand *Src0 = Inst->getSrc(0);
   IceVariable *Reg = NULL;
-  if (Src0) {
+  if (Inst->getSrcSize()) {
+    IceOperand *Src0 = Inst->getSrc(0);
     Reg = legalizeOperandToVar(Src0, Expansion, false, Reg_eax);
   }
   NewInst = new IceInstX8632Ret(Cfg, Reg);
