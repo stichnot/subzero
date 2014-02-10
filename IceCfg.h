@@ -78,6 +78,7 @@ private:
   void placePhiLoads(void);
   void placePhiStores(void);
   void deletePhis(void);
+  void doAddressOpt(void);
   void genCode(void);
   void genFrame(void);
   void liveness(IceLiveness Mode);

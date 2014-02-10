@@ -30,6 +30,7 @@ public:
   void placePhiLoads(void);
   void placePhiStores(void);
   void deletePhis(void);
+  void doAddressOpt(void);
   void genCode(void);
   bool liveness(IceLiveness Mode, bool IsFirst);
   void livenessPostprocess(IceLiveness Mode);

@@ -943,12 +943,13 @@ void IceOperandX8632Mem::dump(IceOstream &Str) const {
   // Pretty-print the Offset.
   bool OffsetIsZero = false;
   bool OffsetIsNegative = false;
-  if (IceConstantInteger *CI =
-          llvm::dyn_cast_or_null<IceConstantInteger>(Offset)) {
+  if (Offset == NULL) {
+    OffsetIsZero = true;
+  } else if (IceConstantInteger *CI =
+                 llvm::dyn_cast<IceConstantInteger>(Offset)) {
     OffsetIsZero = (CI->getIntValue() == 0);
     OffsetIsNegative = (static_cast<int64_t>(CI->getIntValue()) < 0);
-  } else
-    OffsetIsZero = true;
+  }
   if (!OffsetIsZero) { // Suppress if Offset is known to be 0
     if (Dumped) {
       if (!OffsetIsNegative) // Suppress if Offset is known to be negative
@@ -1363,6 +1364,142 @@ IceInstList IceTargetX8632S::lowerIcmp(const IceInstIcmp *Inst,
   return Expansion;
 }
 
+static bool isAssign(const IceInst *Inst) {
+  if (Inst == NULL)
+    return false;
+  if (llvm::isa<IceInstAssign>(Inst))
+    return true;
+  return false;
+}
+
+static bool isAdd(const IceInst *Inst) {
+  if (Inst == NULL)
+    return false;
+  if (const IceInstArithmetic *Arith =
+          llvm::dyn_cast<const IceInstArithmetic>(Inst)) {
+    return (Arith->getOp() == IceInstArithmetic::Add);
+  }
+  return false;
+}
+
+static void computeAddressOpt(IceCfg *Cfg, IceVariable *&Base,
+                              IceVariable *&Index, int &Shift,
+                              int32_t &Offset) {
+  if (Base == NULL)
+    return;
+  // If the Base has more than one use or is live across multiple
+  // blocks, then don't go further.  Alternatively (?), never consider
+  // a transformation that would change a variable that is currently
+  // *not* live across basic block boundaries into one that *is*.
+  if (Base->isMultiblockLife() /* || Base->getUseCount() > 1*/)
+    return;
+
+  while (true) {
+    // Base is Base=Var ==>
+    //   set Base=Var
+    const IceInst *BaseInst = Base->getDefinition();
+    IceOperand *BaseOperand0 = BaseInst ? BaseInst->getSrc(0) : NULL;
+    IceVariable *BaseVariable0 =
+        llvm::dyn_cast_or_null<IceVariable>(BaseOperand0);
+    if (isAssign(BaseInst) && BaseVariable0 &&
+        // TODO: ensure BaseVariable0 stays single-BB
+        true) {
+      Base = BaseVariable0;
+
+      continue;
+    }
+
+    // Index is Index=Var ==>
+    //   set Index=Var
+
+    // Index==NULL && Base is Base=Var1+Var2 ==>
+    //   set Base=Var1, Index=Var2, Shift=0
+    IceOperand *BaseOperand1 = BaseInst ? BaseInst->getSrc(1) : NULL;
+    IceVariable *BaseVariable1 =
+        llvm::dyn_cast_or_null<IceVariable>(BaseOperand1);
+    if (Index == NULL && isAdd(BaseInst) && BaseVariable0 && BaseVariable1 &&
+        // TODO: ensure BaseVariable0 and BaseVariable1 stay single-BB
+        true) {
+      Base = BaseVariable0;
+      Index = BaseVariable1;
+      Shift = 0; // should already have been 0
+      continue;
+    }
+
+    // Index is Index=Var*Const && log2(Const)+Shift<=3 ==>
+    //   Index=Var, Shift+=log2(Const)
+    const IceInst *IndexInst = Index ? Index->getDefinition() : NULL;
+    IceOperand *IndexOperand0 = IndexInst ? IndexInst->getSrc(0) : NULL;
+    IceVariable *IndexVariable0 =
+        llvm::dyn_cast_or_null<IceVariable>(IndexOperand0);
+    IceOperand *IndexOperand1 = IndexInst ? IndexInst->getSrc(1) : NULL;
+    IceConstantInteger *IndexConstant1 =
+        llvm::dyn_cast_or_null<IceConstantInteger>(IndexOperand1);
+    if (IndexInst && llvm::isa<IceInstArithmetic>(IndexInst) &&
+        (llvm::cast<IceInstArithmetic>(IndexInst)->getOp() ==
+         IceInstArithmetic::Mul) &&
+        IndexVariable0 && IndexOperand1->getType() == IceType_i32 &&
+        IndexConstant1) {
+      uint32_t Mult = IndexConstant1->getIntValue();
+      uint32_t LogMult;
+      switch (Mult) {
+      case 1:
+        LogMult = 0;
+        break;
+      case 2:
+        LogMult = 1;
+        break;
+      case 4:
+        LogMult = 2;
+        break;
+      case 8:
+        LogMult = 3;
+        break;
+      default:
+        LogMult = 4;
+        break;
+      }
+      if (Shift + LogMult <= 3) {
+        Index = IndexVariable0;
+        Shift += LogMult;
+        continue;
+      }
+    }
+
+    // Index is Index=Var<<Const && Const+Shift<=3 ==>
+    //   Index=Var, Shift+=Const
+
+    // Index is Index=Const*Var && log2(Const)+Shift<=3 ==>
+    //   Index=Var, Shift+=log2(Const)
+
+    // Index && Shift==0 && Base is Base=Var*Const && log2(Const)+Shift<=3 ==>
+    //   swap(Index,Base)
+    // Similar for Base=Const*Var and Base=Var<<Const
+
+    // Base is Base=Var+Const ==>
+    //   set Base=Var, Offset+=Const
+
+    // Base is Base=Const+Var ==>
+    //   set Base=Var, Offset+=Const
+
+    // Base is Base=Var-Const ==>
+    //   set Base=Var, Offset-=Const
+
+    // Index is Index=Var+Const ==>
+    //   set Index=Var, Offset+=(Const<<Shift)
+
+    // Index is Index=Const+Var ==>
+    //   set Index=Var, Offset+=(Const<<Shift)
+
+    // Index is Index=Var-Const ==>
+    //   set Index=Var, Offset-=(Const<<Shift)
+
+    // TODO: consider overflow issues with respect to Offset.
+    // TODO: handle symbolic constants.
+    break;
+  }
+}
+
 IceInstList IceTargetX8632S::lowerLoad(const IceInstLoad *Inst,
                                        const IceInst *Next,
                                        bool &DeleteNextInst) {
@@ -1371,6 +1508,7 @@ IceInstList IceTargetX8632S::lowerLoad(const IceInstLoad *Inst,
   IceVariable *Dest = Inst->getDest();
   IceOperand *Src0 = Inst->getSrc(0);
   IceOperandX8632Mem *NewSrc;
+
   if (IceOperandX8632Mem *SrcOp = llvm::dyn_cast<IceOperandX8632Mem>(Src0)) {
     NewSrc = lowerMemOp(Expansion, SrcOp);
   } else {
@@ -1388,6 +1526,25 @@ IceInstList IceTargetX8632S::lowerLoad(const IceInstLoad *Inst,
   }
   NewInst = new IceInstX8632Mov(Cfg, Dest, NewSrc);
   Expansion.push_back(NewInst);
+  return Expansion;
+}
+
+IceInstList IceTargetX8632S::doAddressOptLoad(const IceInstLoad *Inst) {
+  IceInstList Expansion;
+  IceInst *NewInst;
+  IceVariable *Dest = Inst->getDest();
+  IceOperand *Src0 = Inst->getSrc(0);
+  IceVariable *Index = NULL;
+  int Shift = 0;
+  int32_t Offset = 0; // TODO: make IceConstant
+  IceVariable *Base = llvm::dyn_cast<IceVariable>(Src0);
+  computeAddressOpt(Cfg, Base, Index, Shift, Offset);
+  if (Base && Src0 != Base) {
+    IceConstant *OffsetOp = Cfg->getConstant(IceType_i32, Offset);
+    Src0 = new IceOperandX8632Mem(Base, OffsetOp, Index, Shift);
+    NewInst = new IceInstLoad(Cfg, Dest, Src0);
+    Expansion.push_back(NewInst);
+  }
   return Expansion;
 }
 
@@ -1468,6 +1625,26 @@ IceInstList IceTargetX8632S::lowerStore(const IceInstStore *Inst,
   NewInst = new IceInstX8632Store(Cfg, Reg0, NewSrc);
   Expansion.push_back(NewInst);
 
+  return Expansion;
+}
+
+IceInstList IceTargetX8632S::doAddressOptStore(const IceInstStore *Inst) {
+  return IceInstList();
+  IceInstList Expansion;
+  IceInst *NewInst;
+  IceOperand *Src0 = Inst->getSrc(0);
+  IceOperand *Src1 = Inst->getSrc(1);
+  IceVariable *Index = NULL;
+  int Shift = 0;
+  int32_t Offset = 0; // TODO: make IceConstant
+  IceVariable *Base = llvm::dyn_cast<IceVariable>(Src1);
+  computeAddressOpt(Cfg, Base, Index, Shift, Offset);
+  if (Src1 != Base) {
+    IceConstant *OffsetOp = Cfg->getConstant(IceType_i32, Offset);
+    Src0 = new IceOperandX8632Mem(Base, OffsetOp, Index, Shift);
+    NewInst = new IceInstStore(Cfg, Src1, Src0);
+    Expansion.push_back(NewInst);
+  }
   return Expansion;
 }
 

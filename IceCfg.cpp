@@ -186,6 +186,13 @@ void IceCfg::genCode(void) {
     setError("IceCfg::makeTarget() wasn't called.");
     return;
   }
+  // TODO: Query whether the Target supports address mode
+  // optimization, and skip the pass if not.
+  for (IceNodeList::iterator I = LNodes.begin(), E = LNodes.end(); I != E;
+       ++I) {
+    (*I)->doAddressOpt();
+  }
+  // Note: Liveness may be incorrect after address mode optimization.
   for (IceNodeList::iterator I = LNodes.begin(), E = LNodes.end(); I != E;
        ++I) {
     (*I)->genCode();
@@ -282,18 +289,11 @@ void IceCfg::translate(IceTargetArch TargetArch) {
     Str << "================ Initial CFG ================\n";
   dump();
 
-  findAddressOpt();
-  if (hasError())
-    return;
-  renumberInstructions();
-  if (hasError())
-    return;
-
   liveness(IceLiveness_RangesFull);
   if (hasError())
     return;
   if (Str.isVerbose())
-    Str << "================ After x86 address opt ================\n";
+    Str << "================ After liveness analysis ================\n";
   dump();
 
   placePhiLoads();

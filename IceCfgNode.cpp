@@ -223,9 +223,25 @@ void IceCfgNode::deletePhis(void) {
   }
 }
 
+void IceCfgNode::doAddressOpt(void) {
+  IceTargetLowering *Target = Cfg->getTarget();
+  IceInstList::iterator I = Insts.begin(), E = Insts.end();
+  while (I != E) {
+    IceInst *Inst = *I++;
+    if (Inst->isDeleted())
+      continue;
+    IceInstList NewInsts = Target->doAddressOpt(Inst);
+    if (!NewInsts.empty()) {
+      insertInsts(I, NewInsts);
+      Inst->setDeleted();
+    }
+  }
+}
+
 void IceCfgNode::genCode(void) {
   IceTargetLowering *Target = Cfg->getTarget();
-  RegManager = Target->makeRegManager(this);
+  if (RegManager == NULL)
+    RegManager = Target->makeRegManager(this);
   // Defer the Phi instructions.
   IceInstList::iterator I = Insts.begin(), E = Insts.end();
   while (I != E) {

@@ -154,6 +154,8 @@ protected:
                                  bool &DeleteNextInst);
   virtual IceInstList lowerSwitch(const IceInstSwitch *Inst,
                                   const IceInst *Next, bool &DeleteNextInst);
+  virtual IceInstList doAddressOptLoad(const IceInstLoad *Inst);
+  virtual IceInstList doAddressOptStore(const IceInstStore *Inst);
 
 private:
   // Lowers a memory operand and returns a new version containing just

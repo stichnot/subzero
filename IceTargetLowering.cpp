@@ -27,6 +27,14 @@ IceTargetLowering *IceTargetLowering::createLowering(IceTargetArch Target,
   return NULL;
 }
 
+IceInstList IceTargetLowering::doAddressOpt(const IceInst *Inst) {
+  if (const IceInstLoad *I = llvm::dyn_cast<const IceInstLoad>(Inst))
+    return doAddressOptLoad(I);
+  if (const IceInstStore *I = llvm::dyn_cast<const IceInstStore>(Inst))
+    return doAddressOptStore(I);
+  return IceInstList();
+}
+
 IceInstList IceTargetLowering::lower(const IceInst *Inst, const IceInst *Next,
                                      bool &DeleteNextInst) {
   if (const IceInstAlloca *I = llvm::dyn_cast<const IceInstAlloca>(Inst))

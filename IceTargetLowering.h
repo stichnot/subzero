@@ -16,6 +16,7 @@ class IceTargetLowering {
 public:
   static IceTargetLowering *createLowering(IceTargetArch Target, IceCfg *Cfg);
   void setRegManager(IceRegManager *R) { RegManager = R; }
+  IceInstList doAddressOpt(const IceInst *Inst);
   IceInstList lower(const IceInst *Inst, const IceInst *Next,
                     bool &DeleteNextInst);
   virtual IceRegManager *makeRegManager(IceCfgNode *Node) { return NULL; }
@@ -77,6 +78,13 @@ protected:
   virtual IceInstList lowerSwitch(const IceInstSwitch *Inst,
                                   const IceInst *Next,
                                   bool &DeleteNextInst) = 0;
+
+  virtual IceInstList doAddressOptLoad(const IceInstLoad *Inst) {
+    return IceInstList();
+  }
+  virtual IceInstList doAddressOptStore(const IceInstStore *Inst) {
+    return IceInstList();
+  }
   IceCfg *const Cfg;
   IceRegManager *RegManager;
   bool HasComputedFrame;
