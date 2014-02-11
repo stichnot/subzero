@@ -54,8 +54,8 @@ ICE code that accomplishes this looks something like::
     IceVariable *Reg;
     Reg = Cfg->makeVariable(Dst->getType());
     Reg->setWeightInfinite();
-    NewInst = new IceInstX8632Mov(Cfg, Reg, Src);
-    NewInst = new IceInstX8632Mov(Cfg, Dst, Reg);
+    NewInst = IceInstX8632Mov::create(Cfg, Reg, Src);
+    NewInst = IceInstX8632Mov::create(Cfg, Dst, Reg);
 
 ``IceCfg::makeVariable()`` generates a new temporary, and
 ``IceVariable::setWeightInfinite()`` gives it infinite weight for the purpose of
@@ -87,8 +87,8 @@ different ``IceVariable``, using ``IceVariable::setPreferredRegister()``::
     Reg = Cfg->makeVariable(Dst->getType());
     Reg->setWeightInfinite();
     Reg->setPreferredRegister(Src);
-    NewInst = new IceInstX8632Mov(Cfg, Reg, Src);
-    NewInst = new IceInstX8632Mov(Cfg, Dst, Reg);
+    NewInst = IceInstX8632Mov::create(Cfg, Reg, Src);
+    NewInst = IceInstX8632Mov::create(Cfg, Dst, Reg);
 
 The usefulness of ``setPreferredRegister()`` is tied into the implementation of
 the register allocator.  ICE uses linear-scan register allocation, which sorts
@@ -101,7 +101,7 @@ exceptions for variables that are no longer in SSA form.)  But
 ``A->setPreferredRegister(B)`` is unlikely to help unless ``B`` has been
 precolored.  In summary, generally the best practice is to use a pattern like::
 
-    NewInst = new IceInstX8632Mov(Cfg, Dst, Src);
+    NewInst = IceInstX8632Mov::create(Cfg, Dst, Src);
     Dst->setPreferredRegister(Src);
     //Src->setPreferredRegister(Dst); -- unlikely to have any effect
 
@@ -120,8 +120,8 @@ second argument of ``setPreferredRegister()``::
     Reg = Cfg->makeVariable(Dst->getType());
     Reg->setWeightInfinite();
     Reg->setPreferredRegister(Src, true);
-    NewInst = new IceInstX8632Mov(Cfg, Reg, Src);
-    NewInst = new IceInstX8632Mov(Cfg, Dst, Reg);
+    NewInst = IceInstX8632Mov::create(Cfg, Reg, Src);
+    NewInst = IceInstX8632Mov::create(Cfg, Dst, Reg);
 
 This should be used with caution and probably only for these short-live-range
 temporaries, otherwise the classic "lost copy" or "lost swap" problem may be
@@ -139,8 +139,8 @@ instruction needs its operand in ``eax``.  This can be done with
     Reg = Cfg->makeVariable(Src->getType());
     Reg->setWeightInfinite();
     Reg->setRegNum(Reg_eax);
-    NewInst = new IceInstX8632Mov(Cfg, Reg, Src);
-    NewInst = new IceInstX8632Ret(Cfg, Reg);
+    NewInst = IceInstX8632Mov::create(Cfg, Reg, Src);
+    NewInst = IceInstX8632Ret::create(Cfg, Reg);
 
 Precoloring with ``IceVariable::setRegNum()`` effectively gives it infinite
 weight for register allocation, so the call to
@@ -164,12 +164,12 @@ range is created that begins and ends in that instruction.  The
 ``IceInstFakeKill`` instruction is inserted after the ``call`` instruction.  For
 example::
 
-    CallInst = new IceInstX8632Call(Cfg, ... );
+    CallInst = IceInstX8632Call::create(Cfg, ... );
     IceVarList KilledRegs;
     KilledRegs.push_back(eax);
     KilledRegs.push_back(ecx);
     KilledRegs.push_back(edx);
-    NewInst = new IceInstFakeKill(Cfg, KilledRegs, CallInst);
+    NewInst = IceInstFakeKill::create(Cfg, KilledRegs, CallInst);
 
 The last argument to the ``IceInstFakeKill`` constructor links it to the
 previous call instruction, such that if its linked instruction is dead-code
@@ -180,7 +180,7 @@ The killed register arguments need to be assigned a physical register via
 proliferation of ``IceVariable`` temporaries, the ``Cfg`` caches one precolored
 ``IceVariable`` for each physical register::
 
-    CallInst = new IceInstX8632Call(Cfg, ... );
+    CallInst = IceInstX8632Call::create(Cfg, ... );
     IceVarList KilledRegs;
     IceVariable *eax = Cfg->getTarget()->getPhysicalRegister(Reg_eax);
     IceVariable *ecx = Cfg->getTarget()->getPhysicalRegister(Reg_ecx);
@@ -188,7 +188,7 @@ proliferation of ``IceVariable`` temporaries, the ``Cfg`` caches one precolored
     KilledRegs.push_back(eax);
     KilledRegs.push_back(ecx);
     KilledRegs.push_back(edx);
-    NewInst = new IceInstFakeKill(Cfg, KilledRegs, CallInst);
+    NewInst = IceInstFakeKill::create(Cfg, KilledRegs, CallInst);
 
 On first glance, it seems unnecessary to explicitly kill the register that
 returns the ``call`` return value.  However, if for some reason the ``call``
@@ -210,12 +210,12 @@ pseudo-instruction.  Its destination can be precolored to the appropriate
 physical register.  For example, a ``call`` returning a 64-bit result in
 ``edx:eax``::
 
-    CallInst = new IceInstX8632Call(Cfg, RegLow, ... );
+    CallInst = IceInstX8632Call::create(Cfg, RegLow, ... );
     ...
-    NewInst = new IceInstFakeKill(Cfg, KilledRegs, CallInst);
+    NewInst = IceInstFakeKill::create(Cfg, KilledRegs, CallInst);
     IceVariable *RegHigh = Cfg->makeVariable(IceType_i32);
     RegHigh->setRegNum(Reg_edx);
-    NewInst = new IceInstFakeDef(Cfg, RegHigh);
+    NewInst = IceInstFakeDef::create(Cfg, RegHigh);
 
 ``RegHigh`` is then assigned into the desired ``IceVariable``.  If that
 assignment ends up being dead-code eliminated, the ``IceInstFakeDef``
@@ -240,7 +240,7 @@ result::
 
     IceVariable *Reg = Cfg->makeVariable(IceType_i32);
     Reg->setRegNum(Reg_eax);
-    CallInst = new IceInstX8632Call(Cfg, Reg, ... );
+    CallInst = IceInstX8632Call::create(Cfg, Reg, ... );
     IceVarList KilledRegs;
     IceVariable *eax = Cfg->getTarget()->getPhysicalRegister(Reg_eax);
     IceVariable *ecx = Cfg->getTarget()->getPhysicalRegister(Reg_ecx);
@@ -248,9 +248,9 @@ result::
     KilledRegs.push_back(eax);
     KilledRegs.push_back(ecx);
     KilledRegs.push_back(edx);
-    NewInst = new IceInstFakeKill(Cfg, KilledRegs, CallInst);
-    NewInst = new IceInstFakeUse(Cfg, Reg);
-    NewInst = new IceInstX8632Mov(Cfg, Result, Reg);
+    NewInst = IceInstFakeKill::create(Cfg, KilledRegs, CallInst);
+    NewInst = IceInstFakeUse::create(Cfg, Reg);
+    NewInst = IceInstX8632Mov::create(Cfg, Result, Reg);
 
 Without the ``IceInstFakeUse``, the entire call sequence could be dead-code
 eliminated if its result were unused.
