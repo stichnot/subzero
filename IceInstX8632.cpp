@@ -1276,24 +1276,14 @@ IceInstList IceTargetX8632S::lowerCall(const IceInstCall *Inst,
 IceInstList IceTargetX8632S::lowerCast(const IceInstCast *Inst,
                                        const IceInst *Next,
                                        bool &DeleteNextInst) {
-  // TODO: The current expansion forces the mov[sz]x operand to be in
-  // a physical register, which is overly restrictive and prevents a
-  // single-instruction expansion "movsx reg, [mem]".  A better
-  // expansion is:
-  //
   // a = cast(b) ==> t=cast(b); a=t; (link t->b, link a->t, no overlap)
   IceInstList Expansion;
   IceInstCast::IceCastKind CastKind = Inst->getCastKind();
   IceVariable *Dest = Inst->getDest();
   IceOperand *Src0 = Inst->getSrc(0);
-  IceVariable *Reg;
   IceInstTarget *NewInst;
-  // cast a=b ==> t=b; mov[sz]x a=t; (link t->b)
-  Reg = Cfg->makeVariable(Src0->getType());
-  Reg->setWeightInfinite();
-  Reg->setPreferredRegister(llvm::dyn_cast<IceVariable>(Src0), true);
-  NewInst = IceInstX8632Mov::create(Cfg, Reg, Src0);
-  Expansion.push_back(NewInst);
+  IceOperand *Reg = legalizeOperand(Src0, Legal_Reg | Legal_Mem, Expansion,
+                                    true);
   switch (CastKind) {
   default:
     // TODO: implement other sorts of casts.
