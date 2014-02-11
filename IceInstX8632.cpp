@@ -51,7 +51,7 @@ IceRegManager *IceTargetX8632::makeRegManager(IceCfgNode *Node) {
 
 IceInstTarget *IceTargetX8632::makeAssign(IceVariable *Dest, IceOperand *Src) {
   assert(Dest->getRegNum() >= 0);
-  return new IceInstX8632Mov(Cfg, Dest, Src);
+  return IceInstX8632Mov::create(Cfg, Dest, Src);
 }
 
 IceVariable *IceTargetX8632::getPhysicalRegister(unsigned RegNum) {
@@ -106,7 +106,8 @@ void IceTargetX8632::addProlog(IceCfgNode *Node) {
   for (unsigned i = 0; i < CalleeSaves.size(); ++i) {
     if (CalleeSaves[i] && RegsUsed[i]) {
       PreservedRegsSizeBytes += 4;
-      Expansion.push_back(new IceInstX8632Push(Cfg, getPhysicalRegister(i)));
+      Expansion.push_back(
+          IceInstX8632Push::create(Cfg, getPhysicalRegister(i)));
     }
   }
 
@@ -116,16 +117,16 @@ void IceTargetX8632::addProlog(IceCfgNode *Node) {
                .count() == 0);
     PreservedRegsSizeBytes += 4;
     Expansion.push_back(
-        new IceInstX8632Push(Cfg, getPhysicalRegister(Reg_ebp)));
-    Expansion.push_back(new IceInstX8632Mov(Cfg, getPhysicalRegister(Reg_ebp),
-                                            getPhysicalRegister(Reg_esp)));
+        IceInstX8632Push::create(Cfg, getPhysicalRegister(Reg_ebp)));
+    Expansion.push_back(IceInstX8632Mov::create(
+        Cfg, getPhysicalRegister(Reg_ebp), getPhysicalRegister(Reg_esp)));
   }
 
   // Generate "sub esp, LocalsSizeBytes"
   if (LocalsSizeBytes)
-    Expansion.push_back(
-        new IceInstX8632Sub(Cfg, getPhysicalRegister(Reg_esp),
-                            Cfg->getConstant(IceType_i32, LocalsSizeBytes)));
+    Expansion.push_back(IceInstX8632Sub::create(
+        Cfg, getPhysicalRegister(Reg_esp),
+        Cfg->getConstant(IceType_i32, LocalsSizeBytes)));
 
   // Fill in stack offsets for locals.
   int NextStackOffset = 0;
@@ -174,7 +175,7 @@ void IceTargetX8632::addProlog(IceCfgNode *Node) {
       IceOperandX8632Mem *Mem = new IceOperandX8632Mem(
           IceType_i32, FramePtr,
           Cfg->getConstant(IceType_i32, Arg->getStackOffset()));
-      Expansion.push_back(new IceInstX8632Mov(Cfg, Arg, Mem));
+      Expansion.push_back(IceInstX8632Mov::create(Cfg, Arg, Mem));
     }
     InArgsSizeBytes += 4;
   }
@@ -205,16 +206,17 @@ void IceTargetX8632::addEpilog(IceCfgNode *Node) {
 
   if (IsEbpBasedFrame) {
     // mov esp, ebp
-    Expansion.push_back(new IceInstX8632Mov(Cfg, getPhysicalRegister(Reg_esp),
-                                            getPhysicalRegister(Reg_ebp)));
+    Expansion.push_back(IceInstX8632Mov::create(
+        Cfg, getPhysicalRegister(Reg_esp), getPhysicalRegister(Reg_ebp)));
     // pop ebp
-    Expansion.push_back(new IceInstX8632Pop(Cfg, getPhysicalRegister(Reg_ebp)));
+    Expansion.push_back(
+        IceInstX8632Pop::create(Cfg, getPhysicalRegister(Reg_ebp)));
   } else {
     // add esp, FrameSizeLocals
     if (LocalsSizeBytes)
-      Expansion.push_back(
-          new IceInstX8632Add(Cfg, getPhysicalRegister(Reg_esp),
-                              Cfg->getConstant(IceType_i32, FrameSizeLocals)));
+      Expansion.push_back(IceInstX8632Add::create(
+          Cfg, getPhysicalRegister(Reg_esp),
+          Cfg->getConstant(IceType_i32, FrameSizeLocals)));
   }
 
   // Add pop instructions for preserved registers.
@@ -225,7 +227,7 @@ void IceTargetX8632::addEpilog(IceCfgNode *Node) {
     if (j == Reg_ebp && IsEbpBasedFrame)
       continue;
     if (CalleeSaves[j] && RegsUsed[j]) {
-      Expansion.push_back(new IceInstX8632Pop(Cfg, getPhysicalRegister(j)));
+      Expansion.push_back(IceInstX8632Pop::create(Cfg, getPhysicalRegister(j)));
     }
   }
 
@@ -271,18 +273,18 @@ IceInstList IceTargetX8632::lowerArithmetic(const IceInstArithmetic *Inst,
   Reg = RegManager->getRegister(Dest->getType(), Prefer, Avoid);
   // Create "reg=Src0" if needed.
   if (!RegManager->registerContains(Reg, Src0)) {
-    NewInst = new IceInstX8632Mov(Cfg, Reg, Src0);
+    NewInst = IceInstX8632Mov::create(Cfg, Reg, Src0);
     Expansion.push_back(NewInst);
     RegManager->notifyLoad(NewInst);
     NewInst->setRegState(RegManager);
   }
   // NewInst = new IceInstX8632Arithmetic(Cfg, Inst->getOp(), Reg, Src1);
   // TODO: Operator-specific instruction instead of Add.
-  NewInst = new IceInstX8632Add(Cfg, Reg, Src1);
+  NewInst = IceInstX8632Add::create(Cfg, Reg, Src1);
   Expansion.push_back(NewInst);
   RegManager->notifyLoad(NewInst, false);
   NewInst->setRegState(RegManager);
-  NewInst = new IceInstX8632Mov(Cfg, Dest, Reg);
+  NewInst = IceInstX8632Mov::create(Cfg, Dest, Reg);
   Expansion.push_back(NewInst);
   RegManager->notifyStore(NewInst);
   NewInst->setRegState(RegManager);
@@ -305,7 +307,7 @@ IceInstList IceTargetX8632::lowerAssign(const IceInstAssign *Inst,
     if (RegManager->registerContains(Reg, Src0)) {
       Src0 = Reg;
     }
-    NewInst = new IceInstX8632Mov(Cfg, Dest, Src0);
+    NewInst = IceInstX8632Mov::create(Cfg, Dest, Src0);
     Expansion.push_back(NewInst);
     // TODO: commenting out the notifyLoad() call because Dest
     // doesn't actually belong to the current RegManager and
@@ -316,12 +318,12 @@ IceInstList IceTargetX8632::lowerAssign(const IceInstAssign *Inst,
     NewInst->setRegState(RegManager);
   } else {
     if (!RegManager->registerContains(Reg, Src0)) {
-      NewInst = new IceInstX8632Mov(Cfg, Reg, Src0);
+      NewInst = IceInstX8632Mov::create(Cfg, Reg, Src0);
       Expansion.push_back(NewInst);
       RegManager->notifyLoad(NewInst);
       NewInst->setRegState(RegManager);
     }
-    NewInst = new IceInstX8632Mov(Cfg, Dest, Reg);
+    NewInst = IceInstX8632Mov::create(Cfg, Dest, Reg);
     Expansion.push_back(NewInst);
     RegManager->notifyStore(NewInst);
     NewInst->setRegState(RegManager);
@@ -390,19 +392,19 @@ IceInstList IceTargetX8632::lowerIcmp(const IceInstIcmp *Inst,
         if (llvm::isa<IceConstant>(Src1)) {
           RegSrc = Src0;
         } else {
-          NewInst = new IceInstX8632Mov(Cfg, Reg, Src0);
+          NewInst = IceInstX8632Mov::create(Cfg, Reg, Src0);
           Expansion.push_back(NewInst);
           RegManager->notifyLoad(NewInst);
           NewInst->setRegState(RegManager);
         }
       }
     }
-    NewInst = new IceInstX8632Icmp(Cfg, RegSrc, Src1);
+    NewInst = IceInstX8632Icmp::create(Cfg, RegSrc, Src1);
     Expansion.push_back(NewInst);
     NewInst->setRegState(RegManager);
     NewInst =
-        new IceInstX8632Br(Cfg, NextBr->getTargetTrue(),
-                           NextBr->getTargetFalse(), Inst->getCondition());
+        IceInstX8632Br::create(Cfg, NextBr->getTargetTrue(),
+                               NextBr->getTargetFalse(), Inst->getCondition());
     Expansion.push_back(NewInst);
     DeleteNextInst = true;
   } else {
@@ -431,7 +433,7 @@ IceInstList IceTargetX8632::lowerLoad(const IceInstLoad *Inst,
       Avoid.push_back(Variable);
     Reg1 = RegManager->getRegister(Dest->getType(), Prefer, Avoid);
     if (!RegManager->registerContains(Reg1, Src0)) {
-      NewInst = new IceInstX8632Mov(Cfg, Reg1, Src0);
+      NewInst = IceInstX8632Mov::create(Cfg, Reg1, Src0);
       Expansion.push_back(NewInst);
       RegManager->notifyLoad(NewInst);
       NewInst->setRegState(RegManager);
@@ -445,7 +447,7 @@ IceInstList IceTargetX8632::lowerLoad(const IceInstLoad *Inst,
     Avoid.push_back(Reg1);
     Reg2 = RegManager->getRegister(Dest->getType(), Prefer, Avoid);
     if (!RegManager->registerContains(Reg2, Src1)) {
-      NewInst = new IceInstX8632Mov(Cfg, Reg2, Src1);
+      NewInst = IceInstX8632Mov::create(Cfg, Reg2, Src1);
       Expansion.push_back(NewInst);
       RegManager->notifyLoad(NewInst);
       NewInst->setRegState(RegManager);
@@ -459,13 +461,13 @@ IceInstList IceTargetX8632::lowerLoad(const IceInstLoad *Inst,
     Avoid.push_back(Reg2);
     Reg = RegManager->getRegister(Dest->getType(), Prefer, Avoid);
   }
-  NewInst = new IceInstX8632Load(Cfg, Reg, Reg1, Reg2, Src2, Src3);
+  NewInst = IceInstX8632Load::create(Cfg, Reg, Reg1, Reg2, Src2, Src3);
   Expansion.push_back(NewInst);
   if (Reg != Dest) // TODO: clean this up
     RegManager->notifyLoad(NewInst, false);
   NewInst->setRegState(RegManager);
   if (Reg != Dest) {
-    NewInst = new IceInstX8632Mov(Cfg, Dest, Reg);
+    NewInst = IceInstX8632Mov::create(Cfg, Dest, Reg);
     Expansion.push_back(NewInst);
     RegManager->notifyStore(NewInst);
     NewInst->setRegState(RegManager);
@@ -494,14 +496,14 @@ IceInstList IceTargetX8632::lowerRet(const IceInstRet *Inst,
     Prefer.push_back(Src0);
     Reg = RegManager->getRegister(Src0->getType(), Prefer, Avoid);
     if (!RegManager->registerContains(Reg, Src0)) {
-      NewInst = new IceInstX8632Mov(Cfg, Reg, Src0);
+      NewInst = IceInstX8632Mov::create(Cfg, Reg, Src0);
       Expansion.push_back(NewInst);
       RegManager->notifyLoad(NewInst);
       NewInst->setRegState(RegManager);
     }
   } else
     Reg = NULL;
-  NewInst = new IceInstX8632Ret(Cfg, Reg);
+  NewInst = IceInstX8632Ret::create(Cfg, Reg);
   Expansion.push_back(NewInst);
   return Expansion;
 }
@@ -969,7 +971,7 @@ llvm::SmallBitVector IceTargetX8632S::getRegisterSet(RegSetMask Include,
 
 IceInstTarget *IceTargetX8632S::makeAssign(IceVariable *Dest, IceOperand *Src) {
   assert(Dest->getRegNum() >= 0);
-  return new IceInstX8632Mov(Cfg, Dest, Src);
+  return IceInstX8632Mov::create(Cfg, Dest, Src);
 }
 
 IceInstList IceTargetX8632S::lowerAlloca(const IceInstAlloca *Inst,
@@ -1083,10 +1085,10 @@ IceInstList IceTargetX8632S::lowerArithmetic(const IceInstArithmetic *Inst,
     Reg0 = Cfg->makeVariable(IceType_i32);
     Reg0->setRegNum(Reg_edx);
     if (ZeroExtendReg1)
-      NewInst =
-          new IceInstX8632Mov(Cfg, Reg0, Cfg->getConstant(IceType_i32, Zero));
+      NewInst = IceInstX8632Mov::create(Cfg, Reg0,
+                                        Cfg->getConstant(IceType_i32, Zero));
     else
-      NewInst = new IceInstX8632Cdq(Cfg, Reg0, Reg1);
+      NewInst = IceInstX8632Cdq::create(Cfg, Reg0, Reg1);
     Expansion.push_back(NewInst);
   }
 
@@ -1098,44 +1100,44 @@ IceInstList IceTargetX8632S::lowerArithmetic(const IceInstArithmetic *Inst,
   // Generate the arithmetic instruction.
   switch (Inst->getOp()) {
   case IceInstArithmetic::Add:
-    NewInst = new IceInstX8632Add(Cfg, Reg1, Reg2);
+    NewInst = IceInstX8632Add::create(Cfg, Reg1, Reg2);
     break;
   case IceInstArithmetic::And:
-    NewInst = new IceInstX8632And(Cfg, Reg1, Reg2);
+    NewInst = IceInstX8632And::create(Cfg, Reg1, Reg2);
     break;
   case IceInstArithmetic::Or:
-    NewInst = new IceInstX8632Or(Cfg, Reg1, Reg2);
+    NewInst = IceInstX8632Or::create(Cfg, Reg1, Reg2);
     break;
   case IceInstArithmetic::Xor:
-    NewInst = new IceInstX8632Xor(Cfg, Reg1, Reg2);
+    NewInst = IceInstX8632Xor::create(Cfg, Reg1, Reg2);
     break;
   case IceInstArithmetic::Sub:
-    NewInst = new IceInstX8632Sub(Cfg, Reg1, Reg2);
+    NewInst = IceInstX8632Sub::create(Cfg, Reg1, Reg2);
     break;
   case IceInstArithmetic::Mul:
     // TODO: Optimized for llvm::isa<IceConstant>(Src1)
-    NewInst = new IceInstX8632Imul(Cfg, Reg1, Reg2);
+    NewInst = IceInstX8632Imul::create(Cfg, Reg1, Reg2);
     break;
   case IceInstArithmetic::Udiv:
-    NewInst = new IceInstX8632Div(Cfg, Reg1, Reg2, Reg0);
+    NewInst = IceInstX8632Div::create(Cfg, Reg1, Reg2, Reg0);
     break;
   case IceInstArithmetic::Sdiv:
-    NewInst = new IceInstX8632Idiv(Cfg, Reg1, Reg2, Reg0);
+    NewInst = IceInstX8632Idiv::create(Cfg, Reg1, Reg2, Reg0);
     break;
   case IceInstArithmetic::Urem:
-    NewInst = new IceInstX8632Div(Cfg, Reg0, Reg2, Reg1);
+    NewInst = IceInstX8632Div::create(Cfg, Reg0, Reg2, Reg1);
     break;
   case IceInstArithmetic::Srem:
-    NewInst = new IceInstX8632Idiv(Cfg, Reg0, Reg2, Reg1);
+    NewInst = IceInstX8632Idiv::create(Cfg, Reg0, Reg2, Reg1);
     break;
   case IceInstArithmetic::Shl:
-    NewInst = new IceInstX8632Shl(Cfg, Reg1, Reg2);
+    NewInst = IceInstX8632Shl::create(Cfg, Reg1, Reg2);
     break;
   case IceInstArithmetic::Lshr:
-    NewInst = new IceInstX8632Shr(Cfg, Reg1, Reg2);
+    NewInst = IceInstX8632Shr::create(Cfg, Reg1, Reg2);
     break;
   case IceInstArithmetic::Ashr:
-    NewInst = new IceInstX8632Sar(Cfg, Reg1, Reg2);
+    NewInst = IceInstX8632Sar::create(Cfg, Reg1, Reg2);
     break;
   case IceInstArithmetic::Fadd:
   case IceInstArithmetic::Fsub:
@@ -1153,7 +1155,7 @@ IceInstList IceTargetX8632S::lowerArithmetic(const IceInstArithmetic *Inst,
   Expansion.push_back(NewInst);
 
   // Assign Dest.
-  NewInst = new IceInstX8632Mov(Cfg, Dest, (ResultFromReg0 ? Reg0 : Reg1));
+  NewInst = IceInstX8632Mov::create(Cfg, Dest, (ResultFromReg0 ? Reg0 : Reg1));
   Expansion.push_back(NewInst);
 
   return Expansion;
@@ -1170,7 +1172,7 @@ IceInstList IceTargetX8632S::lowerAssign(const IceInstAssign *Inst,
   assert(Dest->getType() == Src0->getType());
   IceOperand *Reg =
       legalizeOperand(Src0, Legal_Reg | Legal_Imm, Expansion, true);
-  NewInst = new IceInstX8632Mov(Cfg, Dest, Reg);
+  NewInst = IceInstX8632Mov::create(Cfg, Dest, Reg);
   Expansion.push_back(NewInst);
   return Expansion;
 }
@@ -1201,7 +1203,7 @@ IceInstList IceTargetX8632S::lowerCall(const IceInstCall *Inst,
     IceOperand *Arg = Inst->getSrc(NumArgs - i - 1);
     Arg = legalizeOperand(Arg, Legal_All, Expansion);
     assert(Arg);
-    NewInst = new IceInstX8632Push(Cfg, Arg);
+    NewInst = IceInstX8632Push::create(Cfg, Arg);
     // TODO: Where in the Cfg is StackOffset tracked?  It is needed
     // for instructions that push esp-based stack variables as
     // arguments.
@@ -1224,7 +1226,7 @@ IceInstList IceTargetX8632S::lowerCall(const IceInstCall *Inst,
     Reg->setRegNum(Reg_eax);
   }
   NewInst =
-      new IceInstX8632Call(Cfg, Reg, Inst->getCallTarget(), Inst->isTail());
+      IceInstX8632Call::create(Cfg, Reg, Inst->getCallTarget(), Inst->isTail());
   Expansion.push_back(NewInst);
   IceInst *NewCall = NewInst;
 
@@ -1233,7 +1235,7 @@ IceInstList IceTargetX8632S::lowerCall(const IceInstCall *Inst,
   KilledRegs.push_back(Cfg->getTarget()->getPhysicalRegister(Reg_eax));
   KilledRegs.push_back(Cfg->getTarget()->getPhysicalRegister(Reg_ecx));
   KilledRegs.push_back(Cfg->getTarget()->getPhysicalRegister(Reg_edx));
-  IceInst *Kill = new IceInstFakeKill(Cfg, KilledRegs, NewCall);
+  IceInst *Kill = IceInstFakeKill::create(Cfg, KilledRegs, NewCall);
   Expansion.push_back(Kill);
 
   // Generate a FakeUse to keep the call live if necessary.
@@ -1241,22 +1243,22 @@ IceInstList IceTargetX8632S::lowerCall(const IceInstCall *Inst,
   // TODO: set HasSideEffects=false if it's a known intrinsic without
   // side effects.
   if (HasSideEffects && Reg) {
-    IceInst *FakeUse = new IceInstFakeUse(Cfg, Reg);
+    IceInst *FakeUse = IceInstFakeUse::create(Cfg, Reg);
     Expansion.push_back(FakeUse);
   }
 
   // Generate Dest=Reg assignment.
   if (Dest) {
     Dest->setPreferredRegister(Reg, false);
-    NewInst = new IceInstX8632Mov(Cfg, Dest, Reg);
+    NewInst = IceInstX8632Mov::create(Cfg, Dest, Reg);
     Expansion.push_back(NewInst);
   }
 
   // Add the appropriate offset to esp.
   if (StackOffset) {
     IceVariable *Esp = Cfg->getTarget()->getPhysicalRegister(Reg_esp);
-    NewInst = new IceInstX8632Add(Cfg, Esp,
-                                  Cfg->getConstant(IceType_i32, StackOffset));
+    NewInst = IceInstX8632Add::create(
+        Cfg, Esp, Cfg->getConstant(IceType_i32, StackOffset));
     Expansion.push_back(NewInst);
   }
 
@@ -1282,7 +1284,7 @@ IceInstList IceTargetX8632S::lowerCast(const IceInstCast *Inst,
   Reg = Cfg->makeVariable(Src0->getType());
   Reg->setWeightInfinite();
   Reg->setPreferredRegister(llvm::dyn_cast<IceVariable>(Src0), true);
-  NewInst = new IceInstX8632Mov(Cfg, Reg, Src0);
+  NewInst = IceInstX8632Mov::create(Cfg, Reg, Src0);
   Expansion.push_back(NewInst);
   switch (CastKind) {
   default:
@@ -1291,16 +1293,16 @@ IceInstList IceTargetX8632S::lowerCast(const IceInstCast *Inst,
     return Expansion;
     break;
   case IceInstCast::Sext:
-    NewInst = new IceInstX8632Movsx(Cfg, Dest, Reg);
+    NewInst = IceInstX8632Movsx::create(Cfg, Dest, Reg);
     break;
   case IceInstCast::Zext:
-    NewInst = new IceInstX8632Movzx(Cfg, Dest, Reg);
+    NewInst = IceInstX8632Movzx::create(Cfg, Dest, Reg);
     break;
   case IceInstCast::Trunc:
     // It appears that Trunc is purely used to cast down from one integral type
     // to a smaller integral type.  In the generated code this does not seem
     // to be needed.  Treat these as vanilla moves.
-    NewInst = new IceInstX8632Mov(Cfg, Dest, Reg);
+    NewInst = IceInstX8632Mov::create(Cfg, Dest, Reg);
     break;
   }
   Expansion.push_back(NewInst);
@@ -1339,11 +1341,11 @@ IceInstList IceTargetX8632S::lowerIcmp(const IceInstIcmp *Inst,
     }
     IceOperand *Reg = legalizeOperand(Src0, IsImmOrReg ? Legal_All : Legal_Reg,
                                       Expansion, true);
-    NewInst = new IceInstX8632Icmp(Cfg, Reg, Src1);
+    NewInst = IceInstX8632Icmp::create(Cfg, Reg, Src1);
     Expansion.push_back(NewInst);
     NewInst =
-        new IceInstX8632Br(Cfg, NextBr->getTargetTrue(),
-                           NextBr->getTargetFalse(), Inst->getCondition());
+        IceInstX8632Br::create(Cfg, NextBr->getTargetTrue(),
+                               NextBr->getTargetFalse(), Inst->getCondition());
     Expansion.push_back(NewInst);
     DeleteNextInst = true;
   } else {
@@ -1521,14 +1523,14 @@ IceInstList IceTargetX8632S::lowerLoad(const IceInstLoad *Inst,
       // TODO: The "1" in isLastUse(1) won't be correct if
       // Arith->getSrc(0) contains no IceVariables.
       // TODO: This instruction leaks.
-      IceInstArithmetic *NewArith = new IceInstArithmetic(
+      IceInstArithmetic *NewArith = IceInstArithmetic::create(
           Cfg, Arith->getOp(), Arith->getDest(), Arith->getSrc(0), Src);
       DeleteNextInst = true;
       return lowerArithmetic(NewArith, NULL, DeleteNextInst);
     } else if (Src0Arith == DestLoad && Arith->isCommutative() &&
                Arith->isLastUse(0) && DestLoad != Src1Arith) {
       // TODO: This instruction leaks.
-      IceInstArithmetic *NewArith = new IceInstArithmetic(
+      IceInstArithmetic *NewArith = IceInstArithmetic::create(
           Cfg, Arith->getOp(), Arith->getDest(), Arith->getSrc(1), Src);
       DeleteNextInst = true;
       return lowerArithmetic(NewArith, NULL, DeleteNextInst);
@@ -1536,7 +1538,7 @@ IceInstList IceTargetX8632S::lowerLoad(const IceInstLoad *Inst,
   }
 
   // TODO: This instruction leaks.
-  IceInstAssign *Assign = new IceInstAssign(Cfg, Inst->getDest(), Src);
+  IceInstAssign *Assign = IceInstAssign::create(Cfg, Inst->getDest(), Src);
   return lowerAssign(Assign, Next, DeleteNextInst);
 }
 
@@ -1554,7 +1556,7 @@ IceInstList IceTargetX8632S::doAddressOptLoad(const IceInstLoad *Inst) {
     IceConstant *OffsetOp = Cfg->getConstant(IceType_i32, Offset);
     Addr =
         new IceOperandX8632Mem(Dest->getType(), Base, OffsetOp, Index, Shift);
-    NewInst = new IceInstLoad(Cfg, Dest, Addr);
+    NewInst = IceInstLoad::create(Cfg, Dest, Addr);
     Expansion.push_back(NewInst);
   }
   return Expansion;
@@ -1578,7 +1580,7 @@ IceInstList IceTargetX8632S::lowerRet(const IceInstRet *Inst,
     IceOperand *Src0 = Inst->getSrc(0);
     Reg = legalizeOperandToVar(Src0, Expansion, false, Reg_eax);
   }
-  NewInst = new IceInstX8632Ret(Cfg, Reg);
+  NewInst = IceInstX8632Ret::create(Cfg, Reg);
   Expansion.push_back(NewInst);
   // Add a fake use of esp to make sure esp stays alive for the entire
   // function.  Otherwise post-call esp adjustments get dead-code
@@ -1586,7 +1588,7 @@ IceInstList IceTargetX8632S::lowerRet(const IceInstRet *Inst,
   // should be inserted?  E.g. "void f(int n){while(1) g(n);}" may not
   // have a ret instruction.
   IceVariable *Esp = Cfg->getTarget()->getPhysicalRegister(Reg_esp);
-  IceInst *FakeUse = new IceInstFakeUse(Cfg, Esp);
+  IceInst *FakeUse = IceInstFakeUse::create(Cfg, Esp);
   Expansion.push_back(FakeUse);
   return Expansion;
 }
@@ -1619,7 +1621,7 @@ IceInstList IceTargetX8632S::lowerStore(const IceInstStore *Inst,
   IceOperand *Reg0 =
       legalizeOperand(Value, Legal_Reg | Legal_Imm, Expansion, true);
 
-  NewInst = new IceInstX8632Store(Cfg, Reg0, NewSrc);
+  NewInst = IceInstX8632Store::create(Cfg, Reg0, NewSrc);
   Expansion.push_back(NewInst);
 
   return Expansion;
@@ -1639,7 +1641,7 @@ IceInstList IceTargetX8632S::doAddressOptStore(const IceInstStore *Inst) {
     IceConstant *OffsetOp = Cfg->getConstant(IceType_i32, Offset);
     Addr =
         new IceOperandX8632Mem(Data->getType(), Base, OffsetOp, Index, Shift);
-    NewInst = new IceInstStore(Cfg, Data, Addr);
+    NewInst = IceInstStore::create(Cfg, Data, Addr);
     Expansion.push_back(NewInst);
   }
   return Expansion;
@@ -1661,7 +1663,6 @@ IceOperand *IceTargetX8632S::legalizeOperand(IceOperand *From,
   assert(Allowed & Legal_Reg);
   assert(RegNum < 0 || Allowed == Legal_Reg);
   if (IceOperandX8632Mem *Mem = llvm::dyn_cast<IceOperandX8632Mem>(From)) {
-    // From = lowerMemOp(Insts, Mem);
     IceVariable *Base = Mem->getBase();
     IceVariable *Index = Mem->getIndex();
     IceVariable *RegBase = Base;
@@ -1684,23 +1685,21 @@ IceOperand *IceTargetX8632S::legalizeOperand(IceOperand *From,
       } else {
         Reg->setRegNum(RegNum);
       }
-      NewInst = new IceInstX8632Mov(Cfg, Reg, From);
+      NewInst = IceInstX8632Mov::create(Cfg, Reg, From);
       Insts.push_back(NewInst);
       From = Reg;
     }
     return From;
   }
-  if (IceConstant *Const = llvm::dyn_cast<IceConstant>(From)) {
-    assert(Const); // avoid "unused Const" compiler warning
+  if (llvm::isa<IceConstant>(From)) {
     if (!(Allowed & Legal_Imm)) {
       IceVariable *Reg = Cfg->makeVariable(From->getType());
       if (RegNum < 0) {
         Reg->setWeightInfinite();
-        // Reg->setPreferredRegister(Var, AllowOverlap);
       } else {
         Reg->setRegNum(RegNum);
       }
-      NewInst = new IceInstX8632Mov(Cfg, Reg, From);
+      NewInst = IceInstX8632Mov::create(Cfg, Reg, From);
       Insts.push_back(NewInst);
       From = Reg;
     }
@@ -1720,7 +1719,7 @@ IceOperand *IceTargetX8632S::legalizeOperand(IceOperand *From,
       } else {
         Reg->setRegNum(RegNum);
       }
-      NewInst = new IceInstX8632Mov(Cfg, Reg, From);
+      NewInst = IceInstX8632Mov::create(Cfg, Reg, From);
       Insts.push_back(NewInst);
       From = Reg;
     }

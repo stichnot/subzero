@@ -230,14 +230,14 @@ private:
     IceOperand *Src = convertOperand(Inst, 0);
     assert(Src->getType() == IceType_i32 && "Expecting loads only from i32");
     IceVariable *Dest = mapValueToIceVar(Inst);
-    return new IceInstLoad(Cfg, Dest, Src);
+    return IceInstLoad::create(Cfg, Dest, Src);
   }
 
   IceInst *convertStoreInstruction(const StoreInst *Inst) {
     IceOperand *Addr = convertOperand(Inst, 1);
     assert(Addr->getType() == IceType_i32 && "Expecting stores only from i32");
     IceOperand *Val = convertOperand(Inst, 0);
-    return new IceInstStore(Cfg, Val, Addr);
+    return IceInstStore::create(Cfg, Val, Addr);
   }
 
   IceInst *convertArithInstruction(const Instruction *Inst,
@@ -246,12 +246,13 @@ private:
     IceOperand *Src0 = convertOperand(Inst, 0);
     IceOperand *Src1 = convertOperand(Inst, 1);
     IceVariable *Dest = mapValueToIceVar(BinOp);
-    return new IceInstArithmetic(Cfg, Opcode, Dest, Src0, Src1);
+    return IceInstArithmetic::create(Cfg, Opcode, Dest, Src0, Src1);
   }
 
   IceInst *convertPHINodeInstruction(const PHINode *Inst) {
     unsigned NumValues = Inst->getNumIncomingValues();
-    IceInstPhi *IcePhi = new IceInstPhi(Cfg, NumValues, mapValueToIceVar(Inst));
+    IceInstPhi *IcePhi =
+        IceInstPhi::create(Cfg, NumValues, mapValueToIceVar(Inst));
     for (unsigned N = 0, E = NumValues; N != E; ++N) {
       IcePhi->addArgument(convertOperand(Inst, N),
                           mapBasicBlockToNode(Inst->getIncomingBlock(N)));
@@ -264,11 +265,12 @@ private:
       IceOperand *Src = convertOperand(Inst, 0);
       BasicBlock *BBThen = Inst->getSuccessor(0);
       BasicBlock *BBElse = Inst->getSuccessor(1);
-      return new IceInstBr(Cfg, Src, mapBasicBlockToNode(BBThen),
-                           mapBasicBlockToNode(BBElse));
+      IceCfgNode *NodeThen = mapBasicBlockToNode(BBThen);
+      IceCfgNode *NodeElse = mapBasicBlockToNode(BBElse);
+      return IceInstBr::create(Cfg, Src, NodeThen, NodeElse);
     } else {
       BasicBlock *BBSucc = Inst->getSuccessor(0);
-      return new IceInstBr(Cfg, mapBasicBlockToNode(BBSucc));
+      return IceInstBr::create(Cfg, mapBasicBlockToNode(BBSucc));
     }
   }
 
@@ -276,15 +278,15 @@ private:
     IceOperand *Src = convertOperand(Inst, 0);
     IceVariable *Dest = mapValueToIceVar(Inst, IceType_i32);
 
-    return new IceInstAssign(Cfg, Dest, Src);
+    return IceInstAssign::create(Cfg, Dest, Src);
   }
 
   IceInst *convertRetInstruction(const ReturnInst *Inst) {
     IceOperand *RetOperand = convertOperand(Inst, 0);
     if (RetOperand) {
-      return new IceInstRet(Cfg, RetOperand);
+      return IceInstRet::create(Cfg, RetOperand);
     } else {
-      return new IceInstRet(Cfg);
+      return IceInstRet::create(Cfg);
     }
   }
 
@@ -292,7 +294,7 @@ private:
                                   IceInstCast::IceCastKind CastKind) {
     IceOperand *Src = convertOperand(Inst, 0);
     IceVariable *Dest = mapValueToIceVar(Inst);
-    return new IceInstCast(Cfg, CastKind, Dest, Src);
+    return IceInstCast::create(Cfg, CastKind, Dest, Src);
   }
 
   IceInst *convertICmpInstruction(const ICmpInst *Inst) {
@@ -336,7 +338,7 @@ private:
       break;
     }
 
-    return new IceInstIcmp(Cfg, Cond, Dest, Src0, Src1);
+    return IceInstIcmp::create(Cfg, Cond, Dest, Src0, Src1);
   }
 
   IceInst *convertCallInstruction(const CallInst *Inst) {
@@ -344,7 +346,7 @@ private:
     IceOperand *CallTarget = convertValue(Inst->getCalledValue());
     unsigned NumArgs = Inst->getNumArgOperands();
     IceInstCall *NewInst =
-        new IceInstCall(Cfg, NumArgs, Dest, CallTarget, Inst->isTailCall());
+        IceInstCall::create(Cfg, NumArgs, Dest, CallTarget, Inst->isTailCall());
     for (unsigned i = 0; i < NumArgs; ++i) {
       NewInst->addArg(convertOperand(Inst, i));
     }
