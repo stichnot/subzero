@@ -45,7 +45,8 @@ public:
   virtual void dump(IceOstream &Str) const;
 
 protected:
-  IceOperand(OperandKind Kind, IceType Type) : Type(Type), Kind(Kind) {}
+  IceOperand(IceCfg *Cfg, OperandKind Kind, IceType Type)
+      : Type(Type), Kind(Kind) {}
   const IceType Type;
   const OperandKind Kind;
   IceVariable **Vars;
@@ -66,7 +67,8 @@ public:
   }
 
 protected:
-  IceConstant(OperandKind Kind, IceType Type) : IceOperand(Kind, Type) {
+  IceConstant(IceCfg *Cfg, OperandKind Kind, IceType Type)
+      : IceOperand(Cfg, Kind, Type) {
     Vars = NULL;
     NumVars = 0;
   }
@@ -74,8 +76,9 @@ protected:
 
 class IceConstantInteger : public IceConstant {
 public:
-  static IceConstantInteger *create(IceType Type, uint64_t IntValue) {
-    return new IceConstantInteger(Type, IntValue);
+  static IceConstantInteger *create(IceCfg *Cfg, IceType Type,
+                                    uint64_t IntValue) {
+    return new IceConstantInteger(Cfg, Type, IntValue);
   }
   uint64_t getIntValue(void) const { return IntValue; }
   virtual void dump(IceOstream &Str) const;
@@ -86,16 +89,17 @@ public:
   }
 
 private:
-  IceConstantInteger(IceType Type, uint64_t IntValue)
-      : IceConstant(ConstantInteger, Type), IntValue(IntValue) {}
+  IceConstantInteger(IceCfg *Cfg, IceType Type, uint64_t IntValue)
+      : IceConstant(Cfg, ConstantInteger, Type), IntValue(IntValue) {}
   const uint64_t IntValue;
 };
 
 class IceConstantRelocatable : public IceConstant {
 public:
-  static IceConstantRelocatable *create(IceType Type, const void *Handle,
+  static IceConstantRelocatable *create(IceCfg *Cfg, IceType Type,
+                                        const void *Handle,
                                         const IceString &Name = "") {
-    return new IceConstantRelocatable(Type, Handle, Name);
+    return new IceConstantRelocatable(Cfg, Type, Handle, Name);
   }
   uint32_t getCPIndex(void) const { return CPIndex; }
   const void *getHandle(void) const { return Handle; }
@@ -108,9 +112,9 @@ public:
   }
 
 private:
-  IceConstantRelocatable(IceType Type, const void *Handle,
+  IceConstantRelocatable(IceCfg *Cfg, IceType Type, const void *Handle,
                          const IceString &Name)
-      : IceConstant(ConstantRelocatable, Type), CPIndex(0), Handle(Handle),
+      : IceConstant(Cfg, ConstantRelocatable, Type), CPIndex(0), Handle(Handle),
         Name(Name) {}
   const uint32_t CPIndex;   // index into ICE constant pool
   const void *const Handle; // opaque handle e.g. to LLVM
@@ -170,9 +174,9 @@ IceOstream &operator<<(IceOstream &Str, const IceLiveRange &L);
 // Stack operand, or virtual or physical register
 class IceVariable : public IceOperand {
 public:
-  static IceVariable *create(IceType Type, uint32_t Index,
+  static IceVariable *create(IceCfg *Cfg, IceType Type, uint32_t Index,
                              const IceString &Name) {
-    return new IceVariable(Type, Index, Name);
+    return new IceVariable(Cfg, Type, Index, Name);
   }
   void setUse(const IceInst *Inst, const IceCfgNode *Node);
   uint32_t getIndex(void) const { return Number; }
@@ -228,11 +232,11 @@ public:
   }
 
 private:
-  IceVariable(IceType Type, uint32_t Index, const IceString &Name)
-      : IceOperand(Variable, Type), Number(Index), Name(Name), DefInst(NULL),
-        DefOrUseNode(NULL), IsArgument(false), IsMultiblockLife(false),
-        StackOffset(0), RegNum(-1), RegNumTmp(-1), Weight(1),
-        RegisterPreference(NULL), AllowRegisterOverlap(false) {
+  IceVariable(IceCfg *Cfg, IceType Type, uint32_t Index, const IceString &Name)
+      : IceOperand(Cfg, Variable, Type), Number(Index), Name(Name),
+        DefInst(NULL), DefOrUseNode(NULL), IsArgument(false),
+        IsMultiblockLife(false), StackOffset(0), RegNum(-1), RegNumTmp(-1),
+        Weight(1), RegisterPreference(NULL), AllowRegisterOverlap(false) {
     Vars = new IceVariable *[1];
     Vars[0] = this;
     NumVars = 1;

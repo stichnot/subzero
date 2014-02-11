@@ -19,17 +19,17 @@ public:
   void dump(IceOstream &Str) const;
 
 protected:
-  IceOperandX8632(IceOperandTypeX8632 Kind, IceType Type)
-      : IceOperand(static_cast<OperandKind>(Kind), Type) {}
+  IceOperandX8632(IceCfg *Cfg, IceOperandTypeX8632 Kind, IceType Type)
+      : IceOperand(Cfg, static_cast<OperandKind>(Kind), Type) {}
 };
 
 class IceOperandX8632Mem : public IceOperandX8632 {
 public:
-  static IceOperandX8632Mem *create(IceType Type, IceVariable *Base,
-                                    IceConstant *Offset,
+  static IceOperandX8632Mem *create(IceCfg *Cfg, IceType Type,
+                                    IceVariable *Base, IceConstant *Offset,
                                     IceVariable *Index = NULL,
                                     unsigned Shift = 0) {
-    return new IceOperandX8632Mem(Type, Base, Offset, Index, Shift);
+    return new IceOperandX8632Mem(Cfg, Type, Base, Offset, Index, Shift);
   }
   IceVariable *getBase(void) const { return Base; }
   IceConstant *getOffset(void) const { return Offset; }
@@ -42,8 +42,8 @@ public:
   }
 
 private:
-  IceOperandX8632Mem(IceType Type, IceVariable *Base, IceConstant *Offset,
-                     IceVariable *Index, unsigned Shift);
+  IceOperandX8632Mem(IceCfg *Cfg, IceType Type, IceVariable *Base,
+                     IceConstant *Offset, IceVariable *Index, unsigned Shift);
   IceVariable *Base;
   IceConstant *Offset;
   IceVariable *Index;
