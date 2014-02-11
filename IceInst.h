@@ -71,8 +71,7 @@ public:
   virtual bool isRedundantAssign(void) const { return false; }
 
 protected:
-  IceInst(IceCfg *Cfg, IceInstType Kind, unsigned MaxSrcs,
-          IceVariable *Dest /* = NULL*/);
+  IceInst(IceCfg *Cfg, IceInstType Kind, unsigned MaxSrcs, IceVariable *Dest);
   void addSource(IceOperand *Src);
   void setLastUse(unsigned VarIndex) {
     if (VarIndex < 8 * sizeof(LiveRangesEnded))
@@ -88,6 +87,8 @@ protected:
   bool Deleted;
   // Dead means pending deletion after liveness analysis converges.
   bool Dead;
+  // TODO: use "IceVariable *const Dest".  The problem is that
+  // IceInstPhi::lower() modifies its Dest.
   IceVariable *Dest;
   IceOperand **Srcs;        // TODO: possibly delete[] in destructor
   uint32_t LiveRangesEnded; // only first 32 src operands tracked, sorry
