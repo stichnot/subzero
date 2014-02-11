@@ -376,8 +376,7 @@ private:
     }
     uint32_t Align = Inst->getAlignment();
 
-    IceInstAlloca *NewInst = new IceInstAlloca(Cfg, Size, Align, Dest);
-    return NewInst;
+    return IceInstAlloca::create(Cfg, Size, Align, Dest);
   }
 
   IceCfgNode *convertBasicBlock(const BasicBlock *BB) {

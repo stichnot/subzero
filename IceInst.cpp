@@ -141,6 +141,10 @@ void IceInst::liveness(IceLiveness Mode, int InstNumber, llvm::BitVector &Live,
   }
 }
 
+IceInstAlloca::IceInstAlloca(IceCfg *Cfg, uint32_t Size, uint32_t Align,
+                             IceVariable *Dest)
+    : IceInst(Cfg, IceInst::Alloca, 0, Dest), Size(Size), Align(Align) {}
+
 IceInstArithmetic::IceInstArithmetic(IceCfg *Cfg, OpKind Op, IceVariable *Dest,
                                      IceOperand *Source1, IceOperand *Source2)
     : IceInst(Cfg, IceInst::Arithmetic, 2, Dest), Op(Op) {
