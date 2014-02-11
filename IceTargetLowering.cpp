@@ -12,16 +12,16 @@ IceTargetLowering *IceTargetLowering::createLowering(IceTargetArch Target,
   // These statements can be #ifdef'd to specialize the code generator
   // to a subset of the available targets.
   if (Target == IceTarget_X8632_old)
-    return new IceTargetX8632(Cfg);
+    return IceTargetX8632::create(Cfg);
   if (Target == IceTarget_X8632)
-    return new IceTargetX8632S(Cfg);
+    return IceTargetX8632S::create(Cfg);
 #if 0
   if (Target == IceTarget_X8664)
-    return new IceTargetX8664(Cfg);
+    return IceTargetX8664::create(Cfg);
   if (Target == IceTarget_ARM32)
-    return new IceTargetARM32(Cfg);
+    return IceTargetARM32::create(Cfg);
   if (Target == IceTarget_ARM64)
-    return new IceTargetARM64(Cfg);
+    return IceTargetARM64::create(Cfg);
 #endif
   Cfg->setError("Unsupported target");
   return NULL;

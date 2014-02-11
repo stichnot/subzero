@@ -52,9 +52,7 @@ private:
 
 class IceTargetX8632 : public IceTargetLowering {
 public:
-  IceTargetX8632(IceCfg *Cfg)
-      : IceTargetLowering(Cfg), IsEbpBasedFrame(false), FrameSizeLocals(0),
-        PhysicalRegisters(IceVarList(Reg_NUM)) {}
+  static IceTargetX8632 *create(IceCfg *Cfg) { return new IceTargetX8632(Cfg); }
   virtual IceRegManager *makeRegManager(IceCfgNode *Node);
   virtual IceInstTarget *makeAssign(IceVariable *Dest, IceOperand *Src);
   virtual IceVariable *getPhysicalRegister(unsigned RegNum);
@@ -81,6 +79,9 @@ public:
   };
 
 protected:
+  IceTargetX8632(IceCfg *Cfg)
+      : IceTargetLowering(Cfg), IsEbpBasedFrame(false), FrameSizeLocals(0),
+        PhysicalRegisters(IceVarList(Reg_NUM)) {}
   virtual IceInstList lowerAlloca(const IceInstAlloca *Inst,
                                   const IceInst *Next, bool &DeleteNextInst);
   virtual IceInstList lowerArithmetic(const IceInstArithmetic *Inst,
@@ -123,7 +124,9 @@ private:
 
 class IceTargetX8632S : public IceTargetX8632 {
 public:
-  IceTargetX8632S(IceCfg *Cfg) : IceTargetX8632(Cfg) {}
+  static IceTargetX8632S *create(IceCfg *Cfg) {
+    return new IceTargetX8632S(Cfg);
+  }
   virtual IceRegManager *makeRegManager(IceCfgNode *Node) { return NULL; }
   virtual IceInstTarget *makeAssign(IceVariable *Dest, IceOperand *Src);
   virtual llvm::SmallBitVector
@@ -164,6 +167,7 @@ protected:
   virtual IceInstList doAddressOptStore(const IceInstStore *Inst);
 
 private:
+  IceTargetX8632S(IceCfg *Cfg) : IceTargetX8632(Cfg) {}
   enum OperandLegalization {
     Legal_None = 0,
     Legal_Reg = 1 << 0,
