@@ -1544,17 +1544,17 @@ IceInstList IceTargetX8632S::doAddressOptLoad(const IceInstLoad *Inst) {
   IceInstList Expansion;
   IceInst *NewInst;
   IceVariable *Dest = Inst->getDest();
-  IceOperand *Src0 = Inst->getSrc(0);
+  IceOperand *Addr = Inst->getSrc(0);
   IceVariable *Index = NULL;
   int Shift = 0;
   int32_t Offset = 0; // TODO: make IceConstant
-  IceVariable *Base = llvm::dyn_cast<IceVariable>(Src0);
+  IceVariable *Base = llvm::dyn_cast<IceVariable>(Addr);
   computeAddressOpt(Cfg, Base, Index, Shift, Offset);
-  if (Base && Src0 != Base) {
+  if (Base && Addr != Base) {
     IceConstant *OffsetOp = Cfg->getConstant(IceType_i32, Offset);
-    Src0 =
+    Addr =
         new IceOperandX8632Mem(Dest->getType(), Base, OffsetOp, Index, Shift);
-    NewInst = new IceInstLoad(Cfg, Dest, Src0);
+    NewInst = new IceInstLoad(Cfg, Dest, Addr);
     Expansion.push_back(NewInst);
   }
   return Expansion;
@@ -1605,8 +1605,8 @@ IceInstList IceTargetX8632S::lowerStore(const IceInstStore *Inst,
   IceInstList Expansion;
 
   IceInstTarget *NewInst;
-  IceOperand *Value = Inst->getSrc(0);
-  IceOperand *Src1 = Inst->getSrc(1); // Base
+  IceOperand *Value = Inst->getData();
+  IceOperand *Src1 = Inst->getAddr();
   IceOperandX8632Mem *NewSrc;
   if (!(NewSrc = llvm::dyn_cast<IceOperandX8632Mem>(Src1))) {
     IceVariable *Base = llvm::dyn_cast<IceVariable>(Src1);
@@ -1626,21 +1626,20 @@ IceInstList IceTargetX8632S::lowerStore(const IceInstStore *Inst,
 }
 
 IceInstList IceTargetX8632S::doAddressOptStore(const IceInstStore *Inst) {
-  return IceInstList();
   IceInstList Expansion;
   IceInst *NewInst;
-  IceOperand *Src0 = Inst->getSrc(0);
-  IceOperand *Src1 = Inst->getSrc(1);
+  IceOperand *Data = Inst->getData();
+  IceOperand *Addr = Inst->getAddr();
   IceVariable *Index = NULL;
   int Shift = 0;
   int32_t Offset = 0; // TODO: make IceConstant
-  IceVariable *Base = llvm::dyn_cast<IceVariable>(Src1);
+  IceVariable *Base = llvm::dyn_cast<IceVariable>(Addr);
   computeAddressOpt(Cfg, Base, Index, Shift, Offset);
-  if (Src1 != Base) {
+  if (Base && Addr != Base) {
     IceConstant *OffsetOp = Cfg->getConstant(IceType_i32, Offset);
-    Src0 =
-        new IceOperandX8632Mem(Src0->getType(), Base, OffsetOp, Index, Shift);
-    NewInst = new IceInstStore(Cfg, Src1, Src0);
+    Addr =
+        new IceOperandX8632Mem(Data->getType(), Base, OffsetOp, Index, Shift);
+    NewInst = new IceInstStore(Cfg, Data, Addr);
     Expansion.push_back(NewInst);
   }
   return Expansion;

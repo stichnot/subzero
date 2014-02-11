@@ -567,7 +567,7 @@ void IceInstLoad::dump(IceOstream &Str) const {
 }
 
 void IceInstStore::dump(IceOstream &Str) const {
-  IceType Type = getSrc(0)->getType();
+  IceType Type = getData()->getType();
   Str << "store " << Type << "* ";
   dumpSources(Str);
   Str << ", align ";

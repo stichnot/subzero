@@ -323,7 +323,9 @@ private:
 // SourceData as Srcs[0] and SourceAddr as Srcs[1]
 class IceInstStore : public IceInst {
 public:
-  IceInstStore(IceCfg *Cfg, IceOperand *SourceAddr, IceOperand *SourceData);
+  IceInstStore(IceCfg *Cfg, IceOperand *SourceData, IceOperand *SourceAddr);
+  IceOperand *getAddr(void) const { return getSrc(1); }
+  IceOperand *getData(void) const { return getSrc(0); }
   virtual void dump(IceOstream &Str) const;
   static bool classof(const IceInst *Inst) { return Inst->getKind() == Store; }
 
