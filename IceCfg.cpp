@@ -98,7 +98,7 @@ IceCfgNode *IceCfg::makeNode(uint32_t LabelIndex, IceString Name) {
   if (Nodes.size() <= LabelIndex)
     Nodes.resize(LabelIndex + 1);
   if (Nodes[LabelIndex] == NULL) {
-    IceCfgNode *Node = new IceCfgNode(this, LabelIndex, Name);
+    IceCfgNode *Node = IceCfgNode::create(this, LabelIndex, Name);
     Nodes[LabelIndex] = Node;
     LNodes.push_back(Node);
   }

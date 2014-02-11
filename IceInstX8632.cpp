@@ -172,7 +172,7 @@ void IceTargetX8632::addProlog(IceCfgNode *Node) {
       Arg->setStackOffset(LocalsSizeBytes + PreservedRegsSizeBytes +
                           RetIpSizeBytes + 4 * i);
     if (Arg->getRegNum() >= 0) {
-      IceOperandX8632Mem *Mem = new IceOperandX8632Mem(
+      IceOperandX8632Mem *Mem = IceOperandX8632Mem::create(
           IceType_i32, FramePtr,
           Cfg->getConstant(IceType_i32, Arg->getStackOffset()));
       Expansion.push_back(IceInstX8632Mov::create(Cfg, Arg, Mem));
@@ -1503,7 +1503,7 @@ IceInstList IceTargetX8632S::lowerLoad(const IceInstLoad *Inst,
     IceVariable *Base = llvm::dyn_cast<IceVariable>(Src);
     IceConstant *Offset = llvm::dyn_cast<IceConstant>(Src);
     assert(Base || Offset);
-    Src = new IceOperandX8632Mem(Type, Base, Offset);
+    Src = IceOperandX8632Mem::create(Type, Base, Offset);
   }
   // Fuse this load with a subsequent Arithmetic instruction in the
   // following situations:
@@ -1554,8 +1554,8 @@ IceInstList IceTargetX8632S::doAddressOptLoad(const IceInstLoad *Inst) {
   computeAddressOpt(Cfg, Base, Index, Shift, Offset);
   if (Base && Addr != Base) {
     IceConstant *OffsetOp = Cfg->getConstant(IceType_i32, Offset);
-    Addr =
-        new IceOperandX8632Mem(Dest->getType(), Base, OffsetOp, Index, Shift);
+    Addr = IceOperandX8632Mem::create(Dest->getType(), Base, OffsetOp, Index,
+                                      Shift);
     NewInst = IceInstLoad::create(Cfg, Dest, Addr);
     Expansion.push_back(NewInst);
   }
@@ -1614,7 +1614,7 @@ IceInstList IceTargetX8632S::lowerStore(const IceInstStore *Inst,
     IceVariable *Base = llvm::dyn_cast<IceVariable>(Src1);
     IceConstant *Offset = llvm::dyn_cast<IceConstant>(Src1);
     assert(Base || Offset);
-    NewSrc = new IceOperandX8632Mem(Src1->getType(), Base, Offset);
+    NewSrc = IceOperandX8632Mem::create(Src1->getType(), Base, Offset);
   }
   NewSrc = llvm::cast<IceOperandX8632Mem>(
       legalizeOperand(NewSrc, Legal_All, Expansion));
@@ -1639,8 +1639,8 @@ IceInstList IceTargetX8632S::doAddressOptStore(const IceInstStore *Inst) {
   computeAddressOpt(Cfg, Base, Index, Shift, Offset);
   if (Base && Addr != Base) {
     IceConstant *OffsetOp = Cfg->getConstant(IceType_i32, Offset);
-    Addr =
-        new IceOperandX8632Mem(Data->getType(), Base, OffsetOp, Index, Shift);
+    Addr = IceOperandX8632Mem::create(Data->getType(), Base, OffsetOp, Index,
+                                      Shift);
     NewInst = IceInstStore::create(Cfg, Data, Addr);
     Expansion.push_back(NewInst);
   }
@@ -1674,8 +1674,8 @@ IceOperand *IceTargetX8632S::legalizeOperand(IceOperand *From,
       RegIndex = legalizeOperandToVar(Index, Insts, true);
     }
     if (Base != RegBase || Index != RegIndex) {
-      From = new IceOperandX8632Mem(Mem->getType(), RegBase, Mem->getOffset(),
-                                    RegIndex, Mem->getShift());
+      From = IceOperandX8632Mem::create(
+          Mem->getType(), RegBase, Mem->getOffset(), RegIndex, Mem->getShift());
     }
 
     if (!(Allowed & Legal_Mem)) {

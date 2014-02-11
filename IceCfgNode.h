@@ -11,7 +11,10 @@
 
 class IceCfgNode {
 public:
-  IceCfgNode(IceCfg *Cfg, uint32_t LabelIndex, IceString Name = "");
+  static IceCfgNode *create(IceCfg *Cfg, uint32_t LabelIndex,
+                            IceString Name = "") {
+    return new IceCfgNode(Cfg, LabelIndex, Name);
+  }
   IceInstList &getInsts(void) { return Insts; }
   void appendInst(IceInst *Inst);
   void insertInsts(IceInstList::iterator Location, const IceInstList &NewInsts);
@@ -36,6 +39,7 @@ public:
   void dump(IceOstream &Str) const;
 
 private:
+  IceCfgNode(IceCfg *Cfg, uint32_t LabelIndex, IceString Name);
   IceCfg *const Cfg;
   const uint32_t Number;                  // label index
   IceString Name;                         // for dumping only

@@ -25,8 +25,12 @@ protected:
 
 class IceOperandX8632Mem : public IceOperandX8632 {
 public:
-  IceOperandX8632Mem(IceType Type, IceVariable *Base, IceConstant *Offset,
-                     IceVariable *Index = NULL, unsigned Shift = 0);
+  static IceOperandX8632Mem *create(IceType Type, IceVariable *Base,
+                                    IceConstant *Offset,
+                                    IceVariable *Index = NULL,
+                                    unsigned Shift = 0) {
+    return new IceOperandX8632Mem(Type, Base, Offset, Index, Shift);
+  }
   IceVariable *getBase(void) const { return Base; }
   IceConstant *getOffset(void) const { return Offset; }
   IceVariable *getIndex(void) const { return Index; }
@@ -38,6 +42,8 @@ public:
   }
 
 private:
+  IceOperandX8632Mem(IceType Type, IceVariable *Base, IceConstant *Offset,
+                     IceVariable *Index, unsigned Shift);
   IceVariable *Base;
   IceConstant *Offset;
   IceVariable *Index;

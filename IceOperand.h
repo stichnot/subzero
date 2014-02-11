@@ -170,7 +170,8 @@ IceOstream &operator<<(IceOstream &Str, const IceLiveRange &L);
 // Stack operand, or virtual or physical register
 class IceVariable : public IceOperand {
 public:
-  static IceVariable *create(IceType Type, uint32_t Index, const IceString &Name) {
+  static IceVariable *create(IceType Type, uint32_t Index,
+                             const IceString &Name) {
     return new IceVariable(Type, Index, Name);
   }
   void setUse(const IceInst *Inst, const IceCfgNode *Node);
