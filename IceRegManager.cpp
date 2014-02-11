@@ -13,10 +13,12 @@
 #include "IceTargetLowering.h"
 #include "IceTypes.h"
 
-IceRegManagerEntry::IceRegManagerEntry(IceVariable *Var, unsigned NumReg)
+IceRegManagerEntry::IceRegManagerEntry(IceCfg *Cfg, IceVariable *Var,
+                                       unsigned NumReg)
     : Var(Var) {}
 
-IceRegManagerEntry::IceRegManagerEntry(const IceRegManagerEntry &Other,
+IceRegManagerEntry::IceRegManagerEntry(IceCfg *Cfg,
+                                       const IceRegManagerEntry &Other,
                                        unsigned NumReg)
     : Var(Other.Var), Available(Other.Available) {}
 
@@ -62,7 +64,7 @@ IceRegManager::IceRegManager(IceCfg *Cfg, IceCfgNode *Node, unsigned NumReg)
     sprintf(Buf, "r%u_%u", i + 1, Node->getIndex());
     IceVariable *Reg =
         Cfg->makeVariable(IceType_i32, Cfg->getNumVariables(), Buf);
-    Queue.push_back(new IceRegManagerEntry(Reg, NumReg));
+    Queue.push_back(IceRegManagerEntry::create(Cfg, Reg, NumReg));
   }
 }
 
@@ -70,7 +72,7 @@ IceRegManager::IceRegManager(const IceRegManager &Other)
     : NumReg(Other.NumReg), Cfg(Other.Cfg) {
   for (QueueType::const_iterator I = Other.Queue.begin(), E = Other.Queue.end();
        I != E; ++I) {
-    Queue.push_back(new IceRegManagerEntry(**I, NumReg));
+    Queue.push_back(IceRegManagerEntry::create(Cfg, **I, NumReg));
   }
 }
 

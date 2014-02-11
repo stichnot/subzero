@@ -53,8 +53,14 @@
 
 class IceRegManagerEntry {
 public:
-  IceRegManagerEntry(IceVariable *Var, unsigned NumReg);
-  IceRegManagerEntry(const IceRegManagerEntry &Other, unsigned NumReg);
+  static IceRegManagerEntry *create(IceCfg *Cfg, IceVariable *Var,
+                                    unsigned NumReg) {
+    return new IceRegManagerEntry(Cfg, Var, NumReg);
+  }
+  static IceRegManagerEntry *
+  create(IceCfg *Cfg, const IceRegManagerEntry &Other, unsigned NumReg) {
+    return new IceRegManagerEntry(Cfg, Other, NumReg);
+  }
   void load(IceInst *Inst);
   void store(IceInst *Inst);
   bool contains(const IceOperand *Operand) const;
@@ -62,6 +68,10 @@ public:
   void dump(IceOstream &Str) const;
 
 private:
+  IceRegManagerEntry(IceCfg *Cfg, IceVariable *Var, unsigned NumReg);
+  IceRegManagerEntry(IceCfg *Cfg, const IceRegManagerEntry &Other,
+                     unsigned NumReg);
+
   // Virtual register.
   IceVariable *const Var;
 
