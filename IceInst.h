@@ -71,8 +71,8 @@ public:
   virtual bool isRedundantAssign(void) const { return false; }
 
 protected:
-  IceInst(IceCfg *Cfg, IceInstType Kind, unsigned MaxSrcs);
-  void addDest(IceVariable *Dest);
+  IceInst(IceCfg *Cfg, IceInstType Kind, unsigned MaxSrcs,
+          IceVariable *Dest /* = NULL*/);
   void addSource(IceOperand *Src);
   void setLastUse(unsigned VarIndex) {
     if (VarIndex < 8 * sizeof(LiveRangesEnded))
@@ -97,8 +97,8 @@ IceOstream &operator<<(IceOstream &Str, const IceInst *I);
 
 class IceInstAlloca : public IceInst {
 public:
-  IceInstAlloca(IceCfg *Cfg, uint32_t Size, uint32_t Align)
-      : IceInst(Cfg, IceInst::Alloca, 0), Size(Size), Align(Align) {}
+  IceInstAlloca(IceCfg *Cfg, uint32_t Size, uint32_t Align, IceVariable *Dest)
+      : IceInst(Cfg, IceInst::Alloca, 0, Dest), Size(Size), Align(Align) {}
   virtual void dump(IceOstream &Str) const;
   static bool classof(const IceInst *Inst) { return Inst->getKind() == Alloca; }
 
@@ -176,11 +176,8 @@ class IceInstCall : public IceInst {
 public:
   IceInstCall(IceCfg *Cfg, unsigned MaxSrcs, IceVariable *Dest,
               IceOperand *CallTarget, bool Tail = false)
-      : IceInst(Cfg, IceInst::Call, MaxSrcs), CallTarget(CallTarget),
-        Tail(Tail) {
-    if (Dest)
-      addDest(Dest);
-  }
+      : IceInst(Cfg, IceInst::Call, MaxSrcs, Dest), CallTarget(CallTarget),
+        Tail(Tail) {}
   void addArg(IceOperand *Arg) { addSource(Arg); }
   IceOperand *getCallTarget(void) const { return CallTarget; }
   bool isTail(void) const { return Tail; }
@@ -385,8 +382,9 @@ public:
   static bool classof(const IceInst *Inst) { return Inst->getKind() >= Target; }
 
 protected:
-  IceInstTarget(IceCfg *Cfg, IceInstType Kind, unsigned MaxSrcs)
-      : IceInst(Cfg, Kind, MaxSrcs), RegState(NULL) {
+  IceInstTarget(IceCfg *Cfg, IceInstType Kind, unsigned MaxSrcs,
+                IceVariable *Dest)
+      : IceInst(Cfg, Kind, MaxSrcs, Dest), RegState(NULL) {
     assert(Kind >= Target);
   }
   const IceRegManager *RegState; // used only for debugging/dumping

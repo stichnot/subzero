@@ -10,9 +10,10 @@
 #include "IceOperand.h"
 #include "IceRegManager.h"
 
-IceInst::IceInst(IceCfg *Cfg, IceInstType Kind, unsigned MaxSrcs)
+IceInst::IceInst(IceCfg *Cfg, IceInstType Kind, unsigned MaxSrcs,
+                 IceVariable *Dest)
     : Kind(Kind), MaxSrcs(MaxSrcs), NumSrcs(0), Deleted(false), Dead(false),
-      Dest(NULL), LiveRangesEnded(0) {
+      Dest(Dest), LiveRangesEnded(0) {
   Number = Cfg->newInstNumber();
   Srcs = new IceOperand *[MaxSrcs];
 }
@@ -34,12 +35,6 @@ void IceInst::updateVars(IceCfgNode *Node) {
     if (IceVariable *Var = llvm::dyn_cast<IceVariable>(getSrc(I)))
       Var->setUse(this, Node);
   }
-}
-
-void IceInst::addDest(IceVariable *NewDest) {
-  assert(Dest == NULL);
-  assert(NewDest);
-  Dest = NewDest;
 }
 
 void IceInst::addSource(IceOperand *Source) {
@@ -148,8 +143,7 @@ void IceInst::liveness(IceLiveness Mode, int InstNumber, llvm::BitVector &Live,
 
 IceInstArithmetic::IceInstArithmetic(IceCfg *Cfg, OpKind Op, IceVariable *Dest,
                                      IceOperand *Source1, IceOperand *Source2)
-    : IceInst(Cfg, IceInst::Arithmetic, 2), Op(Op) {
-  addDest(Dest);
+    : IceInst(Cfg, IceInst::Arithmetic, 2, Dest), Op(Op) {
   addSource(Source1);
   addSource(Source2);
 }
@@ -170,8 +164,7 @@ bool IceInstArithmetic::isCommutative(void) const {
 }
 
 IceInstAssign::IceInstAssign(IceCfg *Cfg, IceVariable *Dest, IceOperand *Source)
-    : IceInst(Cfg, IceInst::Assign, 1) {
-  addDest(Dest);
+    : IceInst(Cfg, IceInst::Assign, 1, Dest) {
   addSource(Source);
 }
 
@@ -180,7 +173,7 @@ IceInstAssign::IceInstAssign(IceCfg *Cfg, IceVariable *Dest, IceOperand *Source)
 // there is at most one edge from one node to another.
 IceInstBr::IceInstBr(IceCfg *Cfg, IceOperand *Source, IceCfgNode *TargetTrue,
                      IceCfgNode *TargetFalse)
-    : IceInst(Cfg, IceInst::Br, 1), TargetFalse(TargetFalse),
+    : IceInst(Cfg, IceInst::Br, 1, NULL), TargetFalse(TargetFalse),
       TargetTrue(TargetTrue) {
   if (TargetTrue != TargetFalse) {
     addSource(Source);
@@ -188,7 +181,8 @@ IceInstBr::IceInstBr(IceCfg *Cfg, IceOperand *Source, IceCfgNode *TargetTrue,
 }
 
 IceInstBr::IceInstBr(IceCfg *Cfg, IceCfgNode *Target)
-    : IceInst(Cfg, IceInst::Br, 0), TargetFalse(Target), TargetTrue(NULL) {}
+    : IceInst(Cfg, IceInst::Br, 0, NULL), TargetFalse(Target),
+      TargetTrue(NULL) {}
 
 IceNodeList IceInstBr::getTerminatorEdges(void) const {
   IceNodeList OutEdges;
@@ -200,35 +194,30 @@ IceNodeList IceInstBr::getTerminatorEdges(void) const {
 
 IceInstCast::IceInstCast(IceCfg *Cfg, IceCastKind CastKind, IceVariable *Dest,
                          IceOperand *Source)
-    : IceInst(Cfg, IceInst::Cast, 1), CastKind(CastKind) {
-  addDest(Dest);
+    : IceInst(Cfg, IceInst::Cast, 1, Dest), CastKind(CastKind) {
   addSource(Source);
 }
 
 IceInstIcmp::IceInstIcmp(IceCfg *Cfg, IceICond Condition, IceVariable *Dest,
                          IceOperand *Source1, IceOperand *Source2)
-    : IceInst(Cfg, IceInst::Icmp, 2), Condition(Condition) {
-  addDest(Dest);
+    : IceInst(Cfg, IceInst::Icmp, 2, Dest), Condition(Condition) {
   addSource(Source1);
   addSource(Source2);
 }
 
 IceInstLoad::IceInstLoad(IceCfg *Cfg, IceVariable *Dest, IceOperand *SourceAddr)
-    : IceInst(Cfg, IceInst::Load, 1) {
-  addDest(Dest);
+    : IceInst(Cfg, IceInst::Load, 1, Dest) {
   addSource(SourceAddr);
 }
 
 IceInstStore::IceInstStore(IceCfg *Cfg, IceOperand *Val, IceOperand *Addr)
-    : IceInst(Cfg, IceInst::Store, 2) {
+    : IceInst(Cfg, IceInst::Store, 2, NULL) {
   addSource(Val);
   addSource(Addr);
 }
 
 IceInstPhi::IceInstPhi(IceCfg *Cfg, unsigned MaxSrcs, IceVariable *Dest)
-    : IceInst(Cfg, Phi, MaxSrcs) {
-  addDest(Dest);
-}
+    : IceInst(Cfg, Phi, MaxSrcs, Dest) {}
 
 void IceInstPhi::addArgument(IceOperand *Source, IceCfgNode *Label) {
   addSource(Source);
@@ -297,7 +286,7 @@ void IceInstPhi::livenessPhiOperand(llvm::BitVector &Live, IceCfgNode *Target) {
 }
 
 IceInstRet::IceInstRet(IceCfg *Cfg, IceOperand *Source)
-    : IceInst(Cfg, Ret, Source ? 1 : 0) {
+    : IceInst(Cfg, Ret, Source ? 1 : 0, NULL) {
   if (Source)
     addSource(Source);
 }
@@ -307,22 +296,21 @@ void IceInstTarget::setRegState(const IceRegManager *State) {
 }
 
 IceInstFakeDef::IceInstFakeDef(IceCfg *Cfg, IceVariable *Dest, IceVariable *Src)
-    : IceInst(Cfg, IceInst::FakeDef, Src ? 1 : 0) {
+    : IceInst(Cfg, IceInst::FakeDef, Src ? 1 : 0, Dest) {
   assert(Dest);
-  addDest(Dest);
   if (Src)
     addSource(Src);
 }
 
 IceInstFakeUse::IceInstFakeUse(IceCfg *Cfg, IceVariable *Src)
-    : IceInst(Cfg, IceInst::FakeUse, 1) {
+    : IceInst(Cfg, IceInst::FakeUse, 1, NULL) {
   assert(Src);
   addSource(Src);
 }
 
 IceInstFakeKill::IceInstFakeKill(IceCfg *Cfg, const IceVarList &KilledRegs,
                                  const IceInst *Linked)
-    : IceInst(Cfg, IceInst::FakeKill, KilledRegs.size()), Linked(Linked) {
+    : IceInst(Cfg, IceInst::FakeKill, KilledRegs.size(), NULL), Linked(Linked) {
   for (IceVarList::const_iterator I = KilledRegs.begin(), E = KilledRegs.end();
        I != E; ++I) {
     IceVariable *Var = *I;
