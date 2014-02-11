@@ -153,13 +153,6 @@ void IceCfg::registerEdges(void) {
   }
 }
 
-void IceCfg::findAddressOpt(void) {
-  for (IceNodeList::iterator I = LNodes.begin(), E = LNodes.end(); I != E;
-       ++I) {
-    (*I)->findAddressOpt();
-  }
-}
-
 void IceCfg::placePhiLoads(void) {
   for (IceNodeList::iterator I = LNodes.begin(), E = LNodes.end(); I != E;
        ++I) {

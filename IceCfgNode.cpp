@@ -91,46 +91,6 @@ void IceCfgNode::registerEdges(void) {
   }
 }
 
-void IceCfgNode::findAddressOpt(void) {
-  // No need to check the Phi instructions.
-  IceInstList::iterator I = Insts.begin(), E = Insts.end();
-  while (I != E) {
-    IceInst *Inst = *I++;
-    if (Inst->isDeleted())
-      continue;
-    if (!llvm::isa<IceInstLoad>(Inst) && !llvm::isa<IceInstStore>(Inst))
-      continue;
-    IceInst *NewInst = NULL;
-    IceOperand *Addr;
-    IceType Type;
-    if (llvm::isa<IceInstLoad>(Inst)) {
-      Addr = Inst->getSrc(0);
-      Type = Inst->getDest()->getType();
-    } else {
-      Addr = Inst->getSrc(1);
-      Type = Inst->getSrc(0)->getType();
-    }
-    if (IceVariable *Base = llvm::dyn_cast<IceVariable>(Addr)) {
-      IceVariable *Index = NULL;
-      int Shift = 0;
-      int32_t Offset = 0;
-      Inst->doAddressOpt(Base, Index, Shift, Offset);
-      if (Base != Addr) {
-        IceConstant *OffsetOp = Cfg->getConstant(IceType_i32, Offset);
-        IceOperandX8632Mem *Mem =
-            new IceOperandX8632Mem(Type, Base, OffsetOp, Index, Shift);
-        IceVariable *Dest = Inst->getDest();
-        if (Dest) // Load instruction
-          NewInst = new IceInstLoad(Cfg, Dest, Mem);
-        else // Store instruction
-          NewInst = new IceInstStore(Cfg, Mem, Inst->getSrc(0));
-      }
-    }
-    if (NewInst)
-      Insts.insert(I, NewInst);
-  }
-}
-
 // TODO: Make IceInstList into its own class that wraps the
 // std::list<IceInst*> and provides its own STL iterators.  Provide
 // normal iterators, plus an iterator that automatically skips deleted

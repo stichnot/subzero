@@ -60,8 +60,6 @@ public:
   void setDeleted(void) { Deleted = true; }
   void deleteIfDead(void);
   void updateVars(IceCfgNode *Node);
-  static void doAddressOpt(IceVariable *&Base, IceVariable *&Index, int &Shift,
-                           int32_t &Offset);
   void liveness(IceLiveness Mode, int InstNumber, llvm::BitVector &Live,
                 std::vector<int> &LiveBegin, std::vector<int> &LiveEnd);
   virtual void dump(IceOstream &Str) const;
