@@ -74,10 +74,14 @@ class IceRegManager {
 public:
   typedef std::vector<IceRegManagerEntry *> QueueType;
   // Initialize a brand new register manager.
-  IceRegManager(IceCfg *Cfg, IceCfgNode *Node, unsigned NumReg);
+  static IceRegManager *create(IceCfg *Cfg, IceCfgNode *Node, unsigned NumReg) {
+    return new IceRegManager(Cfg, Node, NumReg);
+  }
   // Capture the predecessor's end-of-block state for an extended
   // basic block.
-  IceRegManager(const IceRegManager &Other);
+  static IceRegManager *create(const IceRegManager &Other) {
+    return new IceRegManager(Other);
+  }
   // TODO: Are these IceVariable instances duplicated across
   // IceRegManager objects?
   IceVariable *getRegister(IceType Type, const IceOpList &Prefer,
@@ -88,11 +92,14 @@ public:
   void dump(IceOstream &Str) const;
 
 private:
+  IceRegManager(IceCfg *Cfg, IceCfgNode *Node, unsigned NumReg);
+  IceRegManager(const IceRegManager &Other);
   const unsigned NumReg;
   // The LRU register queue.  The front element is the least recently
   // used and the next to be assigned.
   // TODO: Multiple queues by type.
   QueueType Queue;
+  IceCfg *Cfg;
 };
 
 #endif // _IceRegManager_h

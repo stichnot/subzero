@@ -45,7 +45,7 @@ llvm::SmallBitVector IceTargetX8632::getRegisterSet(RegSetMask Include,
 IceRegManager *IceTargetX8632::makeRegManager(IceCfgNode *Node) {
   const unsigned NumScratchReg = 3; // eax, ecx, edx
   // TODO: Optimize for extended basic blocks.
-  RegManager = new IceRegManager(Cfg, Node, NumScratchReg);
+  RegManager = IceRegManager::create(Cfg, Node, NumScratchReg);
   return RegManager;
 }
 
@@ -544,7 +544,7 @@ IceOperandX8632Mem::IceOperandX8632Mem(IceCfg *Cfg, IceType Type,
   if (Index)
     ++NumVars;
   if (NumVars) {
-    Vars = new IceVariable *[NumVars];
+    Vars = new IceVariable *[NumVars]; // TODO: use Cfg placement alloc
     unsigned I = 0;
     if (Base)
       Vars[I++] = Base;

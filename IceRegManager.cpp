@@ -55,7 +55,7 @@ bool IceRegManagerEntry::contains(const IceOperand *Operand) const {
 }
 
 IceRegManager::IceRegManager(IceCfg *Cfg, IceCfgNode *Node, unsigned NumReg)
-    : NumReg(NumReg) {
+    : NumReg(NumReg), Cfg(Cfg) {
   // TODO: Config flag to use physical registers directly.
   for (unsigned i = 0; i < NumReg; ++i) {
     char Buf[100];
@@ -67,7 +67,7 @@ IceRegManager::IceRegManager(IceCfg *Cfg, IceCfgNode *Node, unsigned NumReg)
 }
 
 IceRegManager::IceRegManager(const IceRegManager &Other)
-    : NumReg(Other.NumReg) {
+    : NumReg(Other.NumReg), Cfg(Other.Cfg) {
   for (QueueType::const_iterator I = Other.Queue.begin(), E = Other.Queue.end();
        I != E; ++I) {
     Queue.push_back(new IceRegManagerEntry(**I, NumReg));

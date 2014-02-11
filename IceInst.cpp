@@ -15,7 +15,7 @@ IceInst::IceInst(IceCfg *Cfg, IceInstType Kind, unsigned MaxSrcs,
     : Kind(Kind), MaxSrcs(MaxSrcs), NumSrcs(0), Deleted(false), Dead(false),
       Dest(Dest), LiveRangesEnded(0) {
   Number = Cfg->newInstNumber();
-  Srcs = new IceOperand *[MaxSrcs];
+  Srcs = new IceOperand *[MaxSrcs]; // TODO: use placement alloc from Cfg
 }
 
 void IceInst::renumber(IceCfg *Cfg) {
@@ -292,7 +292,7 @@ IceInstRet::IceInstRet(IceCfg *Cfg, IceOperand *Source)
 }
 
 void IceInstTarget::setRegState(const IceRegManager *State) {
-  RegState = new IceRegManager(*State);
+  RegState = IceRegManager::create(*State);
 }
 
 IceInstFakeDef::IceInstFakeDef(IceCfg *Cfg, IceVariable *Dest, IceVariable *Src)
