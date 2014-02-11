@@ -74,8 +74,9 @@ protected:
 
 class IceConstantInteger : public IceConstant {
 public:
-  IceConstantInteger(IceType Type, uint64_t IntValue)
-      : IceConstant(ConstantInteger, Type), IntValue(IntValue) {}
+  static IceConstantInteger *create(IceType Type, uint64_t IntValue) {
+    return new IceConstantInteger(Type, IntValue);
+  }
   uint64_t getIntValue(void) const { return IntValue; }
   virtual void dump(IceOstream &Str) const;
 
@@ -85,15 +86,17 @@ public:
   }
 
 private:
+  IceConstantInteger(IceType Type, uint64_t IntValue)
+      : IceConstant(ConstantInteger, Type), IntValue(IntValue) {}
   const uint64_t IntValue;
 };
 
 class IceConstantRelocatable : public IceConstant {
 public:
-  IceConstantRelocatable(IceType Type, const void *Handle,
-                         const IceString &Name = "")
-      : IceConstant(ConstantRelocatable, Type), CPIndex(0), Handle(Handle),
-        Name(Name) {}
+  static IceConstantRelocatable *create(IceType Type, const void *Handle,
+                                        const IceString &Name = "") {
+    return new IceConstantRelocatable(Type, Handle, Name);
+  }
   uint32_t getCPIndex(void) const { return CPIndex; }
   const void *getHandle(void) const { return Handle; }
   IceString getName(void) const { return Name; }
@@ -105,6 +108,10 @@ public:
   }
 
 private:
+  IceConstantRelocatable(IceType Type, const void *Handle,
+                         const IceString &Name)
+      : IceConstant(ConstantRelocatable, Type), CPIndex(0), Handle(Handle),
+        Name(Name) {}
   const uint32_t CPIndex;   // index into ICE constant pool
   const void *const Handle; // opaque handle e.g. to LLVM
   const IceString Name;     // optional for debug/dump
@@ -163,14 +170,8 @@ IceOstream &operator<<(IceOstream &Str, const IceLiveRange &L);
 // Stack operand, or virtual or physical register
 class IceVariable : public IceOperand {
 public:
-  IceVariable(IceType Type, uint32_t Index, const IceString &Name)
-      : IceOperand(Variable, Type), Number(Index), Name(Name), DefInst(NULL),
-        DefOrUseNode(NULL), IsArgument(false), IsMultiblockLife(false),
-        StackOffset(0), RegNum(-1), RegNumTmp(-1), Weight(1),
-        RegisterPreference(NULL), AllowRegisterOverlap(false) {
-    Vars = new IceVariable *[1];
-    Vars[0] = this;
-    NumVars = 1;
+  static IceVariable *create(IceType Type, uint32_t Index, const IceString &Name) {
+    return new IceVariable(Type, Index, Name);
   }
   void setUse(const IceInst *Inst, const IceCfgNode *Node);
   uint32_t getIndex(void) const { return Number; }
@@ -226,6 +227,15 @@ public:
   }
 
 private:
+  IceVariable(IceType Type, uint32_t Index, const IceString &Name)
+      : IceOperand(Variable, Type), Number(Index), Name(Name), DefInst(NULL),
+        DefOrUseNode(NULL), IsArgument(false), IsMultiblockLife(false),
+        StackOffset(0), RegNum(-1), RegNumTmp(-1), Weight(1),
+        RegisterPreference(NULL), AllowRegisterOverlap(false) {
+    Vars = new IceVariable *[1];
+    Vars[0] = this;
+    NumVars = 1;
+  }
   const uint32_t Number;
   const IceString Name;
   // TODO: A Phi instruction lowers into several assignment
