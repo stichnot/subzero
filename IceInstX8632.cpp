@@ -1436,15 +1436,15 @@ static void computeAddressOpt(IceCfg *Cfg, IceVariable *&Base,
     // Index is Index=Var*Const && log2(Const)+Shift<=3 ==>
     //   Index=Var, Shift+=log2(Const)
     const IceInst *IndexInst = Index ? Index->getDefinition() : NULL;
-    if (const IceInstArithmetic *ArithInst = llvm::dyn_cast_or_null<IceInstArithmetic>(IndexInst)) {
+    if (const IceInstArithmetic *ArithInst =
+            llvm::dyn_cast_or_null<IceInstArithmetic>(IndexInst)) {
       IceOperand *IndexOperand0 = ArithInst->getSrc(0);
       IceVariable *IndexVariable0 = llvm::dyn_cast<IceVariable>(IndexOperand0);
       IceOperand *IndexOperand1 = ArithInst->getSrc(1);
       IceConstantInteger *IndexConstant1 =
-        llvm::dyn_cast<IceConstantInteger>(IndexOperand1);
-      if (ArithInst->getOp() == IceInstArithmetic::Mul &&
-          IndexVariable0 && IndexOperand1->getType() == IceType_i32 &&
-          IndexConstant1) {
+          llvm::dyn_cast<IceConstantInteger>(IndexOperand1);
+      if (ArithInst->getOp() == IceInstArithmetic::Mul && IndexVariable0 &&
+          IndexOperand1->getType() == IceType_i32 && IndexConstant1) {
         uint32_t Mult = IndexConstant1->getIntValue();
         uint32_t LogMult;
         switch (Mult) {
