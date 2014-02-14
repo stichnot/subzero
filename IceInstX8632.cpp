@@ -1502,7 +1502,11 @@ IceInstList IceTargetX8632S::lowerCall(const IceInstCall *Inst,
     // for instructions that push esp-based stack variables as
     // arguments.
     Expansion.push_back(NewInst);
-    StackOffset += iceTypeWidth(Arg->getType());
+    uint32_t ArgWidth = iceTypeWidth(Arg->getType());
+    // Bools (i1) are pushed as a full word, not 1 byte.
+    if (ArgWidth == 1)
+      ArgWidth = 4;
+    StackOffset += ArgWidth;
   }
   // Generate the call instruction.  Assign its result to a temporary
   // with high register allocation weight.
