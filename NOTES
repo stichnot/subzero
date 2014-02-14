@@ -86,5 +86,54 @@ ScopedHashTable, ImmutableSet, ImmutableList.
 Lessons from LLVM's MI layer
 ----------------------------
 
-TODO(eliben): summarize here
+The LLVM MI layer uses arena allocation for all of its artifacts. The main
+gatekeeper of this layer is MachineFunction, which keeps its own
+BumpPtrAllocator and has special allocators for instructions, operands, basic
+blocks and so on.
+
+Example: new MIs (MachineInstr objects) are created with:
+
+  MachineInstr *
+  MachineFunction::CreateMachineInstr(const MCInstrDesc &MCID,
+                                      DebugLoc DL, bool NoImp) {
+    return new (InstructionRecycler.Allocate<MachineInstr>(Allocator))
+      MachineInstr(*this, MCID, DL, NoImp);
+  }
+
+Arrays of MachineOperand objects are created with:
+
+  MachineOperand *allocateOperandArray(OperandCapacity Cap) {
+    return OperandRecycler.allocate(Cap, Allocator);
+  }
+
+The allocator is used for all additional heap allocations, for example to
+create a register mask - Allocator.Allocate<uint32_t>(Size).
+
+Naked "new" is not used anywhere within MachineFunction.
+
+Containers in the MI layer
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+MachineInstr
+************
+
+MachineInstr doesn't use any containers or heap-allocating members. The only
+container-y code related to it is being part of an ilist of MachineInstrs held
+by each MachineBasicBlock (MBB). However, the ilist_traits for MachineInstr
+are defined to use a sentinel member that's not heap-allocated.
+
+MachineBasicBlock
+*****************
+
+MBBs are ilist_nodes held in a MachineFunction, using the same trick as MIs to
+avoid heap allocation for the sentinel.
+
+However, MBBs also hold on to a number of std::vectors - this is probably a
+mistake we don't want to repeat?
+
+MachineFunction
+***************
+
+MachineFunctions (MFs) also hold std::vectors for block numbering...
+
 
