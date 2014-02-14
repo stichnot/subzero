@@ -47,7 +47,6 @@ private:
   IceString Name;                         // for dumping only
   IceNodeList OutEdges;                   // in no particular order
   IceNodeList InEdges;                    // in no particular order
-  std::vector<IceInstList> Compensations; // ordered by InEdges
   // TODO: The Live* vectors are not needed outside liveness analysis,
   // and could be moved outside of IceCfgNode to save memory.
   llvm::BitVector LiveIn, LiveOut;     // TODO: consider llvm::SparseBitVector
