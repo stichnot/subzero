@@ -224,6 +224,11 @@ void IceCfg::genCode(void) {
   renumberInstructions();
   if (hasError())
     return;
+  // TODO: It should be sufficient to use the fastest livness
+  // calculation, i.e. IceLiveness_LREndLightweight.  However,
+  // currently this breaks one test (icmp-simple.ll) because with
+  // IceLiveness_LREndFull, the problematic instructions get dead-code
+  // eliminated.
   liveness(IceLiveness_LREndFull);
   if (hasError())
     return;
