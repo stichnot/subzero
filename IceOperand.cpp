@@ -156,6 +156,22 @@ IceOstream &operator<<(IceOstream &Str, const IceOperand *O) {
   return Str;
 }
 
+void IceVariable::emit(IceOstream &Str, uint32_t Option) const {
+  if (getRegNum() >= 0) {
+    Str << Str.Cfg->physicalRegName(RegNum);
+    return;
+  }
+  Str << "["
+      << Str.Cfg->physicalRegName(Str.Cfg->getTarget()->getFrameOrStackReg());
+  int Offset = getStackOffset();
+  if (Offset) {
+    if (Offset > 0)
+      Str << "+";
+    Str << Offset;
+  }
+  Str << "]";
+}
+
 void IceVariable::dump(IceOstream &Str) const {
   if (Str.isVerbose(IceV_RegOrigins) ||
       (RegNum < 0 && !Str.Cfg->hasComputedFrame()))
@@ -179,9 +195,19 @@ void IceVariable::dump(IceOstream &Str) const {
   }
 }
 
+void IceOperand::emit(IceOstream &Str, uint32_t Option) const { dump(Str); }
+
 void IceOperand::dump(IceOstream &Str) const { Str << "IceOperand<?>"; }
 
+void IceConstantInteger::emit(IceOstream &Str, uint32_t Option) const {
+  dump(Str);
+}
+
 void IceConstantInteger::dump(IceOstream &Str) const { Str << IntValue; }
+
+void IceConstantRelocatable::emit(IceOstream &Str, uint32_t Option) const {
+  Str << Name;
+}
 
 void IceConstantRelocatable::dump(IceOstream &Str) const {
   Str << Name << "(CP=" << CPIndex << ")";

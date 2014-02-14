@@ -1,4 +1,4 @@
-; RUN: %llvm2ice %s | FileCheck %s
+; RUN: %llvm2ice -verbose inst %s | FileCheck %s
 
 define i64 @add_args(i64 %arg1, i64 %arg2) {
 ; CHECK: define internal i64 add_args

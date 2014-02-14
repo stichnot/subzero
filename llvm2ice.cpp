@@ -116,7 +116,12 @@ private:
       return IceType_f32;
     case Type::DoubleTyID:
       return IceType_f64;
-    case Type::PointerTyID:
+    case Type::PointerTyID: {
+      const PointerType *PTy = cast<PointerType>(Ty);
+      return convertType(PTy->getElementType());
+      return IceType_i32;
+    }
+    case Type::FunctionTyID:
       return IceType_i32;
     default:
       report_fatal_error(std::string("Invalid PNaCl type: ") +
@@ -142,7 +147,8 @@ private:
       // For now only constant integers are supported.
       // TODO: support all kinds of constants
       if (const GlobalValue *GV = dyn_cast<GlobalValue>(Const)) {
-        return Cfg->getConstant(IceType_i32, GV, GV->getName());
+        return Cfg->getConstant(/*IceType_i32*/ convertType(GV->getType()), GV,
+                                GV->getName());
       } else if (const ConstantInt *CI = cast<ConstantInt>(Const)) {
         return Cfg->getConstant(convertIntegerType(CI->getType()),
                                 CI->getZExtValue());
@@ -230,14 +236,15 @@ private:
 
   IceInst *convertLoadInstruction(const LoadInst *Inst) {
     IceOperand *Src = convertOperand(Inst, 0);
-    assert(Src->getType() == IceType_i32 && "Expecting loads only from i32");
+    // assert(Src->getType() == IceType_i32 && "Expecting loads only from i32");
     IceVariable *Dest = mapValueToIceVar(Inst);
     return IceInstLoad::create(Cfg, Dest, Src);
   }
 
   IceInst *convertStoreInstruction(const StoreInst *Inst) {
     IceOperand *Addr = convertOperand(Inst, 1);
-    assert(Addr->getType() == IceType_i32 && "Expecting stores only from i32");
+    // assert(Addr->getType() == IceType_i32 && "Expecting stores only from
+    // i32");
     IceOperand *Val = convertOperand(Inst, 0);
     return IceInstStore::create(Cfg, Val, Addr);
   }
@@ -368,9 +375,9 @@ private:
       assert(ElementSize && "Element size needs to be non-zero");
       // TODO(sehr,stichnot): Implement variable-sized allocas
       uint64_t ArrayCount = AllocaType->getArrayNumElements();
-      assert((uint64_t)(((uint32_t) -1) / ElementSize) > ArrayCount &&
+      assert((uint64_t)(((uint32_t) - 1) / ElementSize) > ArrayCount &&
              "Integer overflow on allocation");
-      Size = (uint32_t) ElementSize * ArrayCount;
+      Size = (uint32_t)ElementSize * ArrayCount;
     } else {
       Size = AllocaType->getScalarSizeInBits() / 8;
     }
@@ -445,14 +452,14 @@ int main(int argc, char **argv) {
       continue;
     LLVM2ICEConverter FunctionConverter;
     IceCfg *Cfg = FunctionConverter.convertFunction(I);
-    if (!VerboseList.empty())
-      Cfg->Str.setVerbose(VerboseMask);
-    Cfg->dump();
+    Cfg->Str.setVerbose(VerboseMask);
     if (!DisableTranslation) {
       Cfg->translate(TargetArch);
       if (Cfg->hasError()) {
         errs() << "ICE translation error: " << Cfg->getError() << "\n";
       }
+      uint32_t AsmFormat = 0;
+      Cfg->emit(AsmFormat);
     }
   }
 

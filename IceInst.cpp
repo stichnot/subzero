@@ -346,6 +346,12 @@ IceOstream &operator<<(IceOstream &Str, const IceInst *I) {
   return Str;
 }
 
+void IceInst::emit(IceOstream &Str, uint32_t Option) const {
+  Str << "??? ";
+  dump(Str);
+  Str << "\n";
+}
+
 void IceInst::dump(IceOstream &Str) const {
   dumpDest(Str);
   Str << " =~ ";
@@ -546,6 +552,9 @@ void IceInstIcmp::dump(IceOstream &Str) const {
   case Sle:
     Str << "sle";
     break;
+  case None: // shouldn't happen
+    Str << "<none>";
+    break;
   }
   Str << " " << getSrc(0)->getType() << " ";
   dumpSources(Str);
@@ -606,15 +615,33 @@ void IceInstRet::dump(IceOstream &Str) const {
   dumpSources(Str);
 }
 
+void IceInstFakeDef::emit(IceOstream &Str, uint32_t Option) const {
+  Str << "\t# ";
+  dump(Str);
+  Str << "\n";
+}
+
 void IceInstFakeDef::dump(IceOstream &Str) const {
   dumpDest(Str);
   Str << " = def.pseudo ";
   dumpSources(Str);
 }
 
+void IceInstFakeUse::emit(IceOstream &Str, uint32_t Option) const {
+  Str << "\t# ";
+  dump(Str);
+  Str << "\n";
+}
+
 void IceInstFakeUse::dump(IceOstream &Str) const {
   Str << "use.pseudo ";
   dumpSources(Str);
+}
+
+void IceInstFakeKill::emit(IceOstream &Str, uint32_t Option) const {
+  Str << "\t# ";
+  dump(Str);
+  Str << "\n";
 }
 
 void IceInstFakeKill::dump(IceOstream &Str) const {

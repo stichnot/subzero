@@ -42,6 +42,7 @@ public:
     return Vars[I];
   }
   unsigned getNumVars(void) const { return NumVars; }
+  virtual void emit(IceOstream &Str, uint32_t Option) const;
   virtual void dump(IceOstream &Str) const;
 
 protected:
@@ -59,6 +60,7 @@ IceOstream &operator<<(IceOstream &Str, const IceOperand *O);
 // including synchronized access for parallel translation.
 class IceConstant : public IceOperand {
 public:
+  virtual void emit(IceOstream &Str, uint32_t Option) const = 0;
   virtual void dump(IceOstream &Str) const = 0;
 
   static bool classof(const IceOperand *Operand) {
@@ -81,6 +83,7 @@ public:
     return new IceConstantInteger(Cfg, Type, IntValue);
   }
   uint64_t getIntValue(void) const { return IntValue; }
+  virtual void emit(IceOstream &Str, uint32_t Option) const;
   virtual void dump(IceOstream &Str) const;
 
   static bool classof(const IceOperand *Operand) {
@@ -96,14 +99,15 @@ private:
 
 class IceConstantRelocatable : public IceConstant {
 public:
-  static IceConstantRelocatable *create(IceCfg *Cfg, IceType Type,
-                                        const void *Handle,
+  static IceConstantRelocatable *create(IceCfg *Cfg, uint32_t CPIndex,
+                                        IceType Type, const void *Handle,
                                         const IceString &Name = "") {
-    return new IceConstantRelocatable(Cfg, Type, Handle, Name);
+    return new IceConstantRelocatable(Cfg, Type, Handle, Name, CPIndex);
   }
   uint32_t getCPIndex(void) const { return CPIndex; }
   const void *getHandle(void) const { return Handle; }
   IceString getName(void) const { return Name; }
+  virtual void emit(IceOstream &Str, uint32_t Option) const;
   virtual void dump(IceOstream &Str) const;
 
   static bool classof(const IceOperand *Operand) {
@@ -113,9 +117,9 @@ public:
 
 private:
   IceConstantRelocatable(IceCfg *Cfg, IceType Type, const void *Handle,
-                         const IceString &Name)
-      : IceConstant(Cfg, ConstantRelocatable, Type), CPIndex(0), Handle(Handle),
-        Name(Name) {}
+                         const IceString &Name, uint32_t CPIndex)
+      : IceConstant(Cfg, ConstantRelocatable, Type), CPIndex(CPIndex),
+        Handle(Handle), Name(Name) {}
   const uint32_t CPIndex;   // index into ICE constant pool
   const void *const Handle; // opaque handle e.g. to LLVM
   const IceString Name;     // optional for debug/dump
@@ -225,6 +229,7 @@ public:
     LiveRange.setWeight(IceRegWeight::Inf);
   }
   IceString getName(void) const;
+  virtual void emit(IceOstream &Str, uint32_t Option) const;
   virtual void dump(IceOstream &Str) const;
 
   static bool classof(const IceOperand *Operand) {

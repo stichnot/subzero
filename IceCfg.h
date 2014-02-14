@@ -19,10 +19,12 @@ public:
   void setError(const IceString &Message);
   bool hasComputedFrame(void) const;
   void setName(const IceString &FunctionName) { Name = FunctionName; }
+  IceString getName(void) const { return Name; }
   void setReturnType(IceType ReturnType) { Type = ReturnType; }
   IceTargetLowering *getTarget(void) const { return Target; }
   void addArg(IceVariable *Arg);
   void setEntryNode(IceCfgNode *EntryNode);
+  IceCfgNode *getEntryNode(void) const { return Entry; }
   void registerEdges(void);
   void addNode(IceCfgNode *Node, uint32_t LabelIndex);
   IceCfgNode *splitEdge(IceCfgNode *From, IceCfgNode *To);
@@ -46,6 +48,7 @@ public:
 
   IceString physicalRegName(int Reg) const { return RegisterNames[Reg]; }
   void translate(IceTargetArch TargetArch = IceTarget_X8632);
+  void emit(uint32_t Option) const;
   void dump(void) const;
 
   mutable IceOstream Str;
@@ -67,6 +70,7 @@ private:
   IceNodeList LNodes; // linearized node list; Entry should be first
   IceVarList Variables;
   IceVarList Args; // densely packed vector, subset of Variables
+  class IceConstantPool *ConstantPool;
 
   int NextInstNumber;
   // TODO: This goes away when we get target-specific operands with
@@ -82,6 +86,10 @@ private:
   void genFrame(void);
   void liveness(IceLiveness Mode);
   void regAlloc(void);
+
+  // TODO: This is a hack, and should be moved into a global context
+  // guarded with a mutex.
+  static bool HasEmittedFirstMethod;
 };
 
 #endif // _IceCfg_h

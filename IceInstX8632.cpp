@@ -730,6 +730,52 @@ void IceInstX8632::dump(IceOstream &Str) const {
   IceInst::dump(Str);
 }
 
+void IceInstX8632Br::emit(IceOstream &Str, unsigned Option) const {
+  Str << "\t";
+  switch (Condition) {
+  case IceInstIcmp::Eq:
+    Str << "je";
+    break;
+  case IceInstIcmp::Ne:
+    Str << "jne";
+    break;
+  case IceInstIcmp::Ugt:
+    Str << "jg";
+    break;
+  case IceInstIcmp::Uge:
+    Str << "jge";
+    break;
+  case IceInstIcmp::Ult:
+    Str << "jl";
+    break;
+  case IceInstIcmp::Ule:
+    Str << "jle";
+    break;
+  case IceInstIcmp::Sgt:
+    Str << "ja";
+    break;
+  case IceInstIcmp::Sge:
+    Str << "jae";
+    break;
+  case IceInstIcmp::Slt:
+    Str << "jb";
+    break;
+  case IceInstIcmp::Sle:
+    Str << "jbe";
+    break;
+  case IceInstIcmp::None:
+    Str << "jmp";
+    break;
+  }
+  // TODO: expand conditional branch into 2 separate branches
+  if (Condition == IceInstIcmp::None) {
+    Str << "\t" << getTargetFalse()->getAsmName() << "\n";
+  } else {
+    Str << "\t" << getTargetTrue()->getAsmName() << "\n";
+    Str << "\tjmp\t" << getTargetFalse()->getAsmName() << "\n";
+  }
+}
+
 void IceInstX8632Br::dump(IceOstream &Str) const {
   Str << "br ";
   switch (Condition) {
@@ -763,9 +809,22 @@ void IceInstX8632Br::dump(IceOstream &Str) const {
   case IceInstIcmp::Sle:
     Str << "sle";
     break;
+  case IceInstIcmp::None:
+    Str << "label %" << getTargetFalse()->getName();
+    return;
+    break;
   }
   Str << ", label %" << getTargetTrue()->getName() << ", label %"
       << getTargetFalse()->getName();
+}
+
+void IceInstX8632Call::emit(IceOstream &Str, uint32_t Option) const {
+  assert(getSrcSize() == 0);
+  Str << "\tcall\t";
+  getCallTarget()->emit(Str, Option);
+  if (Tail)
+    Str << "\t# tail";
+  Str << "\n";
 }
 
 void IceInstX8632Call::dump(IceOstream &Str) const {
@@ -778,10 +837,37 @@ void IceInstX8632Call::dump(IceOstream &Str) const {
   Str << "call " << getCallTarget();
 }
 
+static void emitTwoAddress(const char *Opcode, const IceInst *Inst, IceOstream &Str, uint32_t Option, bool ShiftHack = false) {
+  assert(Inst->getSrcSize() == 2);
+  assert(Inst->getDest() == Inst->getSrc(0));
+  Str << "\t" << Opcode << "\t";
+  Inst->getDest()->emit(Str, Option);
+  Str << ", ";
+  bool EmittedSrc1 = false;
+  if (ShiftHack) {
+    IceVariable *ShiftReg = llvm::dyn_cast<IceVariable>(Inst->getSrc(1));
+    if (ShiftReg && ShiftReg->getRegNum() == IceTargetX8632::Reg_ecx) {
+      Str << "cl";
+      EmittedSrc1 = true;
+    }
+  }
+  if (!EmittedSrc1)
+    Inst->getSrc(1)->emit(Str, Option);
+  Str << "\n";
+}
+
+void IceInstX8632Add::emit(IceOstream &Str, uint32_t Option) const {
+  emitTwoAddress("add", this, Str, Option);
+}
+
 void IceInstX8632Add::dump(IceOstream &Str) const {
   dumpDest(Str);
   Str << " = add." << getDest()->getType() << " ";
   dumpSources(Str);
+}
+
+void IceInstX8632Sub::emit(IceOstream &Str, unsigned Option) const {
+  emitTwoAddress("sub", this, Str, Option);
 }
 
 void IceInstX8632Sub::dump(IceOstream &Str) const {
@@ -790,10 +876,18 @@ void IceInstX8632Sub::dump(IceOstream &Str) const {
   dumpSources(Str);
 }
 
+void IceInstX8632And::emit(IceOstream &Str, uint32_t Option) const {
+  emitTwoAddress("and", this, Str, Option);
+}
+
 void IceInstX8632And::dump(IceOstream &Str) const {
   dumpDest(Str);
   Str << " = and." << getDest()->getType() << " ";
   dumpSources(Str);
+}
+
+void IceInstX8632Or::emit(IceOstream &Str, uint32_t Option) const {
+  emitTwoAddress("or", this, Str, Option);
 }
 
 void IceInstX8632Or::dump(IceOstream &Str) const {
@@ -802,10 +896,18 @@ void IceInstX8632Or::dump(IceOstream &Str) const {
   dumpSources(Str);
 }
 
+void IceInstX8632Xor::emit(IceOstream &Str, uint32_t Option) const {
+  emitTwoAddress("xor", this, Str, Option);
+}
+
 void IceInstX8632Xor::dump(IceOstream &Str) const {
   dumpDest(Str);
   Str << " = xor." << getDest()->getType() << " ";
   dumpSources(Str);
+}
+
+void IceInstX8632Imul::emit(IceOstream &Str, uint32_t Option) const {
+  emitTwoAddress("imul", this, Str, Option);
 }
 
 void IceInstX8632Imul::dump(IceOstream &Str) const {
@@ -814,10 +916,24 @@ void IceInstX8632Imul::dump(IceOstream &Str) const {
   dumpSources(Str);
 }
 
+void IceInstX8632Idiv::emit(IceOstream &Str, uint32_t Option) const {
+  assert(getSrcSize() == 3);
+  Str << "\tidiv\t";
+  getSrc(1)->emit(Str, Option);
+  Str << "\n";
+}
+
 void IceInstX8632Idiv::dump(IceOstream &Str) const {
   dumpDest(Str);
   Str << " = idiv." << getDest()->getType() << " ";
   dumpSources(Str);
+}
+
+void IceInstX8632Div::emit(IceOstream &Str, uint32_t Option) const {
+  assert(getSrcSize() == 3);
+  Str << "\tdiv\t";
+  getSrc(1)->emit(Str, Option);
+  Str << "\n";
 }
 
 void IceInstX8632Div::dump(IceOstream &Str) const {
@@ -826,10 +942,20 @@ void IceInstX8632Div::dump(IceOstream &Str) const {
   dumpSources(Str);
 }
 
+void IceInstX8632Shl::emit(IceOstream &Str, uint32_t Option) const {
+  bool ShiftHack = true;
+  emitTwoAddress("shl", this, Str, Option, ShiftHack);
+}
+
 void IceInstX8632Shl::dump(IceOstream &Str) const {
   dumpDest(Str);
   Str << " = shl." << getDest()->getType() << " ";
   dumpSources(Str);
+}
+
+void IceInstX8632Shr::emit(IceOstream &Str, uint32_t Option) const {
+  bool ShiftHack = true;
+  emitTwoAddress("shr", this, Str, Option, ShiftHack);
 }
 
 void IceInstX8632Shr::dump(IceOstream &Str) const {
@@ -838,10 +964,20 @@ void IceInstX8632Shr::dump(IceOstream &Str) const {
   dumpSources(Str);
 }
 
+void IceInstX8632Sar::emit(IceOstream &Str, uint32_t Option) const {
+  bool ShiftHack = true;
+  emitTwoAddress("sar", this, Str, Option, ShiftHack);
+}
+
 void IceInstX8632Sar::dump(IceOstream &Str) const {
   dumpDest(Str);
   Str << " = sar." << getDest()->getType() << " ";
   dumpSources(Str);
+}
+
+void IceInstX8632Cdq::emit(IceOstream &Str, uint32_t Option) const {
+  assert(getSrcSize() == 1);
+  Str << "cdq";
 }
 
 void IceInstX8632Cdq::dump(IceOstream &Str) const {
@@ -850,10 +986,21 @@ void IceInstX8632Cdq::dump(IceOstream &Str) const {
   dumpSources(Str);
 }
 
+void IceInstX8632Icmp::emit(IceOstream &Str, uint32_t Option) const {
+  assert(getSrcSize() == 2);
+  Str << "\tcmp\t";
+  getSrc(0)->emit(Str, Option);
+  Str << ", ";
+  getSrc(1)->emit(Str, Option);
+  Str << "\n";
+}
+
 void IceInstX8632Icmp::dump(IceOstream &Str) const {
   Str << "cmp." << getSrc(0)->getType() << " ";
   dumpSources(Str);
 }
+
+void IceInstX8632Load::emit(IceOstream &Str, uint32_t Option) const {}
 
 void IceInstX8632Load::dump(IceOstream &Str) const {
   Str << "mov." << getDest()->getType() << " ";
@@ -863,9 +1010,27 @@ void IceInstX8632Load::dump(IceOstream &Str) const {
   Str << "]";
 }
 
+void IceInstX8632Store::emit(IceOstream &Str, uint32_t Option) const {
+  assert(getSrcSize() == 2);
+  Str << "\tmov\t";
+  getSrc(1)->emit(Str, Option);
+  Str << ", ";
+  getSrc(0)->emit(Str, Option);
+  Str << "\n";
+}
+
 void IceInstX8632Store::dump(IceOstream &Str) const {
   Str << "mov." << getSrc(0)->getType() << " " << getSrc(1) << ", "
       << getSrc(0);
+}
+
+void IceInstX8632Mov::emit(IceOstream &Str, uint32_t Option) const {
+  assert(getSrcSize() == 1);
+  Str << "\tmov\t";
+  getDest()->emit(Str, Option);
+  Str << ", ";
+  getSrc(0)->emit(Str, Option);
+  Str << "\n";
 }
 
 void IceInstX8632Mov::dump(IceOstream &Str) const {
@@ -873,6 +1038,17 @@ void IceInstX8632Mov::dump(IceOstream &Str) const {
   dumpDest(Str);
   Str << ", ";
   dumpSources(Str);
+}
+
+void IceInstX8632Movsx::emit(IceOstream &Str, uint32_t Option) const {
+  assert(getSrcSize() == 1);
+  Str << "\tmovs" << OpcodeTypeFromIceType(getSrc(0)->getType());
+  Str << OpcodeTypeFromIceType(getDest()->getType());
+  Str << "\t";
+  getDest()->emit(Str, Option);
+  Str << ", ";
+  getSrc(0)->emit(Str, Option);
+  Str << "\n";
 }
 
 void IceInstX8632Movsx::dump(IceOstream &Str) const {
@@ -884,6 +1060,17 @@ void IceInstX8632Movsx::dump(IceOstream &Str) const {
   dumpSources(Str);
 }
 
+void IceInstX8632Movzx::emit(IceOstream &Str, uint32_t Option) const {
+  assert(getSrcSize() == 1);
+  Str << "\tmovz" << OpcodeTypeFromIceType(getSrc(0)->getType());
+  Str << OpcodeTypeFromIceType(getDest()->getType());
+  Str << "\t";
+  getDest()->emit(Str, Option);
+  Str << ", ";
+  getSrc(0)->emit(Str, Option);
+  Str << "\n";
+}
+
 void IceInstX8632Movzx::dump(IceOstream &Str) const {
   Str << "movz" << OpcodeTypeFromIceType(getSrc(0)->getType());
   Str << OpcodeTypeFromIceType(getDest()->getType());
@@ -893,14 +1080,32 @@ void IceInstX8632Movzx::dump(IceOstream &Str) const {
   dumpSources(Str);
 }
 
+void IceInstX8632Pop::emit(IceOstream &Str, uint32_t Option) const {
+  assert(getSrcSize() == 0);
+  Str << "\tpop\t";
+  getDest()->emit(Str, Option);
+  Str << "\n";
+}
+
 void IceInstX8632Pop::dump(IceOstream &Str) const {
   dumpDest(Str);
   Str << " = pop." << getDest()->getType() << " ";
 }
 
+void IceInstX8632Push::emit(IceOstream &Str, uint32_t Option) const {
+  assert(getSrcSize() == 1);
+  Str << "\tpush\t";
+  getSrc(0)->emit(Str, Option);
+  Str << "\n";
+}
+
 void IceInstX8632Push::dump(IceOstream &Str) const {
   Str << "push." << getSrc(0)->getType() << " ";
   dumpSources(Str);
+}
+
+void IceInstX8632Ret::emit(IceOstream &Str, uint32_t Option) const {
+  Str << "\tret\n";
 }
 
 void IceInstX8632Ret::dump(IceOstream &Str) const {
@@ -911,6 +1116,59 @@ void IceInstX8632Ret::dump(IceOstream &Str) const {
 
 void IceOperandX8632::dump(IceOstream &Str) const {
   Str << "<IceOperandX8632>";
+}
+
+void IceOperandX8632Mem::emit(IceOstream &Str, uint32_t Option) const {
+  switch (getType()) {
+  case IceType_i8:
+    Str << "byte ptr ";
+    break;
+  case IceType_i16:
+    Str << "word ptr ";
+    break;
+  case IceType_i32:
+    Str << "dword ptr ";
+    break;
+  case IceType_i64:
+    Str << "qword ptr ";
+    break;
+  default:
+    Str << "??? ";
+    break;
+  }
+  // TODO: The following is an almost verbatim paste of dump().
+  bool Dumped = false;
+  Str << "[";
+  if (Base) {
+    Base->emit(Str, Option);
+    Dumped = true;
+  }
+  if (Index) {
+    assert(Base);
+    Str << "+";
+    if (Shift > 0)
+      Str << (1u << Shift) << "*";
+    Index->emit(Str, Option);
+    Dumped = true;
+  }
+  // Pretty-print the Offset.
+  bool OffsetIsZero = false;
+  bool OffsetIsNegative = false;
+  if (Offset == NULL) {
+    OffsetIsZero = true;
+  } else if (IceConstantInteger *CI =
+                 llvm::dyn_cast<IceConstantInteger>(Offset)) {
+    OffsetIsZero = (CI->getIntValue() == 0);
+    OffsetIsNegative = (static_cast<int64_t>(CI->getIntValue()) < 0);
+  }
+  if (!OffsetIsZero) { // Suppress if Offset is known to be 0
+    if (Dumped) {
+      if (!OffsetIsNegative) // Suppress if Offset is known to be negative
+        Str << "+";
+    }
+    Offset->emit(Str, Option);
+  }
+  Str << "]";
 }
 
 void IceOperandX8632Mem::dump(IceOstream &Str) const {
@@ -984,8 +1242,8 @@ IceInstList IceTargetX8632S::lowerAlloca(const IceInstAlloca *Inst,
   // the number of adjustments of esp, etc.
   IceVariable *Esp = Cfg->getTarget()->getPhysicalRegister(Reg_esp);
   uint32_t Size = Inst->getSize();
-  NewInst = IceInstX8632Sub::create(Cfg, Esp,
-                                    Cfg->getConstant(IceType_i32, Size));
+  NewInst =
+      IceInstX8632Sub::create(Cfg, Esp, Cfg->getConstant(IceType_i32, Size));
   Expansion.push_back(NewInst);
   NewInst = IceInstX8632Mov::create(Cfg, Inst->getDest(), Esp);
   Expansion.push_back(NewInst);
@@ -1190,6 +1448,8 @@ IceInstList IceTargetX8632S::lowerBr(const IceInstBr *Inst, const IceInst *Next,
   IceInstList Expansion;
   if (Inst->getTargetTrue())
     Cfg->setError("Conditional branch lowering unimplemented");
+  IceInstTarget *NewInst = IceInstX8632Br::create(Cfg, Inst->getTargetFalse());
+  Expansion.push_back(NewInst);
   return Expansion;
 }
 
@@ -1612,7 +1872,7 @@ IceInstList IceTargetX8632S::lowerStore(const IceInstStore *Inst,
     IceVariable *Base = llvm::dyn_cast<IceVariable>(Src1);
     IceConstant *Offset = llvm::dyn_cast<IceConstant>(Src1);
     assert(Base || Offset);
-    NewSrc = IceOperandX8632Mem::create(Cfg, Src1->getType(), Base, Offset);
+    NewSrc = IceOperandX8632Mem::create(Cfg, Value->getType(), Base, Offset);
   }
   NewSrc = llvm::cast<IceOperandX8632Mem>(
       legalizeOperand(NewSrc, Legal_All, Expansion));

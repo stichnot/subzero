@@ -1,4 +1,4 @@
-; RUN: %llvm2ice %s | FileCheck %s
+; RUN: %llvm2ice -verbose inst %s | FileCheck %s
 
 define internal i32 @simple_cond(i32 %a, i32 %n) {
 entry:

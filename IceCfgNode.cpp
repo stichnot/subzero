@@ -40,6 +40,10 @@ IceString IceCfgNode::getName(void) const {
   return buf;
 }
 
+IceString IceCfgNode::getAsmName(void) const {
+  return ".L" + Cfg->getName() + "$" + getName();
+}
+
 void IceCfgNode::renumberInstructions(void) {
   for (IcePhiList::const_iterator I = Phis.begin(), E = Phis.end(); I != E;
        ++I) {
@@ -380,6 +384,31 @@ void IceCfgNode::livenessPostprocess(IceLiveness Mode) {
 }
 
 // ======================== Dump routines ======================== //
+
+void IceCfgNode::emit(IceOstream &Str, uint32_t Option) const {
+  if (Cfg->getEntryNode() == this) {
+    Str << Cfg->getName() << ":\n";
+  }
+  Str << getAsmName() << ":\n";
+  // TODO: emit() should blow up in some way if any live phi
+  // instructions remain.
+  for (IcePhiList::const_iterator I = Phis.begin(), E = Phis.end(); I != E;
+       ++I) {
+    IceInstPhi *Inst = *I;
+    if (Inst->isDeleted())
+      continue;
+    Inst->emit(Str, Option);
+  }
+  for (IceInstList::const_iterator I = Insts.begin(), E = Insts.end(); I != E;
+       ++I) {
+    IceInst *Inst = *I;
+    if (Inst->isDeleted())
+      continue;
+    if (Inst->isRedundantAssign())
+      continue;
+    (*I)->emit(Str, Option);
+  }
+}
 
 void IceCfgNode::dump(IceOstream &Str) const {
   if (Str.isVerbose(IceV_Instructions)) {

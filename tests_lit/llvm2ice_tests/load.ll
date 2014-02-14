@@ -1,4 +1,4 @@
-; RUN: %llvm2ice %s | FileCheck %s
+; RUN: %llvm2ice -verbose inst %s | FileCheck %s
 
 define void @load_i64(i32 %addr_arg) {
 entry:

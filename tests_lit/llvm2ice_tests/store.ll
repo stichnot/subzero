@@ -1,4 +1,4 @@
-; RUN: %llvm2ice %s | FileCheck %s
+; RUN: %llvm2ice %s -verbose inst | FileCheck %s
 
 define void @store_i64(i32 %addr_arg) {
 entry:

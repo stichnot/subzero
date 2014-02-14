@@ -62,6 +62,7 @@ public:
   void updateVars(IceCfgNode *Node);
   void liveness(IceLiveness Mode, int InstNumber, llvm::BitVector &Live,
                 std::vector<int> &LiveBegin, std::vector<int> &LiveEnd);
+  virtual void emit(IceOstream &Str, uint32_t Option) const;
   virtual void dump(IceOstream &Str) const;
   virtual void dumpExtras(IceOstream &Str) const;
   void dumpSources(IceOstream &Str) const;
@@ -298,6 +299,7 @@ public:
     Sge,
     Slt,
     Sle,
+    None // not part of LLVM; used for unconditional branch
   };
   static IceInstIcmp *create(IceCfg *Cfg, IceICond Condition, IceVariable *Dest,
                              IceOperand *Source1, IceOperand *Source2) {
@@ -412,6 +414,7 @@ public:
                                 IceVariable *Src = NULL) {
     return new IceInstFakeDef(Cfg, Dest, Src);
   }
+  virtual void emit(IceOstream &Str, uint32_t Option) const;
   virtual void dump(IceOstream &Str) const;
   static bool classof(const IceInst *Inst) {
     return Inst->getKind() == FakeDef;
@@ -426,6 +429,7 @@ public:
   static IceInstFakeUse *create(IceCfg *Cfg, IceVariable *Src) {
     return new IceInstFakeUse(Cfg, Src);
   }
+  virtual void emit(IceOstream &Str, uint32_t Option) const;
   virtual void dump(IceOstream &Str) const;
   static bool classof(const IceInst *Inst) {
     return Inst->getKind() == FakeUse;
@@ -442,6 +446,7 @@ public:
     return new IceInstFakeKill(Cfg, KilledRegs, Linked);
   }
   const IceInst *getLinked(void) const { return Linked; }
+  virtual void emit(IceOstream &Str, uint32_t Option) const;
   virtual void dump(IceOstream &Str) const;
   static bool classof(const IceInst *Inst) {
     return Inst->getKind() == FakeKill;
@@ -457,6 +462,7 @@ private:
 class IceInstTarget : public IceInst {
 public:
   void setRegState(const IceRegManager *State);
+  virtual void emit(IceOstream &Str, uint32_t Option) const = 0;
   virtual void dump(IceOstream &Str) const;
   virtual void dumpExtras(IceOstream &Str) const;
   static bool classof(const IceInst *Inst) { return Inst->getKind() >= Target; }

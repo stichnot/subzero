@@ -1,4 +1,4 @@
-; RUN: %llvm2ice %s | FileCheck %s
+; RUN: %llvm2ice -verbose inst %s | FileCheck %s
 
 define i32 @fib(i32 %n) #0 {
 ; CHECK: define internal i32 fib

@@ -1,4 +1,4 @@
-; RUN: %llvm2ice %s | FileCheck %s
+; RUN: %llvm2ice -verbose inst %s | FileCheck %s
 
 define i64 @arithmetic_chain(i64 %foo, i64 %bar) {
 entry:

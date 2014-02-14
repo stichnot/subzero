@@ -16,6 +16,7 @@
 class IceOperandX8632 : public IceOperand {
 public:
   enum IceOperandTypeX8632 { __Start = IceOperand::Target, Mem, };
+  virtual void emit(IceOstream &Str, uint32_t Option) const = 0;
   void dump(IceOstream &Str) const;
 
 protected:
@@ -35,6 +36,7 @@ public:
   IceConstant *getOffset(void) const { return Offset; }
   IceVariable *getIndex(void) const { return Index; }
   unsigned getShift(void) const { return Shift; }
+  virtual void emit(IceOstream &Str, uint32_t Option) const;
   virtual void dump(IceOstream &Str) const;
 
   static bool classof(const IceOperand *Operand) {
@@ -215,6 +217,7 @@ public:
     Sub,
     Xor,
   };
+  virtual void emit(IceOstream &Str, uint32_t Option) const = 0;
   virtual void dump(IceOstream &Str) const;
 
 protected:
@@ -233,8 +236,12 @@ public:
                                 IceInstIcmp::IceICond Condition) {
     return new IceInstX8632Br(Cfg, TargetTrue, TargetFalse, Condition);
   }
+  static IceInstX8632Br *create(IceCfg *Cfg, IceCfgNode *Target) {
+    return new IceInstX8632Br(Cfg, NULL, Target, IceInstIcmp::None);
+  }
   IceCfgNode *getTargetTrue(void) const { return TargetTrue; }
   IceCfgNode *getTargetFalse(void) const { return TargetFalse; }
+  virtual void emit(IceOstream &Str, uint32_t Option) const;
   virtual void dump(IceOstream &Str) const;
   static bool classof(const IceInst *Inst) { return isClassof(Inst, Br); }
 
@@ -253,6 +260,7 @@ public:
     return new IceInstX8632Call(Cfg, Dest, CallTarget, Tail);
   }
   IceOperand *getCallTarget(void) const { return CallTarget; }
+  virtual void emit(IceOstream &Str, uint32_t Option) const;
   virtual void dump(IceOstream &Str) const;
   static bool classof(const IceInst *Inst) { return isClassof(Inst, Call); }
 
@@ -269,6 +277,7 @@ public:
                                  IceOperand *Source) {
     return new IceInstX8632Add(Cfg, Dest, Source);
   }
+  virtual void emit(IceOstream &Str, uint32_t Option) const;
   virtual void dump(IceOstream &Str) const;
   static bool classof(const IceInst *Inst) { return isClassof(Inst, Add); }
 
@@ -282,6 +291,7 @@ public:
                                  IceOperand *Source) {
     return new IceInstX8632Sub(Cfg, Dest, Source);
   }
+  virtual void emit(IceOstream &Str, uint32_t Option) const;
   virtual void dump(IceOstream &Str) const;
   static bool classof(const IceInst *Inst) { return isClassof(Inst, Sub); }
 
@@ -295,6 +305,7 @@ public:
                                  IceOperand *Source) {
     return new IceInstX8632And(Cfg, Dest, Source);
   }
+  virtual void emit(IceOstream &Str, uint32_t Option) const;
   virtual void dump(IceOstream &Str) const;
   static bool classof(const IceInst *Inst) { return isClassof(Inst, And); }
 
@@ -308,6 +319,7 @@ public:
                                 IceOperand *Source) {
     return new IceInstX8632Or(Cfg, Dest, Source);
   }
+  virtual void emit(IceOstream &Str, uint32_t Option) const;
   virtual void dump(IceOstream &Str) const;
   static bool classof(const IceInst *Inst) { return isClassof(Inst, Or); }
 
@@ -321,6 +333,7 @@ public:
                                  IceOperand *Source) {
     return new IceInstX8632Xor(Cfg, Dest, Source);
   }
+  virtual void emit(IceOstream &Str, uint32_t Option) const;
   virtual void dump(IceOstream &Str) const;
   static bool classof(const IceInst *Inst) { return isClassof(Inst, Xor); }
 
@@ -334,6 +347,7 @@ public:
                                   IceOperand *Source) {
     return new IceInstX8632Imul(Cfg, Dest, Source);
   }
+  virtual void emit(IceOstream &Str, uint32_t Option) const;
   virtual void dump(IceOstream &Str) const;
   static bool classof(const IceInst *Inst) { return isClassof(Inst, Imul); }
 
@@ -347,6 +361,7 @@ public:
                                   IceOperand *Source, IceVariable *Other) {
     return new IceInstX8632Idiv(Cfg, Dest, Source, Other);
   }
+  virtual void emit(IceOstream &Str, uint32_t Option) const;
   virtual void dump(IceOstream &Str) const;
   static bool classof(const IceInst *Inst) { return isClassof(Inst, Idiv); }
 
@@ -360,6 +375,7 @@ public:
                                  IceOperand *Source, IceVariable *Other) {
     return new IceInstX8632Div(Cfg, Dest, Source, Other);
   }
+  virtual void emit(IceOstream &Str, uint32_t Option) const;
   virtual void dump(IceOstream &Str) const;
   static bool classof(const IceInst *Inst) { return isClassof(Inst, Div); }
 
@@ -374,6 +390,7 @@ public:
                                  IceOperand *Source) {
     return new IceInstX8632Shl(Cfg, Dest, Source);
   }
+  virtual void emit(IceOstream &Str, uint32_t Option) const;
   virtual void dump(IceOstream &Str) const;
   static bool classof(const IceInst *Inst) { return isClassof(Inst, Shl); }
 
@@ -387,6 +404,7 @@ public:
                                  IceOperand *Source) {
     return new IceInstX8632Shr(Cfg, Dest, Source);
   }
+  virtual void emit(IceOstream &Str, uint32_t Option) const;
   virtual void dump(IceOstream &Str) const;
   static bool classof(const IceInst *Inst) { return isClassof(Inst, Shr); }
 
@@ -400,6 +418,7 @@ public:
                                  IceOperand *Source) {
     return new IceInstX8632Sar(Cfg, Dest, Source);
   }
+  virtual void emit(IceOstream &Str, uint32_t Option) const;
   virtual void dump(IceOstream &Str) const;
   static bool classof(const IceInst *Inst) { return isClassof(Inst, Sar); }
 
@@ -414,6 +433,7 @@ public:
                                  IceOperand *Source) {
     return new IceInstX8632Cdq(Cfg, Dest, Source);
   }
+  virtual void emit(IceOstream &Str, uint32_t Option) const;
   virtual void dump(IceOstream &Str) const;
   static bool classof(const IceInst *Inst) { return isClassof(Inst, Cdq); }
 
@@ -427,6 +447,7 @@ public:
                                   IceOperand *Src2) {
     return new IceInstX8632Icmp(Cfg, Src1, Src2);
   }
+  virtual void emit(IceOstream &Str, uint32_t Option) const;
   virtual void dump(IceOstream &Str) const;
   static bool classof(const IceInst *Inst) { return isClassof(Inst, Icmp); }
 
@@ -442,6 +463,7 @@ public:
                                   IceOperand *Shift, IceOperand *Offset) {
     return new IceInstX8632Load(Cfg, Dest, Base, Index, Shift, Offset);
   }
+  virtual void emit(IceOstream &Str, uint32_t Option) const;
   virtual void dump(IceOstream &Str) const;
   static bool classof(const IceInst *Inst) { return isClassof(Inst, Load); }
 
@@ -459,6 +481,7 @@ public:
                                    IceOperandX8632Mem *Mem) {
     return new IceInstX8632Store(Cfg, Value, Mem);
   }
+  virtual void emit(IceOstream &Str, uint32_t Option) const;
   virtual void dump(IceOstream &Str) const;
   static bool classof(const IceInst *Inst) { return isClassof(Inst, Store); }
 
@@ -473,6 +496,7 @@ public:
     return new IceInstX8632Mov(Cfg, Dest, Source);
   }
   virtual bool isRedundantAssign(void) const;
+  virtual void emit(IceOstream &Str, uint32_t Option) const;
   virtual void dump(IceOstream &Str) const;
   static bool classof(const IceInst *Inst) { return isClassof(Inst, Mov); }
 
@@ -486,6 +510,7 @@ public:
                                    IceOperand *Source) {
     return new IceInstX8632Movsx(Cfg, Dest, Source);
   }
+  virtual void emit(IceOstream &Str, uint32_t Option) const;
   virtual void dump(IceOstream &Str) const;
   static bool classof(const IceInst *Inst) { return isClassof(Inst, Movsx); }
 
@@ -499,6 +524,7 @@ public:
                                    IceOperand *Source) {
     return new IceInstX8632Movzx(Cfg, Dest, Source);
   }
+  virtual void emit(IceOstream &Str, uint32_t Option) const;
   virtual void dump(IceOstream &Str) const;
   static bool classof(const IceInst *Inst) { return isClassof(Inst, Movzx); }
 
@@ -511,6 +537,7 @@ public:
   static IceInstX8632Pop *create(IceCfg *Cfg, IceVariable *Dest) {
     return new IceInstX8632Pop(Cfg, Dest);
   }
+  virtual void emit(IceOstream &Str, uint32_t Option) const;
   virtual void dump(IceOstream &Str) const;
   static bool classof(const IceInst *Inst) { return isClassof(Inst, Pop); }
 
@@ -523,6 +550,7 @@ public:
   static IceInstX8632Push *create(IceCfg *Cfg, IceOperand *Source) {
     return new IceInstX8632Push(Cfg, Source);
   }
+  virtual void emit(IceOstream &Str, uint32_t Option) const;
   virtual void dump(IceOstream &Str) const;
   static bool classof(const IceInst *Inst) { return isClassof(Inst, Push); }
 
@@ -535,6 +563,7 @@ public:
   static IceInstX8632Ret *create(IceCfg *Cfg, IceVariable *Source = NULL) {
     return new IceInstX8632Ret(Cfg, Source);
   }
+  virtual void emit(IceOstream &Str, uint32_t Option) const;
   virtual void dump(IceOstream &Str) const;
   static bool classof(const IceInst *Inst) { return isClassof(Inst, Ret); }
 

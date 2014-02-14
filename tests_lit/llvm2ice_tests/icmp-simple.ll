@@ -1,4 +1,4 @@
-; RUN: %llvm2ice %s | FileCheck %s
+; RUN: %llvm2ice -verbose inst %s | FileCheck %s
 
 define void @dummy_icmp(i64 %foo, i64 %bar) {
 ; CHECK: define internal void dummy_icmp

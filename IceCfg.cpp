@@ -13,18 +13,54 @@
 #include "IceRegAlloc.h"
 #include "IceTargetLowering.h"
 
+class IceConstantPool {
+public:
+  IceConstantPool(IceCfg *Cfg) : Cfg(Cfg) {}
+  IceConstantRelocatable *getOrAddRelocatable(IceType Type, const void *Handle,
+                                              const IceString &Name) {
+    uint32_t Index = NameToIndex.translate(KeyType(Name, Type));
+    if (Index >= RelocatablePool.size()) {
+      RelocatablePool.resize(Index + 1);
+      void *Handle = NULL;
+      RelocatablePool[Index] =
+          IceConstantRelocatable::create(Cfg, Index, Type, Handle, Name);
+    }
+    IceConstantRelocatable *Constant = RelocatablePool[Index];
+    assert(Constant);
+    return Constant;
+  }
+  uint32_t getSize(void) const { return RelocatablePool.size(); }
+  IceConstantRelocatable *getEntry(uint32_t Index) const {
+    assert(Index < RelocatablePool.size());
+    return RelocatablePool[Index];
+  }
+
+private:
+  typedef std::pair<IceString, IceType> KeyType;
+  // TODO: Cfg is being captured primarily for arena allocation for
+  // new IceConstants.  If IceConstants live beyond a function/Cfg,
+  // they need to be allocated from a global arena and there needs to
+  // be appropriate locking.
+  IceCfg *Cfg;
+  // Use IceValueTranslation<> to map (Name,Type) pairs to an index.
+  IceValueTranslation<KeyType> NameToIndex;
+  std::vector<IceConstantRelocatable *> RelocatablePool;
+};
+
 IceOstream *GlobalStr;
 
 IceCfg::IceCfg(void)
     : Str(std::cout, this), HasError(false), ErrorMessage(""),
       Type(IceType_void), Target(NULL), Entry(NULL), NextInstNumber(1) {
   GlobalStr = &Str;
+  ConstantPool = new IceConstantPool(this);
 }
 
 IceCfg::~IceCfg() {
   // TODO: All ICE data destructors should have proper destructors.
   // However, be careful with delete statements since we'll likely be
   // using arena-based allocation.
+  delete ConstantPool;
 }
 
 void IceCfg::setError(const IceString &Message) {
@@ -111,8 +147,7 @@ IceConstant *IceCfg::getConstant(IceType Type, uint64_t ConstantInt64) {
 
 IceConstant *IceCfg::getConstant(IceType Type, const void *Handle,
                                  const IceString &Name) {
-  // TODO: look up from the constant pool.
-  return IceConstantRelocatable::create(this, Type, Handle, Name);
+  return ConstantPool->getOrAddRelocatable(Type, Handle, Name);
 }
 
 IceVariable *IceCfg::getVariable(uint32_t Index) const {
@@ -334,13 +369,48 @@ void IceCfg::translate(IceTargetArch TargetArch) {
     Str << "================ After stack frame mapping ================\n";
   dump();
 
-  Str.setVerbose(IceV_Instructions);
   if (Str.isVerbose())
     Str << "================ Final output ================\n";
   dump();
 }
 
 // ======================== Dump routines ======================== //
+
+void IceCfg::emit(uint32_t Option) const {
+  if (!HasEmittedFirstMethod) {
+    HasEmittedFirstMethod = true;
+    // Print a helpful command for assembling the output.
+    Str << "# $LLVM_BIN_PATH/llvm-mc"
+        << " -arch=x86"
+        << " -x86-asm-syntax=intel"
+        << " -filetype=obj"
+        << " -o=MyObj.o"
+        << "\n\n";
+  }
+  // TODO: have the Target emit the header?
+  // TODO: need a per-file emit in addition to per-CFG
+  // TODO: emit to a specified file
+  Str << "\t.text\n";
+  Str << "\t.globl\t" << Name << "\n";
+  Str << "\t.type\t" << Name << ",@function\n";
+  uint32_t NumConsts = ConstantPool->getSize();
+  for (uint32_t i = 0; i < NumConsts; ++i) {
+    IceConstantRelocatable *Const = ConstantPool->getEntry(i);
+    if (Const == NULL)
+      continue;
+    Str << "\t.type\t" << Const->getName() << ",@object\n";
+    // TODO: .comm is necessary only when defining vs. declaring?
+    uint32_t Width = iceTypeWidth(Const->getType());
+    Str << "\t.comm\t" << Const->getName() << "," << Width << "," << Width
+        << "\n";
+  }
+  for (IceNodeList::const_iterator I = LNodes.begin(), E = LNodes.end(); I != E;
+       ++I) {
+    (*I)->emit(Str, Option);
+  }
+  Str << "\n";
+  // TODO: have the Target emit a footer?
+}
 
 void IceCfg::dump(void) const {
   // Print function name+args
@@ -375,3 +445,5 @@ void IceCfg::dump(void) const {
     Str << "}\n";
   }
 }
+
+bool IceCfg::HasEmittedFirstMethod = false;

@@ -20,6 +20,7 @@ public:
   void insertInsts(IceInstList::iterator Location, const IceInstList &NewInsts);
   uint32_t getIndex(void) const { return Number; }
   IceString getName(void) const;
+  IceString getAsmName(void) const;
   // The HasReturn flag indicates that this node contains a return
   // instruction and therefore needs an epilog.
   void setHasReturn(void) { HasReturn = true; }
@@ -36,6 +37,7 @@ public:
   void genCode(void);
   bool liveness(IceLiveness Mode, bool IsFirst);
   void livenessPostprocess(IceLiveness Mode);
+  void emit(IceOstream &Str, uint32_t Option) const;
   void dump(IceOstream &Str) const;
 
 private:

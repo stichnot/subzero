@@ -1,4 +1,4 @@
-; RUN: %llvm2ice %s | FileCheck %s
+; RUN: %llvm2ice %s -verbose inst | FileCheck %s
 
 define i32 @simple_cond_branch(i32 %foo, i32 %bar) {
 entry:
