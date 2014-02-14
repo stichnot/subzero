@@ -40,7 +40,7 @@ void IceLinearScan::scan(const llvm::SmallBitVector &RegMask) {
     IceVariable *Var = *I;
     if (Var == NULL)
       continue;
-    if (Var->getLiveRange().getStart() < 0) // empty live range
+    if (Var->getLiveRange().isEmpty())
       continue;
     Unhandled.insert(IceLiveRangeWrapper(Var));
     if (Var->getRegNum() >= 0)

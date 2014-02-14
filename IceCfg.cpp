@@ -292,6 +292,19 @@ void IceCfg::liveness(IceLiveness Mode) {
          ++I) {
       (*I)->livenessPostprocess(Mode);
     }
+    // Special treatment for live in-args.  Their liveness needs to
+    // extend beyond the beginning of the function, otherwise an arg
+    // whose only use is in the first instruction will end up having
+    // the trivial live range [1,1) and will *not* interfere with
+    // other arguments.  So if the first instruction of the method is
+    // "r=arg1+arg2", both args may be assigned the same register.
+    for (unsigned I = 0; I < Args.size(); ++I) {
+      IceVariable *Arg = Args[I];
+      if (!Arg->getLiveRange().isEmpty()) {
+        // Add live range [-1,0) with weight 0.
+        Arg->addLiveRange(-1, 0, 0);
+      }
+    }
   }
 }
 
