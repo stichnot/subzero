@@ -366,23 +366,13 @@ private:
     // TODO(sehr,stichnot): Implement non-static allocas
     assert(Inst->isStaticAlloca() && "Only static allocas are supported");
 
-    IceVariable *Dest = mapValueToIceVar(Inst);
     Type *AllocaType = Inst->getAllocatedType();
-    uint32_t Size;
-    if (AllocaType->isArrayTy()) {
-      Type *ElementType = AllocaType->getArrayElementType();
-      uint32_t ElementSize = ElementType->getScalarSizeInBits() / 8;
-      assert(ElementSize && "Element size needs to be non-zero");
-      // TODO(sehr,stichnot): Implement variable-sized allocas
-      uint64_t ArrayCount = AllocaType->getArrayNumElements();
-      assert((uint64_t)(((uint32_t) - 1) / ElementSize) > ArrayCount &&
-             "Integer overflow on allocation");
-      Size = (uint32_t)ElementSize * ArrayCount;
-    } else {
-      Size = AllocaType->getScalarSizeInBits() / 8;
-      Size *= cast<ConstantInt>(Inst->getArraySize())->getZExtValue();
-    }
+    assert(!AllocaType->isArrayTy() &&
+           "PNaCl lowering passes should eliminate array types");
+    uint32_t Size = AllocaType->getScalarSizeInBits() / 8 *
+                    cast<ConstantInt>(Inst->getArraySize())->getZExtValue();
     uint32_t Align = Inst->getAlignment();
+    IceVariable *Dest = mapValueToIceVar(Inst);
 
     return IceInstAlloca::create(Cfg, Size, Align, Dest);
   }
