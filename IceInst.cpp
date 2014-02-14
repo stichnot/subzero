@@ -18,6 +18,32 @@ IceInst::IceInst(IceCfg *Cfg, IceInstType Kind, unsigned MaxSrcs,
   Srcs = new IceOperand *[MaxSrcs]; // TODO: use placement alloc from Cfg
 }
 
+// If Src is an IceVariable, it returns true if this instruction ends
+// Src's live range.  Otherwise, returns false.
+bool IceInst::isLastUse(const IceOperand *TestSrc) const {
+  if (LiveRangesEnded == 0)
+    return false; // early-exit optimization
+  if (const IceVariable *TestVar = llvm::dyn_cast<const IceVariable>(TestSrc)) {
+    unsigned VarIndex = 0;
+    uint32_t Mask = LiveRangesEnded;
+    for (unsigned I = 0; I < getSrcSize(); ++I) {
+      IceOperand *Src = getSrc(I);
+      unsigned NumVars = Src->getNumVars();
+      for (unsigned J = 0; J < NumVars; ++J, ++VarIndex) {
+        const IceVariable *Var = Src->getVar(J);
+        if (Var == TestVar) {
+          // We've found where the variable is used in the instruction
+          return Mask & 1;
+        }
+        Mask >>= 1;
+        if (Mask == 0)
+          return false;
+      }
+    }
+  }
+  return false;
+}
+
 void IceInst::renumber(IceCfg *Cfg) {
   Number = isDeleted() ? -1 : Cfg->newInstNumber();
 }
@@ -369,7 +395,7 @@ void IceInst::dumpExtras(IceOstream &Str) const {
       unsigned NumVars = Src->getNumVars();
       for (unsigned J = 0; J < NumVars; ++J, ++VarIndex) {
         const IceVariable *Var = Src->getVar(J);
-        if (isLastUse(VarIndex)) {
+        if (isLastUse(Var)) {
           if (First)
             Str << " // LIVEEND={";
           else

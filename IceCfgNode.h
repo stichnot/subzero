@@ -43,10 +43,10 @@ public:
 private:
   IceCfgNode(IceCfg *Cfg, uint32_t LabelIndex, IceString Name);
   IceCfg *const Cfg;
-  const uint32_t Number;                  // label index
-  IceString Name;                         // for dumping only
-  IceNodeList OutEdges;                   // in no particular order
-  IceNodeList InEdges;                    // in no particular order
+  const uint32_t Number; // label index
+  IceString Name;        // for dumping only
+  IceNodeList OutEdges;  // in no particular order
+  IceNodeList InEdges;   // in no particular order
   // TODO: The Live* vectors are not needed outside liveness analysis,
   // and could be moved outside of IceCfgNode to save memory.
   llvm::BitVector LiveIn, LiveOut;     // TODO: consider llvm::SparseBitVector

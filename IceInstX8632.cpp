@@ -263,7 +263,7 @@ IceInstList IceTargetX8632::lowerArithmetic(const IceInstArithmetic *Inst,
   IceOperand *Src1 = Inst->getSrc(1);
   IceVariable *Reg;
   IceInstTarget *NewInst;
-  bool LRend0 = Inst->isLastUse(0);
+  bool LRend0 = Inst->isLastUse(Src0);
   // Prefer Src0 if its live range is ending.
   if (LRend0) {
     Prefer.push_back(Src0);
@@ -837,7 +837,9 @@ void IceInstX8632Call::dump(IceOstream &Str) const {
   Str << "call " << getCallTarget();
 }
 
-static void emitTwoAddress(const char *Opcode, const IceInst *Inst, IceOstream &Str, uint32_t Option, bool ShiftHack = false) {
+static void emitTwoAddress(const char *Opcode, const IceInst *Inst,
+                           IceOstream &Str, uint32_t Option,
+                           bool ShiftHack = false) {
   assert(Inst->getSrcSize() == 2);
   assert(Inst->getDest() == Inst->getSrc(0));
   Str << "\t" << Opcode << "\t";
@@ -1542,8 +1544,8 @@ IceInstList IceTargetX8632S::lowerCast(const IceInstCast *Inst,
   IceVariable *Dest = Inst->getDest();
   IceOperand *Src0 = Inst->getSrc(0);
   IceInstTarget *NewInst;
-  IceOperand *Reg = legalizeOperand(Src0, Legal_Reg | Legal_Mem, Expansion,
-                                    true);
+  IceOperand *Reg =
+      legalizeOperand(Src0, Legal_Reg | Legal_Mem, Expansion, true);
   switch (CastKind) {
   default:
     // TODO: implement other sorts of casts.
@@ -1777,16 +1779,15 @@ IceInstList IceTargetX8632S::lowerLoad(const IceInstLoad *Inst,
     IceVariable *DestLoad = Inst->getDest();
     IceVariable *Src0Arith = llvm::dyn_cast<IceVariable>(Arith->getSrc(0));
     IceVariable *Src1Arith = llvm::dyn_cast<IceVariable>(Arith->getSrc(1));
-    if (Src1Arith == DestLoad && Arith->isLastUse(1) && DestLoad != Src0Arith) {
-      // TODO: The "1" in isLastUse(1) won't be correct if
-      // Arith->getSrc(0) contains no IceVariables.
+    if (Src1Arith == DestLoad && Arith->isLastUse(Src1Arith) &&
+        DestLoad != Src0Arith) {
       // TODO: This instruction leaks.
       IceInstArithmetic *NewArith = IceInstArithmetic::create(
           Cfg, Arith->getOp(), Arith->getDest(), Arith->getSrc(0), Src);
       DeleteNextInst = true;
       return lowerArithmetic(NewArith, NULL, DeleteNextInst);
     } else if (Src0Arith == DestLoad && Arith->isCommutative() &&
-               Arith->isLastUse(0) && DestLoad != Src1Arith) {
+               Arith->isLastUse(Src0Arith) && DestLoad != Src1Arith) {
       // TODO: This instruction leaks.
       IceInstArithmetic *NewArith = IceInstArithmetic::create(
           Cfg, Arith->getOp(), Arith->getDest(), Arith->getSrc(1), Src);

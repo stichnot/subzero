@@ -48,11 +48,7 @@ public:
     return IceNodeList();
   }
   bool isDeleted(void) const { return Deleted; }
-  bool isLastUse(unsigned VarIndex) const {
-    if (VarIndex >= 8 * sizeof(LiveRangesEnded))
-      return false;
-    return LiveRangesEnded & (1u << VarIndex);
-  }
+  bool isLastUse(const IceOperand *Src) const;
   // If an instruction is deleted as a result of replacing it with
   // equivalent instructions, only call setDeleted() *after* inserting
   // the new instructions because of the cascading deletes from
