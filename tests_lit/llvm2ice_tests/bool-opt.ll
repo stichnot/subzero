@@ -1,6 +1,5 @@
 ; RUN: %llvm2ice -verbose inst %s | FileCheck %s
 
-; CHECK: ICE translation error
 define void @testBool(i32 %a, i32 %b) #0 {
 entry:
   %cmp = icmp eq i32 %a, %b

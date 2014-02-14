@@ -633,11 +633,22 @@ IceInstX8632Sar::IceInstX8632Sar(IceCfg *Cfg, IceVariable *Dest,
   addSource(Source);
 }
 
+IceInstX8632Label::IceInstX8632Label(IceCfg *Cfg, IceTargetX8632 *Target)
+    : IceInstX8632(Cfg, IceInstX8632::Label, 0, NULL),
+      Number(Target->makeNextLabelNumber()) {}
+
+IceString IceInstX8632Label::getName(IceCfg *Cfg) const {
+  char buf[30];
+  sprintf(buf, "%u", Number);
+  return ".L" + Cfg->getName() + "$__" + buf;
+}
+
 IceInstX8632Br::IceInstX8632Br(IceCfg *Cfg, IceCfgNode *TargetTrue,
                                IceCfgNode *TargetFalse,
+                               IceInstX8632Label *Label,
                                IceInstIcmp::IceICond Condition)
     : IceInstX8632(Cfg, IceInstX8632::Br, 0, NULL), Condition(Condition),
-      TargetTrue(TargetTrue), TargetFalse(TargetFalse) {}
+      TargetTrue(TargetTrue), TargetFalse(TargetFalse), Label(Label) {}
 
 IceInstX8632Call::IceInstX8632Call(IceCfg *Cfg, IceVariable *Dest,
                                    IceOperand *CallTarget, bool Tail)
@@ -730,6 +741,15 @@ void IceInstX8632::dump(IceOstream &Str) const {
   IceInst::dump(Str);
 }
 
+void IceInstX8632Label::emit(IceOstream &Str, unsigned Option) const {
+  dump(Str);
+  Str << "\n";
+}
+
+void IceInstX8632Label::dump(IceOstream &Str) const {
+  Str << getName(Str.Cfg) << ":";
+}
+
 void IceInstX8632Br::emit(IceOstream &Str, unsigned Option) const {
   Str << "\t";
   switch (Condition) {
@@ -767,12 +787,15 @@ void IceInstX8632Br::emit(IceOstream &Str, unsigned Option) const {
     Str << "jmp";
     break;
   }
-  // TODO: expand conditional branch into 2 separate branches
-  if (Condition == IceInstIcmp::None) {
-    Str << "\t" << getTargetFalse()->getAsmName() << "\n";
+  if (Label) {
+    Str << "\t" << Label->getName(Str.Cfg) << "\n";
   } else {
-    Str << "\t" << getTargetTrue()->getAsmName() << "\n";
-    Str << "\tjmp\t" << getTargetFalse()->getAsmName() << "\n";
+    if (Condition == IceInstIcmp::None) {
+      Str << "\t" << getTargetFalse()->getAsmName() << "\n";
+    } else {
+      Str << "\t" << getTargetTrue()->getAsmName() << "\n";
+      Str << "\tjmp\t" << getTargetFalse()->getAsmName() << "\n";
+    }
   }
 }
 
@@ -810,7 +833,8 @@ void IceInstX8632Br::dump(IceOstream &Str) const {
     Str << "sle";
     break;
   case IceInstIcmp::None:
-    Str << "label %" << getTargetFalse()->getName();
+    Str << "label %"
+        << (Label ? Label->getName(Str.Cfg) : getTargetFalse()->getName());
     return;
     break;
   }
@@ -1608,9 +1632,54 @@ IceInstList IceTargetX8632S::lowerIcmp(const IceInstIcmp *Inst,
                                NextBr->getTargetFalse(), Inst->getCondition());
     Expansion.push_back(NewInst);
     DeleteNextInst = true;
-  } else {
-    Cfg->setError("Icmp lowering without subsequent Br unimplemented");
+    return Expansion;
   }
+
+  // a=icmp cond, b, c ==> cmp b,c; a=1; br cond,L1; FakeUse(a); a=0; L1:
+  //
+  // Alternative without intra-block branch: cmp b,c; a=0; a=set<cond> {a}
+  IceOperand *Src0 = Inst->getSrc(0);
+  IceOperand *Src1 = Inst->getSrc(1);
+  IceVariable *Dest = Inst->getDest();
+  // cmp b, c
+  bool IsImmOrReg = false;
+  if (llvm::isa<IceConstant>(Src1))
+    IsImmOrReg = true;
+  else if (IceVariable *Var = llvm::dyn_cast<IceVariable>(Src1)) {
+    if (Var->getRegNum() >= 0)
+      IsImmOrReg = true;
+  }
+  IceOperand *Reg = legalizeOperand(Src0, IsImmOrReg ? Legal_All : Legal_Reg,
+                                    Expansion, true);
+  NewInst = IceInstX8632Icmp::create(Cfg, Reg, Src1);
+  Expansion.push_back(NewInst);
+
+  // a = 1;
+  uint64_t Zero = 0;
+  uint64_t One = 1;
+  NewInst =
+      IceInstX8632Mov::create(Cfg, Dest, Cfg->getConstant(IceType_i32, One));
+  Expansion.push_back(NewInst);
+
+  // create Label
+  IceInstX8632Label *Label = IceInstX8632Label::create(Cfg, this);
+
+  // br cond, Label
+  NewInst = IceInstX8632Br::create(Cfg, Label, Inst->getCondition());
+  Expansion.push_back(NewInst);
+
+  // FakeUse(a)
+  IceInst *FakeUse = IceInstFakeUse::create(Cfg, Dest);
+  Expansion.push_back(FakeUse);
+
+  // a = 0
+  NewInst =
+      IceInstX8632Mov::create(Cfg, Dest, Cfg->getConstant(IceType_i32, Zero));
+  Expansion.push_back(NewInst);
+
+  // Label:
+  Expansion.push_back(Label);
+
   return Expansion;
 }
 

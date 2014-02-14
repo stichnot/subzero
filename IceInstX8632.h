@@ -68,6 +68,7 @@ public:
   }
   virtual void addProlog(IceCfgNode *Node);
   virtual void addEpilog(IceCfgNode *Node);
+  uint32_t makeNextLabelNumber(void) { return NextLabelNumber++; }
   enum Registers {
     Reg_eax = 0,
     Reg_ecx = 1,
@@ -83,6 +84,7 @@ public:
 protected:
   IceTargetX8632(IceCfg *Cfg)
       : IceTargetLowering(Cfg), IsEbpBasedFrame(false), FrameSizeLocals(0),
+        LocalsSizeBytes(0), NextLabelNumber(0),
         PhysicalRegisters(IceVarList(Reg_NUM)) {}
   virtual IceInstList lowerAlloca(const IceInstAlloca *Inst,
                                   const IceInst *Next, bool &DeleteNextInst);
@@ -118,6 +120,7 @@ protected:
   int FrameSizeLocals;
   int LocalsSizeBytes;
   llvm::SmallBitVector RegsUsed;
+  uint32_t NextLabelNumber;
 
 private:
   IceVarList PhysicalRegisters;
@@ -202,6 +205,7 @@ public:
     Icmp,
     Idiv,
     Imul,
+    Label,
     Load,
     Mov,
     Movsx,
@@ -229,15 +233,69 @@ protected:
   }
 };
 
+// IceInstX8632Label represents an intra-block label that is the
+// target of an intra-block branch.  These are used for lowering i1
+// calculations, Select instructions, and 64-bit compares on a 32-bit
+// architecture, without basic block splitting.  Basic block splitting
+// is not so desirable for several reasons, one of which is the impact
+// on decisions based on whether a variable's live range spans
+// multiple basic blocks.
+//
+// Intra-block control flow must be used with caution.  Consider the
+// sequence for "c = (a >= b ? x : y)".
+//     cmp a, b
+//     br lt, L1
+//     mov c, x
+//     jmp L2
+//   L1:
+//     mov c, y
+//   L2:
+//
+// Without knowledge of the intra-block control flow, liveness
+// analysis will determine the "mov c, x" instruction to be dead.  One
+// way to prevent this is to insert a "FakeUse(c)" instruction
+// anywhere between the two "mov c, ..." instructions, e.g.:
+//
+//     cmp a, b
+//     br lt, L1
+//     mov c, x
+//     jmp L2
+//     FakeUse(c)
+//   L1:
+//     mov c, y
+//   L2:
+//
+// The down-side is that "mov c, x" can never be dead-code eliminated
+// even if there are no uses of c.  As unlikely as this situation is,
+// it would be prevented by running dead code elimination before
+// lowering.
+class IceInstX8632Label : public IceInstX8632 {
+public:
+  static IceInstX8632Label *create(IceCfg *Cfg, IceTargetX8632 *Target) {
+    return new IceInstX8632Label(Cfg, Target);
+  }
+  IceString getName(IceCfg *Cfg) const;
+  virtual void emit(IceOstream &Str, uint32_t Option) const;
+  virtual void dump(IceOstream &Str) const;
+
+private:
+  IceInstX8632Label(IceCfg *Cfg, IceTargetX8632 *Target);
+  uint32_t Number; // used only for unique label string generation
+};
+
 class IceInstX8632Br : public IceInstX8632 {
 public:
   static IceInstX8632Br *create(IceCfg *Cfg, IceCfgNode *TargetTrue,
                                 IceCfgNode *TargetFalse,
                                 IceInstIcmp::IceICond Condition) {
-    return new IceInstX8632Br(Cfg, TargetTrue, TargetFalse, Condition);
+    return new IceInstX8632Br(Cfg, TargetTrue, TargetFalse, NULL, Condition);
   }
   static IceInstX8632Br *create(IceCfg *Cfg, IceCfgNode *Target) {
-    return new IceInstX8632Br(Cfg, NULL, Target, IceInstIcmp::None);
+    return new IceInstX8632Br(Cfg, NULL, Target, NULL, IceInstIcmp::None);
+  }
+  static IceInstX8632Br *create(IceCfg *Cfg, IceInstX8632Label *Label,
+                                IceInstIcmp::IceICond Condition) {
+    return new IceInstX8632Br(Cfg, NULL, NULL, Label, IceInstIcmp::None);
   }
   IceCfgNode *getTargetTrue(void) const { return TargetTrue; }
   IceCfgNode *getTargetFalse(void) const { return TargetFalse; }
@@ -247,10 +305,11 @@ public:
 
 private:
   IceInstX8632Br(IceCfg *Cfg, IceCfgNode *TargetTrue, IceCfgNode *TargetFalse,
-                 IceInstIcmp::IceICond Condition);
+                 IceInstX8632Label *Label, IceInstIcmp::IceICond Condition);
   IceInstIcmp::IceICond Condition;
   IceCfgNode *TargetTrue;
   IceCfgNode *TargetFalse;
+  IceInstX8632Label *Label; // Intra-block branch target
 };
 
 class IceInstX8632Call : public IceInstX8632 {
