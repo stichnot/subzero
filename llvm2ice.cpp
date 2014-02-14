@@ -380,6 +380,7 @@ private:
       Size = (uint32_t)ElementSize * ArrayCount;
     } else {
       Size = AllocaType->getScalarSizeInBits() / 8;
+      Size *= cast<ConstantInt>(Inst->getArraySize())->getZExtValue();
     }
     uint32_t Align = Inst->getAlignment();
 
