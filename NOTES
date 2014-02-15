@@ -122,18 +122,21 @@ container-y code related to it is being part of an ilist of MachineInstrs held
 by each MachineBasicBlock (MBB). However, the ilist_traits for MachineInstr
 are defined to use a sentinel member that's not heap-allocated.
 
+MachineOperands are very POD-like and have no containers.
+
 MachineBasicBlock
 *****************
 
 MBBs are ilist_nodes held in a MachineFunction, using the same trick as MIs to
 avoid heap allocation for the sentinel.
 
-However, MBBs also hold on to a number of std::vectors - this is probably a
-mistake we don't want to repeat?
+However, MBBs also hold on to a number of std::vectors; according to the LLVM
+developers, this was left behind as the transition to allocators was gradual.
+Since the amount of MBBs created is not very large, this is not expected to
+have a big impact.
 
 MachineFunction
 ***************
 
-MachineFunctions (MFs) also hold std::vectors for block numbering...
-
-
+MachineFunctions (MFs) also hold std::vectors for block numbering. See MBBs
+for reasons and expected impact on actual performance.
