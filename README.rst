@@ -37,9 +37,10 @@ At this time, ``llvm2ice`` accepts a few arguments:
 
     ``-target=<TARGET>`` -- Set the target architecture (default x8632).
 
-    ``-verbose=<list>`` -- Set verbosity flags.  This argument allows a
-    comma-separated list of values.  The default is ``inst,pred`` to roughly
-    match the .ll bitcode file.  Of particular use are ``all`` and ``none``.
+    ``-verbose=<list>`` -- Set verbosity flags.  This argument allows
+    a comma-separated list of values.  The default is ``none``, and
+    the value ``inst,pred`` will roughly match the .ll bitcode file.
+    Of particular use are ``all`` and ``none``.
 
 See ir_samples/README.rst for more details.
 
@@ -60,35 +61,10 @@ The above ``lit`` execution also needs the LLVM binary path in the
 Assuming the LLVM paths are set up, ``make check`` is a convenient way to run
 the test suite.
 
+Assembling ``llvm2ice`` output
+------------------------------
 
-TODO list
----------
-
-Here is a list of TODO items.  Some might already be listed in the source code
-with a ``TODO`` comment.
-
-- Add support for not-yet-implemented LLVM bitcode instructions.  Start with
-  constructors and ``dump()`` methods, then add lowering and any special needs.
-
-- Constants.  ``i32`` sort of works now, but the rest either outright don't work
-  or haven't been tested.  Floating point constants need to live in a global
-  constant pool.
-
-- Other types, especially ``i64``, ``f32``, and ``f64``.  Most of the
-  requirements are probably in the lowering and register allocation.
-
-- Global symbols.  Internal representation, and emission.
-
-- Configurability of which passes are run.
-
-- Other targets besides x86-32.
-
-- Add code to LLVM so that for each method that needs translation, first offer
-  Subzero the chance to translate, and if Subzero returns an error code, fall
-  back to robust LLVM translation (presumably O0).
-
-- Add code to Subzero allowing fine-grain control of which methods to attempt to
-  translate and which to unconditionally reject.  The control string can come
-  from the command line and/or environment.
-
-- Refactor the IR passes using a Visitor pattern.
+Currently ``llvm2ice`` produces textual assembly code in a structure
+suitable for input to ``llvm-mc`` and currently using "intel" assembly
+syntax.  The first line of output is a convenient comment indicating
+how to pipe the output to ``llvm-mc`` to produce object code.
