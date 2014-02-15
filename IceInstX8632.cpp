@@ -838,8 +838,12 @@ void IceInstX8632Br::dump(IceOstream &Str) const {
     return;
     break;
   }
-  Str << ", label %" << getTargetTrue()->getName() << ", label %"
-      << getTargetFalse()->getName();
+  if (Label) {
+    Str << ", label %" << Label->getName(Str.Cfg);
+  } else {
+    Str << ", label %" << getTargetTrue()->getName() << ", label %"
+        << getTargetFalse()->getName();
+  }
 }
 
 void IceInstX8632Call::emit(IceOstream &Str, uint32_t Option) const {

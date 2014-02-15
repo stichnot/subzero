@@ -295,7 +295,7 @@ public:
   }
   static IceInstX8632Br *create(IceCfg *Cfg, IceInstX8632Label *Label,
                                 IceInstIcmp::IceICond Condition) {
-    return new IceInstX8632Br(Cfg, NULL, NULL, Label, IceInstIcmp::None);
+    return new IceInstX8632Br(Cfg, NULL, NULL, Label, Condition);
   }
   IceCfgNode *getTargetTrue(void) const { return TargetTrue; }
   IceCfgNode *getTargetFalse(void) const { return TargetFalse; }
