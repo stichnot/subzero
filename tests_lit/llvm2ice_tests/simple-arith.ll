@@ -22,12 +22,10 @@ entry:
 ; CHECK-NOT: ICE translation error
 
 ; Checks for emitted assembly
-; TODO: the argument handling for this function doesn't seem to be implemented
-; correctly yet, so adding checks only for the parts of the function that make
-; sense.
 
 ; CHECK:      .globl add_args_i32
-
-; CHECK:      add ecx, eax
+; CHECK:      mov eax, dword ptr [esp+4]
+; CHECK-NEXT: mov ecx, dword ptr [esp+8]
+; CHECK-NEXT: add ecx, eax
 ; CHECK-NEXT: mov eax, ecx
 ; CHECK-NEXT: ret
