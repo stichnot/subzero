@@ -66,7 +66,7 @@ IceCfg::~IceCfg() {
 void IceCfg::setError(const IceString &Message) {
   HasError = true;
   ErrorMessage = Message;
-  if (Str.isVerbose()) {
+  if (true || Str.isVerbose()) {
     Str << "ICE translation error: " << ErrorMessage << "\n";
   }
 }
