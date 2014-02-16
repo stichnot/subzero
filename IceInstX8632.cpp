@@ -1944,8 +1944,42 @@ IceInstList IceTargetX8632S::lowerRet(const IceInstRet *Inst,
 IceInstList IceTargetX8632S::lowerSelect(const IceInstSelect *Inst,
                                          const IceInst *Next,
                                          bool &DeleteNextInst) {
+  // a=d?b:c ==> cmp d,0; a=b; jne L1; FakeUse(a); a=c; L1:
+  //
+  // Alternative if a is reg and c is not imm: cmp d,0; a=b; a=cmoveq c {a}
   IceInstList Expansion;
-  Cfg->setError("Select lowering not implemented");
+  IceInstTarget *NewInst;
+  IceOperand *Condition =
+      legalizeOperand(Inst->getCondition(), Legal_All, Expansion);
+  uint64_t Zero = 0;
+  IceConstant *OpZero = Cfg->getConstant(IceType_i32, Zero);
+  NewInst = IceInstX8632Icmp::create(Cfg, Condition, OpZero);
+  Expansion.push_back(NewInst);
+
+  IceVariable *Dest = Inst->getDest();
+  IceOperand *SrcTrue = legalizeOperand(Inst->getTrueOperand(),
+                                        Legal_Reg | Legal_Imm, Expansion, true);
+  NewInst = IceInstX8632Mov::create(Cfg, Dest, SrcTrue);
+  Expansion.push_back(NewInst);
+
+  // create Label
+  IceInstX8632Label *Label = IceInstX8632Label::create(Cfg, this);
+
+  NewInst = IceInstX8632Br::create(Cfg, Label, IceInstIcmp::Ne);
+  Expansion.push_back(NewInst);
+
+  // FakeUse(a)
+  IceInst *FakeUse = IceInstFakeUse::create(Cfg, Dest);
+  Expansion.push_back(FakeUse);
+
+  IceOperand *SrcFalse = legalizeOperand(
+      Inst->getFalseOperand(), Legal_Reg | Legal_Imm, Expansion, true);
+  NewInst = IceInstX8632Mov::create(Cfg, Dest, SrcFalse);
+  Expansion.push_back(NewInst);
+
+  // Label:
+  Expansion.push_back(Label);
+
   return Expansion;
 }
 

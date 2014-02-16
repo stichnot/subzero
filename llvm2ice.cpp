@@ -175,6 +175,8 @@ private:
       return convertIntToPtrInstruction(cast<IntToPtrInst>(Inst));
     case Instruction::ICmp:
       return convertICmpInstruction(cast<ICmpInst>(Inst));
+    case Instruction::Select:
+      return convertSelectInstruction(cast<SelectInst>(Inst));
     case Instruction::Load:
       return convertLoadInstruction(cast<LoadInst>(Inst));
     case Instruction::Store:
@@ -348,6 +350,14 @@ private:
     }
 
     return IceInstIcmp::create(Cfg, Cond, Dest, Src0, Src1);
+  }
+
+  IceInst *convertSelectInstruction(const SelectInst *Inst) {
+    IceVariable *Dest = mapValueToIceVar(Inst);
+    IceOperand *Cond = convertValue(Inst->getCondition());
+    IceOperand *Source1 = convertValue(Inst->getTrueValue());
+    IceOperand *Source2 = convertValue(Inst->getFalseValue());
+    return IceInstSelect::create(Cfg, Dest, Cond, Source1, Source2);
   }
 
   IceInst *convertCallInstruction(const CallInst *Inst) {

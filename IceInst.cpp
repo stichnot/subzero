@@ -321,6 +321,16 @@ IceInstRet::IceInstRet(IceCfg *Cfg, IceOperand *Source)
     addSource(Source);
 }
 
+IceInstSelect::IceInstSelect(IceCfg *Cfg, IceVariable *Dest,
+                             IceOperand *Condition, IceOperand *SourceTrue,
+                             IceOperand *SourceFalse)
+    : IceInst(Cfg, IceInst::Select, 3, Dest) {
+  assert(Condition->getType() == IceType_i1);
+  addSource(Condition);
+  addSource(SourceTrue);
+  addSource(SourceFalse);
+}
+
 void IceInstTarget::setRegState(const IceRegManager *State) {
   RegState = IceRegManager::create(*State);
 }
@@ -639,6 +649,16 @@ void IceInstRet::dump(IceOstream &Str) const {
   IceType Type = getSrcSize() == 0 ? IceType_void : getSrc(0)->getType();
   Str << "ret " << Type << " ";
   dumpSources(Str);
+}
+
+void IceInstSelect::dump(IceOstream &Str) const {
+  dumpDest(Str);
+  IceOperand *Condition = getCondition();
+  IceOperand *TrueOp = getTrueOperand();
+  IceOperand *FalseOp = getFalseOperand();
+  Str << " = select " << Condition->getType() << " " << Condition << ", "
+      << TrueOp->getType() << " " << TrueOp << ", " << FalseOp->getType() << " "
+      << FalseOp;
 }
 
 void IceInstFakeDef::emit(IceOstream &Str, uint32_t Option) const {

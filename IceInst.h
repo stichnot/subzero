@@ -356,20 +356,22 @@ private:
   IceInstRet(IceCfg *Cfg, IceOperand *Source);
 };
 
-// TODO: implement
 class IceInstSelect : public IceInst {
 public:
-  static IceInstSelect *create(IceCfg *Cfg, IceType Type, IceOperand *Dest,
-                               IceOperand *Condition, IceOperand *Source1,
-                               IceOperand *Source2) {
-    return new IceInstSelect(Cfg, Type, Dest, Condition, Source1, Source2);
+  static IceInstSelect *create(IceCfg *Cfg, IceVariable *Dest,
+                               IceOperand *Condition, IceOperand *SourceTrue,
+                               IceOperand *SourceFalse) {
+    return new IceInstSelect(Cfg, Dest, Condition, SourceTrue, SourceFalse);
   }
+  IceOperand *getCondition(void) const { return getSrc(0); }
+  IceOperand *getTrueOperand(void) const { return getSrc(1); }
+  IceOperand *getFalseOperand(void) const { return getSrc(2); }
+  virtual void dump(IceOstream &Str) const;
   static bool classof(const IceInst *Inst) { return Inst->getKind() == Select; }
 
 private:
-  IceInstSelect(IceCfg *Cfg, IceType Type, IceOperand *Dest,
-                IceOperand *Condition, IceOperand *Source1,
-                IceOperand *Source2);
+  IceInstSelect(IceCfg *Cfg, IceVariable *Dest, IceOperand *Condition,
+                IceOperand *Source1, IceOperand *Source2);
 };
 
 // SourceData as Srcs[0] and SourceAddr as Srcs[1]
