@@ -1476,9 +1476,21 @@ IceInstList IceTargetX8632S::lowerAssign(const IceInstAssign *Inst,
 IceInstList IceTargetX8632S::lowerBr(const IceInstBr *Inst, const IceInst *Next,
                                      bool &DeleteNextInst) {
   IceInstList Expansion;
-  if (Inst->getTargetTrue())
-    Cfg->setError("Conditional branch lowering unimplemented");
-  IceInstTarget *NewInst = IceInstX8632Br::create(Cfg, Inst->getTargetFalse());
+  if (Inst->getTargetTrue() == NULL) { // unconditional branch
+    IceInstTarget *NewInst =
+        IceInstX8632Br::create(Cfg, Inst->getTargetFalse());
+    Expansion.push_back(NewInst);
+    return Expansion;
+  }
+  // cmp src, 0; br ne, labelTrue; br labelFalse
+  IceInstTarget *NewInst;
+  IceOperand *Src = legalizeOperand(Inst->getSrc(0), Legal_All, Expansion);
+  uint64_t Zero = 0;
+  IceConstant *OpZero = Cfg->getConstant(IceType_i32, Zero);
+  NewInst = IceInstX8632Icmp::create(Cfg, Src, OpZero);
+  Expansion.push_back(NewInst);
+  NewInst = IceInstX8632Br::create(Cfg, Inst->getTargetTrue(),
+                                   Inst->getTargetFalse(), IceInstIcmp::Ne);
   Expansion.push_back(NewInst);
   return Expansion;
 }
