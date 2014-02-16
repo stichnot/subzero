@@ -177,6 +177,8 @@ private:
       return convertICmpInstruction(cast<ICmpInst>(Inst));
     case Instruction::Select:
       return convertSelectInstruction(cast<SelectInst>(Inst));
+    case Instruction::Switch:
+      return convertSwitchInstruction(cast<SwitchInst>(Inst));
     case Instruction::Load:
       return convertLoadInstruction(cast<LoadInst>(Inst));
     case Instruction::Store:
@@ -358,6 +360,22 @@ private:
     IceOperand *Source1 = convertValue(Inst->getTrueValue());
     IceOperand *Source2 = convertValue(Inst->getFalseValue());
     return IceInstSelect::create(Cfg, Dest, Cond, Source1, Source2);
+  }
+
+  IceInst *convertSwitchInstruction(const SwitchInst *Inst) {
+    IceOperand *Source = convertValue(Inst->getCondition());
+    IceCfgNode *LabelDefault = mapBasicBlockToNode(Inst->getDefaultDest());
+    unsigned NumCases = Inst->getNumCases();
+    IceInstSwitch *Switch =
+        IceInstSwitch::create(Cfg, NumCases, Source, LabelDefault);
+    unsigned CurrentCase = 0;
+    for (SwitchInst::ConstCaseIt I = Inst->case_begin(), E = Inst->case_end();
+         I != E; ++I, ++CurrentCase) {
+      uint64_t CaseValue = I.getCaseValue()->getZExtValue();
+      IceCfgNode *CaseSuccessor = mapBasicBlockToNode(I.getCaseSuccessor());
+      Switch->addBranch(CurrentCase, CaseValue, CaseSuccessor);
+    }
+    return Switch;
   }
 
   IceInst *convertCallInstruction(const CallInst *Inst) {

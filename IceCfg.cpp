@@ -136,6 +136,10 @@ IceCfgNode *IceCfg::makeNode(uint32_t LabelIndex, IceString Name) {
   if (Nodes[LabelIndex] == NULL) {
     IceCfgNode *Node = IceCfgNode::create(this, LabelIndex, Name);
     Nodes[LabelIndex] = Node;
+    // TODO: This ends up creating LNodes in the order that nodes are
+    // resolved, not the compacted order they end up in Nodes.  It
+    // would be a good idea to reconstruct LNodes right after initial
+    // ICE formation.
     LNodes.push_back(Node);
   }
   return Nodes[LabelIndex];

@@ -246,9 +246,43 @@ IceInstStore::IceInstStore(IceCfg *Cfg, IceOperand *Val, IceOperand *Addr)
   addSource(Addr);
 }
 
+IceInstSwitch::IceInstSwitch(IceCfg *Cfg, unsigned NumCases, IceOperand *Source,
+                             IceCfgNode *LabelDefault)
+    : IceInst(Cfg, IceInst::Switch, 1, NULL), LabelDefault(LabelDefault),
+      NumCases(NumCases) {
+  addSource(Source);
+  Values = new uint64_t[NumCases];
+  Labels = new IceCfgNode *[NumCases];
+  // Initialize in case buggy code doesn't set all entries
+  for (unsigned I = 0; I < NumCases; ++I) {
+    Values[I] = 0;
+    Labels[I] = NULL;
+  }
+}
+
+void IceInstSwitch::addBranch(unsigned CaseIndex, uint64_t Value,
+                              IceCfgNode *Label) {
+  assert(CaseIndex < NumCases);
+  assert(Labels[CaseIndex] == NULL);
+  Values[CaseIndex] = Value;
+  Labels[CaseIndex] = Label;
+}
+
+IceNodeList IceInstSwitch::getTerminatorEdges(void) const {
+  IceNodeList OutEdges;
+  OutEdges.push_back(LabelDefault);
+  for (unsigned I = 0; I < NumCases; ++I) {
+    OutEdges.push_back(Labels[I]);
+  }
+  return OutEdges;
+}
+
 IceInstPhi::IceInstPhi(IceCfg *Cfg, unsigned MaxSrcs, IceVariable *Dest)
     : IceInst(Cfg, Phi, MaxSrcs, Dest) {}
 
+// TODO: A Switch instruction (and maybe others) can add duplicate
+// edges.  We may want to de-dup Phis and validate consistency, though
+// it seems the current lowering code is OK with this situation.
 void IceInstPhi::addArgument(IceOperand *Source, IceCfgNode *Label) {
   addSource(Source);
   Labels.push_back(Label);
@@ -631,6 +665,17 @@ void IceInstStore::dump(IceOstream &Str) const {
     Str << "1";
     break;
   }
+}
+
+void IceInstSwitch::dump(IceOstream &Str) const {
+  IceType Type = getSrc(0)->getType();
+  Str << "switch " << Type << " " << getSrc(0) << ", label %"
+      << getLabelDefault()->getName() << " [\n";
+  for (unsigned I = 0; I < getNumCases(); ++I) {
+    Str << "    " << Type << " " << getValue(I) << ", label %"
+        << getLabel(I)->getName() << "\n";
+  }
+  Str << "  ]";
 }
 
 void IceInstPhi::dump(IceOstream &Str) const {

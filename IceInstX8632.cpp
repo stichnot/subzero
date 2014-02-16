@@ -794,7 +794,9 @@ void IceInstX8632Br::emit(IceOstream &Str, unsigned Option) const {
       Str << "\t" << getTargetFalse()->getAsmName() << "\n";
     } else {
       Str << "\t" << getTargetTrue()->getAsmName() << "\n";
-      Str << "\tjmp\t" << getTargetFalse()->getAsmName() << "\n";
+      if (getTargetFalse()) {
+        Str << "\tjmp\t" << getTargetFalse()->getAsmName() << "\n";
+      }
     }
   }
 }
@@ -841,8 +843,10 @@ void IceInstX8632Br::dump(IceOstream &Str) const {
   if (Label) {
     Str << ", label %" << Label->getName(Str.Cfg);
   } else {
-    Str << ", label %" << getTargetTrue()->getName() << ", label %"
-        << getTargetFalse()->getName();
+    Str << ", label %" << getTargetTrue()->getName();
+    if (getTargetFalse()) {
+      Str << ", label %" << getTargetFalse()->getName();
+    }
   }
 }
 
@@ -2032,8 +2036,29 @@ IceInstList IceTargetX8632S::doAddressOptStore(const IceInstStore *Inst) {
 IceInstList IceTargetX8632S::lowerSwitch(const IceInstSwitch *Inst,
                                          const IceInst *Next,
                                          bool &DeleteNextInst) {
+  // This implements the most naive possible lowering.
+  // cmp a,val[0]; jeq label[0]; cmp a,val[1]; jeq label[1]; ... jmp default
   IceInstList Expansion;
-  Cfg->setError("Switch lowering not implemented");
+  IceInst *NewInst;
+  IceOperand *Src = Inst->getSrc(0);
+  unsigned NumCases = Inst->getNumCases();
+  // OK, we'll be slightly less naive by forcing Src into a physical
+  // register if there are 2 or more uses.
+  if (NumCases >= 2)
+    Src = legalizeOperandToVar(Src, Expansion, true);
+  else
+    Src = legalizeOperand(Src, Legal_All, Expansion, true);
+  for (unsigned I = 0; I < NumCases; ++I) {
+    IceOperand *Value = Cfg->getConstant(IceType_i32, Inst->getValue(I));
+    NewInst = IceInstX8632Icmp::create(Cfg, Src, Value);
+    Expansion.push_back(NewInst);
+    NewInst = IceInstX8632Br::create(Cfg, Inst->getLabel(I), IceInstIcmp::Eq);
+    Expansion.push_back(NewInst);
+  }
+
+  NewInst = IceInstX8632Br::create(Cfg, Inst->getLabelDefault());
+  Expansion.push_back(NewInst);
+
   return Expansion;
 }
 

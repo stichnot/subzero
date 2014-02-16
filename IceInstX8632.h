@@ -293,6 +293,10 @@ public:
   static IceInstX8632Br *create(IceCfg *Cfg, IceCfgNode *Target) {
     return new IceInstX8632Br(Cfg, NULL, Target, NULL, IceInstIcmp::None);
   }
+  static IceInstX8632Br *create(IceCfg *Cfg, IceCfgNode *Target,
+                                IceInstIcmp::IceICond Condition) {
+    return new IceInstX8632Br(Cfg, Target, NULL, NULL, Condition);
+  }
   static IceInstX8632Br *create(IceCfg *Cfg, IceInstX8632Label *Label,
                                 IceInstIcmp::IceICond Condition) {
     return new IceInstX8632Br(Cfg, NULL, NULL, Label, Condition);

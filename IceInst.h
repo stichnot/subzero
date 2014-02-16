@@ -390,20 +390,34 @@ private:
   IceInstStore(IceCfg *Cfg, IceOperand *SourceData, IceOperand *SourceAddr);
 };
 
-// TODO: implement
 class IceInstSwitch : public IceInst {
 public:
-  static IceInstSwitch *create(IceCfg *Cfg, IceType Type, IceOperand *Source,
-                               int32_t LabelDefault) {
-    return new IceInstSwitch(Cfg, Type, Source, LabelDefault);
+  static IceInstSwitch *create(IceCfg *Cfg, unsigned NumCases,
+                               IceOperand *Source, IceCfgNode *LabelDefault) {
+    return new IceInstSwitch(Cfg, NumCases, Source, LabelDefault);
   }
-  void addBranch(IceType Type, IceOperand *Source, int32_t Label);
+  IceCfgNode *getLabelDefault(void) const { return LabelDefault; }
+  unsigned getNumCases(void) const { return NumCases; }
+  uint64_t getValue(unsigned I) const {
+    assert(I < NumCases);
+    return Values[I];
+  }
+  IceCfgNode *getLabel(unsigned I) const {
+    assert(I < NumCases);
+    return Labels[I];
+  }
+  void addBranch(unsigned CaseIndex, uint64_t Value, IceCfgNode *Label);
   virtual IceNodeList getTerminatorEdges(void) const;
+  virtual void dump(IceOstream &Str) const;
   static bool classof(const IceInst *Inst) { return Inst->getKind() == Switch; }
 
 private:
-  IceInstSwitch(IceCfg *Cfg, IceType Type, IceOperand *Source,
-                int32_t LabelDefault);
+  IceInstSwitch(IceCfg *Cfg, unsigned NumCases, IceOperand *Source,
+                IceCfgNode *LabelDefault);
+  IceCfgNode *LabelDefault;
+  unsigned NumCases;   // not including the default case
+  uint64_t *Values;    // size is NumCases
+  IceCfgNode **Labels; // size is NumCases
 };
 
 class IceInstFakeDef : public IceInst {
