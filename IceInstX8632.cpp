@@ -99,7 +99,7 @@ void IceTargetX8632::addProlog(IceCfgNode *Node) {
       continue;
     if (Var->getLiveRange().isEmpty())
       continue;
-    LocalsSizeBytes += 4;
+    LocalsSizeBytes += typeWidthOnStack(Var->getType());
   }
 
   // Add push instructions for preserved registers.
@@ -143,7 +143,7 @@ void IceTargetX8632::addProlog(IceCfgNode *Node) {
       continue;
     if (Var->getLiveRange().isEmpty())
       continue;
-    NextStackOffset += 4;
+    NextStackOffset += typeWidthOnStack(Var->getType());
     if (IsEbpBasedFrame)
       Var->setStackOffset(-NextStackOffset);
     else
@@ -167,17 +167,20 @@ void IceTargetX8632::addProlog(IceCfgNode *Node) {
   for (unsigned i = 0; i < Args.size(); ++i) {
     IceVariable *Arg = Args[i];
     if (IsEbpBasedFrame)
-      Arg->setStackOffset(PreservedRegsSizeBytes + RetIpSizeBytes + 4 * i);
+      Arg->setStackOffset(PreservedRegsSizeBytes + RetIpSizeBytes +
+                          InArgsSizeBytes);
     else
       Arg->setStackOffset(LocalsSizeBytes + PreservedRegsSizeBytes +
-                          RetIpSizeBytes + 4 * i);
+                          RetIpSizeBytes + InArgsSizeBytes);
     if (Arg->getRegNum() >= 0) {
+      // TODO: Make 2 copies for i64, and use the right type for f32
+      // and f64.
       IceOperandX8632Mem *Mem = IceOperandX8632Mem::create(
           Cfg, IceType_i32, FramePtr,
           Cfg->getConstant(IceType_i32, Arg->getStackOffset()));
       Expansion.push_back(IceInstX8632Mov::create(Cfg, Arg, Mem));
     }
-    InArgsSizeBytes += 4;
+    InArgsSizeBytes += typeWidthOnStack(Arg->getType());
   }
 
   // TODO: If esp is adjusted during out-arg writing for a Call, any
@@ -187,6 +190,7 @@ void IceTargetX8632::addProlog(IceCfgNode *Node) {
 
   if (Cfg->Str.isVerbose(IceV_Frame)) {
     Cfg->Str << "LocalsSizeBytes=" << LocalsSizeBytes << "\n"
+             << "InArgsSizeBytes=" << InArgsSizeBytes << "\n"
              << "PreservedRegsSizeBytes=" << PreservedRegsSizeBytes << "\n";
   }
 
@@ -1522,11 +1526,7 @@ IceInstList IceTargetX8632S::lowerCall(const IceInstCall *Inst,
     // for instructions that push esp-based stack variables as
     // arguments.
     Expansion.push_back(NewInst);
-    uint32_t ArgWidth = iceTypeWidth(Arg->getType());
-    // Bools (i1) are pushed as a full word, not 1 byte.
-    if (ArgWidth == 1)
-      ArgWidth = 4;
-    StackOffset += ArgWidth;
+    StackOffset += typeWidthOnStack(Arg->getType());
   }
   // Generate the call instruction.  Assign its result to a temporary
   // with high register allocation weight.

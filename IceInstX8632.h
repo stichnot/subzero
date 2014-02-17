@@ -66,6 +66,14 @@ public:
   virtual unsigned getFrameOrStackReg(void) const {
     return IsEbpBasedFrame ? Reg_ebp : Reg_esp;
   }
+  virtual uint32_t typeWidthOnStack(IceType Type) {
+    switch (Type) {
+    case IceType_i1:
+      return 4;
+    default:
+      return iceTypeWidth(Type);
+    }
+  }
   virtual void addProlog(IceCfgNode *Node);
   virtual void addEpilog(IceCfgNode *Node);
   uint32_t makeNextLabelNumber(void) { return NextLabelNumber++; }

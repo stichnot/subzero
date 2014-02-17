@@ -25,6 +25,7 @@ public:
   virtual IceString *getRegNames(void) const = 0;
   virtual bool hasFramePointer(void) const { return false; }
   virtual unsigned getFrameOrStackReg(void) const = 0;
+  virtual uint32_t typeWidthOnStack(IceType Type) = 0;
   bool hasComputedFrame(void) const { return HasComputedFrame; }
 
   enum RegSet {
