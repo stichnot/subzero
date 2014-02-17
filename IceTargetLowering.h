@@ -27,6 +27,9 @@ public:
   virtual unsigned getFrameOrStackReg(void) const = 0;
   virtual uint32_t typeWidthOnStack(IceType Type) = 0;
   bool hasComputedFrame(void) const { return HasComputedFrame; }
+  int getStackAdjustment(void) const { return StackAdjustment; }
+  void updateStackAdjustment(int Offset) { StackAdjustment += Offset; }
+  void resetStackAdjustment(void) { StackAdjustment = 0; }
 
   enum RegSet {
     RegMask_None = 0,
@@ -45,7 +48,8 @@ public:
 
 protected:
   IceTargetLowering(IceCfg *Cfg)
-      : Cfg(Cfg), RegManager(NULL), HasComputedFrame(false) {}
+      : Cfg(Cfg), RegManager(NULL), HasComputedFrame(false),
+        StackAdjustment(0) {}
   virtual IceInstList lowerAlloca(const IceInstAlloca *Inst,
                                   const IceInst *Next,
                                   bool &DeleteNextInst) = 0;
@@ -89,6 +93,9 @@ protected:
   IceCfg *const Cfg;
   IceRegManager *RegManager;
   bool HasComputedFrame;
+  // StackAdjustment keeps track of the current stack offset from its
+  // natural location, as arguments are pushed for a function call.
+  int StackAdjustment;
 };
 
 #endif // _IceTargetLowering_h

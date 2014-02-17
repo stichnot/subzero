@@ -163,6 +163,8 @@ void IceTargetX8632::addProlog(IceCfgNode *Node) {
         Cfg, getPhysicalRegister(Reg_esp),
         Cfg->getConstant(IceType_i32, LocalsSizeBytes)));
 
+  resetStackAdjustment();
+
   // Fill in stack offsets for locals.
   int NextStackOffset = 0;
   for (IceVarList::const_iterator I = Variables.begin(), E = Variables.end();
@@ -965,6 +967,7 @@ void IceInstX8632Call::emit(IceOstream &Str, uint32_t Option) const {
   if (Tail)
     Str << "\t# tail";
   Str << "\n";
+  Str.Cfg->getTarget()->resetStackAdjustment();
 }
 
 void IceInstX8632Call::dump(IceOstream &Str) const {
@@ -1239,6 +1242,7 @@ void IceInstX8632Push::emit(IceOstream &Str, uint32_t Option) const {
   Str << "\tpush\t";
   getSrc(0)->emit(Str, Option);
   Str << "\n";
+  Str.Cfg->getTarget()->updateStackAdjustment(4);
 }
 
 void IceInstX8632Push::dump(IceOstream &Str) const {

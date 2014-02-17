@@ -163,7 +163,7 @@ void IceVariable::emit(IceOstream &Str, uint32_t Option) const {
   }
   Str << "["
       << Str.Cfg->physicalRegName(Str.Cfg->getTarget()->getFrameOrStackReg());
-  int Offset = getStackOffset();
+  int Offset = getStackOffset() + Str.Cfg->getTarget()->getStackAdjustment();
   if (Offset) {
     if (Offset > 0)
       Str << "+";
