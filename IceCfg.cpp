@@ -308,6 +308,12 @@ void IceCfg::liveness(IceLiveness Mode) {
         // Add live range [-1,0) with weight 0.
         Arg->addLiveRange(-1, 0, 0);
       }
+      IceVariable *Low = Arg->getLow();
+      if (Low && !Low->getLiveRange().isEmpty())
+        Low->addLiveRange(-1, 0, 0);
+      IceVariable *High = Arg->getHigh();
+      if (High && !High->getLiveRange().isEmpty())
+        High->addLiveRange(-1, 0, 0);
     }
   }
 }

@@ -86,6 +86,8 @@ public:
   void setArgOffsetAndCopy(IceVariable *Arg, IceVariable *FramePtr,
                            int BasicFrameOffset, int &InArgsSizeBytes,
                            IceInstList &Expansion);
+  IceOperand *makeLowOperand(IceOperand *Operand);
+  IceOperand *makeHighOperand(IceOperand *Operand);
   enum Registers {
     Reg_eax = 0,
     Reg_ecx = 1,

@@ -295,6 +295,57 @@ void IceTargetX8632::split64(IceVariable *Var) {
   }
 }
 
+IceOperand *IceTargetX8632::makeLowOperand(IceOperand *Operand) {
+  assert(Operand->getType() == IceType_i64);
+  if (Operand->getType() != IceType_i64)
+    return Operand;
+  if (IceVariable *Var = llvm::dyn_cast<IceVariable>(Operand)) {
+    split64(Var);
+    return Var->getLow();
+  }
+  if (IceConstantInteger *Const = llvm::dyn_cast<IceConstantInteger>(Operand)) {
+    uint64_t Mask = (1ul << 32) - 1;
+    return Cfg->getConstant(IceType_i32, Const->getIntValue() & Mask);
+  }
+  if (IceOperandX8632Mem *Mem = llvm::dyn_cast<IceOperandX8632Mem>(Operand)) {
+    return IceOperandX8632Mem::create(Cfg, IceType_i32, Mem->getBase(),
+                                      Mem->getOffset(), Mem->getIndex(),
+                                      Mem->getShift());
+  }
+  assert(0 && "Unsupported operand type");
+  return NULL;
+}
+
+IceOperand *IceTargetX8632::makeHighOperand(IceOperand *Operand) {
+  assert(Operand->getType() == IceType_i64);
+  if (Operand->getType() != IceType_i64)
+    return Operand;
+  if (IceVariable *Var = llvm::dyn_cast<IceVariable>(Operand)) {
+    split64(Var);
+    return Var->getHigh();
+  }
+  if (IceConstantInteger *Const = llvm::dyn_cast<IceConstantInteger>(Operand)) {
+    return Cfg->getConstant(IceType_i32, Const->getIntValue() >> 32);
+  }
+  if (IceOperandX8632Mem *Mem = llvm::dyn_cast<IceOperandX8632Mem>(Operand)) {
+    IceConstant *Offset = Mem->getOffset();
+    if (Offset == NULL)
+      Offset = Cfg->getConstant(IceType_i32, 4);
+    else {
+      if (IceConstantInteger *IntOffset =
+              llvm::dyn_cast<IceConstantInteger>(Offset)) {
+        Offset = Cfg->getConstant(IceType_i32, 4 + IntOffset->getIntValue());
+      } else {
+        assert(0 && "Symbolic integer constant not yet supported");
+      }
+    }
+    return IceOperandX8632Mem::create(Cfg, IceType_i32, Mem->getBase(), Offset,
+                                      Mem->getIndex(), Mem->getShift());
+  }
+  assert(0 && "Unsupported operand type");
+  return NULL;
+}
+
 IceInstList IceTargetX8632::lowerAlloca(const IceInstAlloca *Inst,
                                         const IceInst *Next,
                                         bool &DeleteNextInst) {
@@ -1574,11 +1625,16 @@ IceInstList IceTargetX8632S::lowerCall(const IceInstCall *Inst,
     IceOperand *Arg = Inst->getSrc(NumArgs - i - 1);
     Arg = legalizeOperand(Arg, Legal_All, Expansion);
     assert(Arg);
-    NewInst = IceInstX8632Push::create(Cfg, Arg);
-    // TODO: Where in the Cfg is StackOffset tracked?  It is needed
-    // for instructions that push esp-based stack variables as
-    // arguments.
-    Expansion.push_back(NewInst);
+    if (Arg->getType() == IceType_i64) {
+      Expansion.push_back(IceInstX8632Push::create(Cfg, makeHighOperand(Arg)));
+      Expansion.push_back(IceInstX8632Push::create(Cfg, makeLowOperand(Arg)));
+    } else {
+      NewInst = IceInstX8632Push::create(Cfg, Arg);
+      // TODO: Where in the Cfg is StackOffset tracked?  It is needed
+      // for instructions that push esp-based stack variables as
+      // arguments.
+      Expansion.push_back(NewInst);
+    }
     StackOffset += typeWidthOnStack(Arg->getType());
   }
   // Generate the call instruction.  Assign its result to a temporary
@@ -1983,7 +2039,17 @@ IceInstList IceTargetX8632S::lowerRet(const IceInstRet *Inst,
   IceVariable *Reg = NULL;
   if (Inst->getSrcSize()) {
     IceOperand *Src0 = Inst->getSrc(0);
-    Reg = legalizeOperandToVar(Src0, Expansion, false, Reg_eax);
+    if (Src0->getType() == IceType_i64) {
+      Src0 = legalizeOperand(Src0, Legal_All, Expansion);
+      IceVariable *Src0Low =
+          legalizeOperandToVar(makeLowOperand(Src0), Expansion, false, Reg_eax);
+      IceVariable *Src0High = legalizeOperandToVar(makeHighOperand(Src0),
+                                                   Expansion, false, Reg_edx);
+      Reg = Src0Low;
+      Expansion.push_back(IceInstFakeUse::create(Cfg, Src0High));
+    } else {
+      Reg = legalizeOperandToVar(Src0, Expansion, false, Reg_eax);
+    }
   }
   NewInst = IceInstX8632Ret::create(Cfg, Reg);
   Expansion.push_back(NewInst);
