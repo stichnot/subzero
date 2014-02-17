@@ -190,6 +190,16 @@ public:
   // TODO: consider initializing IsArgument in the ctor.
   bool getIsArg(void) const { return IsArgument; }
   void setIsArg(void) { IsArgument = true; }
+  IceVariable *getLow(void) const { return LowVar; }
+  IceVariable *getHigh(void) const { return HighVar; }
+  void setLow(IceVariable *Low) {
+    assert(LowVar == NULL);
+    LowVar = Low;
+  }
+  void setHigh(IceVariable *High) {
+    assert(HighVar == NULL);
+    HighVar = High;
+  }
   bool isMultiblockLife(void) const {
     return IsMultiblockLife | IsArgument;
     // TODO: if an argument is only used in the entry node, and there
@@ -241,7 +251,8 @@ private:
       : IceOperand(Cfg, Variable, Type), Number(Index), Name(Name),
         DefInst(NULL), DefOrUseNode(NULL), IsArgument(false),
         IsMultiblockLife(false), StackOffset(0), RegNum(-1), RegNumTmp(-1),
-        Weight(1), RegisterPreference(NULL), AllowRegisterOverlap(false) {
+        Weight(1), RegisterPreference(NULL), AllowRegisterOverlap(false),
+        LowVar(NULL), HighVar(NULL) {
     Vars = new IceVariable *[1];
     Vars[0] = this;
     NumVars = 1;
@@ -264,6 +275,13 @@ private:
   IceVariable *RegisterPreference;
   bool AllowRegisterOverlap;
   IceLiveRange LiveRange;
+  // When lowering from I64 to I32 on a 32-bit architecture, we split
+  // the variable into two machine-size pieces.  LowVar is the
+  // low-order machine-size portion, and HighVar is the remaining
+  // high-order portion.  TODO: It's wasteful to penalize all
+  // variables on all targets this way; use a sparser representation.
+  IceVariable *LowVar;
+  IceVariable *HighVar;
 };
 
 #endif // _IceOperand_h

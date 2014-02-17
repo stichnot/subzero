@@ -65,6 +65,41 @@ IceVariable *IceTargetX8632::getPhysicalRegister(unsigned RegNum) {
   return Reg;
 }
 
+// Helper function for addProlog().  Sets the frame offset for Arg,
+// updates InArgsSizeBytes according to Arg's width, and generates an
+// instruction to copy Arg into its assigned register if applicable.
+// For an I64 arg that has been split into Low and High components, it
+// calls itself recursively on the components, taking care to handle
+// Low first because of the little-endian architecture.
+void IceTargetX8632::setArgOffsetAndCopy(IceVariable *Arg,
+                                         IceVariable *FramePtr,
+                                         int BasicFrameOffset,
+                                         int &InArgsSizeBytes,
+                                         IceInstList &Expansion) {
+  IceVariable *Low = Arg->getLow();
+  IceVariable *High = Arg->getHigh();
+  IceType Type = Arg->getType();
+  if (Low && High && Type == IceType_i64) {
+    assert(Low->getType() != IceType_i64);  // don't want infinite recursion
+    assert(High->getType() != IceType_i64); // don't want infinite recursion
+    setArgOffsetAndCopy(Low, FramePtr, BasicFrameOffset, InArgsSizeBytes,
+                        Expansion);
+    setArgOffsetAndCopy(High, FramePtr, BasicFrameOffset, InArgsSizeBytes,
+                        Expansion);
+    return;
+  }
+  Arg->setStackOffset(BasicFrameOffset + InArgsSizeBytes);
+  if (Arg->getRegNum() >= 0) {
+    // TODO: Uncomment this assert when I64 lowering is complete.
+    // assert(Type != IceType_i64);
+    IceOperandX8632Mem *Mem = IceOperandX8632Mem::create(
+        Cfg, Type, FramePtr,
+        Cfg->getConstant(IceType_i32, Arg->getStackOffset()));
+    Expansion.push_back(IceInstX8632Mov::create(Cfg, Arg, Mem));
+  }
+  InArgsSizeBytes += typeWidthOnStack(Type);
+}
+
 void IceTargetX8632::addProlog(IceCfgNode *Node) {
   IceInstList Expansion;
   int InArgsSizeBytes = 0;
@@ -164,23 +199,13 @@ void IceTargetX8632::addProlog(IceCfgNode *Node) {
   // and if they have no home register, home space will need to be
   // allocated on the stack to copy into.
   IceVariable *FramePtr = getPhysicalRegister(getFrameOrStackReg());
+  int BasicFrameOffset = PreservedRegsSizeBytes + RetIpSizeBytes;
+  if (!IsEbpBasedFrame)
+    BasicFrameOffset += LocalsSizeBytes;
   for (unsigned i = 0; i < Args.size(); ++i) {
     IceVariable *Arg = Args[i];
-    if (IsEbpBasedFrame)
-      Arg->setStackOffset(PreservedRegsSizeBytes + RetIpSizeBytes +
-                          InArgsSizeBytes);
-    else
-      Arg->setStackOffset(LocalsSizeBytes + PreservedRegsSizeBytes +
-                          RetIpSizeBytes + InArgsSizeBytes);
-    if (Arg->getRegNum() >= 0) {
-      // TODO: Make 2 copies for i64, and use the right type for f32
-      // and f64.
-      IceOperandX8632Mem *Mem = IceOperandX8632Mem::create(
-          Cfg, IceType_i32, FramePtr,
-          Cfg->getConstant(IceType_i32, Arg->getStackOffset()));
-      Expansion.push_back(IceInstX8632Mov::create(Cfg, Arg, Mem));
-    }
-    InArgsSizeBytes += typeWidthOnStack(Arg->getType());
+    setArgOffsetAndCopy(Arg, FramePtr, BasicFrameOffset, InArgsSizeBytes,
+                        Expansion);
   }
 
   // TODO: If esp is adjusted during out-arg writing for a Call, any
@@ -240,6 +265,34 @@ void IceTargetX8632::addEpilog(IceCfgNode *Node) {
   IceInstList::iterator InsertPoint = RI.base();
   --InsertPoint;
   Node->insertInsts(InsertPoint, Expansion);
+}
+
+void IceTargetX8632::split64(IceVariable *Var) {
+  switch (Var->getType()) {
+  default:
+    return;
+  case IceType_i64:
+  // TODO: Only consider F64 if we need to push each half when
+  // passing as an argument to a function call.  Note that each half
+  // is still typed as I32.
+  case IceType_f64:
+    break;
+  }
+  IceVariable *Low = Var->getLow();
+  if (Low) {
+    assert(Var->getHigh());
+    return;
+  }
+  Low = Cfg->makeVariable(IceType_i32, -1, Var->getName() + "__lo");
+  Var->setLow(Low);
+  assert(Var->getHigh() == NULL);
+  IceVariable *High =
+      Cfg->makeVariable(IceType_i32, -1, Var->getName() + "__hi");
+  Var->setHigh(High);
+  if (Var->getIsArg()) {
+    Low->setIsArg();
+    High->setIsArg();
+  }
 }
 
 IceInstList IceTargetX8632::lowerAlloca(const IceInstAlloca *Inst,

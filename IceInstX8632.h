@@ -77,6 +77,15 @@ public:
   virtual void addProlog(IceCfgNode *Node);
   virtual void addEpilog(IceCfgNode *Node);
   uint32_t makeNextLabelNumber(void) { return NextLabelNumber++; }
+  // Ensure that a 64-bit IceVariable has been split into 2 32-bit
+  // IceVariables, creating them if necessary.  This is needed for all
+  // I64 operations, and it is needed for pushing F64 arguments for
+  // function calls using the 32-bit push instruction (though the
+  // latter could be done by directly writing to the stack).
+  void split64(IceVariable *Var);
+  void setArgOffsetAndCopy(IceVariable *Arg, IceVariable *FramePtr,
+                           int BasicFrameOffset, int &InArgsSizeBytes,
+                           IceInstList &Expansion);
   enum Registers {
     Reg_eax = 0,
     Reg_ecx = 1,
