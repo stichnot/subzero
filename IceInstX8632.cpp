@@ -671,9 +671,23 @@ IceInstX8632Add::IceInstX8632Add(IceCfg *Cfg, IceVariable *Dest,
   addSource(Source);
 }
 
+IceInstX8632Adc::IceInstX8632Adc(IceCfg *Cfg, IceVariable *Dest,
+                                 IceOperand *Source)
+    : IceInstX8632(Cfg, IceInstX8632::Adc, 2, Dest) {
+  addSource(Dest);
+  addSource(Source);
+}
+
 IceInstX8632Sub::IceInstX8632Sub(IceCfg *Cfg, IceVariable *Dest,
                                  IceOperand *Source)
     : IceInstX8632(Cfg, IceInstX8632::Sub, 2, Dest) {
+  addSource(Dest);
+  addSource(Source);
+}
+
+IceInstX8632Sbb::IceInstX8632Sbb(IceCfg *Cfg, IceVariable *Dest,
+                                 IceOperand *Source)
+    : IceInstX8632(Cfg, IceInstX8632::Sbb, 2, Dest) {
   addSource(Dest);
   addSource(Source);
 }
@@ -704,6 +718,13 @@ IceInstX8632Imul::IceInstX8632Imul(IceCfg *Cfg, IceVariable *Dest,
     : IceInstX8632(Cfg, IceInstX8632::Imul, 2, Dest) {
   addSource(Dest);
   addSource(Source);
+}
+
+IceInstX8632Mul::IceInstX8632Mul(IceCfg *Cfg, IceVariable *Dest,
+                                 IceVariable *Source1, IceOperand *Source2)
+    : IceInstX8632(Cfg, IceInstX8632::Mul, 2, Dest) {
+  addSource(Source1);
+  addSource(Source2);
 }
 
 IceInstX8632Idiv::IceInstX8632Idiv(IceCfg *Cfg, IceVariable *Dest,
@@ -1011,6 +1032,16 @@ void IceInstX8632Add::dump(IceOstream &Str) const {
   dumpSources(Str);
 }
 
+void IceInstX8632Adc::emit(IceOstream &Str, uint32_t Option) const {
+  emitTwoAddress("adc", this, Str, Option);
+}
+
+void IceInstX8632Adc::dump(IceOstream &Str) const {
+  dumpDest(Str);
+  Str << " = adc." << getDest()->getType() << " ";
+  dumpSources(Str);
+}
+
 void IceInstX8632Sub::emit(IceOstream &Str, unsigned Option) const {
   emitTwoAddress("sub", this, Str, Option);
 }
@@ -1018,6 +1049,16 @@ void IceInstX8632Sub::emit(IceOstream &Str, unsigned Option) const {
 void IceInstX8632Sub::dump(IceOstream &Str) const {
   dumpDest(Str);
   Str << " = sub." << getDest()->getType() << " ";
+  dumpSources(Str);
+}
+
+void IceInstX8632Sbb::emit(IceOstream &Str, unsigned Option) const {
+  emitTwoAddress("sbb", this, Str, Option);
+}
+
+void IceInstX8632Sbb::dump(IceOstream &Str) const {
+  dumpDest(Str);
+  Str << " = sbb." << getDest()->getType() << " ";
   dumpSources(Str);
 }
 
@@ -1058,6 +1099,23 @@ void IceInstX8632Imul::emit(IceOstream &Str, uint32_t Option) const {
 void IceInstX8632Imul::dump(IceOstream &Str) const {
   dumpDest(Str);
   Str << " = imul." << getDest()->getType() << " ";
+  dumpSources(Str);
+}
+
+void IceInstX8632Mul::emit(IceOstream &Str, uint32_t Option) const {
+  assert(getSrcSize() == 2);
+  assert(llvm::isa<IceVariable>(getSrc(0)));
+  assert(llvm::dyn_cast<IceVariable>(getSrc(0))->getRegNum() ==
+         IceTargetX8632::Reg_eax);
+  assert(getDest()->getRegNum() == IceTargetX8632::Reg_eax); // TODO: allow edx?
+  Str << "\tmul\t";
+  getSrc(1)->emit(Str, Option);
+  Str << "\n";
+}
+
+void IceInstX8632Mul::dump(IceOstream &Str) const {
+  dumpDest(Str);
+  Str << " = mul." << getDest()->getType() << " ";
   dumpSources(Str);
 }
 
@@ -1426,6 +1484,8 @@ IceInstList IceTargetX8632S::lowerArithmetic(const IceInstArithmetic *Inst,
   // -1 and powers of 2.  Advanced: use lea to multiply by 3, 5, 9.
 
   IceVariable *Dest = Inst->getDest();
+  if (Dest->getType() == IceType_i64)
+    return lowerArithmeticI64(Inst, Next, DeleteNextInst);
   IceOperand *Src0 = Inst->getSrc(0);
   IceOperand *Src1 = Inst->getSrc(1);
   IceVariable *Reg0 = NULL;
@@ -1570,6 +1630,111 @@ IceInstList IceTargetX8632S::lowerArithmetic(const IceInstArithmetic *Inst,
   NewInst = IceInstX8632Mov::create(Cfg, Dest, (ResultFromReg0 ? Reg0 : Reg1));
   Expansion.push_back(NewInst);
 
+  return Expansion;
+}
+
+IceInstList IceTargetX8632S::lowerArithmeticI64(const IceInstArithmetic *Inst,
+                                                const IceInst *Next,
+                                                bool &DeleteNextInst) {
+  IceInstList Expansion;
+  IceVariable *Dest = Inst->getDest();
+  IceOperand *Src0 = legalizeOperand(Inst->getSrc(0), Legal_All, Expansion);
+  IceOperand *Src1 = legalizeOperand(Inst->getSrc(1), Legal_All, Expansion);
+  IceVariable *DestLo = llvm::cast<IceVariable>(makeLowOperand(Dest));
+  IceVariable *DestHi = llvm::cast<IceVariable>(makeHighOperand(Dest));
+  IceOperand *Src0Lo = makeLowOperand(Src0);
+  IceOperand *Src0Hi = makeHighOperand(Src0);
+  IceOperand *Src1Lo = makeLowOperand(Src1);
+  IceOperand *Src1Hi = makeHighOperand(Src1);
+  IceVariable *TmpLo;
+  IceVariable *TmpHi;
+
+  switch (Inst->getOp()) {
+  case IceInstArithmetic::Add:
+    TmpLo = legalizeOperandToVar(Src0Lo, Expansion);
+    Expansion.push_back(IceInstX8632Add::create(Cfg, TmpLo, Src1Lo));
+    Expansion.push_back(IceInstX8632Mov::create(Cfg, DestLo, TmpLo));
+    TmpHi = legalizeOperandToVar(Src0Hi, Expansion);
+    Expansion.push_back(IceInstX8632Adc::create(Cfg, TmpHi, Src1Hi));
+    Expansion.push_back(IceInstX8632Mov::create(Cfg, DestHi, TmpHi));
+    break;
+  case IceInstArithmetic::Sub:
+    TmpLo = legalizeOperandToVar(Src0Lo, Expansion);
+    Expansion.push_back(IceInstX8632Sub::create(Cfg, TmpLo, Src1Lo));
+    Expansion.push_back(IceInstX8632Mov::create(Cfg, DestLo, TmpLo));
+    TmpHi = legalizeOperandToVar(Src0Hi, Expansion);
+    Expansion.push_back(IceInstX8632Sbb::create(Cfg, TmpHi, Src1Hi));
+    Expansion.push_back(IceInstX8632Mov::create(Cfg, DestHi, TmpHi));
+    break;
+  case IceInstArithmetic::And:
+    TmpLo = legalizeOperandToVar(Src0Lo, Expansion);
+    Expansion.push_back(IceInstX8632And::create(Cfg, TmpLo, Src1Lo));
+    Expansion.push_back(IceInstX8632Mov::create(Cfg, DestLo, TmpLo));
+    TmpHi = legalizeOperandToVar(Src0Hi, Expansion);
+    Expansion.push_back(IceInstX8632And::create(Cfg, TmpHi, Src1Hi));
+    Expansion.push_back(IceInstX8632Mov::create(Cfg, DestHi, TmpHi));
+    break;
+  case IceInstArithmetic::Or:
+    TmpLo = legalizeOperandToVar(Src0Lo, Expansion);
+    Expansion.push_back(IceInstX8632Or::create(Cfg, TmpLo, Src1Lo));
+    Expansion.push_back(IceInstX8632Mov::create(Cfg, DestLo, TmpLo));
+    TmpHi = legalizeOperandToVar(Src0Hi, Expansion);
+    Expansion.push_back(IceInstX8632Or::create(Cfg, TmpHi, Src1Hi));
+    Expansion.push_back(IceInstX8632Mov::create(Cfg, DestHi, TmpHi));
+    break;
+  case IceInstArithmetic::Xor:
+    TmpLo = legalizeOperandToVar(Src0Lo, Expansion);
+    Expansion.push_back(IceInstX8632Xor::create(Cfg, TmpLo, Src1Lo));
+    Expansion.push_back(IceInstX8632Mov::create(Cfg, DestLo, TmpLo));
+    TmpHi = legalizeOperandToVar(Src0Hi, Expansion);
+    Expansion.push_back(IceInstX8632Xor::create(Cfg, TmpHi, Src1Hi));
+    Expansion.push_back(IceInstX8632Mov::create(Cfg, DestHi, TmpHi));
+    break;
+  case IceInstArithmetic::Mul: {
+    IceVariable *Tmp1, *Tmp2, *Tmp3;
+    IceVariable *Tmp4Lo = Cfg->makeVariable(IceType_i32);
+    IceVariable *Tmp4Hi = Cfg->makeVariable(IceType_i32);
+    Tmp4Lo->setRegNum(Reg_eax);
+    Tmp4Hi->setRegNum(Reg_edx);
+    // gcc does the following:
+    // a=b*c ==>
+    //   t1 = b.hi; t1 *=(imul) c.lo
+    //   t2 = c.hi; t2 *=(imul) b.lo
+    //   t3:eax = b.lo
+    //   t4.hi:edx,t4.lo:eax = t3:eax *(mul) c.lo
+    //   a.lo = t4.lo
+    //   t4.hi += t1
+    //   t4.hi += t2
+    //   a.hi = t4.hi
+    Tmp1 = legalizeOperandToVar(Src0Hi, Expansion);
+    Expansion.push_back(IceInstX8632Imul::create(Cfg, Tmp1, Src1Lo));
+    Tmp2 = legalizeOperandToVar(Src1Hi, Expansion);
+    Expansion.push_back(IceInstX8632Imul::create(Cfg, Tmp2, Src0Lo));
+    Tmp3 = legalizeOperandToVar(Src0Lo, Expansion, false, Reg_eax);
+    Expansion.push_back(IceInstX8632Mul::create(Cfg, Tmp4Lo, Tmp3, Src1Lo));
+    Expansion.push_back(IceInstX8632Mov::create(Cfg, DestLo, Tmp4Lo));
+    Expansion.push_back(IceInstFakeDef::create(Cfg, Tmp4Hi, Tmp4Lo));
+    Expansion.push_back(IceInstX8632Add::create(Cfg, Tmp4Hi, Tmp1));
+    Expansion.push_back(IceInstX8632Add::create(Cfg, Tmp4Hi, Tmp2));
+    Expansion.push_back(IceInstX8632Mov::create(Cfg, DestHi, Tmp4Hi));
+  } break;
+  case IceInstArithmetic::Udiv:
+  case IceInstArithmetic::Sdiv:
+  case IceInstArithmetic::Urem:
+  case IceInstArithmetic::Srem:
+  case IceInstArithmetic::Shl:
+  case IceInstArithmetic::Lshr:
+  case IceInstArithmetic::Ashr:
+    break;
+  case IceInstArithmetic::Fadd:
+  case IceInstArithmetic::Fsub:
+  case IceInstArithmetic::Fmul:
+  case IceInstArithmetic::Fdiv:
+  case IceInstArithmetic::Frem:
+  case IceInstArithmetic::OpKind_NUM:
+    assert(0);
+    break;
+  }
   return Expansion;
 }
 

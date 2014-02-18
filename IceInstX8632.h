@@ -163,6 +163,8 @@ protected:
   virtual IceInstList lowerArithmetic(const IceInstArithmetic *Inst,
                                       const IceInst *Next,
                                       bool &DeleteNextInst);
+  IceInstList lowerArithmeticI64(const IceInstArithmetic *Inst,
+                                 const IceInst *Next, bool &DeleteNextInst);
   virtual IceInstList lowerAssign(const IceInstAssign *Inst,
                                   const IceInst *Next, bool &DeleteNextInst);
   virtual IceInstList lowerBr(const IceInstBr *Inst, const IceInst *Next,
@@ -215,6 +217,7 @@ class IceInstX8632 : public IceInstTarget {
 public:
   enum IceInstTypeX8632 {
     __Start = IceInst::Target,
+    Adc,
     Add,
     And,
     Br,
@@ -229,11 +232,13 @@ public:
     Mov,
     Movsx,
     Movzx,
+    Mul,
     Or,
     Pop,
     Push,
     Ret,
     Sar,
+    Sbb,
     Shl,
     Shr,
     Store,
@@ -367,6 +372,20 @@ private:
   IceInstX8632Add(IceCfg *Cfg, IceVariable *Dest, IceOperand *Source);
 };
 
+class IceInstX8632Adc : public IceInstX8632 {
+public:
+  static IceInstX8632Adc *create(IceCfg *Cfg, IceVariable *Dest,
+                                 IceOperand *Source) {
+    return new IceInstX8632Adc(Cfg, Dest, Source);
+  }
+  virtual void emit(IceOstream &Str, uint32_t Option) const;
+  virtual void dump(IceOstream &Str) const;
+  static bool classof(const IceInst *Inst) { return isClassof(Inst, Adc); }
+
+private:
+  IceInstX8632Adc(IceCfg *Cfg, IceVariable *Dest, IceOperand *Source);
+};
+
 class IceInstX8632Sub : public IceInstX8632 {
 public:
   static IceInstX8632Sub *create(IceCfg *Cfg, IceVariable *Dest,
@@ -379,6 +398,20 @@ public:
 
 private:
   IceInstX8632Sub(IceCfg *Cfg, IceVariable *Dest, IceOperand *Source);
+};
+
+class IceInstX8632Sbb : public IceInstX8632 {
+public:
+  static IceInstX8632Sbb *create(IceCfg *Cfg, IceVariable *Dest,
+                                 IceOperand *Source) {
+    return new IceInstX8632Sbb(Cfg, Dest, Source);
+  }
+  virtual void emit(IceOstream &Str, uint32_t Option) const;
+  virtual void dump(IceOstream &Str) const;
+  static bool classof(const IceInst *Inst) { return isClassof(Inst, Sbb); }
+
+private:
+  IceInstX8632Sbb(IceCfg *Cfg, IceVariable *Dest, IceOperand *Source);
 };
 
 class IceInstX8632And : public IceInstX8632 {
@@ -435,6 +468,21 @@ public:
 
 private:
   IceInstX8632Imul(IceCfg *Cfg, IceVariable *Dest, IceOperand *Source);
+};
+
+class IceInstX8632Mul : public IceInstX8632 {
+public:
+  static IceInstX8632Mul *create(IceCfg *Cfg, IceVariable *Dest,
+                                 IceVariable *Source1, IceOperand *Source2) {
+    return new IceInstX8632Mul(Cfg, Dest, Source1, Source2);
+  }
+  virtual void emit(IceOstream &Str, uint32_t Option) const;
+  virtual void dump(IceOstream &Str) const;
+  static bool classof(const IceInst *Inst) { return isClassof(Inst, Mul); }
+
+private:
+  IceInstX8632Mul(IceCfg *Cfg, IceVariable *Dest, IceVariable *Source1,
+                  IceOperand *Source2);
 };
 
 class IceInstX8632Idiv : public IceInstX8632 {
