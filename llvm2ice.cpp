@@ -391,18 +391,15 @@ private:
   }
 
   IceInst *convertAllocaInstruction(const AllocaInst *Inst) {
-    // TODO(sehr,stichnot): Implement non-static allocas
-    assert(Inst->isStaticAlloca() && "Only static allocas are supported");
-
     Type *AllocaType = Inst->getAllocatedType();
     assert(!AllocaType->isArrayTy() &&
            "PNaCl lowering passes should eliminate array types");
-    uint32_t Size = AllocaType->getScalarSizeInBits() / 8 *
-                    cast<ConstantInt>(Inst->getArraySize())->getZExtValue();
+    uint32_t ElementSize = AllocaType->getScalarSizeInBits() / 8;
+    IceOperand *ElementCount = convertValue(Inst->getArraySize());
     uint32_t Align = Inst->getAlignment();
     IceVariable *Dest = mapValueToIceVar(Inst);
 
-    return IceInstAlloca::create(Cfg, Size, Align, Dest);
+    return IceInstAlloca::create(Cfg, ElementSize, ElementCount, Align, Dest);
   }
 
   IceCfgNode *convertBasicBlock(const BasicBlock *BB) {

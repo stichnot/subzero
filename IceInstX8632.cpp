@@ -1538,9 +1538,40 @@ IceInstList IceTargetX8632S::lowerAlloca(const IceInstAlloca *Inst,
   // TODO(sehr,stichnot): align allocated memory, keep stack aligned, minimize
   // the number of adjustments of esp, etc.
   IceVariable *Esp = Cfg->getTarget()->getPhysicalRegister(Reg_esp);
-  uint32_t Size = Inst->getSize();
-  NewInst =
-      IceInstX8632Sub::create(Cfg, Esp, Cfg->getConstant(IceType_i32, Size));
+  uint32_t ElementSize = Inst->getElementSize();
+  IceOperand *ElementCount = Inst->getSrc(0);
+  IceOperand *TotalSize;
+  IceConstantInteger *ConstElementCount =
+      llvm::dyn_cast_or_null<IceConstantInteger>(ElementCount);
+  if (ConstElementCount) {
+    TotalSize = Cfg->getConstant(IceType_i32,
+                                 ConstElementCount->getIntValue() *
+                                 ElementSize);
+  } else {
+    IceVariable *Count = legalizeOperandToVar(ElementCount, Expansion);
+    switch (ElementSize) {
+    default:
+      Cfg->setError("Non-power of two sized types not supported by PNaCl");
+      return Expansion;
+    case 1:
+      TotalSize = Count;
+      break;
+    case 2:
+    case 4:
+    case 8:
+    case 16:
+      {
+        static const uint32_t log2[] = { 0, 0, 1, 0, 2, 0, 0, 0, 3,
+                                         0, 0, 0, 0, 0, 0, 0, 4 };
+        IceOperand *LogSize = Cfg->getConstant(IceType_i32, log2[ElementSize]);
+        NewInst = IceInstX8632Shl::create(Cfg, Count, LogSize);
+        TotalSize = Count;
+        Expansion.push_back(NewInst);
+        break;
+      }
+    }
+  }
+  NewInst = IceInstX8632Sub::create(Cfg, Esp, TotalSize);
   Expansion.push_back(NewInst);
   NewInst = IceInstX8632Mov::create(Cfg, Inst->getDest(), Esp);
   Expansion.push_back(NewInst);
