@@ -750,11 +750,27 @@ IceInstX8632Shl::IceInstX8632Shl(IceCfg *Cfg, IceVariable *Dest,
   addSource(Source);
 }
 
+IceInstX8632Shld::IceInstX8632Shld(IceCfg *Cfg, IceVariable *Dest,
+                                   IceVariable *Source1, IceVariable *Source2)
+    : IceInstX8632(Cfg, IceInstX8632::Shld, 3, Dest) {
+  addSource(Dest);
+  addSource(Source1);
+  addSource(Source2);
+}
+
 IceInstX8632Shr::IceInstX8632Shr(IceCfg *Cfg, IceVariable *Dest,
                                  IceOperand *Source)
     : IceInstX8632(Cfg, IceInstX8632::Shr, 2, Dest) {
   addSource(Dest);
   addSource(Source);
+}
+
+IceInstX8632Shrd::IceInstX8632Shrd(IceCfg *Cfg, IceVariable *Dest,
+                                   IceVariable *Source1, IceVariable *Source2)
+    : IceInstX8632(Cfg, IceInstX8632::Shrd, 3, Dest) {
+  addSource(Dest);
+  addSource(Source1);
+  addSource(Source2);
 }
 
 IceInstX8632Sar::IceInstX8632Sar(IceCfg *Cfg, IceVariable *Dest,
@@ -803,6 +819,13 @@ IceInstX8632Icmp::IceInstX8632Icmp(IceCfg *Cfg, IceOperand *Src0,
     : IceInstX8632(Cfg, IceInstX8632::Icmp, 2, NULL) {
   addSource(Src0);
   addSource(Src1);
+}
+
+IceInstX8632Test::IceInstX8632Test(IceCfg *Cfg, IceOperand *Src1,
+                                   IceOperand *Src2)
+    : IceInstX8632(Cfg, IceInstX8632::Test, 2, NULL) {
+  addSource(Src1);
+  addSource(Src2);
 }
 
 IceInstX8632Load::IceInstX8632Load(IceCfg *Cfg, IceVariable *Dest,
@@ -1156,6 +1179,34 @@ void IceInstX8632Shl::dump(IceOstream &Str) const {
   dumpSources(Str);
 }
 
+void IceInstX8632Shld::emit(IceOstream &Str, uint32_t Option) const {
+  assert(getSrcSize() == 3);
+  assert(getDest() == getSrc(0));
+  Str << "\tshld\t";
+  getDest()->emit(Str, Option);
+  Str << ", ";
+  getSrc(1)->emit(Str, Option);
+  Str << ", ";
+  bool ShiftHack = true;
+  bool EmittedSrc1 = false;
+  if (ShiftHack) {
+    IceVariable *ShiftReg = llvm::dyn_cast<IceVariable>(getSrc(2));
+    if (ShiftReg && ShiftReg->getRegNum() == IceTargetX8632::Reg_ecx) {
+      Str << "cl";
+      EmittedSrc1 = true;
+    }
+  }
+  if (!EmittedSrc1)
+    getSrc(2)->emit(Str, Option);
+  Str << "\n";
+}
+
+void IceInstX8632Shld::dump(IceOstream &Str) const {
+  dumpDest(Str);
+  Str << " = shld." << getDest()->getType() << " ";
+  dumpSources(Str);
+}
+
 void IceInstX8632Shr::emit(IceOstream &Str, uint32_t Option) const {
   bool ShiftHack = true;
   emitTwoAddress("shr", this, Str, Option, ShiftHack);
@@ -1164,6 +1215,34 @@ void IceInstX8632Shr::emit(IceOstream &Str, uint32_t Option) const {
 void IceInstX8632Shr::dump(IceOstream &Str) const {
   dumpDest(Str);
   Str << " = shr." << getDest()->getType() << " ";
+  dumpSources(Str);
+}
+
+void IceInstX8632Shrd::emit(IceOstream &Str, uint32_t Option) const {
+  assert(getSrcSize() == 3);
+  assert(getDest() == getSrc(0));
+  Str << "\tshrd\t";
+  getDest()->emit(Str, Option);
+  Str << ", ";
+  getSrc(1)->emit(Str, Option);
+  Str << ", ";
+  bool ShiftHack = true;
+  bool EmittedSrc1 = false;
+  if (ShiftHack) {
+    IceVariable *ShiftReg = llvm::dyn_cast<IceVariable>(getSrc(2));
+    if (ShiftReg && ShiftReg->getRegNum() == IceTargetX8632::Reg_ecx) {
+      Str << "cl";
+      EmittedSrc1 = true;
+    }
+  }
+  if (!EmittedSrc1)
+    getSrc(2)->emit(Str, Option);
+  Str << "\n";
+}
+
+void IceInstX8632Shrd::dump(IceOstream &Str) const {
+  dumpDest(Str);
+  Str << " = shrd." << getDest()->getType() << " ";
   dumpSources(Str);
 }
 
@@ -1200,6 +1279,20 @@ void IceInstX8632Icmp::emit(IceOstream &Str, uint32_t Option) const {
 
 void IceInstX8632Icmp::dump(IceOstream &Str) const {
   Str << "cmp." << getSrc(0)->getType() << " ";
+  dumpSources(Str);
+}
+
+void IceInstX8632Test::emit(IceOstream &Str, uint32_t Option) const {
+  assert(getSrcSize() == 2);
+  Str << "\ttest\t";
+  getSrc(0)->emit(Str, Option);
+  Str << ", ";
+  getSrc(1)->emit(Str, Option);
+  Str << "\n";
+}
+
+void IceInstX8632Test::dump(IceOstream &Str) const {
+  Str << "test." << getSrc(0)->getType() << " ";
   dumpSources(Str);
 }
 
@@ -1718,13 +1811,115 @@ IceInstList IceTargetX8632S::lowerArithmeticI64(const IceInstArithmetic *Inst,
     Expansion.push_back(IceInstX8632Add::create(Cfg, Tmp4Hi, Tmp2));
     Expansion.push_back(IceInstX8632Mov::create(Cfg, DestHi, Tmp4Hi));
   } break;
+  case IceInstArithmetic::Shl: {
+    // TODO: Refactor the similarities between Shl, Lshr, and Ashr.
+    // gcc does the following:
+    // a=b<<c ==>
+    //   t1:ecx = c.lo & 0xff // via movzx, we can probably just t1=c.lo
+    //   t2 = b.lo
+    //   t3 = b.hi
+    //   t3 = shld t3, t2, t1
+    //   t2 = shl t2, t1
+    //   test t1, 0x20
+    //   je L1
+    //   use(t3)
+    //   t3 = t2
+    //   t2 = 0
+    // L1:
+    //   a.lo = t2
+    //   a.hi = t3
+    IceVariable *Tmp1, *Tmp2, *Tmp3;
+    IceConstant *BitTest = Cfg->getConstant(IceType_i32, 0x20);
+    uint64_t ZeroValue = 0;
+    IceConstant *Zero = Cfg->getConstant(IceType_i32, ZeroValue);
+    IceInstX8632Label *Label = IceInstX8632Label::create(Cfg, this);
+    Tmp1 = legalizeOperandToVar(Src1Lo, Expansion, false, Reg_ecx);
+    Tmp2 = legalizeOperandToVar(Src0Lo, Expansion);
+    Tmp3 = legalizeOperandToVar(Src0Hi, Expansion);
+    Expansion.push_back(IceInstX8632Shld::create(Cfg, Tmp3, Tmp2, Tmp1));
+    Expansion.push_back(IceInstX8632Shl::create(Cfg, Tmp2, Tmp1));
+    Expansion.push_back(IceInstX8632Test::create(Cfg, Tmp1, BitTest));
+    Expansion.push_back(IceInstX8632Br::create(Cfg, Label, IceInstIcmp::Eq));
+    Expansion.push_back(IceInstFakeUse::create(Cfg, Tmp3));
+    Expansion.push_back(IceInstX8632Mov::create(Cfg, Tmp3, Tmp2));
+    Expansion.push_back(IceInstX8632Mov::create(Cfg, Tmp2, Zero));
+    Expansion.push_back(Label);
+    Expansion.push_back(IceInstX8632Mov::create(Cfg, DestLo, Tmp2));
+    Expansion.push_back(IceInstX8632Mov::create(Cfg, DestHi, Tmp3));
+  } break;
+  case IceInstArithmetic::Lshr: {
+    // a=b>>c (unsigned) ==>
+    //   t1:ecx = c.lo & 0xff // via movzx, we can probably just t1=c.lo
+    //   t2 = b.lo
+    //   t3 = b.hi
+    //   t2 = shrd t2, t3, t1
+    //   t3 = shr t3, t1
+    //   test t1, 0x20
+    //   je L1
+    //   use(t2)
+    //   t2 = t3
+    //   t3 = 0
+    // L1:
+    //   a.lo = t2
+    //   a.hi = t3
+    IceVariable *Tmp1, *Tmp2, *Tmp3;
+    IceConstant *BitTest = Cfg->getConstant(IceType_i32, 0x20);
+    uint64_t ZeroValue = 0;
+    IceConstant *Zero = Cfg->getConstant(IceType_i32, ZeroValue);
+    IceInstX8632Label *Label = IceInstX8632Label::create(Cfg, this);
+    Tmp1 = legalizeOperandToVar(Src1Lo, Expansion, false, Reg_ecx);
+    Tmp2 = legalizeOperandToVar(Src0Lo, Expansion);
+    Tmp3 = legalizeOperandToVar(Src0Hi, Expansion);
+    Expansion.push_back(IceInstX8632Shrd::create(Cfg, Tmp2, Tmp3, Tmp1));
+    Expansion.push_back(IceInstX8632Shr::create(Cfg, Tmp3, Tmp1));
+    Expansion.push_back(IceInstX8632Test::create(Cfg, Tmp1, BitTest));
+    Expansion.push_back(IceInstX8632Br::create(Cfg, Label, IceInstIcmp::Eq));
+    Expansion.push_back(IceInstFakeUse::create(Cfg, Tmp2));
+    Expansion.push_back(IceInstX8632Mov::create(Cfg, Tmp2, Tmp3));
+    Expansion.push_back(IceInstX8632Mov::create(Cfg, Tmp3, Zero));
+    Expansion.push_back(Label);
+    Expansion.push_back(IceInstX8632Mov::create(Cfg, DestLo, Tmp2));
+    Expansion.push_back(IceInstX8632Mov::create(Cfg, DestHi, Tmp3));
+  } break;
+  case IceInstArithmetic::Ashr: {
+    // a=b>>c (signed) ==>
+    //   t1:ecx = c.lo & 0xff // via movzx, we can probably just t1=c.lo
+    //   t2 = b.lo
+    //   t3 = b.hi
+    //   t2 = shrd t2, t3, t1
+    //   t3 = sar t3, t1
+    //   test t1, 0x20
+    //   je L1
+    //   use(t2)
+    //   t2 = t3
+    //   t3 = sar t3, 0x1f
+    // L1:
+    //   a.lo = t2
+    //   a.hi = t3
+    IceVariable *Tmp1, *Tmp2, *Tmp3;
+    IceConstant *BitTest = Cfg->getConstant(IceType_i32, 0x20);
+    IceConstant *SignExtend = Cfg->getConstant(IceType_i32, 0x1f);
+    IceInstX8632Label *Label = IceInstX8632Label::create(Cfg, this);
+    Tmp1 = legalizeOperandToVar(Src1Lo, Expansion, false, Reg_ecx);
+    Tmp2 = legalizeOperandToVar(Src0Lo, Expansion);
+    Tmp3 = legalizeOperandToVar(Src0Hi, Expansion);
+    Expansion.push_back(IceInstX8632Shrd::create(Cfg, Tmp2, Tmp3, Tmp1));
+    Expansion.push_back(IceInstX8632Sar::create(Cfg, Tmp3, Tmp1));
+    Expansion.push_back(IceInstX8632Test::create(Cfg, Tmp1, BitTest));
+    Expansion.push_back(IceInstX8632Br::create(Cfg, Label, IceInstIcmp::Eq));
+    Expansion.push_back(IceInstFakeUse::create(Cfg, Tmp2));
+    Expansion.push_back(IceInstX8632Mov::create(Cfg, Tmp2, Tmp3));
+    // Expansion.push_back(IceInstX8632Mov::create(Cfg, Tmp3, Zero));
+    Expansion.push_back(IceInstX8632Sar::create(Cfg, Tmp3, SignExtend));
+    Expansion.push_back(Label);
+    Expansion.push_back(IceInstX8632Mov::create(Cfg, DestLo, Tmp2));
+    Expansion.push_back(IceInstX8632Mov::create(Cfg, DestHi, Tmp3));
+  } break;
   case IceInstArithmetic::Udiv:
   case IceInstArithmetic::Sdiv:
   case IceInstArithmetic::Urem:
   case IceInstArithmetic::Srem:
-  case IceInstArithmetic::Shl:
-  case IceInstArithmetic::Lshr:
-  case IceInstArithmetic::Ashr:
+    // TODO: Call a helper intrinsic.
     break;
   case IceInstArithmetic::Fadd:
   case IceInstArithmetic::Fsub:

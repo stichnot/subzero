@@ -240,9 +240,12 @@ public:
     Sar,
     Sbb,
     Shl,
+    Shld,
     Shr,
+    Shrd,
     Store,
     Sub,
+    Test,
     Xor,
   };
   virtual void emit(IceOstream &Str, uint32_t Option) const = 0;
@@ -528,6 +531,21 @@ private:
   IceInstX8632Shl(IceCfg *Cfg, IceVariable *Dest, IceOperand *Source);
 };
 
+class IceInstX8632Shld : public IceInstX8632 {
+public:
+  static IceInstX8632Shld *create(IceCfg *Cfg, IceVariable *Dest,
+                                  IceVariable *Source1, IceVariable *Source2) {
+    return new IceInstX8632Shld(Cfg, Dest, Source1, Source2);
+  }
+  virtual void emit(IceOstream &Str, uint32_t Option) const;
+  virtual void dump(IceOstream &Str) const;
+  static bool classof(const IceInst *Inst) { return isClassof(Inst, Shld); }
+
+private:
+  IceInstX8632Shld(IceCfg *Cfg, IceVariable *Dest, IceVariable *Source1,
+                   IceVariable *Source2);
+};
+
 class IceInstX8632Shr : public IceInstX8632 {
 public:
   static IceInstX8632Shr *create(IceCfg *Cfg, IceVariable *Dest,
@@ -540,6 +558,21 @@ public:
 
 private:
   IceInstX8632Shr(IceCfg *Cfg, IceVariable *Dest, IceOperand *Source);
+};
+
+class IceInstX8632Shrd : public IceInstX8632 {
+public:
+  static IceInstX8632Shrd *create(IceCfg *Cfg, IceVariable *Dest,
+                                  IceVariable *Source1, IceVariable *Source2) {
+    return new IceInstX8632Shrd(Cfg, Dest, Source1, Source2);
+  }
+  virtual void emit(IceOstream &Str, uint32_t Option) const;
+  virtual void dump(IceOstream &Str) const;
+  static bool classof(const IceInst *Inst) { return isClassof(Inst, Shrd); }
+
+private:
+  IceInstX8632Shrd(IceCfg *Cfg, IceVariable *Dest, IceVariable *Source1,
+                   IceVariable *Source2);
 };
 
 class IceInstX8632Sar : public IceInstX8632 {
@@ -583,6 +616,20 @@ public:
 
 private:
   IceInstX8632Icmp(IceCfg *Cfg, IceOperand *Src1, IceOperand *Src2);
+};
+
+class IceInstX8632Test : public IceInstX8632 {
+public:
+  static IceInstX8632Test *create(IceCfg *Cfg, IceOperand *Source1,
+                                  IceOperand *Source2) {
+    return new IceInstX8632Test(Cfg, Source1, Source2);
+  }
+  virtual void emit(IceOstream &Str, uint32_t Option) const;
+  virtual void dump(IceOstream &Str) const;
+  static bool classof(const IceInst *Inst) { return isClassof(Inst, Test); }
+
+private:
+  IceInstX8632Test(IceCfg *Cfg, IceOperand *Source1, IceOperand *Source2);
 };
 
 // TODO: Load is basically equivalent to Assign
