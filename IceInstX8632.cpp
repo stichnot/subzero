@@ -1918,9 +1918,35 @@ IceInstList IceTargetX8632S::lowerArithmeticI64(const IceInstArithmetic *Inst,
   case IceInstArithmetic::Udiv:
   case IceInstArithmetic::Sdiv:
   case IceInstArithmetic::Urem:
-  case IceInstArithmetic::Srem:
-    // TODO: Call a helper intrinsic.
-    break;
+  case IceInstArithmetic::Srem: {
+    IceString HelperName = "???";
+    switch (Inst->getOp()) {
+    case IceInstArithmetic::Udiv:
+      HelperName = "__udivdi3";
+      break;
+    case IceInstArithmetic::Sdiv:
+      HelperName = "__divdi3";
+      break;
+    case IceInstArithmetic::Urem:
+      HelperName = "__umoddi3";
+      break;
+    case IceInstArithmetic::Srem:
+      HelperName = "__moddi3";
+      break;
+    default:
+      assert(0);
+      break;
+    }
+    unsigned MaxSrcs = 2;
+    // TODO: Figure out how to properly construct CallTarget.
+    IceConstant *CallTarget = Cfg->getConstant(IceType_i32, NULL, HelperName);
+    // TODO: This instruction leaks.
+    IceInstCall *Call =
+        IceInstCall::create(Cfg, MaxSrcs, Inst->getDest(), CallTarget);
+    Call->addArg(Inst->getSrc(0));
+    Call->addArg(Inst->getSrc(1));
+    return lowerCall(Call, NULL, DeleteNextInst);
+  } break;
   case IceInstArithmetic::Fadd:
   case IceInstArithmetic::Fsub:
   case IceInstArithmetic::Fmul:
@@ -2004,22 +2030,43 @@ IceInstList IceTargetX8632S::lowerCall(const IceInstCall *Inst,
   // Generate the call instruction.  Assign its result to a temporary
   // with high register allocation weight.
   IceVariable *Dest = Inst->getDest();
-  IceVariable *Reg = NULL;
+  IceVariable *Reg = NULL; // doubles as RegLo as necessary
+  IceVariable *RegHi = NULL;
   if (Dest) {
-    Reg = Cfg->makeVariable(Dest->getType());
-    Reg->setWeightInfinite();
+    switch (Dest->getType()) {
+    case IceType_void:
+      break;
+    case IceType_i1:
+    case IceType_i8:
+    case IceType_i16:
+    case IceType_i32:
+      Reg = Cfg->makeVariable(Dest->getType());
+      Reg->setRegNum(Reg_eax);
+      break;
+    case IceType_i64:
+      Reg = Cfg->makeVariable(IceType_i32);
+      Reg->setRegNum(Reg_eax);
+      RegHi = Cfg->makeVariable(IceType_i32);
+      RegHi->setRegNum(Reg_edx);
+      break;
+    case IceType_f32:
+    case IceType_f64:
+      assert(0);
+      break;
+    }
     // TODO: Reg_eax is only for 32-bit integer results.  For floating
     // point, we need the appropriate FP register.  For a 64-bit
     // integer result, after the Kill instruction add a
     // "tmp:edx=FakeDef(Reg)" instruction for a call that can be
     // dead-code eliminated, and "tmp:edx=FakeDef()" for a call that
     // can't be eliminated.
-    Reg->setRegNum(Reg_eax);
   }
   NewInst =
       IceInstX8632Call::create(Cfg, Reg, Inst->getCallTarget(), Inst->isTail());
   Expansion.push_back(NewInst);
   IceInst *NewCall = NewInst;
+  if (RegHi)
+    Expansion.push_back(IceInstFakeDef::create(Cfg, RegHi));
 
   // Insert some sort of register-kill pseudo instruction.
   IceVarList KilledRegs;
@@ -2040,9 +2087,20 @@ IceInstList IceTargetX8632S::lowerCall(const IceInstCall *Inst,
 
   // Generate Dest=Reg assignment.
   if (Dest) {
-    Dest->setPreferredRegister(Reg, false);
-    NewInst = IceInstX8632Mov::create(Cfg, Dest, Reg);
-    Expansion.push_back(NewInst);
+    if (RegHi) {
+      IceVariable *DestLo = Dest->getLow();
+      IceVariable *DestHi = Dest->getHigh();
+      DestLo->setPreferredRegister(Reg, false);
+      NewInst = IceInstX8632Mov::create(Cfg, DestLo, Reg);
+      Expansion.push_back(NewInst);
+      DestHi->setPreferredRegister(RegHi, false);
+      NewInst = IceInstX8632Mov::create(Cfg, DestHi, RegHi);
+      Expansion.push_back(NewInst);
+    } else {
+      Dest->setPreferredRegister(Reg, false);
+      NewInst = IceInstX8632Mov::create(Cfg, Dest, Reg);
+      Expansion.push_back(NewInst);
+    }
   }
 
   // Add the appropriate offset to esp.
