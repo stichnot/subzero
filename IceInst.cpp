@@ -656,9 +656,8 @@ void IceInstLoad::dump(IceOstream &Str) const {
 
 void IceInstStore::dump(IceOstream &Str) const {
   IceType Type = getData()->getType();
-  Str << "store " << Type << "* ";
-  dumpSources(Str);
-  Str << ", align ";
+  Str << "store " << Type << " " << getData() << ", " << Type << " *"
+      << getAddr() << ", align ";
   switch (Type) {
   case IceType_f32:
     Str << "4";
