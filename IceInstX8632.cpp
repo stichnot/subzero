@@ -2001,6 +2001,8 @@ IceInstList IceTargetX8632S::lowerAssign(const IceInstAssign *Inst,
   IceVariable *Dest = Inst->getDest();
   IceOperand *Src0 = Inst->getSrc(0);
   if (Dest->getType() == IceType_i64) {
+    // TODO: This seems broken if Src and Dest components are both on
+    // the stack and not register-allocated.
     IceVariable *DestLo = llvm::cast<IceVariable>(makeLowOperand(Dest));
     IceVariable *DestHi = llvm::cast<IceVariable>(makeHighOperand(Dest));
     Expansion.push_back(
@@ -2563,34 +2565,61 @@ IceInstList IceTargetX8632S::lowerSelect(const IceInstSelect *Inst,
   //
   // Alternative if a is reg and c is not imm: cmp d,0; a=b; a=cmoveq c {a}
   IceInstList Expansion;
-  IceInstTarget *NewInst;
   IceOperand *Condition =
       legalizeOperand(Inst->getCondition(), Legal_All, Expansion);
   uint64_t Zero = 0;
   IceConstant *OpZero = Cfg->getConstant(IceType_i32, Zero);
-  NewInst = IceInstX8632Icmp::create(Cfg, Condition, OpZero);
-  Expansion.push_back(NewInst);
+  Expansion.push_back(IceInstX8632Icmp::create(Cfg, Condition, OpZero));
 
   IceVariable *Dest = Inst->getDest();
-  IceOperand *SrcTrue = legalizeOperand(Inst->getTrueOperand(),
-                                        Legal_Reg | Legal_Imm, Expansion, true);
-  NewInst = IceInstX8632Mov::create(Cfg, Dest, SrcTrue);
-  Expansion.push_back(NewInst);
+  bool IsI64 = (Dest->getType() == IceType_i64);
+  IceVariable *DestLo = NULL;
+  IceVariable *DestHi = NULL;
+  IceOperand *SrcTrue = Inst->getTrueOperand();
+  if (IsI64) {
+    DestLo = llvm::cast<IceVariable>(makeLowOperand(Dest));
+    DestHi = llvm::cast<IceVariable>(makeHighOperand(Dest));
+    IceOperand *SrcTrueHi = makeHighOperand(SrcTrue);
+    IceOperand *SrcTrueLo = makeLowOperand(SrcTrue);
+    IceOperand *RegHi =
+        legalizeOperand(SrcTrueHi, Legal_Reg | Legal_Imm, Expansion, true);
+    Expansion.push_back(IceInstX8632Mov::create(Cfg, DestHi, RegHi));
+    IceOperand *RegLo =
+        legalizeOperand(SrcTrueLo, Legal_Reg | Legal_Imm, Expansion, true);
+    Expansion.push_back(IceInstX8632Mov::create(Cfg, DestLo, RegLo));
+  } else {
+    SrcTrue = legalizeOperand(SrcTrue, Legal_Reg | Legal_Imm, Expansion, true);
+    Expansion.push_back(IceInstX8632Mov::create(Cfg, Dest, SrcTrue));
+  }
 
   // create Label
   IceInstX8632Label *Label = IceInstX8632Label::create(Cfg, this);
 
-  NewInst = IceInstX8632Br::create(Cfg, Label, IceInstIcmp::Ne);
-  Expansion.push_back(NewInst);
+  Expansion.push_back(IceInstX8632Br::create(Cfg, Label, IceInstIcmp::Ne));
 
   // FakeUse(a)
-  IceInst *FakeUse = IceInstFakeUse::create(Cfg, Dest);
-  Expansion.push_back(FakeUse);
+  if (IsI64) {
+    Expansion.push_back(IceInstFakeUse::create(Cfg, DestLo));
+    Expansion.push_back(IceInstFakeUse::create(Cfg, DestHi));
+  } else {
+    Expansion.push_back(IceInstFakeUse::create(Cfg, Dest));
+  }
 
-  IceOperand *SrcFalse = legalizeOperand(
-      Inst->getFalseOperand(), Legal_Reg | Legal_Imm, Expansion, true);
-  NewInst = IceInstX8632Mov::create(Cfg, Dest, SrcFalse);
-  Expansion.push_back(NewInst);
+  IceOperand *SrcFalse = Inst->getFalseOperand();
+  if (IsI64) {
+    IceOperand *SrcFalseHi = makeHighOperand(SrcFalse);
+    IceOperand *SrcFalseLo = makeLowOperand(SrcFalse);
+    IceOperand *RegHi =
+        legalizeOperand(SrcFalseHi, Legal_Reg | Legal_Imm, Expansion, true);
+    Expansion.push_back(IceInstX8632Mov::create(Cfg, DestHi, RegHi));
+    IceOperand *RegLo =
+        legalizeOperand(SrcFalseLo, Legal_Reg | Legal_Imm, Expansion, true);
+    Expansion.push_back(IceInstX8632Mov::create(Cfg, DestLo, RegLo));
+  } else {
+    SrcFalse =
+        legalizeOperand(SrcFalse, Legal_Reg | Legal_Imm, Expansion, true);
+    Expansion.push_back(IceInstX8632Mov::create(Cfg, Dest, SrcFalse));
+  }
 
   // Label:
   Expansion.push_back(Label);
