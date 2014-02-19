@@ -2172,6 +2172,8 @@ IceInstList IceTargetX8632S::lowerCast(const IceInstCast *Inst,
     // It appears that Trunc is purely used to cast down from one integral type
     // to a smaller integral type.  In the generated code this does not seem
     // to be needed.  Treat these as vanilla moves.
+    if (Reg->getType() == IceType_i64)
+      Reg = makeLowOperand(Reg);
     NewInst = IceInstX8632Mov::create(Cfg, Dest, Reg);
     break;
   }
