@@ -7,7 +7,7 @@ entry:
   ret void
 
 ; CHECK:       %ptr64 = i32 %addr_arg
-; CHECK-NEXT:  store i64* 1, {{.*}}, align 1
+; CHECK-NEXT:  store i64 1, {{.*}}, align 1
 ; CHECK-NEXT:  ret void
 }
 
@@ -18,7 +18,7 @@ entry:
   ret void
 
 ; CHECK:       %ptr32 = i32 %addr_arg
-; CHECK-NEXT:  store i32* 1, {{.*}}, align 1
+; CHECK-NEXT:  store i32 1, {{.*}}, align 1
 ; CHECK-NEXT:  ret void
 }
 
@@ -29,7 +29,7 @@ entry:
   ret void
 
 ; CHECK:       %ptr16 = i32 %addr_arg
-; CHECK-NEXT:  store i16* 1, {{.*}}, align 1
+; CHECK-NEXT:  store i16 1, {{.*}}, align 1
 ; CHECK-NEXT:  ret void
 }
 
@@ -40,7 +40,7 @@ entry:
   ret void
 
 ; CHECK:       %ptr8 = i32 %addr_arg
-; CHECK-NEXT:  store i8* 1, {{.*}}, align 1
+; CHECK-NEXT:  store i8 1, {{.*}}, align 1
 ; CHECK-NEXT:  ret void
 }
 
