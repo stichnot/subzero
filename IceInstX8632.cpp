@@ -1549,9 +1549,8 @@ IceInstList IceTargetX8632S::lowerAlloca(const IceInstAlloca *Inst,
   IceConstantInteger *ConstElementCount =
       llvm::dyn_cast_or_null<IceConstantInteger>(ElementCount);
   if (ConstElementCount) {
-    TotalSize = Cfg->getConstant(IceType_i32,
-                                 ConstElementCount->getIntValue() *
-                                 ElementSize);
+    TotalSize = Cfg->getConstant(IceType_i32, ConstElementCount->getIntValue() *
+                                                  ElementSize);
   } else {
     IceVariable *Count = legalizeOperandToVar(ElementCount, Expansion);
     switch (ElementSize) {
@@ -1564,16 +1563,15 @@ IceInstList IceTargetX8632S::lowerAlloca(const IceInstAlloca *Inst,
     case 2:
     case 4:
     case 8:
-    case 16:
-      {
-        static const uint32_t log2[] = { 0, 0, 1, 0, 2, 0, 0, 0, 3,
-                                         0, 0, 0, 0, 0, 0, 0, 4 };
-        IceOperand *LogSize = Cfg->getConstant(IceType_i32, log2[ElementSize]);
-        NewInst = IceInstX8632Shl::create(Cfg, Count, LogSize);
-        TotalSize = Count;
-        Expansion.push_back(NewInst);
-        break;
-      }
+    case 16: {
+      static const uint32_t log2[] = { 0, 0, 1, 0, 2, 0, 0, 0, 3,
+                                       0, 0, 0, 0, 0, 0, 0, 4 };
+      IceOperand *LogSize = Cfg->getConstant(IceType_i32, log2[ElementSize]);
+      NewInst = IceInstX8632Shl::create(Cfg, Count, LogSize);
+      TotalSize = Count;
+      Expansion.push_back(NewInst);
+      break;
+    }
     }
   }
   NewInst = IceInstX8632Sub::create(Cfg, Esp, TotalSize);
@@ -2605,23 +2603,32 @@ IceInstList IceTargetX8632S::lowerStore(const IceInstStore *Inst,
                                         bool &DeleteNextInst) {
   IceInstList Expansion;
 
-  IceInstTarget *NewInst;
   IceOperand *Value = Inst->getData();
-  IceOperand *Src1 = Inst->getAddr();
-  IceOperandX8632Mem *NewSrc;
-  if (!(NewSrc = llvm::dyn_cast<IceOperandX8632Mem>(Src1))) {
-    IceVariable *Base = llvm::dyn_cast<IceVariable>(Src1);
-    IceConstant *Offset = llvm::dyn_cast<IceConstant>(Src1);
+  IceOperand *Addr = Inst->getAddr();
+  IceOperandX8632Mem *NewAddr = llvm::dyn_cast<IceOperandX8632Mem>(Addr);
+  if (!NewAddr) {
+    IceVariable *Base = llvm::dyn_cast<IceVariable>(Addr);
+    IceConstant *Offset = llvm::dyn_cast<IceConstant>(Addr);
     assert(Base || Offset);
-    NewSrc = IceOperandX8632Mem::create(Cfg, Value->getType(), Base, Offset);
+    NewAddr = IceOperandX8632Mem::create(Cfg, Value->getType(), Base, Offset);
   }
-  NewSrc = llvm::cast<IceOperandX8632Mem>(
-      legalizeOperand(NewSrc, Legal_All, Expansion));
-  IceOperand *Reg0 =
-      legalizeOperand(Value, Legal_Reg | Legal_Imm, Expansion, true);
+  NewAddr = llvm::cast<IceOperandX8632Mem>(
+      legalizeOperand(NewAddr, Legal_All, Expansion));
 
-  NewInst = IceInstX8632Store::create(Cfg, Reg0, NewSrc);
-  Expansion.push_back(NewInst);
+  if (NewAddr->getType() == IceType_i64) {
+    Value = legalizeOperand(Value, Legal_All, Expansion);
+    IceOperand *ValueHi = makeHighOperand(Value);
+    IceOperand *ValueLo = makeLowOperand(Value);
+    Value = legalizeOperand(Value, Legal_Reg | Legal_Imm, Expansion, true);
+    Expansion.push_back(IceInstX8632Store::create(
+        Cfg, ValueHi,
+        llvm::cast<IceOperandX8632Mem>(makeHighOperand(NewAddr))));
+    Expansion.push_back(IceInstX8632Store::create(
+        Cfg, ValueLo, llvm::cast<IceOperandX8632Mem>(makeLowOperand(NewAddr))));
+  } else {
+    Value = legalizeOperand(Value, Legal_Reg | Legal_Imm, Expansion, true);
+    Expansion.push_back(IceInstX8632Store::create(Cfg, Value, NewAddr));
+  }
 
   return Expansion;
 }
