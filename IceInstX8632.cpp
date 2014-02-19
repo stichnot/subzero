@@ -17,6 +17,7 @@ const char *OpcodeTypeFromIceType(IceType type) {
   switch (type) {
   default:
     return "U";
+  case IceType_i1:
   case IceType_i8:
     return "b";
   case IceType_i16:
@@ -1417,6 +1418,7 @@ void IceOperandX8632::dump(IceOstream &Str) const {
 
 void IceOperandX8632Mem::emit(IceOstream &Str, uint32_t Option) const {
   switch (getType()) {
+  case IceType_i1:
   case IceType_i8:
     Str << "byte ptr ";
     break;
@@ -2153,7 +2155,6 @@ IceInstList IceTargetX8632S::lowerCast(const IceInstCast *Inst,
   IceInstCast::IceCastKind CastKind = Inst->getCastKind();
   IceVariable *Dest = Inst->getDest();
   IceOperand *Src0 = Inst->getSrc(0);
-  IceInstTarget *NewInst;
   IceOperand *Reg =
       legalizeOperand(Src0, Legal_Reg | Legal_Mem, Expansion, true);
   switch (CastKind) {
@@ -2163,10 +2164,38 @@ IceInstList IceTargetX8632S::lowerCast(const IceInstCast *Inst,
     return Expansion;
     break;
   case IceInstCast::Sext:
-    NewInst = IceInstX8632Movsx::create(Cfg, Dest, Reg);
+    if (Dest->getType() == IceType_i64) {
+      // t1=movsx src; t2=t1; t2=sar t2, 31; dst.lo=t1; dst.hi=t2
+      IceVariable *DestLo = llvm::cast<IceVariable>(makeLowOperand(Dest));
+      IceVariable *DestHi = llvm::cast<IceVariable>(makeHighOperand(Dest));
+      if (Reg->getType() == IceType_i32)
+        Expansion.push_back(IceInstX8632Mov::create(Cfg, DestLo, Reg));
+      else
+        Expansion.push_back(IceInstX8632Movsx::create(Cfg, DestLo, Reg));
+      IceVariable *RegHi = Cfg->makeVariable(IceType_i32);
+      IceConstant *Shift = Cfg->getConstant(IceType_i32, 31);
+      Expansion.push_back(IceInstX8632Mov::create(Cfg, RegHi, Reg));
+      Expansion.push_back(IceInstX8632Sar::create(Cfg, RegHi, Shift));
+      Expansion.push_back(IceInstX8632Mov::create(Cfg, DestHi, RegHi));
+    } else {
+      Expansion.push_back(IceInstX8632Movsx::create(Cfg, Dest, Reg));
+    }
     break;
   case IceInstCast::Zext:
-    NewInst = IceInstX8632Movzx::create(Cfg, Dest, Reg);
+    if (Dest->getType() == IceType_i64) {
+      // t1=movzx src; dst.lo=t1; dst.hi=0
+      uint32_t ConstZero = 0;
+      IceConstant *Zero = Cfg->getConstant(IceType_i32, ConstZero);
+      IceVariable *DestLo = llvm::cast<IceVariable>(makeLowOperand(Dest));
+      IceVariable *DestHi = llvm::cast<IceVariable>(makeHighOperand(Dest));
+      if (Reg->getType() == IceType_i32)
+        Expansion.push_back(IceInstX8632Mov::create(Cfg, DestLo, Reg));
+      else
+        Expansion.push_back(IceInstX8632Movzx::create(Cfg, DestLo, Reg));
+      Expansion.push_back(IceInstX8632Mov::create(Cfg, DestHi, Zero));
+    } else {
+      Expansion.push_back(IceInstX8632Movzx::create(Cfg, Dest, Reg));
+    }
     break;
   case IceInstCast::Trunc:
     // It appears that Trunc is purely used to cast down from one integral type
@@ -2174,10 +2203,9 @@ IceInstList IceTargetX8632S::lowerCast(const IceInstCast *Inst,
     // to be needed.  Treat these as vanilla moves.
     if (Reg->getType() == IceType_i64)
       Reg = makeLowOperand(Reg);
-    NewInst = IceInstX8632Mov::create(Cfg, Dest, Reg);
+    Expansion.push_back(IceInstX8632Mov::create(Cfg, Dest, Reg));
     break;
   }
-  Expansion.push_back(NewInst);
   return Expansion;
 }
 
