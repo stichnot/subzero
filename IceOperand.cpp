@@ -207,10 +207,15 @@ void IceConstantInteger::dump(IceOstream &Str) const { Str << IntValue; }
 
 void IceConstantRelocatable::emit(IceOstream &Str, uint32_t Option) const {
   Str << Name;
+  if (Offset) {
+    if (Offset > 0)
+      Str << "+";
+    Str << Offset;
+  }
 }
 
 void IceConstantRelocatable::dump(IceOstream &Str) const {
-  Str << Name << "(CP=" << CPIndex << ")";
+  Str << Name << "+" << Offset << "(CP=" << CPIndex << ")";
 }
 
 void IceLiveRange::dump(IceOstream &Str) const {

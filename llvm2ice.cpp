@@ -148,7 +148,7 @@ private:
       // TODO: support all kinds of constants
       if (const GlobalValue *GV = dyn_cast<GlobalValue>(Const)) {
         return Cfg->getConstant(/*IceType_i32*/ convertType(GV->getType()), GV,
-                                GV->getName());
+                                0, GV->getName());
       } else if (const ConstantInt *CI = cast<ConstantInt>(Const)) {
         return Cfg->getConstant(convertIntegerType(CI->getType()),
                                 CI->getZExtValue());

@@ -101,11 +101,13 @@ class IceConstantRelocatable : public IceConstant {
 public:
   static IceConstantRelocatable *create(IceCfg *Cfg, uint32_t CPIndex,
                                         IceType Type, const void *Handle,
+                                        int64_t Offset,
                                         const IceString &Name = "") {
-    return new IceConstantRelocatable(Cfg, Type, Handle, Name, CPIndex);
+    return new IceConstantRelocatable(Cfg, Type, Handle, Offset, Name, CPIndex);
   }
   uint32_t getCPIndex(void) const { return CPIndex; }
   const void *getHandle(void) const { return Handle; }
+  int64_t getOffset(void) const { return Offset; }
   IceString getName(void) const { return Name; }
   virtual void emit(IceOstream &Str, uint32_t Option) const;
   virtual void dump(IceOstream &Str) const;
@@ -117,11 +119,13 @@ public:
 
 private:
   IceConstantRelocatable(IceCfg *Cfg, IceType Type, const void *Handle,
-                         const IceString &Name, uint32_t CPIndex)
+                         int64_t Offset, const IceString &Name,
+                         uint32_t CPIndex)
       : IceConstant(Cfg, ConstantRelocatable, Type), CPIndex(CPIndex),
-        Handle(Handle), Name(Name) {}
+        Handle(Handle), Offset(Offset), Name(Name) {}
   const uint32_t CPIndex;   // index into ICE constant pool
   const void *const Handle; // opaque handle e.g. to LLVM
+  const int64_t Offset;     // fixed offset to add
   const IceString Name;     // optional for debug/dump
 };
 

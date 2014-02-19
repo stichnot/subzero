@@ -22,12 +22,12 @@ define void @from_int8() nounwind {
   %4 = sext i8 %1 to i64
   store i64 %4, i64* @i64v, align 8
   ret void
-  ; CHECK: mov eax, byte ptr [
-  ; CHECK-NEXT: movsbw ecx, eax
+  ; CHECK: mov ecx, byte ptr [
+  ; CHECK-NEXT: movsbw edx, ecx
   ; CHECK-NEXT: mov word ptr [
-  ; CHECK-NEXT: movsbl ecx, eax
+  ; CHECK-NEXT: movsbl ecx, ecx
   ; CHECK-NEXT: mov dword ptr [
-  ; CHECK-NEXT: movsbq eax, eax
+  ; Note: "mov qword ptr" is broken and should be fixed with i64 Store lowering.
   ; CHECK-NEXT: mov qword ptr [
 }
 
@@ -40,12 +40,12 @@ define void @from_int16() nounwind {
   %4 = sext i16 %1 to i64
   store i64 %4, i64* @i64v, align 8
   ret void
-  ; CHECK: mov eax, word ptr [
-  ; CHECK-NEXT: mov ecx, eax
+  ; CHECK: mov ecx, word ptr [
+  ; CHECK-NEXT: mov edx, ecx
   ; CHECK-NEXT: mov byte ptr [
-  ; CHECK-NEXT: movswl ecx, eax
+  ; CHECK-NEXT: movswl ecx, ecx
   ; CHECK-NEXT: mov dword ptr [
-  ; CHECK-NEXT: movswq eax, eax
+  ; Note: "mov qword ptr" is broken and should be fixed with i64 Store lowering.
   ; CHECK-NEXT: mov qword ptr [
 }
 
@@ -58,12 +58,11 @@ define void @from_int32() nounwind {
   %4 = sext i32 %1 to i64
   store i64 %4, i64* @i64v, align 8
   ret void
-  ; CHECK: mov eax, dword ptr [
-  ; CHECK-NEXT: mov ecx, eax
+  ; CHECK: mov ecx, dword ptr [
+  ; CHECK-NEXT: mov edx, ecx
   ; CHECK-NEXT: mov byte ptr [
-  ; CHECK-NEXT: mov ecx, eax
   ; CHECK-NEXT: mov word ptr [
-  ; CHECK-NEXT: movslq eax, eax
+  ; Note: "mov qword ptr" is broken and should be fixed with i64 Store lowering.
   ; CHECK-NEXT: mov qword ptr [
 }
 
@@ -76,7 +75,7 @@ define void @from_int64() nounwind {
   %4 = trunc i64 %1 to i32
   store i32 %4, i32* @i32v, align 4
   ret void
-  ; CHECK: mov eax, qword ptr [
+  ; CHECK: mov eax, dword ptr [
   ; CHECK-NEXT: mov ecx, eax
   ; CHECK-NEXT: mov byte ptr [
   ; CHECK-NEXT: mov ecx, eax
@@ -93,12 +92,12 @@ define void @from_uint8() nounwind {
   %4 = zext i8 %1 to i64
   store i64 %4, i64* @i64v, align 8
   ret void
-  ; CHECK: mov eax, byte ptr [
-  ; CHECK-NEXT: movzbw ecx, eax
+  ; CHECK: mov ecx, byte ptr [
+  ; CHECK-NEXT: movzbw edx, ecx
   ; CHECK-NEXT: mov word ptr [
-  ; CHECK-NEXT: movzbl ecx, eax
+  ; CHECK-NEXT: movzbl ecx, ecx
   ; CHECK-NEXT: mov dword ptr [
-  ; CHECK-NEXT: movzbq eax, eax
+  ; Note: "mov qword ptr" is broken and should be fixed with i64 Store lowering.
   ; CHECK-NEXT: mov qword ptr [
 }
 
@@ -111,12 +110,12 @@ define void @from_uint16() nounwind {
   %4 = zext i16 %1 to i64
   store i64 %4, i64* @i64v, align 8
   ret void
-  ; CHECK: mov eax, word ptr [
-  ; CHECK-NEXT: mov ecx, eax
+  ; CHECK: mov ecx, word ptr [
+  ; CHECK-NEXT: mov edx, ecx
   ; CHECK-NEXT: mov byte ptr [
-  ; CHECK-NEXT: movzwl ecx, eax
+  ; CHECK-NEXT: movzwl ecx, ecx
   ; CHECK-NEXT: mov dword ptr [
-  ; CHECK-NEXT: movzwq eax, eax
+  ; Note: "mov qword ptr" is broken and should be fixed with i64 Store lowering.
   ; CHECK-NEXT: mov qword ptr [
 }
 
@@ -129,12 +128,11 @@ define void @from_uint32() nounwind {
   %4 = zext i32 %1 to i64
   store i64 %4, i64* @i64v, align 8
   ret void
-  ; CHECK: mov eax, dword ptr [
-  ; CHECK-NEXT: mov ecx, eax
+  ; CHECK: mov ecx, dword ptr [
+  ; CHECK-NEXT: mov edx, ecx
   ; CHECK-NEXT: mov byte ptr [
-  ; CHECK-NEXT: mov ecx, eax
   ; CHECK-NEXT: mov word ptr [
-  ; CHECK-NEXT: movzlq eax, eax
+  ; Note: "mov qword ptr" is broken and should be fixed with i64 Store lowering.
   ; CHECK-NEXT: mov qword ptr [
 }
 
@@ -147,7 +145,7 @@ define void @from_uint64() nounwind {
   %4 = trunc i64 %1 to i32
   store i32 %4, i32* @i32v, align 4
   ret void
-  ; CHECK: mov eax, qword ptr [
+  ; CHECK: mov eax, dword ptr [
   ; CHECK-NEXT: mov ecx, eax
   ; CHECK-NEXT: mov byte ptr [
   ; CHECK-NEXT: mov ecx, eax

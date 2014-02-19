@@ -334,13 +334,16 @@ IceOperand *IceTargetX8632::makeHighOperand(IceOperand *Operand) {
     IceConstant *Offset = Mem->getOffset();
     if (Offset == NULL)
       Offset = Cfg->getConstant(IceType_i32, 4);
-    else {
-      if (IceConstantInteger *IntOffset =
-              llvm::dyn_cast<IceConstantInteger>(Offset)) {
-        Offset = Cfg->getConstant(IceType_i32, 4 + IntOffset->getIntValue());
-      } else {
-        assert(0 && "Symbolic integer constant not yet supported");
-      }
+    else if (IceConstantInteger *IntOffset =
+                 llvm::dyn_cast<IceConstantInteger>(Offset)) {
+      Offset = Cfg->getConstant(IceType_i32, 4 + IntOffset->getIntValue());
+    } else if (IceConstantRelocatable *SymOffset =
+                   llvm::dyn_cast<IceConstantRelocatable>(Offset)) {
+      // TODO: This creates a new entry in the constant pool, instead
+      // of reusing the existing entry.
+      Offset =
+          Cfg->getConstant(IceType_i32, SymOffset->getHandle(),
+                           4 + SymOffset->getOffset(), SymOffset->getName());
     }
     return IceOperandX8632Mem::create(Cfg, IceType_i32, Mem->getBase(), Offset,
                                       Mem->getIndex(), Mem->getShift());
@@ -1972,7 +1975,8 @@ IceInstList IceTargetX8632S::lowerArithmeticI64(const IceInstArithmetic *Inst,
     }
     unsigned MaxSrcs = 2;
     // TODO: Figure out how to properly construct CallTarget.
-    IceConstant *CallTarget = Cfg->getConstant(IceType_i32, NULL, HelperName);
+    IceConstant *CallTarget =
+        Cfg->getConstant(IceType_i32, NULL, 0, HelperName);
     // TODO: This instruction leaks.
     IceInstCall *Call =
         IceInstCall::create(Cfg, MaxSrcs, Inst->getDest(), CallTarget);
@@ -1998,13 +2002,20 @@ IceInstList IceTargetX8632S::lowerAssign(const IceInstAssign *Inst,
   IceInstList Expansion;
   IceVariable *Dest = Inst->getDest();
   IceOperand *Src0 = Inst->getSrc(0);
-  IceInstTarget *NewInst;
+  if (Dest->getType() == IceType_i64) {
+    IceVariable *DestLo = llvm::cast<IceVariable>(makeLowOperand(Dest));
+    IceVariable *DestHi = llvm::cast<IceVariable>(makeHighOperand(Dest));
+    Expansion.push_back(
+        IceInstX8632Mov::create(Cfg, DestLo, makeLowOperand(Src0)));
+    Expansion.push_back(
+        IceInstX8632Mov::create(Cfg, DestHi, makeHighOperand(Src0)));
+    return Expansion;
+  }
   // a=b ==> t=b; a=t; (link t->b)
   assert(Dest->getType() == Src0->getType());
   IceOperand *Reg =
       legalizeOperand(Src0, Legal_Reg | Legal_Imm, Expansion, true);
-  NewInst = IceInstX8632Mov::create(Cfg, Dest, Reg);
-  Expansion.push_back(NewInst);
+  Expansion.push_back(IceInstX8632Mov::create(Cfg, Dest, Reg));
   return Expansion;
 }
 

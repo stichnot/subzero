@@ -36,7 +36,7 @@ public:
   IceConstant *getConstant(IceType Type, uint64_t ConstantInt64);
   // Returns a symbolic constant.  For now, Handle would refer to
   // something LLVM-specific to facilitate linking.
-  IceConstant *getConstant(IceType Type, const void *Handle,
+  IceConstant *getConstant(IceType Type, const void *Handle, int64_t Offset,
                            const IceString &Name = "");
   IceVariable *getVariable(uint32_t Index) const;
   IceVariable *makeVariable(IceType Type, uint32_t Index = -1,

@@ -17,13 +17,14 @@ class IceConstantPool {
 public:
   IceConstantPool(IceCfg *Cfg) : Cfg(Cfg) {}
   IceConstantRelocatable *getOrAddRelocatable(IceType Type, const void *Handle,
+                                              int64_t Offset,
                                               const IceString &Name) {
     uint32_t Index = NameToIndex.translate(KeyType(Name, Type));
     if (Index >= RelocatablePool.size()) {
       RelocatablePool.resize(Index + 1);
       void *Handle = NULL;
-      RelocatablePool[Index] =
-          IceConstantRelocatable::create(Cfg, Index, Type, Handle, Name);
+      RelocatablePool[Index] = IceConstantRelocatable::create(
+          Cfg, Index, Type, Handle, Offset, Name);
     }
     IceConstantRelocatable *Constant = RelocatablePool[Index];
     assert(Constant);
@@ -150,8 +151,8 @@ IceConstant *IceCfg::getConstant(IceType Type, uint64_t ConstantInt64) {
 }
 
 IceConstant *IceCfg::getConstant(IceType Type, const void *Handle,
-                                 const IceString &Name) {
-  return ConstantPool->getOrAddRelocatable(Type, Handle, Name);
+                                 int64_t Offset, const IceString &Name) {
+  return ConstantPool->getOrAddRelocatable(Type, Handle, Offset, Name);
 }
 
 IceVariable *IceCfg::getVariable(uint32_t Index) const {

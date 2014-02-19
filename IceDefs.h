@@ -151,6 +151,11 @@ inline IceOstream &operator<<(IceOstream &Str, uint64_t U) {
   return Str;
 }
 
+inline IceOstream &operator<<(IceOstream &Str, int64_t I) {
+  Str.Stream << I;
+  return Str;
+}
+
 inline IceOstream &operator<<(IceOstream &Str, double D) {
   Str.Stream << D;
   return Str;
