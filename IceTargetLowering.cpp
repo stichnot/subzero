@@ -11,8 +11,6 @@ IceTargetLowering *IceTargetLowering::createLowering(IceTargetArch Target,
                                                      IceCfg *Cfg) {
   // These statements can be #ifdef'd to specialize the code generator
   // to a subset of the available targets.
-  if (Target == IceTarget_X8632_old)
-    return IceTargetX8632::create(Cfg);
   if (Target == IceTarget_X8632)
     return IceTargetX8632S::create(Cfg);
 #if 0

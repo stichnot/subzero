@@ -437,8 +437,6 @@ cl::opt<bool> DisableTranslation("notranslate",
 cl::opt<IceTargetArch> TargetArch(
     "target", cl::desc("Target architecture:"), cl::init(IceTarget_X8632),
     cl::values(clEnumValN(IceTarget_X8632, "x8632", "x86-32"),
-               clEnumValN(IceTarget_X8632_old, "x8632_old",
-                          "x86-32 old version"),
                clEnumValN(IceTarget_X8664, "x8664", "x86-64"),
                clEnumValN(IceTarget_ARM32, "arm32", "ARM32"),
                clEnumValN(IceTarget_ARM64, "arm64", "ARM64"), clEnumValEnd));
