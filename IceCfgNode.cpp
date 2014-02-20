@@ -244,21 +244,24 @@ void IceCfgNode::insertInsts(IceInstList::iterator Location,
   }
 }
 
+void IceCfgNode::livenessInit(IceLiveness Mode) {
+  if (Mode != IceLiveness_LREndLightweight) {
+    unsigned NumVars = Cfg->getNumVariables();
+    LiveIn.clear();
+    LiveIn.resize(NumVars);
+    LiveOut.clear();
+    LiveOut.resize(NumVars);
+    LiveBegin.resize(NumVars);
+    LiveEnd.resize(NumVars);
+  }
+}
+
 // Returns true if the incoming liveness changed from before, false if
-// it stayed the same.  IsFirst is set the first time the node is
-// processed, and is a signal to initialize LiveIn.
-bool IceCfgNode::liveness(IceLiveness Mode, bool IsFirst) {
+// it stayed the same.
+bool IceCfgNode::liveness(IceLiveness Mode) {
   unsigned NumVars = Cfg->getNumVariables();
   llvm::BitVector Live(NumVars);
   if (Mode != IceLiveness_LREndLightweight) {
-    if (IsFirst) {
-      LiveIn.clear();
-      LiveIn.resize(NumVars);
-      LiveOut.clear();
-      LiveOut.resize(NumVars);
-      LiveBegin.resize(NumVars);
-      LiveEnd.resize(NumVars);
-    }
     LiveBegin.clear();
     LiveEnd.clear();
     // Initialize Live to be the union of all successors' LiveIn.

@@ -250,7 +250,7 @@ void IceCfg::liveness(IceLiveness Mode) {
   if (Mode == IceLiveness_LREndLightweight) {
     for (IceNodeList::iterator I = LNodes.begin(), E = LNodes.end(); I != E;
          ++I) {
-      (*I)->liveness(Mode, true);
+      (*I)->liveness(Mode);
     }
     return;
   }
@@ -260,15 +260,16 @@ void IceCfg::liveness(IceLiveness Mode) {
   for (IceNodeList::iterator I = LNodes.begin(), E = LNodes.end(); I != E;
        ++I) {
     NeedToProcess[(*I)->getIndex()] = true;
+    (*I)->livenessInit(Mode);
   }
-  for (bool First = true; NeedToProcess.any(); First = false) {
+  while (NeedToProcess.any()) {
     // Iterate in reverse topological order to speed up convergence.
     for (IceNodeList::reverse_iterator I = LNodes.rbegin(), E = LNodes.rend();
          I != E; ++I) {
       IceCfgNode *Node = *I;
       if (NeedToProcess[Node->getIndex()]) {
         NeedToProcess[Node->getIndex()] = false;
-        bool Changed = Node->liveness(Mode, First);
+        bool Changed = Node->liveness(Mode);
         if (Changed) {
           // Mark all in-edges as needing to be processed
           const IceNodeList &InEdges = Node->getInEdges();

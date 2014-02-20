@@ -2228,21 +2228,37 @@ IceInstList IceTargetX8632S::lowerFcmp(const IceInstFcmp *Inst,
   return Expansion;
 }
 
+static struct {
+  IceInstIcmp::IceICond Cond, C1, C2, C3;
+} Icmp64NonEqNe[] = {
+    { IceInstIcmp::Eq, IceInstIcmp::Ne },
+    { IceInstIcmp::Ne, IceInstIcmp::Eq },
+    { IceInstIcmp::Ugt, IceInstIcmp::Ugt, IceInstIcmp::Ult, IceInstIcmp::Ugt },
+    { IceInstIcmp::Uge, IceInstIcmp::Ugt, IceInstIcmp::Ult, IceInstIcmp::Uge },
+    { IceInstIcmp::Ult, IceInstIcmp::Ult, IceInstIcmp::Ugt, IceInstIcmp::Ult },
+    { IceInstIcmp::Ule, IceInstIcmp::Ult, IceInstIcmp::Ugt, IceInstIcmp::Ule },
+    { IceInstIcmp::Sgt, IceInstIcmp::Sgt, IceInstIcmp::Slt, IceInstIcmp::Ugt },
+    { IceInstIcmp::Sge, IceInstIcmp::Sgt, IceInstIcmp::Slt, IceInstIcmp::Uge },
+    { IceInstIcmp::Slt, IceInstIcmp::Slt, IceInstIcmp::Sgt, IceInstIcmp::Ult },
+    { IceInstIcmp::Sle, IceInstIcmp::Slt, IceInstIcmp::Sgt, IceInstIcmp::Ule },
+  };
+const static unsigned Icmp64NonEqNeSize =
+    sizeof(Icmp64NonEqNe) / sizeof(*Icmp64NonEqNe);
+
 IceInstList IceTargetX8632S::lowerIcmp(const IceInstIcmp *Inst,
                                        const IceInst *Next,
                                        bool &DeleteNextInst) {
   IceInstList Expansion;
   IceInstTarget *NewInst;
-  // For now, require that the following instruction is a branch
-  // based on the last use of this instruction's Dest operand.
-  // TODO: Fix this.
-  if (llvm::isa<IceInstBr>(Next) && Inst->getDest() == Next->getSrc(0)) {
+  IceOperand *Src0 = Inst->getSrc(0);
+  IceOperand *Src1 = Inst->getSrc(1);
+  IceVariable *Dest = Inst->getDest();
+  if (Src0->getType() != IceType_i64 && Next && llvm::isa<IceInstBr>(Next) &&
+      Dest == Next->getSrc(0) && Next->isLastUse(Dest)) {
     const IceInstBr *NextBr = llvm::cast<IceInstBr>(Next);
     // This is basically identical to an Arithmetic instruction,
     // except there is no Dest variable to store.
     // cmp a,b ==> mov t,a; cmp t,b
-    IceOperand *Src0 = Inst->getSrc(0);
-    IceOperand *Src1 = Inst->getSrc(1);
     bool IsImmOrReg = false;
     if (llvm::isa<IceConstant>(Src1))
       IsImmOrReg = true;
@@ -2265,9 +2281,60 @@ IceInstList IceTargetX8632S::lowerIcmp(const IceInstIcmp *Inst,
   // a=icmp cond, b, c ==> cmp b,c; a=1; br cond,L1; FakeUse(a); a=0; L1:
   //
   // Alternative without intra-block branch: cmp b,c; a=0; a=set<cond> {a}
-  IceOperand *Src0 = Inst->getSrc(0);
-  IceOperand *Src1 = Inst->getSrc(1);
-  IceVariable *Dest = Inst->getDest();
+  uint64_t Zero = 0;
+  uint64_t One = 1;
+  IceOperand *ConstZero = Cfg->getConstant(IceType_i32, Zero);
+  IceOperand *ConstOne = Cfg->getConstant(IceType_i32, One);
+  if (Src0->getType() == IceType_i64) {
+    IceInstIcmp::IceICond Condition = Inst->getCondition();
+    unsigned Index = static_cast<unsigned>(Condition);
+    assert(Index < Icmp64NonEqNeSize);
+    assert(Icmp64NonEqNe[Index].Cond == Condition);
+    IceInstX8632Label *LabelFalse = IceInstX8632Label::create(Cfg, this);
+    IceInstX8632Label *LabelTrue = IceInstX8632Label::create(Cfg, this);
+    Src0 = legalizeOperand(Src0, Legal_All, Expansion);
+    Src1 = legalizeOperand(Src1, Legal_All, Expansion);
+    if (Condition == IceInstIcmp::Eq || Condition == IceInstIcmp::Ne) {
+      Expansion.push_back(IceInstX8632Mov::create(Cfg, Dest, ConstZero));
+      IceOperand *RegHi = legalizeOperand(makeHighOperand(Src1),
+                                          Legal_Reg | Legal_Imm, Expansion);
+      Expansion.push_back(
+          IceInstX8632Icmp::create(Cfg, makeHighOperand(Src0), RegHi));
+      Expansion.push_back(
+          IceInstX8632Br::create(Cfg, LabelFalse, Icmp64NonEqNe[Index].C1));
+      IceOperand *RegLo = legalizeOperand(makeLowOperand(Src1),
+                                          Legal_Reg | Legal_Imm, Expansion);
+      Expansion.push_back(
+          IceInstX8632Icmp::create(Cfg, makeLowOperand(Src0), RegLo));
+      Expansion.push_back(
+          IceInstX8632Br::create(Cfg, LabelFalse, Icmp64NonEqNe[Index].C1));
+      Expansion.push_back(LabelTrue);
+      Expansion.push_back(IceInstFakeUse::create(Cfg, Dest));
+      Expansion.push_back(IceInstX8632Mov::create(Cfg, Dest, ConstOne));
+      Expansion.push_back(LabelFalse);
+    } else {
+      Expansion.push_back(IceInstX8632Mov::create(Cfg, Dest, ConstOne));
+      IceOperand *RegHi = legalizeOperand(makeHighOperand(Src1),
+                                          Legal_Reg | Legal_Imm, Expansion);
+      Expansion.push_back(
+          IceInstX8632Icmp::create(Cfg, makeHighOperand(Src0), RegHi));
+      Expansion.push_back(
+          IceInstX8632Br::create(Cfg, LabelTrue, Icmp64NonEqNe[Index].C1));
+      Expansion.push_back(
+          IceInstX8632Br::create(Cfg, LabelFalse, Icmp64NonEqNe[Index].C2));
+      IceOperand *RegLo = legalizeOperand(makeLowOperand(Src1),
+                                          Legal_Reg | Legal_Imm, Expansion);
+      Expansion.push_back(
+          IceInstX8632Icmp::create(Cfg, makeLowOperand(Src0), RegLo));
+      Expansion.push_back(
+          IceInstX8632Br::create(Cfg, LabelTrue, Icmp64NonEqNe[Index].C3));
+      Expansion.push_back(LabelFalse);
+      Expansion.push_back(IceInstFakeUse::create(Cfg, Dest));
+      Expansion.push_back(IceInstX8632Mov::create(Cfg, Dest, ConstZero));
+      Expansion.push_back(LabelTrue);
+    }
+    return Expansion;
+  }
   // cmp b, c
   bool IsImmOrReg = false;
   if (llvm::isa<IceConstant>(Src1))
@@ -2282,8 +2349,6 @@ IceInstList IceTargetX8632S::lowerIcmp(const IceInstIcmp *Inst,
   Expansion.push_back(NewInst);
 
   // a = 1;
-  uint64_t Zero = 0;
-  uint64_t One = 1;
   NewInst =
       IceInstX8632Mov::create(Cfg, Dest, Cfg->getConstant(IceType_i32, One));
   Expansion.push_back(NewInst);

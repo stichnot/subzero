@@ -35,7 +35,8 @@ public:
   void deletePhis(void);
   void doAddressOpt(void);
   void genCode(void);
-  bool liveness(IceLiveness Mode, bool IsFirst);
+  void livenessInit(IceLiveness Mode);
+  bool liveness(IceLiveness Mode);
   void livenessPostprocess(IceLiveness Mode);
   void emit(IceOstream &Str, uint32_t Option) const;
   void dump(IceOstream &Str) const;
