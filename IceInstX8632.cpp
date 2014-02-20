@@ -510,17 +510,6 @@ IceInstX8632Test::IceInstX8632Test(IceCfg *Cfg, IceOperand *Src1,
   addSource(Src2);
 }
 
-IceInstX8632Load::IceInstX8632Load(IceCfg *Cfg, IceVariable *Dest,
-                                   IceOperand *Src0, IceOperand *Src1,
-                                   IceOperand *Src2, IceOperand *Src3)
-    : IceInstX8632(Cfg, IceInstX8632::Load, 4, Dest) {
-  assert(0 && "Remove support for 4-src Load instruction");
-  addSource(Src0);
-  addSource(Src1);
-  addSource(Src2);
-  addSource(Src3);
-}
-
 IceInstX8632Store::IceInstX8632Store(IceCfg *Cfg, IceOperand *Value,
                                      IceOperandX8632Mem *Mem)
     : IceInstX8632(Cfg, IceInstX8632::Store, 2, NULL) {
@@ -976,16 +965,6 @@ void IceInstX8632Test::emit(IceOstream &Str, uint32_t Option) const {
 void IceInstX8632Test::dump(IceOstream &Str) const {
   Str << "test." << getSrc(0)->getType() << " ";
   dumpSources(Str);
-}
-
-void IceInstX8632Load::emit(IceOstream &Str, uint32_t Option) const {}
-
-void IceInstX8632Load::dump(IceOstream &Str) const {
-  Str << "mov." << getDest()->getType() << " ";
-  dumpDest(Str);
-  Str << ", [";
-  dumpSources(Str);
-  Str << "]";
 }
 
 void IceInstX8632Store::emit(IceOstream &Str, uint32_t Option) const {

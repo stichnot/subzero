@@ -583,23 +583,6 @@ private:
   IceInstX8632Test(IceCfg *Cfg, IceOperand *Source1, IceOperand *Source2);
 };
 
-// TODO: Load is basically equivalent to Assign
-class IceInstX8632Load : public IceInstX8632 {
-public:
-  static IceInstX8632Load *create(IceCfg *Cfg, IceVariable *Dest,
-                                  IceOperand *Base, IceOperand *Index,
-                                  IceOperand *Shift, IceOperand *Offset) {
-    return new IceInstX8632Load(Cfg, Dest, Base, Index, Shift, Offset);
-  }
-  virtual void emit(IceOstream &Str, uint32_t Option) const;
-  virtual void dump(IceOstream &Str) const;
-  static bool classof(const IceInst *Inst) { return isClassof(Inst, Load); }
-
-private:
-  IceInstX8632Load(IceCfg *Cfg, IceVariable *Dest, IceOperand *Base,
-                   IceOperand *Index, IceOperand *Shift, IceOperand *Offset);
-};
-
 // This is essentially a "mov" instruction with an IceOperandX8632Mem
 // operand instead of IceVariable as the destination.  It's important
 // for liveness that there is no Dest operand.
