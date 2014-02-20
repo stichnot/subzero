@@ -47,7 +47,7 @@ public:
   int newInstNumber(void);
 
   IceString physicalRegName(int Reg) const { return RegisterNames[Reg]; }
-  void translate(IceTargetArch TargetArch = IceTarget_X8632);
+  void translate(IceTargetArch TargetArch);
   void emit(uint32_t Option) const;
   void dump(void) const;
 
