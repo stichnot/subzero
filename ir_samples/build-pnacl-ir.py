@@ -18,6 +18,7 @@ if __name__ == '__main__':
         help='C file(s) to convert')
     argparser.add_argument('--nacl_sdk_root', nargs='?', type=str,
         help='Path to NACL_SDK_ROOT')
+    argparser.add_argument('--disable-verify', action='store_true')
     args = argparser.parse_args()
 
     nacl_sdk_root = os.environ.get('NACL_SDK_ROOT', None)
@@ -45,8 +46,9 @@ Please set the NACL_SDK_ROOT environment variable or pass the path through
         shellcmd(clang_path + ' -I{0} -c {1} -o {2}'.format(
             includes_path, cname, llname))
         shellcmd(opt_path +
-            ' -O2 -pnacl-abi-simplify-preopt -pnacl-abi-simplify-postopt'
-            ' -verify-pnaclabi-module -verify-pnaclabi-functions'
+            ' -O2 -pnacl-abi-simplify-preopt -pnacl-abi-simplify-postopt' +
+            ('' if args.disable_verify else
+             ' -verify-pnaclabi-module -verify-pnaclabi-functions') +
             ' -pnaclabi-allow-debug-metadata -disable-simplify-libcalls'
             ' {0} -S -o {1}'.format(llname, pnaclname))
 
