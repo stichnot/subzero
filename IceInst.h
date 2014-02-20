@@ -209,8 +209,7 @@ public:
 private:
   IceInstCall(IceCfg *Cfg, unsigned NumArgs, IceVariable *Dest,
               IceOperand *CallTarget, bool Tail)
-      : IceInst(Cfg, IceInst::Call, NumArgs + 1, Dest),
-        Tail(Tail) {
+      : IceInst(Cfg, IceInst::Call, NumArgs + 1, Dest), Tail(Tail) {
     addSource(CallTarget);
   }
   const bool Tail;

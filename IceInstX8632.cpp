@@ -482,8 +482,7 @@ IceInstX8632Br::IceInstX8632Br(IceCfg *Cfg, IceCfgNode *TargetTrue,
 
 IceInstX8632Call::IceInstX8632Call(IceCfg *Cfg, IceVariable *Dest,
                                    IceOperand *CallTarget, bool Tail)
-    : IceInstX8632(Cfg, IceInstX8632::Call, 1, Dest),
-      Tail(Tail) {
+    : IceInstX8632(Cfg, IceInstX8632::Call, 1, Dest), Tail(Tail) {
   addSource(CallTarget);
 }
 
@@ -1622,8 +1621,8 @@ IceInstList IceTargetX8632::lowerArithmeticI64(const IceInstArithmetic *Inst,
         Cfg->getConstant(IceType_i32, NULL, 0, HelperName);
     bool Tailcall = false;
     // TODO: This instruction leaks.
-    IceInstCall *Call =
-      IceInstCall::create(Cfg, MaxSrcs, Inst->getDest(), CallTarget, Tailcall);
+    IceInstCall *Call = IceInstCall::create(Cfg, MaxSrcs, Inst->getDest(),
+                                            CallTarget, Tailcall);
     Call->addArg(Inst->getSrc(0));
     Call->addArg(Inst->getSrc(1));
     return lowerCall(Call, NULL, DeleteNextInst);
@@ -1748,9 +1747,9 @@ IceInstList IceTargetX8632::lowerCall(const IceInstCall *Inst,
     // dead-code eliminated, and "tmp:edx=FakeDef()" for a call that
     // can't be eliminated.
   }
-  IceOperand *CallTarget = legalizeOperand(Inst->getCallTarget(), Legal_All, Expansion);
-  NewInst =
-      IceInstX8632Call::create(Cfg, Reg, CallTarget, Inst->isTail());
+  IceOperand *CallTarget =
+      legalizeOperand(Inst->getCallTarget(), Legal_All, Expansion);
+  NewInst = IceInstX8632Call::create(Cfg, Reg, CallTarget, Inst->isTail());
   Expansion.push_back(NewInst);
   IceInst *NewCall = NewInst;
   if (RegHi)
