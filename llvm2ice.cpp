@@ -391,11 +391,7 @@ private:
   }
 
   IceInst *convertAllocaInstruction(const AllocaInst *Inst) {
-    Type *AllocaType = Inst->getAllocatedType();
-    assert(!AllocaType->isArrayTy() &&
-           "PNaCl lowering passes should eliminate array types");
-    uint32_t ElementSize = AllocaType->getScalarSizeInBits() / 8;
-    assert(ElementSize == 1 && "PNaCl should only alloca byte arrays");
+    // PNaCl bitcode only contains allocas of byte-granular objects.
     IceOperand *ByteCount = convertValue(Inst->getArraySize());
     uint32_t Align = Inst->getAlignment();
     IceVariable *Dest = mapValueToIceVar(Inst);

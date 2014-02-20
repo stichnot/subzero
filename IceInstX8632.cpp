@@ -1544,9 +1544,7 @@ IceInstList IceTargetX8632S::lowerAlloca(const IceInstAlloca *Inst,
   // the number of adjustments of esp, etc.
   IceVariable *Esp = Cfg->getTarget()->getPhysicalRegister(Reg_esp);
   IceOperand *ByteCount = Inst->getSrc(0);
-  IceOperand *TotalSize = legalizeOperand(ByteCount,
-                                          Legal_Reg | Legal_Imm | Legal_Mem,
-                                          Expansion);
+  IceOperand *TotalSize = legalizeOperand(ByteCount, Legal_All, Expansion);
   NewInst = IceInstX8632Sub::create(Cfg, Esp, TotalSize);
   Expansion.push_back(NewInst);
   NewInst = IceInstX8632Mov::create(Cfg, Inst->getDest(), Esp);
