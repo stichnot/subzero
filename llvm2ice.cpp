@@ -395,11 +395,12 @@ private:
     assert(!AllocaType->isArrayTy() &&
            "PNaCl lowering passes should eliminate array types");
     uint32_t ElementSize = AllocaType->getScalarSizeInBits() / 8;
-    IceOperand *ElementCount = convertValue(Inst->getArraySize());
+    assert(ElementSize == 1 && "PNaCl should only alloca byte arrays");
+    IceOperand *ByteCount = convertValue(Inst->getArraySize());
     uint32_t Align = Inst->getAlignment();
     IceVariable *Dest = mapValueToIceVar(Inst);
 
-    return IceInstAlloca::create(Cfg, ElementSize, ElementCount, Align, Dest);
+    return IceInstAlloca::create(Cfg, ByteCount, Align, Dest);
   }
 
   IceCfgNode *convertBasicBlock(const BasicBlock *BB) {

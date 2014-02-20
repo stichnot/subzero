@@ -95,21 +95,19 @@ IceOstream &operator<<(IceOstream &Str, const IceInst *I);
 
 class IceInstAlloca : public IceInst {
 public:
-  static IceInstAlloca *create(IceCfg *Cfg, uint32_t ElementSize,
-                               IceOperand *ElementCount, uint32_t Align,
+  static IceInstAlloca *create(IceCfg *Cfg, IceOperand *ByteCount,
+                               uint32_t Align,
                                IceVariable *Dest) {
-    return new IceInstAlloca(Cfg, ElementSize, ElementCount, Align, Dest);
+    return new IceInstAlloca(Cfg, ByteCount, Align, Dest);
   }
-  uint32_t getElementSize() const { return ElementSize; }
   uint32_t getAlign() const { return Align; }
   virtual void dump(IceOstream &Str) const;
   static bool classof(const IceInst *Inst) { return Inst->getKind() == Alloca; }
 
 protected:
 private:
-  IceInstAlloca(IceCfg *Cfg, uint32_t ElementSize, IceOperand *ElementCount,
-                uint32_t Align, IceVariable *Dest);
-  const uint32_t ElementSize;
+  IceInstAlloca(IceCfg *Cfg, IceOperand *ByteCount, uint32_t Align,
+                IceVariable *Dest);
   const uint32_t Align;
 };
 

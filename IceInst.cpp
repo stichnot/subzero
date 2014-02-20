@@ -167,12 +167,10 @@ void IceInst::liveness(IceLiveness Mode, int InstNumber, llvm::BitVector &Live,
   }
 }
 
-IceInstAlloca::IceInstAlloca(IceCfg *Cfg, uint32_t ElementSize,
-                             IceOperand *ElementCount, uint32_t Align,
-                             IceVariable *Dest)
-    : IceInst(Cfg, IceInst::Alloca, 1, Dest), ElementSize(ElementSize),
-      Align(Align) {
-  addSource(ElementCount);
+IceInstAlloca::IceInstAlloca(IceCfg *Cfg, IceOperand *ByteCount,
+                             uint32_t Align, IceVariable *Dest)
+    : IceInst(Cfg, IceInst::Alloca, 1, Dest), Align(Align) {
+  addSource(ByteCount);
 }
 
 IceInstArithmetic::IceInstArithmetic(IceCfg *Cfg, OpKind Op, IceVariable *Dest,
@@ -473,7 +471,7 @@ void IceInst::dumpDest(IceOstream &Str) const {
 
 void IceInstAlloca::dump(IceOstream &Str) const {
   dumpDest(Str);
-  Str << " = alloca i32 " << ElementSize << ", i32 ";
+  Str << " = alloca i8, i32 ";
   Str << getSrc(0) << ", align " << Align;
 }
 
