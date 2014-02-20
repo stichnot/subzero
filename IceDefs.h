@@ -32,7 +32,6 @@ class IceLiveRange;
 class IceOperand;
 class IceVariable;
 class IceConstant;
-class IceRegManager;
 class IceTargetLowering;
 
 // typedefs of containers

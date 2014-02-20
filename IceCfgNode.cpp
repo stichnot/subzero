@@ -7,13 +7,12 @@
 #include "IceCfgNode.h"
 #include "IceInst.h"
 #include "IceOperand.h"
-#include "IceRegManager.h"
 #include "IceTargetLowering.h"
 #include "IceInstX8632.h"
 
 IceCfgNode::IceCfgNode(IceCfg *Cfg, uint32_t LabelNumber, IceString Name)
     : Cfg(Cfg), Number(LabelNumber), Name(Name), ArePhiLoadsPlaced(false),
-      ArePhiStoresPlaced(false), HasReturn(false), RegManager(NULL) {}
+      ArePhiStoresPlaced(false), HasReturn(false) {}
 
 void IceCfgNode::appendInst(IceInst *Inst) {
   if (IceInstPhi *Phi = llvm::dyn_cast<IceInstPhi>(Inst)) {
@@ -212,8 +211,6 @@ void IceCfgNode::doAddressOpt(void) {
 
 void IceCfgNode::genCode(void) {
   IceTargetLowering *Target = Cfg->getTarget();
-  if (RegManager == NULL)
-    RegManager = Target->makeRegManager(this);
   // Defer the Phi instructions.
   IceInstList::iterator I = Insts.begin(), E = Insts.end();
   while (I != E) {
@@ -445,13 +442,6 @@ void IceCfgNode::dump(IceOstream &Str) const {
     while (I != E) {
       IceInst *Inst = *I++;
       Str << Inst;
-    }
-  }
-  if (Str.isVerbose(IceV_RegManager)) {
-    if (RegManager) {
-      Str << "    // AVAIL:";
-      RegManager->dump(Str);
-      Str << "\n";
     }
   }
   if (Str.isVerbose(IceV_Liveness) && !LiveOut.empty()) {

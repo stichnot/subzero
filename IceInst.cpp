@@ -8,7 +8,6 @@
 #include "IceInst.h"
 #include "IceInstX8632.h"
 #include "IceOperand.h"
-#include "IceRegManager.h"
 
 IceInst::IceInst(IceCfg *Cfg, IceInstType Kind, unsigned MaxSrcs,
                  IceVariable *Dest)
@@ -167,8 +166,8 @@ void IceInst::liveness(IceLiveness Mode, int InstNumber, llvm::BitVector &Live,
   }
 }
 
-IceInstAlloca::IceInstAlloca(IceCfg *Cfg, IceOperand *ByteCount,
-                             uint32_t Align, IceVariable *Dest)
+IceInstAlloca::IceInstAlloca(IceCfg *Cfg, IceOperand *ByteCount, uint32_t Align,
+                             IceVariable *Dest)
     : IceInst(Cfg, IceInst::Alloca, 1, Dest), Align(Align) {
   addSource(ByteCount);
 }
@@ -365,10 +364,6 @@ IceInstSelect::IceInstSelect(IceCfg *Cfg, IceVariable *Dest,
   addSource(Condition);
   addSource(SourceTrue);
   addSource(SourceFalse);
-}
-
-void IceInstTarget::setRegState(const IceRegManager *State) {
-  RegState = IceRegManager::create(*State);
 }
 
 IceInstFakeDef::IceInstFakeDef(IceCfg *Cfg, IceVariable *Dest, IceVariable *Src)
@@ -751,10 +746,4 @@ void IceInstTarget::dump(IceOstream &Str) const {
 
 void IceInstTarget::dumpExtras(IceOstream &Str) const {
   IceInst::dumpExtras(Str);
-  if (Str.isVerbose(IceV_RegManager)) {
-    if (RegState) {
-      Str << " //";
-      RegState->dump(Str);
-    }
-  }
 }

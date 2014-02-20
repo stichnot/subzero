@@ -96,8 +96,7 @@ IceOstream &operator<<(IceOstream &Str, const IceInst *I);
 class IceInstAlloca : public IceInst {
 public:
   static IceInstAlloca *create(IceCfg *Cfg, IceOperand *ByteCount,
-                               uint32_t Align,
-                               IceVariable *Dest) {
+                               uint32_t Align, IceVariable *Dest) {
     return new IceInstAlloca(Cfg, ByteCount, Align, Dest);
   }
   uint32_t getAlign() const { return Align; }
@@ -473,7 +472,6 @@ private:
 
 class IceInstTarget : public IceInst {
 public:
-  void setRegState(const IceRegManager *State);
   virtual void emit(IceOstream &Str, uint32_t Option) const = 0;
   virtual void dump(IceOstream &Str) const;
   virtual void dumpExtras(IceOstream &Str) const;
@@ -482,10 +480,10 @@ public:
 protected:
   IceInstTarget(IceCfg *Cfg, IceInstType Kind, unsigned MaxSrcs,
                 IceVariable *Dest)
-      : IceInst(Cfg, Kind, MaxSrcs, Dest), RegState(NULL) {
+      : IceInst(Cfg, Kind, MaxSrcs, Dest) {
     assert(Kind >= Target);
   }
-  const IceRegManager *RegState; // used only for debugging/dumping
+
 private:
 };
 

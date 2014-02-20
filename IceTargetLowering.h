@@ -15,12 +15,9 @@
 class IceTargetLowering {
 public:
   static IceTargetLowering *createLowering(IceTargetArch Target, IceCfg *Cfg);
-  void setRegManager(IceRegManager *R) { RegManager = R; }
   IceInstList doAddressOpt(const IceInst *Inst);
   IceInstList lower(const IceInst *Inst, const IceInst *Next,
                     bool &DeleteNextInst);
-  virtual IceRegManager *makeRegManager(IceCfgNode *Node) { return NULL; }
-  virtual IceInstTarget *makeAssign(IceVariable *Dest, IceOperand *Src) = 0;
   virtual IceVariable *getPhysicalRegister(unsigned RegNum) = 0;
   virtual IceString *getRegNames(void) const = 0;
   virtual bool hasFramePointer(void) const { return false; }
@@ -48,8 +45,7 @@ public:
 
 protected:
   IceTargetLowering(IceCfg *Cfg)
-      : Cfg(Cfg), RegManager(NULL), HasComputedFrame(false),
-        StackAdjustment(0) {}
+      : Cfg(Cfg), HasComputedFrame(false), StackAdjustment(0) {}
   virtual IceInstList lowerAlloca(const IceInstAlloca *Inst,
                                   const IceInst *Next,
                                   bool &DeleteNextInst) = 0;
@@ -91,7 +87,6 @@ protected:
     return IceInstList();
   }
   IceCfg *const Cfg;
-  IceRegManager *RegManager;
   bool HasComputedFrame;
   // StackAdjustment keeps track of the current stack offset from its
   // natural location, as arguments are pushed for a function call.

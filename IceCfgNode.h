@@ -57,18 +57,6 @@ private:
   bool ArePhiLoadsPlaced;
   bool ArePhiStoresPlaced;
   bool HasReturn;
-  // TODO: Allow the block to have a list of RegManager objects.  A
-  // mid-block call instruction kills all scratch registers at once
-  // and there is no relationship between pre-and post-call
-  // availability.  This has two advantages.  First, physical register
-  // assignment can depend on either incoming or outgoing edges but
-  // not both, leading to less compensation code.  Second, especially
-  // for blocks containing multiple call instructions, it increases
-  // the amount of randomness possible without affecting code quality.
-  // The multi-block register allocation would need access to the
-  // first and last RegManager objects on the list for computing
-  // preferences.
-  IceRegManager *RegManager;
 };
 
 #endif // _IceCfgNode_h

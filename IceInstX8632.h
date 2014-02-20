@@ -55,8 +55,6 @@ private:
 class IceTargetX8632 : public IceTargetLowering {
 public:
   static IceTargetX8632 *create(IceCfg *Cfg) { return new IceTargetX8632(Cfg); }
-  virtual IceRegManager *makeRegManager(IceCfgNode *Node);
-  virtual IceInstTarget *makeAssign(IceVariable *Dest, IceOperand *Src);
   virtual IceVariable *getPhysicalRegister(unsigned RegNum);
   virtual IceString *getRegNames(void) const { return RegNames; }
   virtual llvm::SmallBitVector
@@ -100,64 +98,12 @@ public:
     Reg_NUM = 8
   };
 
-protected:
+private:
   IceTargetX8632(IceCfg *Cfg)
       : IceTargetLowering(Cfg), IsEbpBasedFrame(false), FrameSizeLocals(0),
         LocalsSizeBytes(0), NextLabelNumber(0),
         PhysicalRegisters(IceVarList(Reg_NUM)) {}
-  virtual IceInstList lowerAlloca(const IceInstAlloca *Inst,
-                                  const IceInst *Next, bool &DeleteNextInst);
-  virtual IceInstList lowerArithmetic(const IceInstArithmetic *Inst,
-                                      const IceInst *Next,
-                                      bool &DeleteNextInst);
-  virtual IceInstList lowerAssign(const IceInstAssign *Inst,
-                                  const IceInst *Next, bool &DeleteNextInst);
-  virtual IceInstList lowerBr(const IceInstBr *Inst, const IceInst *Next,
-                              bool &DeleteNextInst);
-  virtual IceInstList lowerCall(const IceInstCall *Inst, const IceInst *Next,
-                                bool &DeleteNextInst);
-  virtual IceInstList lowerCast(const IceInstCast *Inst, const IceInst *Next,
-                                bool &DeleteNextInst);
-  virtual IceInstList lowerFcmp(const IceInstFcmp *Inst, const IceInst *Next,
-                                bool &DeleteNextInst);
-  virtual IceInstList lowerIcmp(const IceInstIcmp *Inst, const IceInst *Next,
-                                bool &DeleteNextInst);
-  virtual IceInstList lowerLoad(const IceInstLoad *Inst, const IceInst *Next,
-                                bool &DeleteNextInst);
-  virtual IceInstList lowerPhi(const IceInstPhi *Inst, const IceInst *Next,
-                               bool &DeleteNextInst);
-  virtual IceInstList lowerRet(const IceInstRet *Inst, const IceInst *Next,
-                               bool &DeleteNextInst);
-  virtual IceInstList lowerSelect(const IceInstSelect *Inst,
-                                  const IceInst *Next, bool &DeleteNextInst);
-  virtual IceInstList lowerStore(const IceInstStore *Inst, const IceInst *Next,
-                                 bool &DeleteNextInst);
-  virtual IceInstList lowerSwitch(const IceInstSwitch *Inst,
-                                  const IceInst *Next, bool &DeleteNextInst);
 
-  bool IsEbpBasedFrame;
-  int FrameSizeLocals;
-  int LocalsSizeBytes;
-  llvm::SmallBitVector RegsUsed;
-  uint32_t NextLabelNumber;
-
-private:
-  IceVarList PhysicalRegisters;
-  static IceString RegNames[];
-};
-
-class IceTargetX8632S : public IceTargetX8632 {
-public:
-  static IceTargetX8632S *create(IceCfg *Cfg) {
-    return new IceTargetX8632S(Cfg);
-  }
-  virtual IceRegManager *makeRegManager(IceCfgNode *Node) { return NULL; }
-  virtual IceInstTarget *makeAssign(IceVariable *Dest, IceOperand *Src);
-  virtual llvm::SmallBitVector
-  getRegisterSet(RegSetMask Include = RegMask_All,
-                 RegSetMask Exclude = RegMask_None) const;
-
-protected:
   virtual IceInstList lowerAlloca(const IceInstAlloca *Inst,
                                   const IceInst *Next, bool &DeleteNextInst);
   virtual IceInstList lowerArithmetic(const IceInstArithmetic *Inst,
@@ -192,8 +138,6 @@ protected:
   virtual IceInstList doAddressOptLoad(const IceInstLoad *Inst);
   virtual IceInstList doAddressOptStore(const IceInstStore *Inst);
 
-private:
-  IceTargetX8632S(IceCfg *Cfg) : IceTargetX8632(Cfg) {}
   enum OperandLegalization {
     Legal_None = 0,
     Legal_Reg = 1 << 0,
@@ -211,6 +155,14 @@ private:
     return llvm::cast<IceVariable>(
         legalizeOperand(From, Legal_Reg, Insts, AllowOverlap, RegNum));
   }
+
+  bool IsEbpBasedFrame;
+  int FrameSizeLocals;
+  int LocalsSizeBytes;
+  llvm::SmallBitVector RegsUsed;
+  uint32_t NextLabelNumber;
+  IceVarList PhysicalRegisters;
+  static IceString RegNames[];
 };
 
 class IceInstX8632 : public IceInstTarget {
