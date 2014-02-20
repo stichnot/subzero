@@ -560,7 +560,11 @@ void IceInstCall::dump(IceOstream &Str) const {
   if (Tail)
     Str << "tail ";
   Str << "call " << getCallTarget() << "(";
-  dumpSources(Str);
+  for (unsigned I = 0; I < getNumArgs(); ++I) {
+    if (I > 0)
+      Str << ", ";
+    Str << getArg(I);
+  }
   Str << ")";
 }
 

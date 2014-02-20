@@ -301,7 +301,7 @@ public:
                                   IceOperand *CallTarget, bool Tail) {
     return new IceInstX8632Call(Cfg, Dest, CallTarget, Tail);
   }
-  IceOperand *getCallTarget(void) const { return CallTarget; }
+  IceOperand *getCallTarget(void) const { return getSrc(0); }
   virtual void emit(IceOstream &Str, uint32_t Option) const;
   virtual void dump(IceOstream &Str) const;
   static bool classof(const IceInst *Inst) { return isClassof(Inst, Call); }
@@ -309,7 +309,6 @@ public:
 private:
   IceInstX8632Call(IceCfg *Cfg, IceVariable *Dest, IceOperand *CallTarget,
                    bool Tail);
-  IceOperand *CallTarget;
   const bool Tail;
 };
 

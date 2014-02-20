@@ -194,23 +194,25 @@ private:
 
 class IceInstCall : public IceInst {
 public:
-  static IceInstCall *create(IceCfg *Cfg, unsigned MaxSrcs, IceVariable *Dest,
-                             IceOperand *CallTarget, bool Tail = false) {
-    return new IceInstCall(Cfg, MaxSrcs, Dest, CallTarget, Tail);
+  static IceInstCall *create(IceCfg *Cfg, unsigned NumArgs, IceVariable *Dest,
+                             IceOperand *CallTarget, bool Tail) {
+    return new IceInstCall(Cfg, NumArgs, Dest, CallTarget, Tail);
   }
   void addArg(IceOperand *Arg) { addSource(Arg); }
-  IceOperand *getCallTarget(void) const { return CallTarget; }
+  IceOperand *getCallTarget(void) const { return getSrc(0); }
+  IceOperand *getArg(unsigned I) const { return getSrc(I + 1); }
+  unsigned getNumArgs(void) const { return getSrcSize() - 1; }
   bool isTail(void) const { return Tail; }
   virtual void dump(IceOstream &Str) const;
   static bool classof(const IceInst *Inst) { return Inst->getKind() == Call; }
 
 private:
-  IceInstCall(IceCfg *Cfg, unsigned MaxSrcs, IceVariable *Dest,
+  IceInstCall(IceCfg *Cfg, unsigned NumArgs, IceVariable *Dest,
               IceOperand *CallTarget, bool Tail)
-      : IceInst(Cfg, IceInst::Call, MaxSrcs, Dest), CallTarget(CallTarget),
-        Tail(Tail) {}
-  // TODO: Shouldn't CallTarget be one of the operands?
-  IceOperand *CallTarget;
+      : IceInst(Cfg, IceInst::Call, NumArgs + 1, Dest),
+        Tail(Tail) {
+    addSource(CallTarget);
+  }
   const bool Tail;
 };
 

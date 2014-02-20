@@ -482,9 +482,9 @@ IceInstX8632Br::IceInstX8632Br(IceCfg *Cfg, IceCfgNode *TargetTrue,
 
 IceInstX8632Call::IceInstX8632Call(IceCfg *Cfg, IceVariable *Dest,
                                    IceOperand *CallTarget, bool Tail)
-    : IceInstX8632(Cfg, IceInstX8632::Call, 0, Dest), CallTarget(CallTarget),
+    : IceInstX8632(Cfg, IceInstX8632::Call, 1, Dest),
       Tail(Tail) {
-  // TODO: CallTarget should be another source operand.
+  addSource(CallTarget);
 }
 
 IceInstX8632Cdq::IceInstX8632Cdq(IceCfg *Cfg, IceVariable *Dest,
@@ -688,7 +688,7 @@ void IceInstX8632Br::dump(IceOstream &Str) const {
 }
 
 void IceInstX8632Call::emit(IceOstream &Str, uint32_t Option) const {
-  assert(getSrcSize() == 0);
+  assert(getSrcSize() == 1);
   Str << "\tcall\t";
   getCallTarget()->emit(Str, Option);
   if (Tail)
@@ -1620,9 +1620,10 @@ IceInstList IceTargetX8632::lowerArithmeticI64(const IceInstArithmetic *Inst,
     // TODO: Figure out how to properly construct CallTarget.
     IceConstant *CallTarget =
         Cfg->getConstant(IceType_i32, NULL, 0, HelperName);
+    bool Tailcall = false;
     // TODO: This instruction leaks.
     IceInstCall *Call =
-        IceInstCall::create(Cfg, MaxSrcs, Inst->getDest(), CallTarget);
+      IceInstCall::create(Cfg, MaxSrcs, Inst->getDest(), CallTarget, Tailcall);
     Call->addArg(Inst->getSrc(0));
     Call->addArg(Inst->getSrc(1));
     return lowerCall(Call, NULL, DeleteNextInst);
@@ -1700,8 +1701,8 @@ IceInstList IceTargetX8632::lowerCall(const IceInstCall *Inst,
   // eliminated after lowering, we would need to ensure that the
   // pre-call push instructions and the post-call esp adjustment get
   // eliminated as well.
-  for (unsigned NumArgs = Inst->getSrcSize(), i = 0; i < NumArgs; ++i) {
-    IceOperand *Arg = Inst->getSrc(NumArgs - i - 1);
+  for (unsigned NumArgs = Inst->getNumArgs(), i = 0; i < NumArgs; ++i) {
+    IceOperand *Arg = Inst->getArg(NumArgs - i - 1);
     Arg = legalizeOperand(Arg, Legal_All, Expansion);
     assert(Arg);
     if (Arg->getType() == IceType_i64) {
@@ -1709,9 +1710,6 @@ IceInstList IceTargetX8632::lowerCall(const IceInstCall *Inst,
       Expansion.push_back(IceInstX8632Push::create(Cfg, makeLowOperand(Arg)));
     } else {
       NewInst = IceInstX8632Push::create(Cfg, Arg);
-      // TODO: Where in the Cfg is StackOffset tracked?  It is needed
-      // for instructions that push esp-based stack variables as
-      // arguments.
       Expansion.push_back(NewInst);
     }
     StackOffset += typeWidthOnStack(Arg->getType());
@@ -1750,8 +1748,9 @@ IceInstList IceTargetX8632::lowerCall(const IceInstCall *Inst,
     // dead-code eliminated, and "tmp:edx=FakeDef()" for a call that
     // can't be eliminated.
   }
+  IceOperand *CallTarget = legalizeOperand(Inst->getCallTarget(), Legal_All, Expansion);
   NewInst =
-      IceInstX8632Call::create(Cfg, Reg, Inst->getCallTarget(), Inst->isTail());
+      IceInstX8632Call::create(Cfg, Reg, CallTarget, Inst->isTail());
   Expansion.push_back(NewInst);
   IceInst *NewCall = NewInst;
   if (RegHi)
