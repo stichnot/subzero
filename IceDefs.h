@@ -111,14 +111,14 @@ private:
 class IceOstream {
 public:
   IceOstream(std::ostream &Stream, IceCfg *Cfg)
-      : Stream(Stream), Cfg(Cfg), Verbose(IceV_Instructions | IceV_Preds) {}
+      : Stream(&Stream), Cfg(Cfg), Verbose(IceV_Instructions | IceV_Preds) {}
   bool isVerbose(IceVerboseMask Mask = IceV_All) { return Verbose & Mask; }
   void setVerbose(IceVerboseMask Mask) { Verbose = Mask; }
   void addVerbose(IceVerboseMask Mask) { Verbose |= Mask; }
   void subVerbose(IceVerboseMask Mask) { Verbose &= ~Mask; }
   // TODO: Use LLVM's raw_ostream instead.
   // http://llvm.org/docs/CodingStandards.html#use-raw-ostream
-  std::ostream &Stream;
+  std::ostream *Stream;
   IceCfg *const Cfg;
 
 private:
@@ -126,37 +126,37 @@ private:
 };
 
 inline IceOstream &operator<<(IceOstream &Str, const char *S) {
-  Str.Stream << S;
+  *(Str.Stream) << S;
   return Str;
 }
 
 inline IceOstream &operator<<(IceOstream &Str, const IceString &S) {
-  Str.Stream << S;
+  *(Str.Stream) << S;
   return Str;
 }
 
 inline IceOstream &operator<<(IceOstream &Str, uint32_t U) {
-  Str.Stream << U;
+  *(Str.Stream) << U;
   return Str;
 }
 
 inline IceOstream &operator<<(IceOstream &Str, int32_t I) {
-  Str.Stream << I;
+  *(Str.Stream) << I;
   return Str;
 }
 
 inline IceOstream &operator<<(IceOstream &Str, uint64_t U) {
-  Str.Stream << U;
+  *(Str.Stream) << U;
   return Str;
 }
 
 inline IceOstream &operator<<(IceOstream &Str, int64_t I) {
-  Str.Stream << I;
+  *(Str.Stream) << I;
   return Str;
 }
 
 inline IceOstream &operator<<(IceOstream &Str, double D) {
-  Str.Stream << D;
+  *(Str.Stream) << D;
   return Str;
 }
 

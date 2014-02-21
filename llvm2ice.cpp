@@ -23,6 +23,9 @@
 #include "llvm/Support/raw_ostream.h"
 #include "llvm/Support/SourceMgr.h"
 
+#include <fstream>
+#include <iostream>
+
 using namespace llvm;
 
 // Debugging helper
@@ -443,6 +446,9 @@ cl::opt<IceTargetArch> TargetArch(
                clEnumValN(IceTarget_ARM64, "arm64", "ARM64"), clEnumValEnd));
 cl::opt<std::string> IRFilename(cl::Positional, cl::desc("<IR file>"),
                                 cl::Required);
+static cl::opt<std::string>
+OutputFilename("o", cl::desc("Override output filename"), cl::init("-"),
+               cl::value_desc("filename"));
 
 int main(int argc, char **argv) {
   cl::ParseCommandLineOptions(argc, argv);
@@ -459,11 +465,17 @@ int main(int argc, char **argv) {
   for (unsigned i = 0; i != VerboseList.size(); ++i)
     VerboseMask |= VerboseList[i];
 
+  std::ofstream Ofs;
+  if (OutputFilename != "-") {
+    Ofs.open(OutputFilename.c_str(), std::ofstream::out);
+  }
+
   for (Module::const_iterator I = Mod->begin(), E = Mod->end(); I != E; ++I) {
     if (I->empty())
       continue;
     LLVM2ICEConverter FunctionConverter;
     IceCfg *Cfg = FunctionConverter.convertFunction(I);
+    Cfg->Str.Stream = &(OutputFilename == "-" ? std::cout : Ofs);
     Cfg->Str.setVerbose(VerboseMask);
     if (!DisableTranslation) {
       Cfg->translate(TargetArch);
