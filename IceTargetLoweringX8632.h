@@ -108,8 +108,7 @@ private:
                               IceInstList &Insts, bool AllowOverlap = false,
                               int RegNum = -1);
   IceVariable *legalizeOperandToVar(IceOperand *From, IceInstList &Insts,
-                                    bool AllowOverlap = false,
-                                    int RegNum = -1);
+                                    bool AllowOverlap = false, int RegNum = -1);
 
   bool IsEbpBasedFrame;
   int FrameSizeLocals;

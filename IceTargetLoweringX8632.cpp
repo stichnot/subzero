@@ -1579,9 +1579,10 @@ IceOperand *IceTargetX8632::legalizeOperand(IceOperand *From, LegalMask Allowed,
   return From;
 }
 
-IceVariable *IceTargetX8632::legalizeOperandToVar(IceOperand *From, IceInstList &Insts,
-                                    bool AllowOverlap,
-                                    int RegNum) {
+IceVariable *IceTargetX8632::legalizeOperandToVar(IceOperand *From,
+                                                  IceInstList &Insts,
+                                                  bool AllowOverlap,
+                                                  int RegNum) {
   return llvm::cast<IceVariable>(
-                                 legalizeOperand(From, Legal_Reg, Insts, AllowOverlap, RegNum));
+      legalizeOperand(From, Legal_Reg, Insts, AllowOverlap, RegNum));
 }
