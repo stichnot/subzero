@@ -19,7 +19,7 @@ public:
   IceInstList lower(const IceInst *Inst, const IceInst *Next,
                     bool &DeleteNextInst);
   virtual IceVariable *getPhysicalRegister(unsigned RegNum) = 0;
-  virtual IceString *getRegNames(void) const = 0;
+  virtual IceString getRegName(int RegNum) const = 0;
   virtual bool hasFramePointer(void) const { return false; }
   virtual unsigned getFrameOrStackReg(void) const = 0;
   virtual uint32_t typeWidthOnStack(IceType Type) = 0;

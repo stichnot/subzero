@@ -14,7 +14,11 @@ class IceTargetX8632 : public IceTargetLowering {
 public:
   static IceTargetX8632 *create(IceCfg *Cfg) { return new IceTargetX8632(Cfg); }
   virtual IceVariable *getPhysicalRegister(unsigned RegNum);
-  virtual IceString *getRegNames(void) const { return RegNames; }
+  virtual IceString getRegName(int RegNum) const {
+    assert(RegNum >= 0);
+    assert(RegNum < Reg_NUM);
+    return RegNames[RegNum];
+  }
   virtual llvm::SmallBitVector
   getRegisterSet(RegSetMask Include = RegMask_All,
                  RegSetMask Exclude = RegMask_None) const;

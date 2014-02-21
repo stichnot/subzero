@@ -78,8 +78,6 @@ bool IceCfg::hasComputedFrame(void) const {
 
 void IceCfg::makeTarget(IceTargetArch Arch) {
   Target = IceTargetLowering::createLowering(Arch, this);
-  if (Target)
-    RegisterNames = Target->getRegNames();
 }
 
 void IceCfg::addArg(IceVariable *Arg) {
@@ -176,6 +174,11 @@ int IceCfg::newInstNumber(void) {
   int Result = NextInstNumber;
   NextInstNumber += 1;
   return Result;
+}
+
+IceString IceCfg::physicalRegName(int Reg) const {
+  assert(getTarget());
+  return getTarget()->getRegName(Reg);
 }
 
 void IceCfg::renumberInstructions(void) {

@@ -46,7 +46,7 @@ public:
   unsigned getNumVariables(void) const { return Variables.size(); }
   int newInstNumber(void);
 
-  IceString physicalRegName(int Reg) const { return RegisterNames[Reg]; }
+  IceString physicalRegName(int Reg) const;
   void translate(IceTargetArch TargetArch);
   void emit(uint32_t Option) const;
   void dump(void) const;
@@ -75,7 +75,6 @@ private:
   int NextInstNumber;
   // TODO: This goes away when we get target-specific operands with
   // their own dump() methods.
-  IceString *RegisterNames;
   void makeTarget(IceTargetArch Arch);
   void renumberInstructions(void);
   void placePhiLoads(void);
