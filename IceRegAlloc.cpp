@@ -225,7 +225,6 @@ void IceLinearScan::scan(const llvm::SmallBitVector &RegMask) {
                                            E = Inactive.end();
            I != E; ++I) {
         IceLiveRangeWrapper Item = *I;
-        assert(Item.overlaps(Cur));
         int RegNum = Item.Var->getRegNumTmp();
         assert(RegNum >= 0);
         Weights[RegNum].addWeight(Item.range().getWeight());
