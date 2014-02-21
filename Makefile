@@ -44,6 +44,7 @@ OBJS= \
 	IceRegAlloc.o \
 	IceRegManager.o \
 	IceTargetLowering.o \
+	IceTargetLoweringX8632.o \
 	IceTypes.o
 
 # Keep all the first target so it's the default.

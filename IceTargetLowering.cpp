@@ -5,7 +5,7 @@
 
 #include "IceCfg.h" // setError()
 #include "IceTargetLowering.h"
-#include "IceInstX8632.h"
+#include "IceTargetLoweringX8632.h"
 
 IceTargetLowering *IceTargetLowering::createLowering(IceTargetArch Target,
                                                      IceCfg *Cfg) {
