@@ -149,7 +149,6 @@ void IceRegManager::notifyLoad(IceInst *Inst, bool IsAssign) {
 
 void IceRegManager::notifyStore(IceInst *Inst) {
   IceVariable *Reg = llvm::cast<IceVariable>(Inst->getSrc(0));
-  assert(Variable);
   IceRegManagerEntry *Entry = NULL;
   for (QueueType::iterator I = Queue.begin(), E = Queue.end(); I != E; ++I) {
     if ((*I)->getVar() == Reg) {
