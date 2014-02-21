@@ -15,6 +15,10 @@
 class IceTargetLowering {
 public:
   static IceTargetLowering *createLowering(IceTargetArch Target, IceCfg *Cfg);
+  virtual void translate(void) {
+    Cfg->setError("Target doesn't specify lowering steps.");
+  }
+
   IceInstList doAddressOpt(const IceInst *Inst);
   IceInstList lower(const IceInst *Inst, const IceInst *Next,
                     bool &DeleteNextInst);
@@ -94,7 +98,7 @@ protected:
   // allocate registers based on affinity and other factors.  The
   // simplest lowering does nothing here and leaves it all to a
   // subsequent global register allocation pass.
-  virtual void postLower(IceInstList &Expansion) {}
+  virtual void postLower(const IceInstList &Expansion) {}
 
   IceCfg *const Cfg;
   bool HasComputedFrame;

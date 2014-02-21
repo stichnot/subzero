@@ -48,6 +48,15 @@ public:
 
   IceString physicalRegName(int Reg) const;
   void translate(IceTargetArch TargetArch);
+  void renumberInstructions(void);
+  void placePhiLoads(void);
+  void placePhiStores(void);
+  void deletePhis(void);
+  void doAddressOpt(void);
+  void genCode(void);
+  void genFrame(void);
+  void liveness(IceLiveness Mode);
+  void regAlloc(void);
   void emit(uint32_t Option) const;
   void dump(void) const;
 
@@ -74,15 +83,6 @@ private:
 
   int NextInstNumber;
   void makeTarget(IceTargetArch Arch);
-  void renumberInstructions(void);
-  void placePhiLoads(void);
-  void placePhiStores(void);
-  void deletePhis(void);
-  void doAddressOpt(void);
-  void genCode(void);
-  void genFrame(void);
-  void liveness(IceLiveness Mode);
-  void regAlloc(void);
 
   // TODO: This is a hack, and should be moved into a global context
   // guarded with a mutex.

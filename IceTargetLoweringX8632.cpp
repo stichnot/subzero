@@ -10,6 +10,71 @@
 #include "IceOperand.h"
 #include "IceTargetLoweringX8632.h"
 
+void IceTargetX8632::translate(void) {
+  Cfg->placePhiLoads();
+  if (Cfg->hasError())
+    return;
+  Cfg->placePhiStores();
+  if (Cfg->hasError())
+    return;
+  Cfg->deletePhis();
+  if (Cfg->hasError())
+    return;
+  Cfg->renumberInstructions();
+  if (Cfg->hasError())
+    return;
+  if (Cfg->Str.isVerbose())
+    Cfg->Str << "================ After Phi lowering ================\n";
+  Cfg->dump();
+
+  Cfg->doAddressOpt();
+  // Liveness may be incorrect after address mode optimization.
+  Cfg->renumberInstructions();
+  if (Cfg->hasError())
+    return;
+  // TODO: It should be sufficient to use the fastest livness
+  // calculation, i.e. IceLiveness_LREndLightweight.  However,
+  // currently this breaks one test (icmp-simple.ll) because with
+  // IceLiveness_LREndFull, the problematic instructions get dead-code
+  // eliminated.
+  Cfg->liveness(IceLiveness_LREndFull);
+  if (Cfg->hasError())
+    return;
+  if (Cfg->Str.isVerbose())
+    Cfg->Str
+        << "================ After x86 address mode opt ================\n";
+  Cfg->dump();
+  Cfg->genCode();
+  if (Cfg->hasError())
+    return;
+  Cfg->renumberInstructions();
+  if (Cfg->hasError())
+    return;
+  Cfg->liveness(IceLiveness_RangesFull);
+  if (Cfg->hasError())
+    return;
+  ComputedLiveRanges = true;
+  if (Cfg->Str.isVerbose())
+    Cfg->Str
+        << "================ After initial x8632 codegen ================\n";
+  Cfg->dump();
+
+  Cfg->regAlloc();
+  if (Cfg->hasError())
+    return;
+  if (Cfg->Str.isVerbose())
+    Cfg->Str
+        << "================ After linear scan regalloc ================\n";
+  Cfg->dump();
+
+  Cfg->genFrame();
+  if (Cfg->hasError())
+    return;
+  if (Cfg->Str.isVerbose())
+    Cfg->Str << "================ After stack frame mapping ================\n";
+  Cfg->dump();
+}
+
 IceString IceTargetX8632::RegNames[] = { "eax", "ecx", "edx", "ebx",
                                          "esp", "ebp", "esi", "edi", };
 
@@ -91,7 +156,7 @@ void IceTargetX8632::addProlog(IceCfgNode *Node) {
     }
     if (Var->getIsArg())
       continue;
-    if (Var->getLiveRange().isEmpty())
+    if (ComputedLiveRanges && Var->getLiveRange().isEmpty())
       continue;
     LocalsSizeBytes += typeWidthOnStack(Var->getType());
   }
@@ -137,7 +202,7 @@ void IceTargetX8632::addProlog(IceCfgNode *Node) {
     }
     if (Var->getIsArg())
       continue;
-    if (Var->getLiveRange().isEmpty())
+    if (ComputedLiveRanges && Var->getLiveRange().isEmpty())
       continue;
     NextStackOffset += typeWidthOnStack(Var->getType());
     if (IsEbpBasedFrame)
@@ -456,6 +521,8 @@ IceInstList IceTargetX8632::lowerArithmetic(const IceInstArithmetic *Inst,
   // Assign t2.
   if (Reg2InEcx) {
     Reg2 = legalizeOperandToVar(Src1, Expansion, false, Reg_ecx);
+  } else {
+    Reg2 = legalizeOperand(Src1, Legal_All, Expansion);
   }
 
   // Generate the arithmetic instruction.
@@ -1585,4 +1652,82 @@ IceVariable *IceTargetX8632::legalizeOperandToVar(IceOperand *From,
                                                   int RegNum) {
   return llvm::cast<IceVariable>(
       legalizeOperand(From, Legal_Reg, Insts, AllowOverlap, RegNum));
+}
+
+////////////////////////////////////////////////////////////////
+
+void IceTargetX8632Fast::translate(void) {
+  Cfg->placePhiLoads();
+  if (Cfg->hasError())
+    return;
+  Cfg->placePhiStores();
+  if (Cfg->hasError())
+    return;
+  Cfg->deletePhis();
+  if (Cfg->hasError())
+    return;
+  if (Cfg->Str.isVerbose())
+    Cfg->Str << "================ After Phi lowering ================\n";
+  Cfg->dump();
+
+  Cfg->genCode();
+  if (Cfg->hasError())
+    return;
+  if (Cfg->Str.isVerbose())
+    Cfg->Str
+        << "================ After initial x8632 codegen ================\n";
+  Cfg->dump();
+
+  Cfg->genFrame();
+  if (Cfg->hasError())
+    return;
+  if (Cfg->Str.isVerbose())
+    Cfg->Str << "================ After stack frame mapping ================\n";
+  Cfg->dump();
+}
+
+void IceTargetX8632Fast::postLower(const IceInstList &Expansion) {
+  llvm::SmallBitVector AvailableRegisters = getRegisterSet(RegMask_All);
+  // Make one pass to black-list pre-colored registers.  TODO: If
+  // there was some prior register allocation pass that made register
+  // assignments, those registers need to be black-listed here as
+  // well.
+  for (IceInstList::const_iterator I = Expansion.begin(), E = Expansion.end();
+       I != E; ++I) {
+    const IceInst *Inst = *I;
+    unsigned VarIndex = 0;
+    for (unsigned SrcNum = 0; SrcNum < Inst->getSrcSize(); ++SrcNum) {
+      IceOperand *Src = Inst->getSrc(SrcNum);
+      unsigned NumVars = Src->getNumVars();
+      for (unsigned J = 0; J < NumVars; ++J, ++VarIndex) {
+        const IceVariable *Var = Src->getVar(J);
+        int RegNum = Var->getRegNum();
+        if (RegNum < 0)
+          continue;
+        AvailableRegisters[RegNum] = false;
+      }
+    }
+  }
+  // The second pass colors infinite-weight variables.
+  for (IceInstList::const_iterator I = Expansion.begin(), E = Expansion.end();
+       I != E; ++I) {
+    const IceInst *Inst = *I;
+    unsigned VarIndex = 0;
+    for (unsigned SrcNum = 0; SrcNum < Inst->getSrcSize(); ++SrcNum) {
+      IceOperand *Src = Inst->getSrc(SrcNum);
+      unsigned NumVars = Src->getNumVars();
+      for (unsigned J = 0; J < NumVars; ++J, ++VarIndex) {
+        IceVariable *Var = Src->getVar(J);
+        int RegNum = Var->getRegNum();
+        if (RegNum >= 0)
+          continue;
+        if (!Var->getWeight().isInf())
+          continue;
+        assert(!AvailableRegisters.empty());
+        RegNum = AvailableRegisters.find_first();
+        Var->setRegNum(RegNum);
+        AvailableRegisters[RegNum] = false;
+      }
+    }
+  }
 }

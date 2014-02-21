@@ -13,6 +13,8 @@
 class IceTargetX8632 : public IceTargetLowering {
 public:
   static IceTargetX8632 *create(IceCfg *Cfg) { return new IceTargetX8632(Cfg); }
+  virtual void translate(void);
+
   virtual IceVariable *getPhysicalRegister(unsigned RegNum);
   virtual IceString getRegName(int RegNum) const {
     assert(RegNum >= 0);
@@ -27,6 +29,7 @@ public:
     return IsEbpBasedFrame ? Reg_ebp : Reg_esp;
   }
   virtual uint32_t typeWidthOnStack(IceType Type) {
+    return (iceTypeWidth(Type) + 3) & ~3;
     switch (Type) {
     case IceType_i1:
       return 4;
@@ -60,10 +63,10 @@ public:
     Reg_NUM = 8
   };
 
-private:
+protected:
   IceTargetX8632(IceCfg *Cfg)
       : IceTargetLowering(Cfg), IsEbpBasedFrame(false), FrameSizeLocals(0),
-        LocalsSizeBytes(0), NextLabelNumber(0),
+        LocalsSizeBytes(0), NextLabelNumber(0), ComputedLiveRanges(false),
         PhysicalRegisters(IceVarList(Reg_NUM)) {}
 
   virtual IceInstList lowerAlloca(const IceInstAlloca *Inst,
@@ -119,8 +122,21 @@ private:
   int LocalsSizeBytes;
   llvm::SmallBitVector RegsUsed;
   uint32_t NextLabelNumber;
+  bool ComputedLiveRanges;
   IceVarList PhysicalRegisters;
   static IceString RegNames[];
+};
+
+class IceTargetX8632Fast : public IceTargetX8632 {
+public:
+  static IceTargetX8632Fast *create(IceCfg *Cfg) {
+    return new IceTargetX8632Fast(Cfg);
+  }
+  virtual void translate(void);
+
+protected:
+  IceTargetX8632Fast(IceCfg *Cfg) : IceTargetX8632(Cfg) {}
+  virtual void postLower(const IceInstList &Expansion);
 };
 
 #endif // _IceTargetLoweringX8632_h

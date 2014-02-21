@@ -217,32 +217,18 @@ void IceCfg::deletePhis(void) {
   }
 }
 
+void IceCfg::doAddressOpt(void) {
+  for (IceNodeList::iterator I = LNodes.begin(), E = LNodes.end(); I != E;
+       ++I) {
+    (*I)->doAddressOpt();
+  }
+}
+
 void IceCfg::genCode(void) {
   if (Target == NULL) {
     setError("IceCfg::makeTarget() wasn't called.");
     return;
   }
-  // TODO: Query whether the Target supports address mode
-  // optimization, and skip the pass if not.
-  for (IceNodeList::iterator I = LNodes.begin(), E = LNodes.end(); I != E;
-       ++I) {
-    (*I)->doAddressOpt();
-  }
-  // Liveness may be incorrect after address mode optimization.
-  renumberInstructions();
-  if (hasError())
-    return;
-  // TODO: It should be sufficient to use the fastest livness
-  // calculation, i.e. IceLiveness_LREndLightweight.  However,
-  // currently this breaks one test (icmp-simple.ll) because with
-  // IceLiveness_LREndFull, the problematic instructions get dead-code
-  // eliminated.
-  liveness(IceLiveness_LREndFull);
-  if (hasError())
-    return;
-  if (Str.isVerbose())
-    Str << "================ After x86 address mode opt ================\n";
-  dump();
   for (IceNodeList::iterator I = LNodes.begin(), E = LNodes.end(); I != E;
        ++I) {
     (*I)->genCode();
@@ -359,48 +345,7 @@ void IceCfg::translate(IceTargetArch TargetArch) {
     Str << "================ Initial CFG ================\n";
   dump();
 
-  placePhiLoads();
-  if (hasError())
-    return;
-  placePhiStores();
-  if (hasError())
-    return;
-  deletePhis();
-  if (hasError())
-    return;
-  renumberInstructions();
-  if (hasError())
-    return;
-  if (Str.isVerbose())
-    Str << "================ After Phi lowering ================\n";
-  dump();
-
-  genCode();
-  if (hasError())
-    return;
-  renumberInstructions();
-  if (hasError())
-    return;
-  liveness(IceLiveness_RangesFull);
-  if (hasError())
-    return;
-  if (Str.isVerbose())
-    Str << "================ After initial x8632 codegen ================\n";
-  dump();
-
-  regAlloc();
-  if (hasError())
-    return;
-  if (Str.isVerbose())
-    Str << "================ After linear scan regalloc ================\n";
-  dump();
-
-  genFrame();
-  if (hasError())
-    return;
-  if (Str.isVerbose())
-    Str << "================ After stack frame mapping ================\n";
-  dump();
+  getTarget()->translate();
 
   if (Str.isVerbose())
     Str << "================ Final output ================\n";

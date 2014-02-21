@@ -37,7 +37,7 @@ public:
   };
   IceType getType(void) const { return Type; }
   OperandKind getKind(void) const { return Kind; }
-  const IceVariable *getVar(unsigned I) const {
+  IceVariable *getVar(unsigned I) const {
     assert(I < getNumVars());
     return Vars[I];
   }
