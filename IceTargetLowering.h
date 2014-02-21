@@ -88,6 +88,14 @@ protected:
   virtual IceInstList doAddressOptStore(const IceInstStore *Inst) {
     return IceInstList();
   }
+  // This gives the target an opportunity to post-process the lowered
+  // expansion before returning.  The primary intention is to do some
+  // Register Manager activity as necessary, specifically to eagerly
+  // allocate registers based on affinity and other factors.  The
+  // simplest lowering does nothing here and leaves it all to a
+  // subsequent global register allocation pass.
+  virtual void postLower(IceInstList &Expansion) {}
+
   IceCfg *const Cfg;
   bool HasComputedFrame;
   // StackAdjustment keeps track of the current stack offset from its

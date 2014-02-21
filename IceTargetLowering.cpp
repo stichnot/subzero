@@ -35,34 +35,73 @@ IceInstList IceTargetLowering::doAddressOpt(const IceInst *Inst) {
 
 IceInstList IceTargetLowering::lower(const IceInst *Inst, const IceInst *Next,
                                      bool &DeleteNextInst) {
-  if (const IceInstAlloca *I = llvm::dyn_cast<const IceInstAlloca>(Inst))
-    return lowerAlloca(I, Next, DeleteNextInst);
-  if (const IceInstArithmetic *I =
-          llvm::dyn_cast<const IceInstArithmetic>(Inst))
-    return lowerArithmetic(I, Next, DeleteNextInst);
-  if (const IceInstAssign *I = llvm::dyn_cast<const IceInstAssign>(Inst))
-    return lowerAssign(I, Next, DeleteNextInst);
-  if (const IceInstBr *I = llvm::dyn_cast<const IceInstBr>(Inst))
-    return lowerBr(I, Next, DeleteNextInst);
-  if (const IceInstCall *I = llvm::dyn_cast<const IceInstCall>(Inst))
-    return lowerCall(I, Next, DeleteNextInst);
-  if (const IceInstCast *I = llvm::dyn_cast<const IceInstCast>(Inst))
-    return lowerCast(I, Next, DeleteNextInst);
-  if (const IceInstFcmp *I = llvm::dyn_cast<const IceInstFcmp>(Inst))
-    return lowerFcmp(I, Next, DeleteNextInst);
-  if (const IceInstIcmp *I = llvm::dyn_cast<const IceInstIcmp>(Inst))
-    return lowerIcmp(I, Next, DeleteNextInst);
-  if (const IceInstLoad *I = llvm::dyn_cast<const IceInstLoad>(Inst))
-    return lowerLoad(I, Next, DeleteNextInst);
-  if (const IceInstRet *I = llvm::dyn_cast<const IceInstRet>(Inst))
-    return lowerRet(I, Next, DeleteNextInst);
-  if (const IceInstSelect *I = llvm::dyn_cast<const IceInstSelect>(Inst))
-    return lowerSelect(I, Next, DeleteNextInst);
-  if (const IceInstStore *I = llvm::dyn_cast<const IceInstStore>(Inst))
-    return lowerStore(I, Next, DeleteNextInst);
-  if (const IceInstSwitch *I = llvm::dyn_cast<const IceInstSwitch>(Inst))
-    return lowerSwitch(I, Next, DeleteNextInst);
+  IceInstList Expansion;
+  switch (Inst->getKind()) {
+  case IceInst::Alloca:
+    Expansion =
+        lowerAlloca(llvm::dyn_cast<IceInstAlloca>(Inst), Next, DeleteNextInst);
+    break;
+  case IceInst::Arithmetic:
+    Expansion = lowerArithmetic(llvm::dyn_cast<IceInstArithmetic>(Inst), Next,
+                                DeleteNextInst);
+    break;
+  case IceInst::Assign:
+    Expansion =
+        lowerAssign(llvm::dyn_cast<IceInstAssign>(Inst), Next, DeleteNextInst);
+    break;
+  case IceInst::Br:
+    Expansion = lowerBr(llvm::dyn_cast<IceInstBr>(Inst), Next, DeleteNextInst);
+    break;
+  case IceInst::Call:
+    Expansion =
+        lowerCall(llvm::dyn_cast<IceInstCall>(Inst), Next, DeleteNextInst);
+    break;
+  case IceInst::Cast:
+    Expansion =
+        lowerCast(llvm::dyn_cast<IceInstCast>(Inst), Next, DeleteNextInst);
+    break;
+  case IceInst::Fcmp:
+    Expansion =
+        lowerFcmp(llvm::dyn_cast<IceInstFcmp>(Inst), Next, DeleteNextInst);
+    break;
+  case IceInst::Icmp:
+    Expansion =
+        lowerIcmp(llvm::dyn_cast<IceInstIcmp>(Inst), Next, DeleteNextInst);
+    break;
+  case IceInst::Load:
+    Expansion =
+        lowerLoad(llvm::dyn_cast<IceInstLoad>(Inst), Next, DeleteNextInst);
+    break;
+  case IceInst::Phi:
+    Expansion =
+        lowerPhi(llvm::dyn_cast<IceInstPhi>(Inst), Next, DeleteNextInst);
+    break;
+  case IceInst::Ret:
+    Expansion =
+        lowerRet(llvm::dyn_cast<IceInstRet>(Inst), Next, DeleteNextInst);
+    break;
+  case IceInst::Select:
+    Expansion =
+        lowerSelect(llvm::dyn_cast<IceInstSelect>(Inst), Next, DeleteNextInst);
+    break;
+  case IceInst::Store:
+    Expansion =
+        lowerStore(llvm::dyn_cast<IceInstStore>(Inst), Next, DeleteNextInst);
+    break;
+  case IceInst::Switch:
+    Expansion =
+        lowerSwitch(llvm::dyn_cast<IceInstSwitch>(Inst), Next, DeleteNextInst);
+    break;
+  case IceInst::FakeDef:
+  case IceInst::FakeUse:
+  case IceInst::FakeKill:
+  case IceInst::Target:
+    // These are all Target instruction types and shouldn't be
+    // encountered at this stage.
+    Cfg->setError("Can't lower unsupported instruction type");
+    break;
+  }
 
-  Cfg->setError("Can't lower unsupported instruction type");
-  return IceInstList();
+  postLower(Expansion);
+  return Expansion;
 }
