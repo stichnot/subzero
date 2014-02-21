@@ -332,7 +332,6 @@ public:
   void addArgument(IceOperand *Source, IceCfgNode *Label);
   IceOperand *getArgument(IceCfgNode *Label) const;
   IceInst *lower(IceCfg *Cfg, IceCfgNode *Node);
-  // TODO: delete unused getOperandForTarget()
   IceOperand *getOperandForTarget(IceCfgNode *Target) const;
   void livenessPhiOperand(llvm::BitVector &Live, IceCfgNode *Target);
   virtual void dump(IceOstream &Str) const;

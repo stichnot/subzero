@@ -73,8 +73,6 @@ private:
   class IceConstantPool *ConstantPool;
 
   int NextInstNumber;
-  // TODO: This goes away when we get target-specific operands with
-  // their own dump() methods.
   void makeTarget(IceTargetArch Arch);
   void renumberInstructions(void);
   void placePhiLoads(void);
