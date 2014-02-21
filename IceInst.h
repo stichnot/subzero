@@ -248,7 +248,6 @@ private:
   IceCastKind CastKind;
 };
 
-// TODO: implement
 class IceInstFcmp : public IceInst {
 public:
   enum IceFCond {
@@ -270,15 +269,16 @@ public:
     Uno,
     True
   };
-  static IceInstFcmp *create(IceCfg *Cfg, IceFCond Condition, IceType Type,
-                             IceOperand *Dest, IceOperand *Source1,
-                             IceOperand *Source2) {
-    return new IceInstFcmp(Cfg, Condition, Type, Dest, Source1, Source2);
+  static IceInstFcmp *create(IceCfg *Cfg, IceFCond Condition, IceVariable *Dest,
+                             IceOperand *Source1, IceOperand *Source2) {
+    return new IceInstFcmp(Cfg, Condition, Dest, Source1, Source2);
   }
+  IceFCond getCondition(void) const { return Condition; }
+  virtual void dump(IceOstream &Str) const;
   static bool classof(const IceInst *Inst) { return Inst->getKind() == Fcmp; }
 
 private:
-  IceInstFcmp(IceCfg *Cfg, IceFCond Condition, IceType Type, IceOperand *Dest,
+  IceInstFcmp(IceCfg *Cfg, IceFCond Condition, IceVariable *Dest,
               IceOperand *Source1, IceOperand *Source2);
   IceFCond Condition;
 };
