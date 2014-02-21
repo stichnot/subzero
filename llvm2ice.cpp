@@ -173,6 +173,8 @@ private:
       return convertRetInstruction(cast<ReturnInst>(Inst));
     case Instruction::IntToPtr:
       return convertIntToPtrInstruction(cast<IntToPtrInst>(Inst));
+    case Instruction::FCmp:
+      return convertFCmpInstruction(cast<FCmpInst>(Inst));
     case Instruction::ICmp:
       return convertICmpInstruction(cast<ICmpInst>(Inst));
     case Instruction::Select:
@@ -308,6 +310,67 @@ private:
     IceOperand *Src = convertOperand(Inst, 0);
     IceVariable *Dest = mapValueToIceVar(Inst);
     return IceInstCast::create(Cfg, CastKind, Dest, Src);
+  }
+
+  IceInst *convertFCmpInstruction(const FCmpInst *Inst) {
+    IceOperand *Src0 = convertOperand(Inst, 0);
+    IceOperand *Src1 = convertOperand(Inst, 1);
+    IceVariable *Dest = mapValueToIceVar(Inst);
+
+    IceInstFcmp::IceFCond Cond;
+    switch (Inst->getPredicate()) {
+      default:
+      case CmpInst::FCMP_FALSE:
+        Cond = IceInstFcmp::False;
+        break;
+      case CmpInst::FCMP_OEQ:
+        Cond = IceInstFcmp::Oeq;
+        break;
+      case CmpInst::FCMP_OGT:
+        Cond = IceInstFcmp::Ogt;
+        break;
+      case CmpInst::FCMP_OGE:
+        Cond = IceInstFcmp::Oge;
+        break;
+      case CmpInst::FCMP_OLT:
+        Cond = IceInstFcmp::Olt;
+        break;
+      case CmpInst::FCMP_OLE:
+        Cond = IceInstFcmp::Ole;
+        break;
+      case CmpInst::FCMP_ONE:
+        Cond = IceInstFcmp::One;
+        break;
+      case CmpInst::FCMP_ORD:
+        Cond = IceInstFcmp::Ord;
+        break;
+      case CmpInst::FCMP_UEQ:
+        Cond = IceInstFcmp::Ueq;
+        break;
+      case CmpInst::FCMP_UGT:
+        Cond = IceInstFcmp::Ugt;
+        break;
+      case CmpInst::FCMP_UGE:
+        Cond = IceInstFcmp::Uge;
+        break;
+      case CmpInst::FCMP_ULT:
+        Cond = IceInstFcmp::Ult;
+        break;
+      case CmpInst::FCMP_ULE:
+        Cond = IceInstFcmp::Ule;
+        break;
+      case CmpInst::FCMP_UNE:
+        Cond = IceInstFcmp::Une;
+        break;
+      case CmpInst::FCMP_UNO:
+        Cond = IceInstFcmp::Uno;
+        break;
+      case CmpInst::FCMP_TRUE:
+        Cond = IceInstFcmp::True;
+        break;
+    }
+
+    return IceInstFcmp::create(Cfg, Cond, Dest, Src0, Src1);
   }
 
   IceInst *convertICmpInstruction(const ICmpInst *Inst) {
