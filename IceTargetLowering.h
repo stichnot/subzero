@@ -43,6 +43,8 @@ public:
   virtual void addProlog(IceCfgNode *Node) = 0;
   virtual void addEpilog(IceCfgNode *Node) = 0;
 
+  virtual ~IceTargetLowering() {}
+
 protected:
   IceTargetLowering(IceCfg *Cfg)
       : Cfg(Cfg), HasComputedFrame(false), StackAdjustment(0) {}

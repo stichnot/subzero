@@ -15,7 +15,7 @@ class IceTargetX8632;
 
 class IceOperandX8632 : public IceOperand {
 public:
-  enum IceOperandTypeX8632 { __Start = IceOperand::Target, Mem, };
+  enum IceOperandTypeX8632 { __Start = IceOperand::Target, Mem };
   virtual void emit(IceOstream &Str, uint32_t Option) const = 0;
   void dump(IceOstream &Str) const;
 
@@ -85,7 +85,7 @@ public:
     Store,
     Sub,
     Test,
-    Xor,
+    Xor
   };
   virtual void emit(IceOstream &Str, uint32_t Option) const = 0;
   virtual void dump(IceOstream &Str) const;

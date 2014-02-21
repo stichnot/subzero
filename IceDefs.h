@@ -80,7 +80,7 @@ enum IceLiveness {
   // In addition to IceLiveness_LREndFull, also calculate the complete
   // live range for each variable in a form suitable for interference
   // calculation and register allocation.
-  IceLiveness_RangesFull,
+  IceLiveness_RangesFull
 };
 
 // This is a convenience templated class that provides a mapping

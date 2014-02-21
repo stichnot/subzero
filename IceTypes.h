@@ -15,14 +15,14 @@ enum IceType {
   IceType_i32,
   IceType_i64,
   IceType_f32,
-  IceType_f64,
+  IceType_f64
 };
 
 enum IceTargetArch {
   IceTarget_X8632,
   IceTarget_X8664,
   IceTarget_ARM32,
-  IceTarget_ARM64,
+  IceTarget_ARM64
 };
 
 uint32_t iceTypeWidth(IceType T);

@@ -67,6 +67,8 @@ public:
   // OK that it's virtual.
   virtual bool isRedundantAssign(void) const { return false; }
 
+  virtual ~IceInst() {}
+
 protected:
   IceInst(IceCfg *Cfg, IceInstType Kind, unsigned MaxSrcs, IceVariable *Dest);
   void addSource(IceOperand *Src);
@@ -133,7 +135,7 @@ public:
     And,
     Or,
     Xor,
-    OpKind_NUM,
+    OpKind_NUM
   };
   static IceInstArithmetic *create(IceCfg *Cfg, OpKind Op, IceVariable *Dest,
                                    IceOperand *Source1, IceOperand *Source2) {
@@ -230,7 +232,7 @@ public:
     Sitofp,
     Ptrtoint,
     Inttoptr,
-    Bitcast,
+    Bitcast
   };
   static IceInstCast *create(IceCfg *Cfg, IceCastKind CastKind,
                              IceVariable *Dest, IceOperand *Source) {
@@ -266,7 +268,7 @@ public:
     Ule,
     Une,
     Uno,
-    True,
+    True
   };
   static IceInstFcmp *create(IceCfg *Cfg, IceFCond Condition, IceType Type,
                              IceOperand *Dest, IceOperand *Source1,

@@ -45,6 +45,8 @@ public:
   virtual void emit(IceOstream &Str, uint32_t Option) const;
   virtual void dump(IceOstream &Str) const;
 
+  virtual ~IceOperand() {}
+
 protected:
   IceOperand(IceCfg *Cfg, OperandKind Kind, IceType Type)
       : Type(Type), Kind(Kind) {}
