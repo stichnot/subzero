@@ -1069,7 +1069,8 @@ IceInstList IceTargetX8632::lowerIcmp(const IceInstIcmp *Inst,
   IceOperand *Src1 = Inst->getSrc(1);
   IceVariable *Dest = Inst->getDest();
   if (Src0->getType() != IceType_i64 && Next && llvm::isa<IceInstBr>(Next) &&
-      Dest == Next->getSrc(0) && Next->isLastUse(Dest)) {
+      Next->getSrcSize() > 0 && Dest == Next->getSrc(0) &&
+      Next->isLastUse(Dest)) {
     const IceInstBr *NextBr = llvm::cast<IceInstBr>(Next);
     // This is basically identical to an Arithmetic instruction,
     // except there is no Dest variable to store.
