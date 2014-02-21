@@ -31,8 +31,9 @@ LLVM_CXXFLAGS := `$(LLVM_BIN_PATH)/llvm-config --cxxflags`
 LLVM_LDFLAGS := `$(LLVM_BIN_PATH)/llvm-config --ldflags --libs --system-libs`
 
 # It's recommended that CXX matches the compiler you used to build LLVM itself.
+OPTLEVEL := -O0
 CXX := g++
-CXXFLAGS := -Wall -Werror -fno-rtti -O0 -g $(LLVM_CXXFLAGS)
+CXXFLAGS := -Wall -Werror -fno-rtti $(OPTLEVEL) -g $(LLVM_CXXFLAGS)
 LDFLAGS :=
 
 OBJS= \
