@@ -10,6 +10,7 @@
 #include <assert.h>
 #include <stdint.h>
 #include <stdio.h> // sprintf
+#include <time.h>
 
 #include <list>
 #include <map>
@@ -106,6 +107,27 @@ public:
 
 private:
   ContainerType Entries;
+};
+
+class IceTimer {
+public:
+  IceTimer(void) {
+    clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &Start);
+  }
+  uint64_t getElapsedNs(void) const {
+    struct timespec Now;
+    clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &Now);
+    uint64_t Interval = Now.tv_nsec - Start.tv_nsec;
+    return Interval;
+  }
+  uint64_t getElapsedUs(void) const {
+    return getElapsedNs() / 1000;
+  }
+  uint64_t getElapsedMs(void) const {
+    return getElapsedNs() / (1000 * 1000);
+  }
+private:
+  struct timespec Start;
 };
 
 class IceOstream {
