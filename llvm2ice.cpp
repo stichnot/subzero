@@ -76,9 +76,12 @@ public:
 
     for (Function::const_iterator BBI = F->begin(), BBE = F->end(); BBI != BBE;
          ++BBI) {
+      mapBasicBlockToNode(BBI);
+    }
+    for (Function::const_iterator BBI = F->begin(), BBE = F->end(); BBI != BBE;
+         ++BBI) {
       convertBasicBlock(BBI);
     }
-
     Cfg->setEntryNode(mapBasicBlockToNode(&F->getEntryBlock()));
     Cfg->registerEdges();
 
