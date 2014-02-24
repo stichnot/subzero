@@ -10,7 +10,6 @@
 #include <assert.h>
 #include <stdint.h>
 #include <stdio.h> // sprintf
-#include <time.h>
 
 #include <list>
 #include <map>
@@ -21,6 +20,7 @@
 
 // See http://llvm.org/docs/ProgrammersManual.html#isa
 #include "llvm/Support/Casting.h"
+#include "llvm/Support/Timer.h"
 #include "llvm/ADT/BitVector.h"
 #include "llvm/ADT/SmallBitVector.h"
 
@@ -111,23 +111,19 @@ private:
 
 class IceTimer {
 public:
-  IceTimer(void) {
-    clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &Start);
-  }
+  IceTimer(void) : Start(llvm::TimeRecord::getCurrentTime(false)) {}
   uint64_t getElapsedNs(void) const {
-    struct timespec Now;
-    clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &Now);
-    uint64_t Interval = Now.tv_nsec - Start.tv_nsec;
-    return Interval;
+    return getElapsedSec() * 1000 * 1000 * 1000;
   }
-  uint64_t getElapsedUs(void) const {
-    return getElapsedNs() / 1000;
+  uint64_t getElapsedUs(void) const { return getElapsedSec() * 1000 * 1000; }
+  uint64_t getElapsedMs(void) const { return getElapsedSec() * 1000; }
+  double getElapsedSec(void) const {
+    llvm::TimeRecord End = llvm::TimeRecord::getCurrentTime(false);
+    return End.getWallTime() - Start.getWallTime();
   }
-  uint64_t getElapsedMs(void) const {
-    return getElapsedNs() / (1000 * 1000);
-  }
+
 private:
-  struct timespec Start;
+  const llvm::TimeRecord Start;
 };
 
 class IceOstream {
