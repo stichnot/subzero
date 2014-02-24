@@ -281,6 +281,7 @@ void IceCfg::liveness(IceLiveness Mode) {
     }
   }
   if (Mode != IceLiveness_LREndLightweight) {
+    IceTimer T_liveRange;
     // Make a final pass over instructions to delete dead instructions
     // and build each IceVariable's live range.
     for (IceNodeList::iterator I = LNodes.begin(), E = LNodes.end(); I != E;
@@ -306,6 +307,7 @@ void IceCfg::liveness(IceLiveness Mode) {
       if (High && !High->getLiveRange().isEmpty())
         High->addLiveRange(-1, 0, 0);
     }
+    T_liveRange.printElapsedUs(Str, "live range construction");
   }
 }
 
@@ -345,7 +347,9 @@ void IceCfg::translate(IceTargetArch TargetArch) {
     Str << "================ Initial CFG ================\n";
   dump();
 
+  IceTimer T_translate;
   getTarget()->translate();
+  T_translate.printElapsedUs(Str, "translate()");
 
   if (Str.isVerbose())
     Str << "================ Final output ================\n";
@@ -355,6 +359,7 @@ void IceCfg::translate(IceTargetArch TargetArch) {
 // ======================== Dump routines ======================== //
 
 void IceCfg::emit(uint32_t Option) const {
+  IceTimer T_emit;
   if (!HasEmittedFirstMethod) {
     HasEmittedFirstMethod = true;
     // Print a helpful command for assembling the output.
@@ -388,6 +393,7 @@ void IceCfg::emit(uint32_t Option) const {
   }
   Str << "\n";
   // TODO: have the Target emit a footer?
+  T_emit.printElapsedUs(Str, "emit()");
 }
 
 void IceCfg::dump(void) const {

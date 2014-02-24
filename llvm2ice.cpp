@@ -450,6 +450,7 @@ cl::list<IceVerbose> VerboseList(
         clEnumValN(IceV_RegOrigins, "orig", "Physical register origins"),
         clEnumValN(IceV_LinearScan, "regalloc", "Linear scan details"),
         clEnumValN(IceV_Frame, "frame", "Stack frame layout details"),
+        clEnumValN(IceV_Timing, "time", "Pass timing details"),
         clEnumValN(IceV_All, "all", "Use all verbose options"),
         clEnumValN(IceV_None, "none", "No verbosity"), clEnumValEnd));
 cl::opt<bool> DisableTranslation("notranslate",

@@ -62,6 +62,7 @@ enum IceVerbose {
   IceV_RegOrigins = 1 << 7,
   IceV_LinearScan = 1 << 8,
   IceV_Frame = 1 << 9,
+  IceV_Timing = 1 << 10,
   IceV_All = ~IceV_None
 };
 typedef uint32_t IceVerboseMask;
@@ -109,28 +110,13 @@ private:
   ContainerType Entries;
 };
 
-class IceTimer {
-public:
-  IceTimer(void) : Start(llvm::TimeRecord::getCurrentTime(false)) {}
-  uint64_t getElapsedNs(void) const {
-    return getElapsedSec() * 1000 * 1000 * 1000;
-  }
-  uint64_t getElapsedUs(void) const { return getElapsedSec() * 1000 * 1000; }
-  uint64_t getElapsedMs(void) const { return getElapsedSec() * 1000; }
-  double getElapsedSec(void) const {
-    llvm::TimeRecord End = llvm::TimeRecord::getCurrentTime(false);
-    return End.getWallTime() - Start.getWallTime();
-  }
-
-private:
-  const llvm::TimeRecord Start;
-};
-
 class IceOstream {
 public:
   IceOstream(std::ostream &Stream, IceCfg *Cfg)
       : Stream(&Stream), Cfg(Cfg), Verbose(IceV_Instructions | IceV_Preds) {}
-  bool isVerbose(IceVerboseMask Mask = IceV_All) { return Verbose & Mask; }
+  bool isVerbose(IceVerboseMask Mask = (IceV_All & ~IceV_Timing)) {
+    return Verbose & Mask;
+  }
   void setVerbose(IceVerboseMask Mask) { Verbose = Mask; }
   void addVerbose(IceVerboseMask Mask) { Verbose |= Mask; }
   void subVerbose(IceVerboseMask Mask) { Verbose &= ~Mask; }
@@ -182,5 +168,26 @@ inline IceOstream &operator<<(IceOstream &Str, double D) {
 // IceCfg/IceOstream objects aren't otherwise available.  Not
 // thread-safe.
 extern IceOstream *GlobalStr;
+
+class IceTimer {
+public:
+  IceTimer(void) : Start(llvm::TimeRecord::getCurrentTime(false)) {}
+  uint64_t getElapsedNs(void) const {
+    return getElapsedSec() * 1000 * 1000 * 1000;
+  }
+  uint64_t getElapsedUs(void) const { return getElapsedSec() * 1000 * 1000; }
+  uint64_t getElapsedMs(void) const { return getElapsedSec() * 1000; }
+  double getElapsedSec(void) const {
+    llvm::TimeRecord End = llvm::TimeRecord::getCurrentTime(false);
+    return End.getWallTime() - Start.getWallTime();
+  }
+  void printElapsedUs(IceOstream &Str, const IceString &Tag) const {
+    if (Str.isVerbose(IceV_Timing))
+      Str << "# " << getElapsedUs() << " usec " << Tag << "\n";
+  }
+
+private:
+  const llvm::TimeRecord Start;
+};
 
 #endif // _IceDefs_h

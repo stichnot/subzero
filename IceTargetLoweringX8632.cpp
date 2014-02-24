@@ -11,65 +11,89 @@
 #include "IceTargetLoweringX8632.h"
 
 void IceTargetX8632::translate(void) {
+  IceTimer T_placePhiLoads;
   Cfg->placePhiLoads();
   if (Cfg->hasError())
     return;
+  T_placePhiLoads.printElapsedUs(Cfg->Str, "placePhiLoads()");
+  IceTimer T_placePhiStores;
   Cfg->placePhiStores();
   if (Cfg->hasError())
     return;
+  T_placePhiStores.printElapsedUs(Cfg->Str, "placePhiStores()");
+  IceTimer T_deletePhis;
   Cfg->deletePhis();
   if (Cfg->hasError())
     return;
+  T_deletePhis.printElapsedUs(Cfg->Str, "deletePhis()");
+  IceTimer T_renumber1;
   Cfg->renumberInstructions();
   if (Cfg->hasError())
     return;
+  T_renumber1.printElapsedUs(Cfg->Str, "renumberInstructions()");
   if (Cfg->Str.isVerbose())
     Cfg->Str << "================ After Phi lowering ================\n";
   Cfg->dump();
 
+  IceTimer T_doAddressOpt;
   Cfg->doAddressOpt();
+  T_doAddressOpt.printElapsedUs(Cfg->Str, "doAddressOpt()");
   // Liveness may be incorrect after address mode optimization.
+  IceTimer T_renumber2;
   Cfg->renumberInstructions();
   if (Cfg->hasError())
     return;
+  T_renumber2.printElapsedUs(Cfg->Str, "renumberInstructions()");
   // TODO: It should be sufficient to use the fastest livness
   // calculation, i.e. IceLiveness_LREndLightweight.  However,
   // currently this breaks one test (icmp-simple.ll) because with
   // IceLiveness_LREndFull, the problematic instructions get dead-code
   // eliminated.
+  IceTimer T_liveness1;
   Cfg->liveness(IceLiveness_LREndFull);
   if (Cfg->hasError())
     return;
+  T_liveness1.printElapsedUs(Cfg->Str, "liveness()");
   if (Cfg->Str.isVerbose())
     Cfg->Str
         << "================ After x86 address mode opt ================\n";
   Cfg->dump();
+  IceTimer T_genCode;
   Cfg->genCode();
   if (Cfg->hasError())
     return;
+  T_genCode.printElapsedUs(Cfg->Str, "genCode()");
+  IceTimer T_renumber3;
   Cfg->renumberInstructions();
   if (Cfg->hasError())
     return;
+  T_renumber3.printElapsedUs(Cfg->Str, "renumberInstructions()");
+  IceTimer T_liveness2;
   Cfg->liveness(IceLiveness_RangesFull);
   if (Cfg->hasError())
     return;
+  T_liveness2.printElapsedUs(Cfg->Str, "liveness()");
   ComputedLiveRanges = true;
   if (Cfg->Str.isVerbose())
     Cfg->Str
         << "================ After initial x8632 codegen ================\n";
   Cfg->dump();
 
+  IceTimer T_regAlloc;
   Cfg->regAlloc();
   if (Cfg->hasError())
     return;
+  T_regAlloc.printElapsedUs(Cfg->Str, "regAlloc()");
   if (Cfg->Str.isVerbose())
     Cfg->Str
         << "================ After linear scan regalloc ================\n";
   Cfg->dump();
 
+  IceTimer T_genFrame;
   Cfg->genFrame();
   if (Cfg->hasError())
     return;
+  T_genFrame.printElapsedUs(Cfg->Str, "genFrame()");
   if (Cfg->Str.isVerbose())
     Cfg->Str << "================ After stack frame mapping ================\n";
   Cfg->dump();
@@ -1658,30 +1682,40 @@ IceVariable *IceTargetX8632::legalizeOperandToVar(IceOperand *From,
 ////////////////////////////////////////////////////////////////
 
 void IceTargetX8632Fast::translate(void) {
+  IceTimer T_placePhiLoads;
   Cfg->placePhiLoads();
   if (Cfg->hasError())
     return;
+  T_placePhiLoads.printElapsedUs(Cfg->Str, "placePhiLoads()");
+  IceTimer T_placePhiStores;
   Cfg->placePhiStores();
   if (Cfg->hasError())
     return;
+  T_placePhiStores.printElapsedUs(Cfg->Str, "placePhiStores()");
+  IceTimer T_deletePhis;
   Cfg->deletePhis();
   if (Cfg->hasError())
     return;
+  T_deletePhis.printElapsedUs(Cfg->Str, "deletePhis()");
   if (Cfg->Str.isVerbose())
     Cfg->Str << "================ After Phi lowering ================\n";
   Cfg->dump();
 
+  IceTimer T_genCode;
   Cfg->genCode();
   if (Cfg->hasError())
     return;
+  T_genCode.printElapsedUs(Cfg->Str, "genCode()");
   if (Cfg->Str.isVerbose())
     Cfg->Str
         << "================ After initial x8632 codegen ================\n";
   Cfg->dump();
 
+  IceTimer T_genFrame;
   Cfg->genFrame();
   if (Cfg->hasError())
     return;
+  T_genFrame.printElapsedUs(Cfg->Str, "genFrame()");
   if (Cfg->Str.isVerbose())
     Cfg->Str << "================ After stack frame mapping ================\n";
   Cfg->dump();
