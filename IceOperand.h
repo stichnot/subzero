@@ -42,6 +42,7 @@ public:
     return Vars[I];
   }
   unsigned getNumVars(void) const { return NumVars; }
+  virtual void setUse(const IceInst *Inst, const IceCfgNode *Node) {}
   virtual void emit(IceOstream &Str, uint32_t Option) const;
   virtual void dump(IceOstream &Str) const;
 

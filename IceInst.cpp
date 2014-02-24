@@ -57,8 +57,7 @@ void IceInst::updateVars(IceCfgNode *Node) {
   if (Dest)
     Dest->setDefinition(this, Node);
   for (unsigned I = 0; I < getSrcSize(); ++I) {
-    if (IceVariable *Var = llvm::dyn_cast<IceVariable>(getSrc(I)))
-      Var->setUse(this, Node);
+    getSrc(I)->setUse(this, Node);
   }
 }
 

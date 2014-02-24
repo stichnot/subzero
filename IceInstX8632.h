@@ -36,6 +36,7 @@ public:
   IceConstant *getOffset(void) const { return Offset; }
   IceVariable *getIndex(void) const { return Index; }
   unsigned getShift(void) const { return Shift; }
+  virtual void setUse(const IceInst *Inst, const IceCfgNode *Node);
   virtual void emit(IceOstream &Str, uint32_t Option) const;
   virtual void dump(IceOstream &Str) const;
 

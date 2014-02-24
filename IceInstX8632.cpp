@@ -48,6 +48,15 @@ IceOperandX8632Mem::IceOperandX8632Mem(IceCfg *Cfg, IceType Type,
   }
 }
 
+void IceOperandX8632Mem::setUse(const IceInst *Inst, const IceCfgNode *Node) {
+  if (getBase())
+    getBase()->setUse(Inst, Node);
+  if (getOffset())
+    getOffset()->setUse(Inst, Node);
+  if (getIndex())
+    getIndex()->setUse(Inst, Node);
+}
+
 IceInstX8632Add::IceInstX8632Add(IceCfg *Cfg, IceVariable *Dest,
                                  IceOperand *Source)
     : IceInstX8632(Cfg, IceInstX8632::Add, 2, Dest) {
