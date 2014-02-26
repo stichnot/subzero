@@ -367,7 +367,7 @@ void IceCfgNode::livenessPostprocess(IceLiveness Mode) {
     if (LiveIn[i] && LiveOut[i] && LiveBegin[i] > LiveEnd[i]) {
       IceVariable *Var = Cfg->getVariable(i);
       Var->addLiveRange(FirstInstNum, LiveEnd[i], 1);
-      Var->addLiveRange(LiveBegin[i], LastInstNum, 1);
+      Var->addLiveRange(LiveBegin[i], LastInstNum + 1, 1);
       continue;
     }
     int Begin = LiveIn[i] ? FirstInstNum : LiveBegin[i];
