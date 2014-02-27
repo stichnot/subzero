@@ -67,7 +67,7 @@ enum IceVerbose {
 };
 typedef uint32_t IceVerboseMask;
 
-enum IceLiveness {
+enum IceLivenessMode {
   // Lightweight version of live-range-end calculation.  Marks the
   // last use of variables whose definition and uses are completely
   // within a single block.

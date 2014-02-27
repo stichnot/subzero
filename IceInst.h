@@ -56,7 +56,7 @@ public:
   void setDeleted(void) { Deleted = true; }
   void deleteIfDead(void);
   void updateVars(IceCfgNode *Node);
-  void liveness(IceLiveness Mode, int InstNumber, llvm::BitVector &Live,
+  void liveness(IceLivenessMode Mode, int InstNumber, llvm::BitVector &Live,
                 std::vector<int> &LiveBegin, std::vector<int> &LiveEnd);
   virtual void emit(IceOstream &Str, uint32_t Option) const;
   virtual void dump(IceOstream &Str) const;

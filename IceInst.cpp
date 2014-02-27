@@ -67,8 +67,9 @@ void IceInst::addSource(IceOperand *Source) {
   Srcs[NumSrcs++] = Source;
 }
 
-void IceInst::liveness(IceLiveness Mode, int InstNumber, llvm::BitVector &Live,
-                       std::vector<int> &LiveBegin, std::vector<int> &LiveEnd) {
+void IceInst::liveness(IceLivenessMode Mode, int InstNumber,
+                       llvm::BitVector &Live, std::vector<int> &LiveBegin,
+                       std::vector<int> &LiveEnd) {
   if (isDeleted())
     return;
   if (llvm::isa<IceInstFakeKill>(this))

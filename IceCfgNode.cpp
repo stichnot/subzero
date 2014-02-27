@@ -243,7 +243,7 @@ void IceCfgNode::insertInsts(IceInstList::iterator Location,
   }
 }
 
-void IceCfgNode::livenessInit(IceLiveness Mode) {
+void IceCfgNode::livenessInit(IceLivenessMode Mode) {
   if (Mode != IceLiveness_LREndLightweight) {
     unsigned NumVars = Cfg->getNumVariables();
     LiveIn.clear();
@@ -257,7 +257,7 @@ void IceCfgNode::livenessInit(IceLiveness Mode) {
 
 // Returns true if the incoming liveness changed from before, false if
 // it stayed the same.
-bool IceCfgNode::liveness(IceLiveness Mode) {
+bool IceCfgNode::liveness(IceLivenessMode Mode) {
   unsigned NumVars = Cfg->getNumVariables();
   llvm::BitVector Live(NumVars);
   if (Mode != IceLiveness_LREndLightweight) {
@@ -314,7 +314,7 @@ bool IceCfgNode::liveness(IceLiveness Mode) {
 // assignment to the phi-based temporary is in a different basic
 // block, and there is a single read that ends the live in the basic
 // block that contained the actual phi instruction.
-void IceCfgNode::livenessPostprocess(IceLiveness Mode) {
+void IceCfgNode::livenessPostprocess(IceLivenessMode Mode) {
   int FirstInstNum = -1;
   int LastInstNum = -1;
   // Process phis in any order.  Process only Dest operands.

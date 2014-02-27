@@ -235,7 +235,7 @@ void IceCfg::genCode(void) {
   }
 }
 
-void IceCfg::liveness(IceLiveness Mode) {
+void IceCfg::liveness(IceLivenessMode Mode) {
   if (Mode == IceLiveness_LREndLightweight) {
     for (IceNodeList::iterator I = LNodes.begin(), E = LNodes.end(); I != E;
          ++I) {

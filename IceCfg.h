@@ -55,7 +55,7 @@ public:
   void doAddressOpt(void);
   void genCode(void);
   void genFrame(void);
-  void liveness(IceLiveness Mode);
+  void liveness(IceLivenessMode Mode);
   bool validateLiveness(void) const;
   void regAlloc(void);
   void emit(uint32_t Option) const;
