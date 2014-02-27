@@ -55,6 +55,7 @@ IceString IceVariable::getName(void) const {
 }
 
 void IceLiveRange::addSegment(int Start, int End) {
+#ifdef USE_SET
   RangeElementType Element(Start, End);
   RangeType::iterator Next = Range.lower_bound(Element);
   assert(Next == Range.upper_bound(Element)); // Element not already present
@@ -84,6 +85,26 @@ void IceLiveRange::addSegment(int Start, int End) {
   // End of code that merges contiguous segments.
 
   Range.insert(Next, Element);
+#else
+  if (Range.empty()) {
+    Range.push_back(RangeElementType(Start, End));
+    return;
+  }
+  // Special case for faking in-arg liveness.
+  if (End < Range.front().first) {
+    assert(Start < 0);
+    Range.push_front(RangeElementType(Start, End));
+    return;
+  }
+  int CurrentEnd = Range.back().second;
+  assert (Start >= CurrentEnd);
+  // Check for merge opportunity.
+  if (Start == CurrentEnd) {
+    Range.back().second = End;
+    return;
+  }
+  Range.push_back(RangeElementType(Start, End));
+#endif
 }
 
 bool IceLiveRange::endsBefore(const IceLiveRange &Other) const {

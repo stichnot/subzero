@@ -155,6 +155,10 @@ IceOstream &operator<<(IceOstream &Str, const IceRegWeight &W);
 bool operator<(const IceRegWeight &A, const IceRegWeight &B);
 bool operator<=(const IceRegWeight &A, const IceRegWeight &B);
 
+// USE_SET uses std::set to hold the segments instead of std::list.
+// Using std::list will be slightly faster, but is more restrictive
+// because new segments cannot be added in the middle.
+//#define USE_SET
 class IceLiveRange {
 public:
   IceLiveRange(void) : Weight(0) {}
@@ -176,7 +180,11 @@ public:
 
 private:
   typedef std::pair<int, int> RangeElementType;
+#ifdef USE_SET
   typedef std::set<RangeElementType> RangeType;
+#else
+  typedef std::list<RangeElementType> RangeType;
+#endif
   RangeType Range;
   IceRegWeight Weight;
 };
