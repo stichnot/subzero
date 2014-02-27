@@ -342,8 +342,8 @@ void IceTargetX8632::split64(IceVariable *Var) {
       Cfg->makeVariable(IceType_i32, CurrentNode, -1, Var->getName() + "__hi");
   Var->setHigh(High);
   if (Var->getIsArg()) {
-    Low->setIsArg();
-    High->setIsArg();
+    Low->setIsArg(Cfg);
+    High->setIsArg(Cfg);
   }
 }
 

@@ -30,6 +30,8 @@ public:
   IceCfgNode *splitEdge(IceCfgNode *From, IceCfgNode *To);
   IceCfgNode *getNode(uint32_t LabelIndex) const;
   IceCfgNode *makeNode(uint32_t LabelIndex = -1, IceString Name = "");
+  const IceNodeList &getLNodes(void) const { return LNodes; }
+  unsigned getNumNodes(void) const { return Nodes.size(); }
   // getConstant() is not const because it might add something to the
   // constant pool.
   IceConstant *getConstant(IceType Type, const void *ConstantBits);
@@ -44,6 +46,7 @@ public:
   const IceVarList &getVariables(void) const { return Variables; }
   const IceVarList &getArgs(void) const { return Args; }
   unsigned getNumVariables(void) const { return Variables.size(); }
+  IceLiveness *getLiveness(void) const { return Liveness; }
   int newInstNumber(void);
 
   IceString physicalRegName(int Reg) const;
@@ -81,6 +84,7 @@ private:
   IceVarList Variables;
   IceVarList Args; // densely packed vector, subset of Variables
   class IceConstantPool *ConstantPool;
+  IceLiveness *Liveness;
 
   int NextInstNumber;
   void makeTarget(IceTargetArch Arch);

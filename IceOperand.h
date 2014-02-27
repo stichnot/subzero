@@ -197,7 +197,7 @@ public:
   void replaceDefinition(IceInst *Inst, const IceCfgNode *Node);
   // TODO: consider initializing IsArgument in the ctor.
   bool getIsArg(void) const { return IsArgument; }
-  void setIsArg(void) { IsArgument = true; }
+  void setIsArg(IceCfg *Cfg);
   IceVariable *getLow(void) const { return LowVar; }
   IceVariable *getHigh(void) const { return HighVar; }
   void setLow(IceVariable *Low) {
@@ -230,6 +230,7 @@ public:
   IceVariable *getPreferredRegister(void) const { return RegisterPreference; }
   bool getRegisterOverlap(void) const { return AllowRegisterOverlap; }
   void resetLiveRange(void) { LiveRange.reset(); }
+  void setLiveRange(const IceLiveRange &Range) { LiveRange = Range; }
   void addLiveRange(int Start, int End, uint32_t WeightDelta) {
     assert(WeightDelta != IceRegWeight::Inf);
     LiveRange.addSegment(Start, End);

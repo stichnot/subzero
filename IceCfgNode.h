@@ -35,9 +35,8 @@ public:
   void deletePhis(void);
   void doAddressOpt(void);
   void genCode(void);
-  void livenessInit(IceLivenessMode Mode);
-  bool liveness(IceLivenessMode Mode);
-  void livenessPostprocess(IceLivenessMode Mode);
+  bool liveness(IceLivenessMode Mode, IceLiveness *Liveness);
+  void livenessPostprocess(IceLivenessMode Mode, IceLiveness *Liveness);
   void emit(IceOstream &Str, uint32_t Option) const;
   void dump(IceOstream &Str) const;
 
@@ -48,12 +47,8 @@ private:
   IceString Name;        // for dumping only
   IceNodeList OutEdges;  // in no particular order
   IceNodeList InEdges;   // in no particular order
-  // TODO: The Live* vectors are not needed outside liveness analysis,
-  // and could be moved outside of IceCfgNode to save memory.
-  llvm::BitVector LiveIn, LiveOut;     // TODO: consider llvm::SparseBitVector
-  std::vector<int> LiveBegin, LiveEnd; // maps variables to inst numbers
-  IcePhiList Phis;                     // unordered set of phi instructions
-  IceInstList Insts;                   // ordered list of non-phi instructions
+  IcePhiList Phis;       // unordered set of phi instructions
+  IceInstList Insts;     // ordered list of non-phi instructions
   bool ArePhiLoadsPlaced;
   bool ArePhiStoresPlaced;
   bool HasReturn;

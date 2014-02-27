@@ -6,6 +6,7 @@
 #include "IceCfg.h"
 #include "IceCfgNode.h"
 #include "IceInst.h"
+#include "IceLiveness.h"
 #include "IceOperand.h"
 #include "IceTargetLowering.h"
 #include "IceInstX8632.h"
@@ -243,47 +244,40 @@ void IceCfgNode::insertInsts(IceInstList::iterator Location,
   }
 }
 
-void IceCfgNode::livenessInit(IceLivenessMode Mode) {
-  if (Mode != IceLiveness_LREndLightweight) {
-    unsigned NumVars = Cfg->getNumVariables();
-    LiveIn.clear();
-    LiveIn.resize(NumVars);
-    LiveOut.clear();
-    LiveOut.resize(NumVars);
-    LiveBegin.resize(NumVars);
-    LiveEnd.resize(NumVars);
-  }
-}
-
 // Returns true if the incoming liveness changed from before, false if
 // it stayed the same.
-bool IceCfgNode::liveness(IceLivenessMode Mode) {
-  unsigned NumVars = Cfg->getNumVariables();
+bool IceCfgNode::liveness(IceLivenessMode Mode, IceLiveness *Liveness) {
+  unsigned NumVars;
+  if (Mode == IceLiveness_LREndLightweight)
+    NumVars = Cfg->getNumVariables();
+  else
+    NumVars = Liveness->getLocalSize(this);
+  std::vector<int> &LiveBegin = Liveness->getLiveBegin(this);
+  std::vector<int> &LiveEnd = Liveness->getLiveEnd(this);
   llvm::BitVector Live(NumVars);
   if (Mode != IceLiveness_LREndLightweight) {
-    LiveBegin.clear();
-    LiveEnd.clear();
-    LiveBegin.resize(NumVars);
-    LiveEnd.resize(NumVars);
+    LiveBegin.assign(NumVars, 0);
+    LiveEnd.assign(NumVars, 0);
     // Initialize Live to be the union of all successors' LiveIn.
     for (IceNodeList::const_iterator I = OutEdges.begin(), E = OutEdges.end();
          I != E; ++I) {
       IceCfgNode *Succ = *I;
-      Live |= Succ->LiveIn;
+      Live |= Liveness->getLiveIn(Succ);
       // Mark corresponding argument of phis in successor as live.
       for (IcePhiList::const_iterator I1 = Succ->Phis.begin(),
                                       E1 = Succ->Phis.end();
            I1 != E1; ++I1) {
-        (*I1)->livenessPhiOperand(Live, this);
+        (*I1)->livenessPhiOperand(Live, this, Liveness);
       }
     }
-    LiveOut = Live;
+    // TODO: Can LiveOut contain local variables???
+    Liveness->getLiveOut(this) = Live;
   }
 
   // Process instructions in reverse order
   for (IceInstList::const_reverse_iterator I = Insts.rbegin(), E = Insts.rend();
        I != E; ++I) {
-    (*I)->liveness(Mode, (*I)->getNumber(), Live, LiveBegin, LiveEnd);
+    (*I)->liveness(Mode, (*I)->getNumber(), Live, Liveness, this);
   }
   // Process phis in any order
   int FirstPhiNumber = -1;
@@ -291,11 +285,37 @@ bool IceCfgNode::liveness(IceLivenessMode Mode) {
        ++I) {
     if (FirstPhiNumber < 0)
       FirstPhiNumber = (*I)->getNumber();
-    (*I)->liveness(Mode, FirstPhiNumber, Live, LiveBegin, LiveEnd);
+    (*I)->liveness(Mode, FirstPhiNumber, Live, Liveness, this);
+  }
+
+  // When using the sparse representation, after traversing the
+  // instructions in the block, the Live bitvector should only contain
+  // set bits for global variables upon block entry.  We validate this
+  // by shrinking the Live vector and then testing it against the
+  // pre-shrunk version.  (The shrinking is required, but the
+  // validation is not.)
+  if (Mode != IceLiveness_LREndLightweight) {
+    llvm::BitVector LiveOrig = Live;
+    Live.resize(Liveness->getGlobalSize());
+    // Non-global arguments in the entry node are allowed to be live on
+    // entry.
+    bool IsEntry = (Cfg->getEntryNode() == this);
+    assert(IsEntry || Live == LiveOrig);
+    if (!(IsEntry || Live == LiveOrig)) {
+      IceOstream &Str = Cfg->Str;
+      Str.setCurrentNode(NULL);
+      Str << "LiveOrig-Live =";
+      for (unsigned i = Live.size(); i < LiveOrig.size(); ++i) {
+        if (LiveOrig.test(i))
+          Str << " " << Liveness->getVariable(i, this);
+      }
+      Str << "\n";
+    }
   }
 
   bool Changed = false;
   if (Mode != IceLiveness_LREndLightweight) {
+    llvm::BitVector &LiveIn = Liveness->getLiveIn(this);
     // Add in current LiveIn
     Live |= LiveIn;
     // Check result, set LiveIn=Live
@@ -314,7 +334,8 @@ bool IceCfgNode::liveness(IceLivenessMode Mode) {
 // assignment to the phi-based temporary is in a different basic
 // block, and there is a single read that ends the live in the basic
 // block that contained the actual phi instruction.
-void IceCfgNode::livenessPostprocess(IceLivenessMode Mode) {
+void IceCfgNode::livenessPostprocess(IceLivenessMode Mode,
+                                     IceLiveness *Liveness) {
   int FirstInstNum = -1;
   int LastInstNum = -1;
   // Process phis in any order.  Process only Dest operands.
@@ -352,7 +373,7 @@ void IceCfgNode::livenessPostprocess(IceLivenessMode Mode) {
           for (unsigned i = 0; i < NumSrcs; ++i) {
             IceVariable *Var = llvm::cast<IceVariable>(Inst->getSrc(i));
             int InstNumber = Inst->getNumber();
-            Var->addLiveRange(InstNumber, InstNumber, 1);
+            Liveness->addLiveRange(Var, InstNumber, InstNumber, 1);
           }
         }
       }
@@ -361,29 +382,35 @@ void IceCfgNode::livenessPostprocess(IceLivenessMode Mode) {
   if (Mode != IceLiveness_RangesFull)
     return;
 
-  unsigned NumVars = Cfg->getNumVariables();
+  unsigned NumVars = Liveness->getLocalSize(this);
+  unsigned NumGlobals = Liveness->getGlobalSize();
+  llvm::BitVector &LiveIn = Liveness->getLiveIn(this);
+  llvm::BitVector &LiveOut = Liveness->getLiveOut(this);
+  std::vector<int> &LiveBegin = Liveness->getLiveBegin(this);
+  std::vector<int> &LiveEnd = Liveness->getLiveEnd(this);
   for (unsigned i = 0; i < NumVars; ++i) {
     // Deal with the case where the variable is both live-in and
     // live-out, but LiveEnd comes before LiveBegin.  In this case, we
     // need to add two segments to the live range because there is a
     // hole in the middle.  This would typically happen as a result of
     // phi lowering in the presence of loopback edges.
-    if (LiveIn[i] && LiveOut[i] && LiveBegin[i] > LiveEnd[i]) {
-      IceVariable *Var = Cfg->getVariable(i);
-      Var->addLiveRange(FirstInstNum, LiveEnd[i], 1);
-      Var->addLiveRange(LiveBegin[i], LastInstNum + 1, 1);
+    bool IsGlobal = (i < NumGlobals);
+    if (IsGlobal && LiveIn[i] && LiveOut[i] && LiveBegin[i] > LiveEnd[i]) {
+      IceVariable *Var = Liveness->getVariable(i, this);
+      Liveness->addLiveRange(Var, FirstInstNum, LiveEnd[i], 1);
+      Liveness->addLiveRange(Var, LiveBegin[i], LastInstNum + 1, 1);
       continue;
     }
-    int Begin = LiveIn[i] ? FirstInstNum : LiveBegin[i];
-    int End = LiveOut[i] ? LastInstNum + 1 : LiveEnd[i];
+    int Begin = (IsGlobal && LiveIn[i]) ? FirstInstNum : LiveBegin[i];
+    int End = (IsGlobal && LiveOut[i]) ? LastInstNum + 1 : LiveEnd[i];
     if (Begin <= 0 && End <= 0)
       continue;
     if (Begin <= FirstInstNum)
       Begin = FirstInstNum;
     if (End <= 0)
       End = LastInstNum + 1;
-    IceVariable *Var = Cfg->getVariable(i);
-    Var->addLiveRange(Begin, End, 1);
+    IceVariable *Var = Liveness->getVariable(i, this);
+    Liveness->addLiveRange(Var, Begin, End, 1);
   }
 }
 
@@ -417,6 +444,7 @@ void IceCfgNode::emit(IceOstream &Str, uint32_t Option) const {
 
 void IceCfgNode::dump(IceOstream &Str) const {
   Str.setCurrentNode(this);
+  IceLiveness *Liveness = Str.Cfg->getLiveness();
   if (Str.isVerbose(IceV_Instructions)) {
     Str << getName() << ":\n";
   }
@@ -430,11 +458,14 @@ void IceCfgNode::dump(IceOstream &Str) const {
     }
     Str << "\n";
   }
+  llvm::BitVector LiveIn;
+  if (Liveness)
+    LiveIn = Liveness->getLiveIn(this);
   if (Str.isVerbose(IceV_Liveness) && !LiveIn.empty()) {
     Str << "    // LiveIn:";
     for (unsigned i = 0; i < LiveIn.size(); ++i) {
       if (LiveIn[i]) {
-        Str << " %" << Str.Cfg->getVariable(i)->getName();
+        Str << " %" << Liveness->getVariable(i, this)->getName();
       }
     }
     Str << "\n";
@@ -450,11 +481,14 @@ void IceCfgNode::dump(IceOstream &Str) const {
       Str << Inst;
     }
   }
+  llvm::BitVector LiveOut;
+  if (Liveness)
+    LiveOut = Liveness->getLiveOut(this);
   if (Str.isVerbose(IceV_Liveness) && !LiveOut.empty()) {
     Str << "    // LiveOut:";
     for (unsigned i = 0; i < LiveOut.size(); ++i) {
       if (LiveOut[i]) {
-        Str << " %" << Str.Cfg->getVariable(i)->getName();
+        Str << " %" << Liveness->getVariable(i, this)->getName();
       }
     }
     Str << "\n";

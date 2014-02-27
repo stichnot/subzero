@@ -41,6 +41,7 @@ OBJS= \
 	IceCfgNode.o \
 	IceInst.o \
 	IceInstX8632.o \
+	IceLiveness.o \
 	IceOperand.o \
 	IceRegAlloc.o \
 	IceRegManager.o \

@@ -29,6 +29,7 @@ class IceCfgNode;
 class IceInst;
 class IceInstPhi;
 class IceInstTarget;
+class IceLiveness;
 class IceLiveRange;
 class IceOperand;
 class IceVariable;

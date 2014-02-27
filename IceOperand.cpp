@@ -36,6 +36,16 @@ void IceVariable::replaceDefinition(IceInst *Inst, const IceCfgNode *Node) {
   setDefinition(Inst, Node);
 }
 
+void IceVariable::setIsArg(IceCfg *Cfg) {
+  IsArgument = true;
+  if (DefOrUseNode == NULL)
+    return;
+  IceCfgNode *Entry = Cfg->getEntryNode();
+  if (DefOrUseNode == Entry)
+    return;
+  DefOrUseNode = NULL;
+}
+
 IceString IceVariable::getName(void) const {
   if (Name != "")
     return Name;

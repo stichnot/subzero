@@ -57,7 +57,7 @@ public:
   void deleteIfDead(void);
   void updateVars(IceCfgNode *Node);
   void liveness(IceLivenessMode Mode, int InstNumber, llvm::BitVector &Live,
-                std::vector<int> &LiveBegin, std::vector<int> &LiveEnd);
+                IceLiveness *Liveness, const IceCfgNode *Node);
   virtual void emit(IceOstream &Str, uint32_t Option) const;
   virtual void dump(IceOstream &Str) const;
   virtual void dumpExtras(IceOstream &Str) const;
@@ -335,7 +335,8 @@ public:
   IceOperand *getArgument(IceCfgNode *Label) const;
   IceInst *lower(IceCfg *Cfg, IceCfgNode *Node);
   IceOperand *getOperandForTarget(IceCfgNode *Target) const;
-  void livenessPhiOperand(llvm::BitVector &Live, IceCfgNode *Target);
+  void livenessPhiOperand(llvm::BitVector &Live, IceCfgNode *Target,
+                          IceLiveness *Liveness);
   virtual void dump(IceOstream &Str) const;
   static bool classof(const IceInst *Inst) { return Inst->getKind() == Phi; }
 

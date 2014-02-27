@@ -7,6 +7,7 @@
 #include "IceCfgNode.h"
 #include "IceInst.h"
 #include "IceInstX8632.h"
+#include "IceLiveness.h"
 #include "IceOperand.h"
 
 IceInst::IceInst(IceCfg *Cfg, IceInstType Kind, unsigned MaxSrcs,
@@ -68,8 +69,8 @@ void IceInst::addSource(IceOperand *Source) {
 }
 
 void IceInst::liveness(IceLivenessMode Mode, int InstNumber,
-                       llvm::BitVector &Live, std::vector<int> &LiveBegin,
-                       std::vector<int> &LiveEnd) {
+                       llvm::BitVector &Live, IceLiveness *Liveness,
+                       const IceCfgNode *Node) {
   if (isDeleted())
     return;
   if (llvm::isa<IceInstFakeKill>(this))
@@ -96,9 +97,11 @@ void IceInst::liveness(IceLivenessMode Mode, int InstNumber,
     return;
   }
 
+  std::vector<int32_t> &LiveBegin = Liveness->getLiveBegin(Node);
+  std::vector<int32_t> &LiveEnd = Liveness->getLiveEnd(Node);
   Dead = false;
   if (Dest) {
-    unsigned VarNum = Dest->getIndex();
+    unsigned VarNum = Liveness->getLiveIndex(Dest);
     if (Live[VarNum]) {
       Live[VarNum] = false;
       LiveBegin[VarNum] = InstNumber;
@@ -129,7 +132,7 @@ void IceInst::liveness(IceLivenessMode Mode, int InstNumber,
     unsigned NumVars = Src->getNumVars();
     for (unsigned J = 0; J < NumVars; ++J, ++VarIndex) {
       const IceVariable *Var = Src->getVar(J);
-      uint32_t VarNum = Var->getIndex();
+      uint32_t VarNum = Liveness->getLiveIndex(Var);
       if (!Live[VarNum]) {
         setLastUse(VarIndex);
         if (!IsPhi) {
@@ -330,7 +333,8 @@ IceOperand *IceInstPhi::getOperandForTarget(IceCfgNode *Target) const {
 // predecessor edge.  Doesn't mark the operand as live if the Phi
 // instruction is dead or deleted.  TODO: Make sure liveness
 // convergence works correctly for dead instructions.
-void IceInstPhi::livenessPhiOperand(llvm::BitVector &Live, IceCfgNode *Target) {
+void IceInstPhi::livenessPhiOperand(llvm::BitVector &Live, IceCfgNode *Target,
+                                    IceLiveness *Liveness) {
   if (isDeleted() || Dead)
     return;
   IceNodeList::const_iterator EdgeIter = Labels.begin(), EdgeEnd = Labels.end();
@@ -338,7 +342,7 @@ void IceInstPhi::livenessPhiOperand(llvm::BitVector &Live, IceCfgNode *Target) {
        ++EdgeIter, ++I) {
     if (*EdgeIter == Target) {
       if (IceVariable *Var = llvm::dyn_cast<IceVariable>(getSrc(I))) {
-        uint32_t SrcIndex = Var->getIndex();
+        uint32_t SrcIndex = Liveness->getLiveIndex(Var);
         if (!Live[SrcIndex]) {
           setLastUse(I);
           Live[SrcIndex] = true;
