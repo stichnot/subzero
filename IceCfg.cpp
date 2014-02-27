@@ -309,6 +309,55 @@ void IceCfg::liveness(IceLiveness Mode) {
     }
     T_liveRange.printElapsedUs(Str, "live range construction");
   }
+  if (Mode == IceLiveness_RangesFull) {
+    dump();
+    assert(validateLiveness());
+  }
+}
+
+// Traverse every IceVariable of every IceInst and verify that it
+// appears within the IceVariable's computed live range.
+bool IceCfg::validateLiveness(void) const {
+  bool Valid = true;
+  for (IceNodeList::const_iterator I1 = LNodes.begin(), E1 = LNodes.end();
+       I1 != E1; ++I1) {
+    IceCfgNode *Node = *I1;
+    IceInstList &Insts = Node->getInsts();
+    for (IceInstList::const_iterator I2 = Insts.begin(), E2 = Insts.end();
+         I2 != E2; ++I2) {
+      IceInst *Inst = *I2;
+      if (Inst->isDeleted())
+        continue;
+      if (llvm::isa<IceInstFakeKill>(Inst))
+        continue;
+      int InstNumber = Inst->getNumber();
+      IceVariable *Dest = Inst->getDest();
+      if (Dest) {
+        // TODO: This instruction should actually begin Dest's live
+        // range, so we could probably test that this instruction is
+        // the beginning of some segment of Dest's live range.  But
+        // this wouldn't work with non-SSA temporaries during
+        // lowering.
+        if (!Dest->getLiveRange().containsValue(InstNumber)) {
+          Valid = false;
+          assert(Valid);
+        }
+      }
+      unsigned VarIndex = 0;
+      for (unsigned I = 0; I < Inst->getSrcSize(); ++I) {
+        IceOperand *Src = Inst->getSrc(I);
+        unsigned NumVars = Src->getNumVars();
+        for (unsigned J = 0; J < NumVars; ++J, ++VarIndex) {
+          const IceVariable *Var = Src->getVar(J);
+          if (!Var->getLiveRange().containsValue(InstNumber)) {
+            Valid = false;
+            assert(Valid);
+          }
+        }
+      }
+    }
+  }
+  return Valid;
 }
 
 void IceCfg::regAlloc(void) {

@@ -261,6 +261,8 @@ bool IceCfgNode::liveness(IceLiveness Mode) {
   if (Mode != IceLiveness_LREndLightweight) {
     LiveBegin.clear();
     LiveEnd.clear();
+    LiveBegin.resize(NumVars);
+    LiveEnd.resize(NumVars);
     // Initialize Live to be the union of all successors' LiveIn.
     for (IceNodeList::const_iterator I = OutEdges.begin(), E = OutEdges.end();
          I != E; ++I) {

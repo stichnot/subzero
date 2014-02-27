@@ -56,6 +56,7 @@ public:
   void genCode(void);
   void genFrame(void);
   void liveness(IceLiveness Mode);
+  bool validateLiveness(void) const;
   void regAlloc(void);
   void emit(uint32_t Option) const;
   void dump(void) const;

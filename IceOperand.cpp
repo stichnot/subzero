@@ -107,6 +107,15 @@ bool IceLiveRange::overlaps(const IceLiveRange &Other) const {
   return false;
 }
 
+bool IceLiveRange::containsValue(int Value) const {
+  for (RangeType::const_iterator I = Range.begin(), E = Range.end(); I != E;
+       ++I) {
+    if (I->first <= Value && Value <= I->second)
+      return true;
+  }
+  return false;
+}
+
 void IceLiveRange::unitTests(void) {
   IceCfg Cfg;
   IceOstream &Str = Cfg.Str;

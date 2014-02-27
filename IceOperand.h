@@ -166,6 +166,7 @@ public:
   void addSegment(int Start, int End);
   bool endsBefore(const IceLiveRange &Other) const;
   bool overlaps(const IceLiveRange &Other) const;
+  bool containsValue(int Value) const;
   bool isEmpty(void) const { return Range.empty(); }
   IceRegWeight getWeight(void) const { return Weight; }
   void setWeight(const IceRegWeight &NewWeight) { Weight = NewWeight; }
