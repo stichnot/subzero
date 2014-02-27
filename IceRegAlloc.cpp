@@ -370,6 +370,7 @@ IceOstream &operator<<(IceOstream &Str, const IceLiveRangeWrapper &R) {
 void IceLinearScan::dump(IceOstream &Str) const {
   if (!Cfg->Str.isVerbose(IceV_LinearScan))
     return;
+  Cfg->Str.setCurrentNode(NULL);
   Str << "**** Current regalloc state:\n";
   Str << "++++++ Handled:\n";
   for (UnorderedRanges::const_iterator I = Handled.begin(), E = Handled.end();

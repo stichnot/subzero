@@ -196,6 +196,7 @@ void IceCfgNode::deletePhis(void) {
 
 void IceCfgNode::doAddressOpt(void) {
   IceTargetLowering *Target = Cfg->getTarget();
+  Target->setCurrentNode(this);
   IceInstList::iterator I = Insts.begin(), E = Insts.end();
   while (I != E) {
     IceInst *Inst = *I++;
@@ -211,6 +212,7 @@ void IceCfgNode::doAddressOpt(void) {
 
 void IceCfgNode::genCode(void) {
   IceTargetLowering *Target = Cfg->getTarget();
+  Target->setCurrentNode(this);
   // Defer the Phi instructions.
   IceInstList::iterator I = Insts.begin(), E = Insts.end();
   while (I != E) {
@@ -388,6 +390,7 @@ void IceCfgNode::livenessPostprocess(IceLiveness Mode) {
 // ======================== Dump routines ======================== //
 
 void IceCfgNode::emit(IceOstream &Str, uint32_t Option) const {
+  Str.setCurrentNode(this);
   if (Cfg->getEntryNode() == this) {
     Str << Cfg->getName() << ":\n";
   }
@@ -413,6 +416,7 @@ void IceCfgNode::emit(IceOstream &Str, uint32_t Option) const {
 }
 
 void IceCfgNode::dump(IceOstream &Str) const {
+  Str.setCurrentNode(this);
   if (Str.isVerbose(IceV_Instructions)) {
     Str << getName() << ":\n";
   }

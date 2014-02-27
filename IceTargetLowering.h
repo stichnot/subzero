@@ -31,6 +31,7 @@ public:
   int getStackAdjustment(void) const { return StackAdjustment; }
   void updateStackAdjustment(int Offset) { StackAdjustment += Offset; }
   void resetStackAdjustment(void) { StackAdjustment = 0; }
+  void setCurrentNode(IceCfgNode *Node) { CurrentNode = Node; }
 
   enum RegSet {
     RegMask_None = 0,
@@ -51,7 +52,8 @@ public:
 
 protected:
   IceTargetLowering(IceCfg *Cfg)
-      : Cfg(Cfg), HasComputedFrame(false), StackAdjustment(0) {}
+      : Cfg(Cfg), HasComputedFrame(false), StackAdjustment(0),
+        CurrentNode(NULL) {}
   virtual IceInstList lowerAlloca(const IceInstAlloca *Inst,
                                   const IceInst *Next,
                                   bool &DeleteNextInst) = 0;
@@ -105,6 +107,7 @@ protected:
   // StackAdjustment keeps track of the current stack offset from its
   // natural location, as arguments are pushed for a function call.
   int StackAdjustment;
+  IceCfgNode *CurrentNode;
 };
 
 #endif // _IceTargetLowering_h

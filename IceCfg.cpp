@@ -159,14 +159,14 @@ IceVariable *IceCfg::getVariable(uint32_t Index) const {
   return Variables[Index];
 }
 
-IceVariable *IceCfg::makeVariable(IceType Type, uint32_t Index,
-                                  const IceString &Name) {
+IceVariable *IceCfg::makeVariable(IceType Type, const IceCfgNode *Node,
+                                  uint32_t Index, const IceString &Name) {
   if (Index == (uint32_t) - 1)
     Index = Variables.size();
   if (Variables.size() <= Index)
     Variables.resize(Index + 1);
   if (Variables[Index] == NULL)
-    Variables[Index] = IceVariable::create(this, Type, Index, Name);
+    Variables[Index] = IceVariable::create(this, Type, Node, Index, Name);
   return Variables[Index];
 }
 
@@ -446,6 +446,7 @@ void IceCfg::emit(uint32_t Option) const {
 }
 
 void IceCfg::dump(void) const {
+  Str.setCurrentNode(getEntryNode());
   // Print function name+args
   if (Str.isVerbose(IceV_Instructions)) {
     Str << "define internal " << Type << " " << Name << "(";
@@ -456,6 +457,7 @@ void IceCfg::dump(void) const {
     }
     Str << ") {\n";
   }
+  Str.setCurrentNode(NULL);
   if (Str.isVerbose(IceV_Liveness)) {
     // Print summary info about variables
     for (IceVarList::const_iterator I = Variables.begin(), E = Variables.end();

@@ -16,23 +16,19 @@ bool operator<=(const IceRegWeight &A, const IceRegWeight &B) {
 }
 
 void IceVariable::setUse(const IceInst *Inst, const IceCfgNode *Node) {
-  if (llvm::isa<IceInstPhi>(Inst) ||
-      (DefOrUseNode != NULL && DefOrUseNode != Node)) {
-    IsMultiblockLife = true;
-  }
-  DefOrUseNode = Node;
+  if (DefOrUseNode == NULL)
+    return;
+  if (llvm::isa<IceInstPhi>(Inst) || Node != DefOrUseNode)
+    DefOrUseNode = NULL;
 }
 
 void IceVariable::setDefinition(IceInst *Inst, const IceCfgNode *Node) {
-  if (DefInst || IsArgument) {
-    DefInst = Inst;
+  if (DefOrUseNode == NULL)
     return;
-  }
-  if (DefOrUseNode != NULL && DefOrUseNode != Node) {
-    IsMultiblockLife = true;
-  }
+  // Can first check preexisting DefInst if we care about multi-def vars.
   DefInst = Inst;
-  DefOrUseNode = Node;
+  if (Node != DefOrUseNode)
+    DefOrUseNode = NULL;
 }
 
 void IceVariable::replaceDefinition(IceInst *Inst, const IceCfgNode *Node) {
@@ -166,6 +162,8 @@ IceOstream &operator<<(IceOstream &Str, const IceOperand *O) {
 }
 
 void IceVariable::emit(IceOstream &Str, uint32_t Option) const {
+  const IceCfgNode *CurrentNode = Str.getCurrentNode();
+  assert(DefOrUseNode == NULL || DefOrUseNode == CurrentNode);
   if (getRegNum() >= 0) {
     Str << Str.Cfg->physicalRegName(RegNum);
     return;
@@ -182,6 +180,9 @@ void IceVariable::emit(IceOstream &Str, uint32_t Option) const {
 }
 
 void IceVariable::dump(IceOstream &Str) const {
+  const IceCfgNode *CurrentNode = Str.getCurrentNode();
+  assert(CurrentNode == NULL || DefOrUseNode == NULL ||
+         DefOrUseNode == CurrentNode);
   if (Str.isVerbose(IceV_RegOrigins) ||
       (RegNum < 0 && !Str.Cfg->hasComputedFrame()))
     Str << "%" << getName();

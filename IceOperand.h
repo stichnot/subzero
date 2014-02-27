@@ -186,9 +186,9 @@ IceOstream &operator<<(IceOstream &Str, const IceLiveRange &L);
 // Stack operand, or virtual or physical register
 class IceVariable : public IceOperand {
 public:
-  static IceVariable *create(IceCfg *Cfg, IceType Type, uint32_t Index,
-                             const IceString &Name) {
-    return new IceVariable(Cfg, Type, Index, Name);
+  static IceVariable *create(IceCfg *Cfg, IceType Type, const IceCfgNode *Node,
+                             uint32_t Index, const IceString &Name) {
+    return new IceVariable(Cfg, Type, Node, Index, Name);
   }
   void setUse(const IceInst *Inst, const IceCfgNode *Node);
   uint32_t getIndex(void) const { return Number; }
@@ -208,12 +208,8 @@ public:
     assert(HighVar == NULL);
     HighVar = High;
   }
-  bool isMultiblockLife(void) const {
-    return IsMultiblockLife | IsArgument;
-    // TODO: if an argument is only used in the entry node, and there
-    // are no back-edges to the entry node, then it doesn't have a
-    // multi-block lifetime.
-  }
+  bool isMultiblockLife(void) const { return (DefOrUseNode == NULL); }
+  const IceCfgNode *getLocalUseNode() const { return DefOrUseNode; }
   void setRegNum(int NewRegNum) {
     assert(RegNum < 0 ||
            RegNum == NewRegNum); // shouldn't set it more than once
@@ -255,12 +251,12 @@ public:
   }
 
 private:
-  IceVariable(IceCfg *Cfg, IceType Type, uint32_t Index, const IceString &Name)
+  IceVariable(IceCfg *Cfg, IceType Type, const IceCfgNode *Node, uint32_t Index,
+              const IceString &Name)
       : IceOperand(Cfg, Variable, Type), Number(Index), Name(Name),
-        DefInst(NULL), DefOrUseNode(NULL), IsArgument(false),
-        IsMultiblockLife(false), StackOffset(0), RegNum(-1), RegNumTmp(-1),
-        Weight(1), RegisterPreference(NULL), AllowRegisterOverlap(false),
-        LowVar(NULL), HighVar(NULL) {
+        DefInst(NULL), DefOrUseNode(Node), IsArgument(false), StackOffset(0),
+        RegNum(-1), RegNumTmp(-1), Weight(1), RegisterPreference(NULL),
+        AllowRegisterOverlap(false), LowVar(NULL), HighVar(NULL) {
     Vars = new IceVariable *[1];
     Vars[0] = this;
     NumVars = 1;
@@ -272,9 +268,8 @@ private:
   // here so that they can all be deleted when this variable's use
   // count reaches zero.
   IceInst *DefInst;
-  const IceCfgNode *DefOrUseNode; // for detecting IsMultiblockLife
+  const IceCfgNode *DefOrUseNode; // for detecting isMultiblockLife()
   bool IsArgument;
-  bool IsMultiblockLife;
   int
   StackOffset; // Canonical location on stack (only if RegNum==-1 || IsArgument)
   int RegNum;  // Allocated register; -1 for no allocation

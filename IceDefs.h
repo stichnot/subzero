@@ -113,13 +113,16 @@ private:
 class IceOstream {
 public:
   IceOstream(std::ostream &Stream, IceCfg *Cfg)
-      : Stream(&Stream), Cfg(Cfg), Verbose(IceV_Instructions | IceV_Preds) {}
+      : Stream(&Stream), Cfg(Cfg), Verbose(IceV_Instructions | IceV_Preds),
+        CurrentNode(NULL) {}
   bool isVerbose(IceVerboseMask Mask = (IceV_All & ~IceV_Timing)) {
     return Verbose & Mask;
   }
   void setVerbose(IceVerboseMask Mask) { Verbose = Mask; }
   void addVerbose(IceVerboseMask Mask) { Verbose |= Mask; }
   void subVerbose(IceVerboseMask Mask) { Verbose &= ~Mask; }
+  void setCurrentNode(const IceCfgNode *Node) { CurrentNode = Node; }
+  const IceCfgNode *getCurrentNode(void) const { return CurrentNode; }
   // TODO: Use LLVM's raw_ostream instead.
   // http://llvm.org/docs/CodingStandards.html#use-raw-ostream
   std::ostream *Stream;
@@ -127,6 +130,9 @@ public:
 
 private:
   IceVerboseMask Verbose;
+  // CurrentNode is maintained during dumping/emitting just for
+  // validating IceVariable::DefOrUseNode.
+  const IceCfgNode *CurrentNode;
 };
 
 inline IceOstream &operator<<(IceOstream &Str, const char *S) {

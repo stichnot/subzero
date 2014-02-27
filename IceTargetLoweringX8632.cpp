@@ -106,7 +106,8 @@ IceVariable *IceTargetX8632::getPhysicalRegister(unsigned RegNum) {
   assert(RegNum < PhysicalRegisters.size());
   IceVariable *Reg = PhysicalRegisters[RegNum];
   if (Reg == NULL) {
-    Reg = Cfg->makeVariable(IceType_i32);
+    IceCfgNode *Node = NULL; // NULL means multi-block lifetime
+    Reg = Cfg->makeVariable(IceType_i32, Node);
     Reg->setRegNum(RegNum);
     PhysicalRegisters[RegNum] = Reg;
   }
@@ -333,11 +334,12 @@ void IceTargetX8632::split64(IceVariable *Var) {
     assert(Var->getHigh());
     return;
   }
-  Low = Cfg->makeVariable(IceType_i32, -1, Var->getName() + "__lo");
+  Low =
+      Cfg->makeVariable(IceType_i32, CurrentNode, -1, Var->getName() + "__lo");
   Var->setLow(Low);
   assert(Var->getHigh() == NULL);
   IceVariable *High =
-      Cfg->makeVariable(IceType_i32, -1, Var->getName() + "__hi");
+      Cfg->makeVariable(IceType_i32, CurrentNode, -1, Var->getName() + "__hi");
   Var->setHigh(High);
   if (Var->getIsArg()) {
     Low->setIsArg();
@@ -532,7 +534,7 @@ IceInstList IceTargetX8632::lowerArithmetic(const IceInstArithmetic *Inst,
 
   // Assign t0:edx.
   if (ZeroExtendReg1 || SignExtendReg1) {
-    Reg0 = Cfg->makeVariable(IceType_i32);
+    Reg0 = Cfg->makeVariable(IceType_i32, CurrentNode);
     Reg0->setRegNum(Reg_edx);
     if (ZeroExtendReg1) {
       IceConstant *ConstZero = Cfg->getConstant(IceType_i32, Zero);
@@ -671,8 +673,8 @@ IceInstList IceTargetX8632::lowerArithmeticI64(const IceInstArithmetic *Inst,
     break;
   case IceInstArithmetic::Mul: {
     IceVariable *Tmp1, *Tmp2, *Tmp3;
-    IceVariable *Tmp4Lo = Cfg->makeVariable(IceType_i32);
-    IceVariable *Tmp4Hi = Cfg->makeVariable(IceType_i32);
+    IceVariable *Tmp4Lo = Cfg->makeVariable(IceType_i32, CurrentNode);
+    IceVariable *Tmp4Hi = Cfg->makeVariable(IceType_i32, CurrentNode);
     Tmp4Lo->setRegNum(Reg_eax);
     Tmp4Hi->setRegNum(Reg_edx);
     // gcc does the following:
@@ -927,13 +929,13 @@ IceInstList IceTargetX8632::lowerCall(const IceInstCall *Inst,
     case IceType_i8:
     case IceType_i16:
     case IceType_i32:
-      Reg = Cfg->makeVariable(Dest->getType());
+      Reg = Cfg->makeVariable(Dest->getType(), CurrentNode);
       Reg->setRegNum(Reg_eax);
       break;
     case IceType_i64:
-      Reg = Cfg->makeVariable(IceType_i32);
+      Reg = Cfg->makeVariable(IceType_i32, CurrentNode);
       Reg->setRegNum(Reg_eax);
-      RegHi = Cfg->makeVariable(IceType_i32);
+      RegHi = Cfg->makeVariable(IceType_i32, CurrentNode);
       RegHi->setRegNum(Reg_edx);
       break;
     case IceType_f32:
@@ -1023,7 +1025,7 @@ IceInstList IceTargetX8632::lowerCast(const IceInstCast *Inst,
         Expansion.push_back(IceInstX8632Mov::create(Cfg, DestLo, Reg));
       else
         Expansion.push_back(IceInstX8632Movsx::create(Cfg, DestLo, Reg));
-      IceVariable *RegHi = Cfg->makeVariable(IceType_i32);
+      IceVariable *RegHi = Cfg->makeVariable(IceType_i32, CurrentNode);
       IceConstant *Shift = Cfg->getConstant(IceType_i32, 31);
       Expansion.push_back(IceInstX8632Mov::create(Cfg, RegHi, Reg));
       Expansion.push_back(IceInstX8632Sar::create(Cfg, RegHi, Shift));
@@ -1624,7 +1626,7 @@ IceOperand *IceTargetX8632::legalizeOperand(IceOperand *From, LegalMask Allowed,
     }
 
     if (!(Allowed & Legal_Mem)) {
-      IceVariable *Reg = Cfg->makeVariable(From->getType());
+      IceVariable *Reg = Cfg->makeVariable(From->getType(), CurrentNode);
       if (RegNum < 0) {
         Reg->setWeightInfinite();
       } else {
@@ -1637,7 +1639,7 @@ IceOperand *IceTargetX8632::legalizeOperand(IceOperand *From, LegalMask Allowed,
   }
   if (llvm::isa<IceConstant>(From)) {
     if (!(Allowed & Legal_Imm)) {
-      IceVariable *Reg = Cfg->makeVariable(From->getType());
+      IceVariable *Reg = Cfg->makeVariable(From->getType(), CurrentNode);
       if (RegNum < 0) {
         Reg->setWeightInfinite();
       } else {
@@ -1655,7 +1657,7 @@ IceOperand *IceTargetX8632::legalizeOperand(IceOperand *From, LegalMask Allowed,
     //   RegNum is required and CurRegNum doesn't match.
     if ((!(Allowed & Legal_Mem) && CurRegNum < 0) ||
         (RegNum >= 0 && RegNum != CurRegNum)) {
-      IceVariable *Reg = Cfg->makeVariable(From->getType());
+      IceVariable *Reg = Cfg->makeVariable(From->getType(), CurrentNode);
       if (RegNum < 0) {
         Reg->setWeightInfinite();
         Reg->setPreferredRegister(Var, AllowOverlap);

@@ -39,8 +39,8 @@ public:
   IceConstant *getConstant(IceType Type, const void *Handle, int64_t Offset,
                            const IceString &Name = "");
   IceVariable *getVariable(uint32_t Index) const;
-  IceVariable *makeVariable(IceType Type, uint32_t Index = -1,
-                            const IceString &Name = "");
+  IceVariable *makeVariable(IceType Type, const IceCfgNode *Node,
+                            uint32_t Index = -1, const IceString &Name = "");
   const IceVarList &getVariables(void) const { return Variables; }
   const IceVarList &getArgs(void) const { return Args; }
   unsigned getNumVariables(void) const { return Variables.size(); }

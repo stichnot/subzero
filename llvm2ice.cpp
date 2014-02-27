@@ -59,7 +59,7 @@ template <typename T> static std::string LLVMObjectAsString(const T *O) {
 //
 class LLVM2ICEConverter {
 public:
-  LLVM2ICEConverter() : Cfg(NULL) {}
+  LLVM2ICEConverter() : Cfg(NULL), CurrentNode(NULL) {}
 
   IceCfg *convertFunction(const Function *F) {
     VariableTranslation.clear();
@@ -68,6 +68,8 @@ public:
     Cfg->setName(F->getName());
     Cfg->setReturnType(convertType(F->getReturnType()));
 
+    // The initial definition/use of each arg is the entry node.
+    CurrentNode = mapBasicBlockToNode(&F->getEntryBlock());
     for (Function::const_arg_iterator ArgI = F->arg_begin(),
                                       ArgE = F->arg_end();
          ArgI != ArgE; ++ArgI) {
@@ -80,6 +82,7 @@ public:
     }
     for (Function::const_iterator BBI = F->begin(), BBE = F->end(); BBI != BBE;
          ++BBI) {
+      CurrentNode = mapBasicBlockToNode(BBI);
       convertBasicBlock(BBI);
     }
     Cfg->setEntryNode(mapBasicBlockToNode(&F->getEntryBlock()));
@@ -95,8 +98,9 @@ private:
   IceVariable *mapValueToIceVar(const Value *V, IceType IceTy) {
     if (IceTy == IceType_void)
       return NULL;
-    return Cfg->makeVariable(IceTy, VariableTranslation.translate(V),
-                             V->getName());
+    assert(CurrentNode);
+    return Cfg->makeVariable(IceTy, CurrentNode,
+                             VariableTranslation.translate(V), V->getName());
   }
 
   IceVariable *mapValueToIceVar(const Value *V) {
@@ -432,6 +436,7 @@ private:
 private:
   // Data
   IceCfg *Cfg;
+  IceCfgNode *CurrentNode;
   IceValueTranslation<const Value *> VariableTranslation;
   IceValueTranslation<const BasicBlock *> LabelTranslation;
 };
