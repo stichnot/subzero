@@ -97,7 +97,7 @@ void IceLiveRange::addSegment(int Start, int End) {
     return;
   }
   int CurrentEnd = Range.back().second;
-  assert (Start >= CurrentEnd);
+  assert(Start >= CurrentEnd);
   // Check for merge opportunity.
   if (Start == CurrentEnd) {
     Range.back().second = End;
