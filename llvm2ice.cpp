@@ -22,25 +22,11 @@
 #include "llvm/Support/ErrorHandling.h"
 #include "llvm/Support/raw_ostream.h"
 #include "llvm/Support/SourceMgr.h"
-#include "llvm/Support/Timer.h"
 
 #include <fstream>
 #include <iostream>
 
 using namespace llvm;
-
-class SubzeroTimer {
-public:
-  SubzeroTimer() { StartTime = TimeRecord::getCurrentTime(false); }
-
-  double stop() {
-    TimeRecord EndTime = TimeRecord::getCurrentTime(false);
-    return EndTime.getWallTime() - StartTime.getWallTime();
-  }
-
-private:
-  TimeRecord StartTime;
-};
 
 // Debugging helper
 template <typename T> static std::string LLVMObjectAsString(const T *O) {
@@ -485,11 +471,12 @@ int main(int argc, char **argv) {
   Module *Mod;
 
   {
-    SubzeroTimer T;
+    IceTimer T;
     Mod = ParseIRFile(IRFilename, Err, getGlobalContext());
 
     if (SubzeroTimingEnabled) {
-      std::cerr << "[Subzero timing] IR Parsing: " << T.stop() << " sec\n";
+      std::cerr << "[Subzero timing] IR Parsing: " << T.getElapsedSec()
+                << " sec\n";
     }
   }
 
@@ -512,33 +499,33 @@ int main(int argc, char **argv) {
       continue;
     LLVM2ICEConverter FunctionConverter;
 
-    SubzeroTimer TConvert;
+    IceTimer TConvert;
     IceCfg *Cfg = FunctionConverter.convertFunction(I);
 
     if (SubzeroTimingEnabled) {
       std::cerr << "[Subzero timing] Convert function " << Cfg->getName()
-                << ": " << TConvert.stop() << " sec\n";
+                << ": " << TConvert.getElapsedSec() << " sec\n";
     }
 
     Cfg->Str.Stream = &(OutputFilename == "-" ? std::cout : Ofs);
     Cfg->Str.setVerbose(VerboseMask);
     if (!DisableTranslation) {
-      SubzeroTimer TTranslate;
+      IceTimer TTranslate;
       Cfg->translate(TargetArch);
       if (SubzeroTimingEnabled) {
         std::cerr << "[Subzero timing] Translate function " << Cfg->getName()
-                  << ": " << TTranslate.stop() << " sec\n";
+                  << ": " << TTranslate.getElapsedSec() << " sec\n";
       }
       if (Cfg->hasError()) {
         errs() << "ICE translation error: " << Cfg->getError() << "\n";
       }
       uint32_t AsmFormat = 0;
 
-      SubzeroTimer TEmit;
+      IceTimer TEmit;
       Cfg->emit(AsmFormat);
       if (SubzeroTimingEnabled) {
         std::cerr << "[Subzero timing] Emit function " << Cfg->getName() << ": "
-                  << TEmit.stop() << " sec\n";
+                  << TEmit.getElapsedSec() << " sec\n";
       }
     }
   }
