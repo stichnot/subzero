@@ -211,7 +211,7 @@ void IceVariable::emit(IceOstream &Str, uint32_t Option) const {
 
 void IceVariable::dump(IceOstream &Str) const {
   const IceCfgNode *CurrentNode = Str.getCurrentNode();
-  (void) CurrentNode;
+  (void)CurrentNode;
   assert(CurrentNode == NULL || DefOrUseNode == NULL ||
          DefOrUseNode == CurrentNode);
   if (Str.isVerbose(IceV_RegOrigins) ||

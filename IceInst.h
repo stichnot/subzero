@@ -99,7 +99,8 @@ class IceInstAlloca : public IceInst {
 public:
   static IceInstAlloca *create(IceCfg *Cfg, IceOperand *ByteCount,
                                uint32_t Align, IceVariable *Dest) {
-    return new IceInstAlloca(Cfg, ByteCount, Align, Dest);
+    return new (Cfg->allocateInst<IceInstAlloca>())
+        IceInstAlloca(Cfg, ByteCount, Align, Dest);
   }
   uint32_t getAlign() const { return Align; }
   virtual void dump(IceOstream &Str) const;
@@ -139,7 +140,8 @@ public:
   };
   static IceInstArithmetic *create(IceCfg *Cfg, OpKind Op, IceVariable *Dest,
                                    IceOperand *Source1, IceOperand *Source2) {
-    return new IceInstArithmetic(Cfg, Op, Dest, Source1, Source2);
+    return new (Cfg->allocateInst<IceInstArithmetic>())
+        IceInstArithmetic(Cfg, Op, Dest, Source1, Source2);
   }
   OpKind getOp(void) const { return Op; }
   bool isCommutative(void) const;
@@ -159,7 +161,8 @@ class IceInstAssign : public IceInst {
 public:
   static IceInstAssign *create(IceCfg *Cfg, IceVariable *Dest,
                                IceOperand *Source) {
-    return new IceInstAssign(Cfg, Dest, Source);
+    return new (Cfg->allocateInst<IceInstAssign>())
+        IceInstAssign(Cfg, Dest, Source);
   }
   virtual void dump(IceOstream &Str) const;
   static bool classof(const IceInst *Inst) { return Inst->getKind() == Assign; }
@@ -172,10 +175,11 @@ class IceInstBr : public IceInst {
 public:
   static IceInstBr *create(IceCfg *Cfg, IceOperand *Source,
                            IceCfgNode *TargetTrue, IceCfgNode *TargetFalse) {
-    return new IceInstBr(Cfg, Source, TargetTrue, TargetFalse);
+    return new (Cfg->allocateInst<IceInstBr>())
+        IceInstBr(Cfg, Source, TargetTrue, TargetFalse);
   }
   static IceInstBr *create(IceCfg *Cfg, IceCfgNode *Target) {
-    return new IceInstBr(Cfg, Target);
+    return new (Cfg->allocateInst<IceInstBr>()) IceInstBr(Cfg, Target);
   }
   IceCfgNode *getTargetTrue(void) const { return TargetTrue; }
   IceCfgNode *getTargetFalse(void) const { return TargetFalse; }
@@ -198,7 +202,8 @@ class IceInstCall : public IceInst {
 public:
   static IceInstCall *create(IceCfg *Cfg, unsigned NumArgs, IceVariable *Dest,
                              IceOperand *CallTarget, bool Tail) {
-    return new IceInstCall(Cfg, NumArgs, Dest, CallTarget, Tail);
+    return new (Cfg->allocateInst<IceInstCall>())
+        IceInstCall(Cfg, NumArgs, Dest, CallTarget, Tail);
   }
   void addArg(IceOperand *Arg) { addSource(Arg); }
   IceOperand *getCallTarget(void) const { return getSrc(0); }
@@ -236,7 +241,8 @@ public:
   };
   static IceInstCast *create(IceCfg *Cfg, IceCastKind CastKind,
                              IceVariable *Dest, IceOperand *Source) {
-    return new IceInstCast(Cfg, CastKind, Dest, Source);
+    return new (Cfg->allocateInst<IceInstCast>())
+        IceInstCast(Cfg, CastKind, Dest, Source);
   }
   IceCastKind getCastKind() const { return CastKind; }
   virtual void dump(IceOstream &Str) const;
@@ -273,7 +279,8 @@ public:
   static IceInstFcmp *create(IceCfg *Cfg, IceFCond Condition, IceType Type,
                              IceOperand *Dest, IceOperand *Source1,
                              IceOperand *Source2) {
-    return new IceInstFcmp(Cfg, Condition, Type, Dest, Source1, Source2);
+    return new (Cfg->allocateInst<IceInstFcmp>())
+        IceInstFcmp(Cfg, Condition, Type, Dest, Source1, Source2);
   }
   static bool classof(const IceInst *Inst) { return Inst->getKind() == Fcmp; }
 
@@ -301,7 +308,8 @@ public:
   };
   static IceInstIcmp *create(IceCfg *Cfg, IceICond Condition, IceVariable *Dest,
                              IceOperand *Source1, IceOperand *Source2) {
-    return new IceInstIcmp(Cfg, Condition, Dest, Source1, Source2);
+    return new (Cfg->allocateInst<IceInstIcmp>())
+        IceInstIcmp(Cfg, Condition, Dest, Source1, Source2);
   }
   IceICond getCondition(void) const { return Condition; }
   virtual void dump(IceOstream &Str) const;
@@ -317,7 +325,8 @@ class IceInstLoad : public IceInst {
 public:
   static IceInstLoad *create(IceCfg *Cfg, IceVariable *Dest,
                              IceOperand *SourceAddr) {
-    return new IceInstLoad(Cfg, Dest, SourceAddr);
+    return new (Cfg->allocateInst<IceInstLoad>())
+        IceInstLoad(Cfg, Dest, SourceAddr);
   }
   virtual void dump(IceOstream &Str) const;
   static bool classof(const IceInst *Inst) { return Inst->getKind() == Load; }
@@ -329,7 +338,7 @@ private:
 class IceInstPhi : public IceInst {
 public:
   static IceInstPhi *create(IceCfg *Cfg, unsigned MaxSrcs, IceVariable *Dest) {
-    return new IceInstPhi(Cfg, MaxSrcs, Dest);
+    return new (Cfg->allocateInst<IceInstPhi>()) IceInstPhi(Cfg, MaxSrcs, Dest);
   }
   void addArgument(IceOperand *Source, IceCfgNode *Label);
   IceOperand *getArgument(IceCfgNode *Label) const;
@@ -348,7 +357,7 @@ private:
 class IceInstRet : public IceInst {
 public:
   static IceInstRet *create(IceCfg *Cfg, IceOperand *Source = NULL) {
-    return new IceInstRet(Cfg, Source);
+    return new (Cfg->allocateInst<IceInstRet>()) IceInstRet(Cfg, Source);
   }
   virtual IceNodeList getTerminatorEdges(void) const { return IceNodeList(); }
   virtual void dump(IceOstream &Str) const;
@@ -363,7 +372,8 @@ public:
   static IceInstSelect *create(IceCfg *Cfg, IceVariable *Dest,
                                IceOperand *Condition, IceOperand *SourceTrue,
                                IceOperand *SourceFalse) {
-    return new IceInstSelect(Cfg, Dest, Condition, SourceTrue, SourceFalse);
+    return new (Cfg->allocateInst<IceInstSelect>())
+        IceInstSelect(Cfg, Dest, Condition, SourceTrue, SourceFalse);
   }
   IceOperand *getCondition(void) const { return getSrc(0); }
   IceOperand *getTrueOperand(void) const { return getSrc(1); }
@@ -381,7 +391,8 @@ class IceInstStore : public IceInst {
 public:
   static IceInstStore *create(IceCfg *Cfg, IceOperand *SourceData,
                               IceOperand *SourceAddr) {
-    return new IceInstStore(Cfg, SourceData, SourceAddr);
+    return new (Cfg->allocateInst<IceInstStore>())
+        IceInstStore(Cfg, SourceData, SourceAddr);
   }
   IceOperand *getAddr(void) const { return getSrc(1); }
   IceOperand *getData(void) const { return getSrc(0); }
@@ -396,7 +407,8 @@ class IceInstSwitch : public IceInst {
 public:
   static IceInstSwitch *create(IceCfg *Cfg, unsigned NumCases,
                                IceOperand *Source, IceCfgNode *LabelDefault) {
-    return new IceInstSwitch(Cfg, NumCases, Source, LabelDefault);
+    return new (Cfg->allocateInst<IceInstSwitch>())
+        IceInstSwitch(Cfg, NumCases, Source, LabelDefault);
   }
   IceCfgNode *getLabelDefault(void) const { return LabelDefault; }
   unsigned getNumCases(void) const { return NumCases; }
@@ -426,7 +438,8 @@ class IceInstFakeDef : public IceInst {
 public:
   static IceInstFakeDef *create(IceCfg *Cfg, IceVariable *Dest,
                                 IceVariable *Src = NULL) {
-    return new IceInstFakeDef(Cfg, Dest, Src);
+    return new (Cfg->allocateInst<IceInstFakeDef>())
+        IceInstFakeDef(Cfg, Dest, Src);
   }
   virtual void emit(IceOstream &Str, uint32_t Option) const;
   virtual void dump(IceOstream &Str) const;
@@ -441,7 +454,7 @@ private:
 class IceInstFakeUse : public IceInst {
 public:
   static IceInstFakeUse *create(IceCfg *Cfg, IceVariable *Src) {
-    return new IceInstFakeUse(Cfg, Src);
+    return new (Cfg->allocateInst<IceInstFakeUse>()) IceInstFakeUse(Cfg, Src);
   }
   virtual void emit(IceOstream &Str, uint32_t Option) const;
   virtual void dump(IceOstream &Str) const;
@@ -457,7 +470,8 @@ class IceInstFakeKill : public IceInst {
 public:
   static IceInstFakeKill *create(IceCfg *Cfg, const IceVarList &KilledRegs,
                                  const IceInst *Linked) {
-    return new IceInstFakeKill(Cfg, KilledRegs, Linked);
+    return new (Cfg->allocateInst<IceInstFakeKill>())
+        IceInstFakeKill(Cfg, KilledRegs, Linked);
   }
   const IceInst *getLinked(void) const { return Linked; }
   virtual void emit(IceOstream &Str, uint32_t Option) const;

@@ -10,6 +10,8 @@
 #include "IceDefs.h"
 #include "IceTypes.h"
 
+#include "llvm/Support/Allocator.h"
+
 class IceCfg {
 public:
   IceCfg(void);
@@ -64,9 +66,16 @@ public:
   void emit(uint32_t Option) const;
   void dump(void) const;
 
+  // Allocate an instruction of type T using the per-Cfg instruction allocator.
+  template <typename T> T *allocateInst() {
+    return InstAllocator.Allocate<T>();
+  }
+
   mutable IceOstream Str;
 
 private:
+  llvm::BumpPtrAllocator InstAllocator;
+
   bool HasError;
   IceString ErrorMessage;
   IceString Name; // function name
