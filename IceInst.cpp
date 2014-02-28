@@ -15,7 +15,7 @@ IceInst::IceInst(IceCfg *Cfg, IceInstType Kind, unsigned MaxSrcs,
     : Kind(Kind), MaxSrcs(MaxSrcs), NumSrcs(0), Deleted(false), Dead(false),
       Dest(Dest), LiveRangesEnded(0) {
   Number = Cfg->newInstNumber();
-  Srcs = new IceOperand *[MaxSrcs]; // TODO: use placement alloc from Cfg
+  Srcs = Cfg->allocateArrayOf<IceOperand *>(MaxSrcs);
 }
 
 // If Src is an IceVariable, it returns true if this instruction ends
@@ -255,8 +255,8 @@ IceInstSwitch::IceInstSwitch(IceCfg *Cfg, unsigned NumCases, IceOperand *Source,
     : IceInst(Cfg, IceInst::Switch, 1, NULL), LabelDefault(LabelDefault),
       NumCases(NumCases) {
   addSource(Source);
-  Values = new uint64_t[NumCases];
-  Labels = new IceCfgNode *[NumCases];
+  Values = Cfg->allocateArrayOf<uint64_t>(NumCases);
+  Labels = Cfg->allocateArrayOf<IceCfgNode *>(NumCases);
   // Initialize in case buggy code doesn't set all entries
   for (unsigned I = 0; I < NumCases; ++I) {
     Values[I] = 0;

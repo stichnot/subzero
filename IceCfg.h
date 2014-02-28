@@ -67,14 +67,22 @@ public:
   void dump(void) const;
 
   // Allocate an instruction of type T using the per-Cfg instruction allocator.
-  template <typename T> T *allocateInst() {
-    return InstAllocator.Allocate<T>();
+  template <typename T> T *allocateInst() { return Allocator.Allocate<T>(); }
+
+  // Allocate an array of data of type T using the per-Cfg allocator.
+  template <typename T> T *allocateArrayOf(size_t NumElems) {
+    return Allocator.Allocate<T>(NumElems);
   }
 
   mutable IceOstream Str;
 
 private:
-  llvm::BumpPtrAllocator InstAllocator;
+  // TODO: for now, everything is allocated from the same allocator. In the
+  // future we may want to split this to several allocators, for example in
+  // order to use a "Recycler" to preserve memory. If we keep all allocation
+  // requests from the Cfg exposed via methods, we can always switch the
+  // implementation over at a later point.
+  llvm::BumpPtrAllocator Allocator;
 
   bool HasError;
   IceString ErrorMessage;
