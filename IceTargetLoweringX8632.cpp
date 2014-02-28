@@ -150,6 +150,7 @@ void IceTargetX8632::setArgOffsetAndCopy(IceVariable *Arg,
 }
 
 void IceTargetX8632::addProlog(IceCfgNode *Node) {
+  const bool SimpleCoalescing = true;
   IceInstList Expansion;
   int InArgsSizeBytes = 0;
   int RetIpSizeBytes = 4;
@@ -161,9 +162,17 @@ void IceTargetX8632::addProlog(IceCfgNode *Node) {
   // slot.  Or, do coalescing by running the register allocator again
   // with an infinite set of registers (as a side effect, this gives
   // variables a second chance at physical register assignment).
+  //
+  // A middle ground approach is to leverage sparsity and allocate one
+  // block of space on the frame for globals (variables with
+  // multi-block lifetime), and one block to share for locals
+  // (single-block lifetime).
 
   llvm::SmallBitVector CalleeSaves =
       getRegisterSet(IceTargetLowering::RegMask_CalleeSave);
+
+  int GlobalsSize = 0;
+  std::vector<int> LocalsSize(Cfg->getNumNodes());
 
   // Prepass.  Compute RegsUsed, PreservedRegsSizeBytes, and
   // LocalsSizeBytes.
@@ -183,8 +192,21 @@ void IceTargetX8632::addProlog(IceCfgNode *Node) {
       continue;
     if (ComputedLiveRanges && Var->getLiveRange().isEmpty())
       continue;
-    LocalsSizeBytes += typeWidthOnStack(Var->getType());
+    int Increment = typeWidthOnStack(Var->getType());
+    if (SimpleCoalescing) {
+      if (Var->isMultiblockLife()) {
+        GlobalsSize += Increment;
+      } else {
+        unsigned NodeIndex = Var->getLocalUseNode()->getIndex();
+        LocalsSize[NodeIndex] += Increment;
+        if (LocalsSize[NodeIndex] > LocalsSizeBytes)
+          LocalsSizeBytes = LocalsSize[NodeIndex];
+      }
+    } else {
+      LocalsSizeBytes += Increment;
+    }
   }
+  LocalsSizeBytes += GlobalsSize;
 
   // Add push instructions for preserved registers.
   for (unsigned i = 0; i < CalleeSaves.size(); ++i) {
@@ -215,6 +237,9 @@ void IceTargetX8632::addProlog(IceCfgNode *Node) {
   resetStackAdjustment();
 
   // Fill in stack offsets for locals.
+  int TotalGlobalsSize = GlobalsSize;
+  GlobalsSize = 0;
+  LocalsSize.assign(LocalsSize.size(), 0);
   int NextStackOffset = 0;
   for (IceVarList::const_iterator I = Variables.begin(), E = Variables.end();
        I != E; ++I) {
@@ -229,7 +254,19 @@ void IceTargetX8632::addProlog(IceCfgNode *Node) {
       continue;
     if (ComputedLiveRanges && Var->getLiveRange().isEmpty())
       continue;
-    NextStackOffset += typeWidthOnStack(Var->getType());
+    int Increment = typeWidthOnStack(Var->getType());
+    if (SimpleCoalescing) {
+      if (Var->isMultiblockLife()) {
+        GlobalsSize += Increment;
+        NextStackOffset = GlobalsSize;
+      } else {
+        unsigned NodeIndex = Var->getLocalUseNode()->getIndex();
+        LocalsSize[NodeIndex] += Increment;
+        NextStackOffset = TotalGlobalsSize + LocalsSize[NodeIndex];
+      }
+    } else {
+      NextStackOffset += Increment;
+    }
     if (IsEbpBasedFrame)
       Var->setStackOffset(-NextStackOffset);
     else
