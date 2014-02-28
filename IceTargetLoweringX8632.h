@@ -74,8 +74,6 @@ protected:
   virtual IceInstList lowerArithmetic(const IceInstArithmetic *Inst,
                                       const IceInst *Next,
                                       bool &DeleteNextInst);
-  IceInstList lowerArithmeticI64(const IceInstArithmetic *Inst,
-                                 const IceInst *Next, bool &DeleteNextInst);
   virtual IceInstList lowerAssign(const IceInstAssign *Inst,
                                   const IceInst *Next, bool &DeleteNextInst);
   virtual IceInstList lowerBr(const IceInstBr *Inst, const IceInst *Next,

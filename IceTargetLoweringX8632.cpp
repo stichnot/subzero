@@ -477,105 +477,363 @@ IceInstList IceTargetX8632::lowerArithmetic(const IceInstArithmetic *Inst,
                                             bool &DeleteNextInst) {
   IceInstList Expansion;
   IceVariable *Dest = Inst->getDest();
-  if (Dest->getType() == IceType_i64)
-    return lowerArithmeticI64(Inst, Next, DeleteNextInst);
-  IceOperand *Src0 = Inst->getSrc(0);
-  IceOperand *Src1 = Inst->getSrc(1);
+  IceOperand *Src0 = legalizeOperand(Inst->getSrc(0), Legal_All, Expansion);
+  IceOperand *Src1 = legalizeOperand(Inst->getSrc(1), Legal_All, Expansion);
   IceVariable *Reg0 = NULL;
   IceVariable *Reg1 = NULL;
   IceOperand *Reg2 = Src1;
   uint64_t Zero = 0;
+  bool LowerI64ToI32 = (Dest->getType() == IceType_i64);
+  IceVariable *DestLo, *DestHi;
+  IceVariable *TmpLo, *TmpHi;
+  IceOperand *Src0Lo, *Src0Hi, *Src1Lo, *Src1Hi;
+  if (LowerI64ToI32) {
+    DestLo = llvm::cast<IceVariable>(makeLowOperand(Dest));
+    DestHi = llvm::cast<IceVariable>(makeHighOperand(Dest));
+    Src0Lo = makeLowOperand(Src0);
+    Src0Hi = makeHighOperand(Src0);
+    Src1Lo = makeLowOperand(Src1);
+    Src1Hi = makeHighOperand(Src1);
+  }
 
   switch (Inst->getOp()) {
   case IceInstArithmetic::Add:
-    Reg1 = legalizeOperandToVar(Src0, Expansion);
-    Reg2 = legalizeOperand(Src1, Legal_All, Expansion);
-    Expansion.push_back(IceInstX8632Add::create(Cfg, Reg1, Reg2));
+    if (LowerI64ToI32) {
+      TmpLo = legalizeOperandToVar(Src0Lo, Expansion);
+      Expansion.push_back(IceInstX8632Add::create(Cfg, TmpLo, Src1Lo));
+      Expansion.push_back(IceInstX8632Mov::create(Cfg, DestLo, TmpLo));
+      TmpHi = legalizeOperandToVar(Src0Hi, Expansion);
+      Expansion.push_back(IceInstX8632Adc::create(Cfg, TmpHi, Src1Hi));
+      Expansion.push_back(IceInstX8632Mov::create(Cfg, DestHi, TmpHi));
+    } else {
+      Reg1 = legalizeOperandToVar(Src0, Expansion);
+      Reg2 = legalizeOperand(Src1, Legal_All, Expansion);
+      Expansion.push_back(IceInstX8632Add::create(Cfg, Reg1, Reg2));
+      Expansion.push_back(IceInstX8632Mov::create(Cfg, Dest, Reg1));
+    }
     break;
   case IceInstArithmetic::And:
-    Reg1 = legalizeOperandToVar(Src0, Expansion);
-    Reg2 = legalizeOperand(Src1, Legal_All, Expansion);
-    Expansion.push_back(IceInstX8632And::create(Cfg, Reg1, Reg2));
+    if (LowerI64ToI32) {
+      TmpLo = legalizeOperandToVar(Src0Lo, Expansion);
+      Expansion.push_back(IceInstX8632And::create(Cfg, TmpLo, Src1Lo));
+      Expansion.push_back(IceInstX8632Mov::create(Cfg, DestLo, TmpLo));
+      TmpHi = legalizeOperandToVar(Src0Hi, Expansion);
+      Expansion.push_back(IceInstX8632And::create(Cfg, TmpHi, Src1Hi));
+      Expansion.push_back(IceInstX8632Mov::create(Cfg, DestHi, TmpHi));
+    } else {
+      Reg1 = legalizeOperandToVar(Src0, Expansion);
+      Reg2 = legalizeOperand(Src1, Legal_All, Expansion);
+      Expansion.push_back(IceInstX8632And::create(Cfg, Reg1, Reg2));
+      Expansion.push_back(IceInstX8632Mov::create(Cfg, Dest, Reg1));
+    }
     break;
   case IceInstArithmetic::Or:
-    Reg1 = legalizeOperandToVar(Src0, Expansion);
-    Reg2 = legalizeOperand(Src1, Legal_All, Expansion);
-    Expansion.push_back(IceInstX8632Or::create(Cfg, Reg1, Reg2));
+    if (LowerI64ToI32) {
+      TmpLo = legalizeOperandToVar(Src0Lo, Expansion);
+      Expansion.push_back(IceInstX8632Or::create(Cfg, TmpLo, Src1Lo));
+      Expansion.push_back(IceInstX8632Mov::create(Cfg, DestLo, TmpLo));
+      TmpHi = legalizeOperandToVar(Src0Hi, Expansion);
+      Expansion.push_back(IceInstX8632Or::create(Cfg, TmpHi, Src1Hi));
+      Expansion.push_back(IceInstX8632Mov::create(Cfg, DestHi, TmpHi));
+    } else {
+      Reg1 = legalizeOperandToVar(Src0, Expansion);
+      Reg2 = legalizeOperand(Src1, Legal_All, Expansion);
+      Expansion.push_back(IceInstX8632Or::create(Cfg, Reg1, Reg2));
+      Expansion.push_back(IceInstX8632Mov::create(Cfg, Dest, Reg1));
+    }
     break;
   case IceInstArithmetic::Xor:
-    Reg1 = legalizeOperandToVar(Src0, Expansion);
-    Reg2 = legalizeOperand(Src1, Legal_All, Expansion);
-    Expansion.push_back(IceInstX8632Xor::create(Cfg, Reg1, Reg2));
+    if (LowerI64ToI32) {
+      TmpLo = legalizeOperandToVar(Src0Lo, Expansion);
+      Expansion.push_back(IceInstX8632Xor::create(Cfg, TmpLo, Src1Lo));
+      Expansion.push_back(IceInstX8632Mov::create(Cfg, DestLo, TmpLo));
+      TmpHi = legalizeOperandToVar(Src0Hi, Expansion);
+      Expansion.push_back(IceInstX8632Xor::create(Cfg, TmpHi, Src1Hi));
+      Expansion.push_back(IceInstX8632Mov::create(Cfg, DestHi, TmpHi));
+    } else {
+      Reg1 = legalizeOperandToVar(Src0, Expansion);
+      Reg2 = legalizeOperand(Src1, Legal_All, Expansion);
+      Expansion.push_back(IceInstX8632Xor::create(Cfg, Reg1, Reg2));
+      Expansion.push_back(IceInstX8632Mov::create(Cfg, Dest, Reg1));
+    }
     break;
   case IceInstArithmetic::Sub:
-    Reg1 = legalizeOperandToVar(Src0, Expansion);
-    Reg2 = legalizeOperand(Src1, Legal_All, Expansion);
-    Expansion.push_back(IceInstX8632Sub::create(Cfg, Reg1, Reg2));
+    if (LowerI64ToI32) {
+      TmpLo = legalizeOperandToVar(Src0Lo, Expansion);
+      Expansion.push_back(IceInstX8632Sub::create(Cfg, TmpLo, Src1Lo));
+      Expansion.push_back(IceInstX8632Mov::create(Cfg, DestLo, TmpLo));
+      TmpHi = legalizeOperandToVar(Src0Hi, Expansion);
+      Expansion.push_back(IceInstX8632Sbb::create(Cfg, TmpHi, Src1Hi));
+      Expansion.push_back(IceInstX8632Mov::create(Cfg, DestHi, TmpHi));
+    } else {
+      Reg1 = legalizeOperandToVar(Src0, Expansion);
+      Reg2 = legalizeOperand(Src1, Legal_All, Expansion);
+      Expansion.push_back(IceInstX8632Sub::create(Cfg, Reg1, Reg2));
+      Expansion.push_back(IceInstX8632Mov::create(Cfg, Dest, Reg1));
+    }
     break;
   case IceInstArithmetic::Mul:
-    // TODO: Optimize for llvm::isa<IceConstant>(Src1)
-    // TODO: Strength-reduce multiplications by a constant,
-    // particularly -1 and powers of 2.  Advanced: use lea to multiply
-    // by 3, 5, 9.
-    Reg1 = legalizeOperandToVar(Src0, Expansion);
-    Reg2 = legalizeOperand(Src1, Legal_All, Expansion);
-    Expansion.push_back(IceInstX8632Imul::create(Cfg, Reg1, Reg2));
+    if (LowerI64ToI32) {
+      IceVariable *Tmp1, *Tmp2, *Tmp3;
+      IceVariable *Tmp4Lo = Cfg->makeVariable(IceType_i32, CurrentNode);
+      IceVariable *Tmp4Hi = Cfg->makeVariable(IceType_i32, CurrentNode);
+      Tmp4Lo->setRegNum(Reg_eax);
+      Tmp4Hi->setRegNum(Reg_edx);
+      // gcc does the following:
+      // a=b*c ==>
+      //   t1 = b.hi; t1 *=(imul) c.lo
+      //   t2 = c.hi; t2 *=(imul) b.lo
+      //   t3:eax = b.lo
+      //   t4.hi:edx,t4.lo:eax = t3:eax *(mul) c.lo
+      //   a.lo = t4.lo
+      //   t4.hi += t1
+      //   t4.hi += t2
+      //   a.hi = t4.hi
+      Tmp1 = legalizeOperandToVar(Src0Hi, Expansion);
+      Expansion.push_back(IceInstX8632Imul::create(Cfg, Tmp1, Src1Lo));
+      Tmp2 = legalizeOperandToVar(Src1Hi, Expansion);
+      Expansion.push_back(IceInstX8632Imul::create(Cfg, Tmp2, Src0Lo));
+      Tmp3 = legalizeOperandToVar(Src0Lo, Expansion, false, Reg_eax);
+      Expansion.push_back(IceInstX8632Mul::create(Cfg, Tmp4Lo, Tmp3, Src1Lo));
+      Expansion.push_back(IceInstX8632Mov::create(Cfg, DestLo, Tmp4Lo));
+      Expansion.push_back(IceInstFakeDef::create(Cfg, Tmp4Hi, Tmp4Lo));
+      Expansion.push_back(IceInstX8632Add::create(Cfg, Tmp4Hi, Tmp1));
+      Expansion.push_back(IceInstX8632Add::create(Cfg, Tmp4Hi, Tmp2));
+      Expansion.push_back(IceInstX8632Mov::create(Cfg, DestHi, Tmp4Hi));
+    } else {
+      // TODO: Optimize for llvm::isa<IceConstant>(Src1)
+      // TODO: Strength-reduce multiplications by a constant,
+      // particularly -1 and powers of 2.  Advanced: use lea to
+      // multiply by 3, 5, 9.
+      Reg1 = legalizeOperandToVar(Src0, Expansion);
+      Reg2 = legalizeOperand(Src1, Legal_All, Expansion);
+      Expansion.push_back(IceInstX8632Imul::create(Cfg, Reg1, Reg2));
+      Expansion.push_back(IceInstX8632Mov::create(Cfg, Dest, Reg1));
+    }
     break;
   case IceInstArithmetic::Shl:
-    Reg1 = legalizeOperandToVar(Src0, Expansion);
-    if (!llvm::isa<IceConstant>(Src1))
-      Reg2 = legalizeOperandToVar(Src1, Expansion, false, Reg_ecx);
-    Expansion.push_back(IceInstX8632Shl::create(Cfg, Reg1, Reg2));
+    if (LowerI64ToI32) {
+      // TODO: Refactor the similarities between Shl, Lshr, and Ashr.
+      // gcc does the following:
+      // a=b<<c ==>
+      //   t1:ecx = c.lo & 0xff // via movzx, we can probably just t1=c.lo
+      //   t2 = b.lo
+      //   t3 = b.hi
+      //   t3 = shld t3, t2, t1
+      //   t2 = shl t2, t1
+      //   test t1, 0x20
+      //   je L1
+      //   use(t3)
+      //   t3 = t2
+      //   t2 = 0
+      // L1:
+      //   a.lo = t2
+      //   a.hi = t3
+      IceVariable *Tmp1, *Tmp2, *Tmp3;
+      IceConstant *BitTest = Cfg->getConstant(IceType_i32, 0x20);
+      uint64_t ZeroValue = 0;
+      IceConstant *Zero = Cfg->getConstant(IceType_i32, ZeroValue);
+      IceInstX8632Label *Label = IceInstX8632Label::create(Cfg, this);
+      Tmp1 = legalizeOperandToVar(Src1Lo, Expansion, false, Reg_ecx);
+      Tmp2 = legalizeOperandToVar(Src0Lo, Expansion);
+      Tmp3 = legalizeOperandToVar(Src0Hi, Expansion);
+      Expansion.push_back(IceInstX8632Shld::create(Cfg, Tmp3, Tmp2, Tmp1));
+      Expansion.push_back(IceInstX8632Shl::create(Cfg, Tmp2, Tmp1));
+      Expansion.push_back(IceInstX8632Test::create(Cfg, Tmp1, BitTest));
+      Expansion.push_back(IceInstX8632Br::create(Cfg, Label, IceInstIcmp::Eq));
+      Expansion.push_back(IceInstFakeUse::create(Cfg, Tmp3));
+      Expansion.push_back(IceInstX8632Mov::create(Cfg, Tmp3, Tmp2));
+      Expansion.push_back(IceInstX8632Mov::create(Cfg, Tmp2, Zero));
+      Expansion.push_back(Label);
+      Expansion.push_back(IceInstX8632Mov::create(Cfg, DestLo, Tmp2));
+      Expansion.push_back(IceInstX8632Mov::create(Cfg, DestHi, Tmp3));
+    } else {
+      Reg1 = legalizeOperandToVar(Src0, Expansion);
+      if (!llvm::isa<IceConstant>(Src1))
+        Reg2 = legalizeOperandToVar(Src1, Expansion, false, Reg_ecx);
+      Expansion.push_back(IceInstX8632Shl::create(Cfg, Reg1, Reg2));
+      Expansion.push_back(IceInstX8632Mov::create(Cfg, Dest, Reg1));
+    }
     break;
   case IceInstArithmetic::Lshr:
-    Reg1 = legalizeOperandToVar(Src0, Expansion);
-    if (!llvm::isa<IceConstant>(Src1))
-      Reg2 = legalizeOperandToVar(Src1, Expansion, false, Reg_ecx);
-    Expansion.push_back(IceInstX8632Shr::create(Cfg, Reg1, Reg2));
+    if (LowerI64ToI32) {
+      // a=b>>c (unsigned) ==>
+      //   t1:ecx = c.lo & 0xff // via movzx, we can probably just t1=c.lo
+      //   t2 = b.lo
+      //   t3 = b.hi
+      //   t2 = shrd t2, t3, t1
+      //   t3 = shr t3, t1
+      //   test t1, 0x20
+      //   je L1
+      //   use(t2)
+      //   t2 = t3
+      //   t3 = 0
+      // L1:
+      //   a.lo = t2
+      //   a.hi = t3
+      IceVariable *Tmp1, *Tmp2, *Tmp3;
+      IceConstant *BitTest = Cfg->getConstant(IceType_i32, 0x20);
+      uint64_t ZeroValue = 0;
+      IceConstant *Zero = Cfg->getConstant(IceType_i32, ZeroValue);
+      IceInstX8632Label *Label = IceInstX8632Label::create(Cfg, this);
+      Tmp1 = legalizeOperandToVar(Src1Lo, Expansion, false, Reg_ecx);
+      Tmp2 = legalizeOperandToVar(Src0Lo, Expansion);
+      Tmp3 = legalizeOperandToVar(Src0Hi, Expansion);
+      Expansion.push_back(IceInstX8632Shrd::create(Cfg, Tmp2, Tmp3, Tmp1));
+      Expansion.push_back(IceInstX8632Shr::create(Cfg, Tmp3, Tmp1));
+      Expansion.push_back(IceInstX8632Test::create(Cfg, Tmp1, BitTest));
+      Expansion.push_back(IceInstX8632Br::create(Cfg, Label, IceInstIcmp::Eq));
+      Expansion.push_back(IceInstFakeUse::create(Cfg, Tmp2));
+      Expansion.push_back(IceInstX8632Mov::create(Cfg, Tmp2, Tmp3));
+      Expansion.push_back(IceInstX8632Mov::create(Cfg, Tmp3, Zero));
+      Expansion.push_back(Label);
+      Expansion.push_back(IceInstX8632Mov::create(Cfg, DestLo, Tmp2));
+      Expansion.push_back(IceInstX8632Mov::create(Cfg, DestHi, Tmp3));
+    } else {
+      Reg1 = legalizeOperandToVar(Src0, Expansion);
+      if (!llvm::isa<IceConstant>(Src1))
+        Reg2 = legalizeOperandToVar(Src1, Expansion, false, Reg_ecx);
+      Expansion.push_back(IceInstX8632Shr::create(Cfg, Reg1, Reg2));
+      Expansion.push_back(IceInstX8632Mov::create(Cfg, Dest, Reg1));
+    }
     break;
   case IceInstArithmetic::Ashr:
-    Reg1 = legalizeOperandToVar(Src0, Expansion);
-    if (!llvm::isa<IceConstant>(Src1))
-      Reg2 = legalizeOperandToVar(Src1, Expansion, false, Reg_ecx);
-    Expansion.push_back(IceInstX8632Sar::create(Cfg, Reg1, Reg2));
+    if (LowerI64ToI32) {
+      // a=b>>c (signed) ==>
+      //   t1:ecx = c.lo & 0xff // via movzx, we can probably just t1=c.lo
+      //   t2 = b.lo
+      //   t3 = b.hi
+      //   t2 = shrd t2, t3, t1
+      //   t3 = sar t3, t1
+      //   test t1, 0x20
+      //   je L1
+      //   use(t2)
+      //   t2 = t3
+      //   t3 = sar t3, 0x1f
+      // L1:
+      //   a.lo = t2
+      //   a.hi = t3
+      IceVariable *Tmp1, *Tmp2, *Tmp3;
+      IceConstant *BitTest = Cfg->getConstant(IceType_i32, 0x20);
+      IceConstant *SignExtend = Cfg->getConstant(IceType_i32, 0x1f);
+      IceInstX8632Label *Label = IceInstX8632Label::create(Cfg, this);
+      Tmp1 = legalizeOperandToVar(Src1Lo, Expansion, false, Reg_ecx);
+      Tmp2 = legalizeOperandToVar(Src0Lo, Expansion);
+      Tmp3 = legalizeOperandToVar(Src0Hi, Expansion);
+      Expansion.push_back(IceInstX8632Shrd::create(Cfg, Tmp2, Tmp3, Tmp1));
+      Expansion.push_back(IceInstX8632Sar::create(Cfg, Tmp3, Tmp1));
+      Expansion.push_back(IceInstX8632Test::create(Cfg, Tmp1, BitTest));
+      Expansion.push_back(IceInstX8632Br::create(Cfg, Label, IceInstIcmp::Eq));
+      Expansion.push_back(IceInstFakeUse::create(Cfg, Tmp2));
+      Expansion.push_back(IceInstX8632Mov::create(Cfg, Tmp2, Tmp3));
+      // Expansion.push_back(IceInstX8632Mov::create(Cfg, Tmp3, Zero));
+      Expansion.push_back(IceInstX8632Sar::create(Cfg, Tmp3, SignExtend));
+      Expansion.push_back(Label);
+      Expansion.push_back(IceInstX8632Mov::create(Cfg, DestLo, Tmp2));
+      Expansion.push_back(IceInstX8632Mov::create(Cfg, DestHi, Tmp3));
+    } else {
+      Reg1 = legalizeOperandToVar(Src0, Expansion);
+      if (!llvm::isa<IceConstant>(Src1))
+        Reg2 = legalizeOperandToVar(Src1, Expansion, false, Reg_ecx);
+      Expansion.push_back(IceInstX8632Sar::create(Cfg, Reg1, Reg2));
+      Expansion.push_back(IceInstX8632Mov::create(Cfg, Dest, Reg1));
+    }
     break;
-  case IceInstArithmetic::Udiv: {
-    Reg1 = legalizeOperandToVar(Src0, Expansion, false, Reg_eax);
-    Reg0 = Cfg->makeVariable(IceType_i32, CurrentNode);
-    Reg0->setRegNum(Reg_edx);
-    IceConstant *ConstZero = Cfg->getConstant(IceType_i32, Zero);
-    Expansion.push_back(IceInstX8632Mov::create(Cfg, Reg0, ConstZero));
-    Reg2 = legalizeOperand(Src1, Legal_All, Expansion);
-    Expansion.push_back(IceInstX8632Div::create(Cfg, Reg1, Reg2, Reg0));
+  case IceInstArithmetic::Udiv:
+    if (LowerI64ToI32) {
+      unsigned MaxSrcs = 2;
+      // TODO: Figure out how to properly construct CallTarget.
+      IceConstant *CallTarget =
+          Cfg->getConstant(IceType_i32, NULL, 0, "__udivdi3");
+      bool Tailcall = false;
+      // TODO: This instruction leaks.
+      IceInstCall *Call = IceInstCall::create(Cfg, MaxSrcs, Inst->getDest(),
+                                              CallTarget, Tailcall);
+      Call->addArg(Inst->getSrc(0));
+      Call->addArg(Inst->getSrc(1));
+      return lowerCall(Call, NULL, DeleteNextInst);
+    } else {
+      Reg1 = legalizeOperandToVar(Src0, Expansion, false, Reg_eax);
+      Reg0 = Cfg->makeVariable(IceType_i32, CurrentNode);
+      Reg0->setRegNum(Reg_edx);
+      IceConstant *ConstZero = Cfg->getConstant(IceType_i32, Zero);
+      Expansion.push_back(IceInstX8632Mov::create(Cfg, Reg0, ConstZero));
+      Reg2 = legalizeOperand(Src1, Legal_All, Expansion);
+      Expansion.push_back(IceInstX8632Div::create(Cfg, Reg1, Reg2, Reg0));
+      Expansion.push_back(IceInstX8632Mov::create(Cfg, Dest, Reg1));
+    }
     break;
-  }
   case IceInstArithmetic::Sdiv:
-    Reg1 = legalizeOperandToVar(Src0, Expansion, false, Reg_eax);
-    Reg0 = Cfg->makeVariable(IceType_i32, CurrentNode);
-    Reg0->setRegNum(Reg_edx);
-    Expansion.push_back(IceInstX8632Cdq::create(Cfg, Reg0, Reg1));
-    Reg2 = legalizeOperand(Src1, Legal_All, Expansion);
-    Expansion.push_back(IceInstX8632Idiv::create(Cfg, Reg1, Reg2, Reg0));
+    if (LowerI64ToI32) {
+      unsigned MaxSrcs = 2;
+      // TODO: Figure out how to properly construct CallTarget.
+      IceConstant *CallTarget =
+          Cfg->getConstant(IceType_i32, NULL, 0, "__divdi3");
+      bool Tailcall = false;
+      // TODO: This instruction leaks.
+      IceInstCall *Call = IceInstCall::create(Cfg, MaxSrcs, Inst->getDest(),
+                                              CallTarget, Tailcall);
+      Call->addArg(Inst->getSrc(0));
+      Call->addArg(Inst->getSrc(1));
+      return lowerCall(Call, NULL, DeleteNextInst);
+    } else {
+      Reg1 = legalizeOperandToVar(Src0, Expansion, false, Reg_eax);
+      Reg0 = Cfg->makeVariable(IceType_i32, CurrentNode);
+      Reg0->setRegNum(Reg_edx);
+      Expansion.push_back(IceInstX8632Cdq::create(Cfg, Reg0, Reg1));
+      Reg2 = legalizeOperand(Src1, Legal_All, Expansion);
+      Expansion.push_back(IceInstX8632Idiv::create(Cfg, Reg1, Reg2, Reg0));
+      Expansion.push_back(IceInstX8632Mov::create(Cfg, Dest, Reg1));
+    }
     break;
-  case IceInstArithmetic::Urem: {
-    Reg1 = legalizeOperandToVar(Src0, Expansion, false, Reg_eax);
-    Reg0 = Cfg->makeVariable(IceType_i32, CurrentNode);
-    Reg0->setRegNum(Reg_edx);
-    IceConstant *ConstZero = Cfg->getConstant(IceType_i32, Zero);
-    Expansion.push_back(IceInstX8632Mov::create(Cfg, Reg0, ConstZero));
-    Reg2 = legalizeOperand(Src1, Legal_All, Expansion);
-    Expansion.push_back(IceInstX8632Div::create(Cfg, Reg0, Reg2, Reg1));
-    Reg1 = Reg0;
+  case IceInstArithmetic::Urem:
+    if (LowerI64ToI32) {
+      unsigned MaxSrcs = 2;
+      // TODO: Figure out how to properly construct CallTarget.
+      IceConstant *CallTarget =
+          Cfg->getConstant(IceType_i32, NULL, 0, "__umoddi3");
+      bool Tailcall = false;
+      // TODO: This instruction leaks.
+      IceInstCall *Call = IceInstCall::create(Cfg, MaxSrcs, Inst->getDest(),
+                                              CallTarget, Tailcall);
+      Call->addArg(Inst->getSrc(0));
+      Call->addArg(Inst->getSrc(1));
+      return lowerCall(Call, NULL, DeleteNextInst);
+    } else {
+      Reg1 = legalizeOperandToVar(Src0, Expansion, false, Reg_eax);
+      Reg0 = Cfg->makeVariable(IceType_i32, CurrentNode);
+      Reg0->setRegNum(Reg_edx);
+      IceConstant *ConstZero = Cfg->getConstant(IceType_i32, Zero);
+      Expansion.push_back(IceInstX8632Mov::create(Cfg, Reg0, ConstZero));
+      Reg2 = legalizeOperand(Src1, Legal_All, Expansion);
+      Expansion.push_back(IceInstX8632Div::create(Cfg, Reg0, Reg2, Reg1));
+      Reg1 = Reg0;
+      Expansion.push_back(IceInstX8632Mov::create(Cfg, Dest, Reg1));
+    }
     break;
-  }
   case IceInstArithmetic::Srem:
-    Reg1 = legalizeOperandToVar(Src0, Expansion, false, Reg_eax);
-    Reg0 = Cfg->makeVariable(IceType_i32, CurrentNode);
-    Reg0->setRegNum(Reg_edx);
-    Expansion.push_back(IceInstX8632Cdq::create(Cfg, Reg0, Reg1));
-    Reg2 = legalizeOperand(Src1, Legal_All, Expansion);
-    Expansion.push_back(IceInstX8632Idiv::create(Cfg, Reg0, Reg2, Reg1));
-    Reg1 = Reg0;
+    if (LowerI64ToI32) {
+      unsigned MaxSrcs = 2;
+      // TODO: Figure out how to properly construct CallTarget.
+      IceConstant *CallTarget =
+          Cfg->getConstant(IceType_i32, NULL, 0, "__moddi3");
+      bool Tailcall = false;
+      // TODO: This instruction leaks.
+      IceInstCall *Call = IceInstCall::create(Cfg, MaxSrcs, Inst->getDest(),
+                                              CallTarget, Tailcall);
+      Call->addArg(Inst->getSrc(0));
+      Call->addArg(Inst->getSrc(1));
+      return lowerCall(Call, NULL, DeleteNextInst);
+    } else {
+      Reg1 = legalizeOperandToVar(Src0, Expansion, false, Reg_eax);
+      Reg0 = Cfg->makeVariable(IceType_i32, CurrentNode);
+      Reg0->setRegNum(Reg_edx);
+      Expansion.push_back(IceInstX8632Cdq::create(Cfg, Reg0, Reg1));
+      Reg2 = legalizeOperand(Src1, Legal_All, Expansion);
+      Expansion.push_back(IceInstX8632Idiv::create(Cfg, Reg0, Reg2, Reg1));
+      Reg1 = Reg0;
+      Expansion.push_back(IceInstX8632Mov::create(Cfg, Dest, Reg1));
+    }
     break;
   case IceInstArithmetic::Fadd:
   case IceInstArithmetic::Fsub:
@@ -585,242 +843,6 @@ IceInstList IceTargetX8632::lowerArithmetic(const IceInstArithmetic *Inst,
     // TODO: implement
     Cfg->setError("FP arithmetic lowering not implemented");
     break;
-  case IceInstArithmetic::OpKind_NUM:
-    assert(0);
-    break;
-  }
-  Expansion.push_back(IceInstX8632Mov::create(Cfg, Dest, Reg1));
-  return Expansion;
-}
-
-IceInstList IceTargetX8632::lowerArithmeticI64(const IceInstArithmetic *Inst,
-                                               const IceInst *Next,
-                                               bool &DeleteNextInst) {
-  IceInstList Expansion;
-  IceVariable *Dest = Inst->getDest();
-  IceOperand *Src0 = legalizeOperand(Inst->getSrc(0), Legal_All, Expansion);
-  IceOperand *Src1 = legalizeOperand(Inst->getSrc(1), Legal_All, Expansion);
-  IceVariable *DestLo = llvm::cast<IceVariable>(makeLowOperand(Dest));
-  IceVariable *DestHi = llvm::cast<IceVariable>(makeHighOperand(Dest));
-  IceOperand *Src0Lo = makeLowOperand(Src0);
-  IceOperand *Src0Hi = makeHighOperand(Src0);
-  IceOperand *Src1Lo = makeLowOperand(Src1);
-  IceOperand *Src1Hi = makeHighOperand(Src1);
-  IceVariable *TmpLo;
-  IceVariable *TmpHi;
-
-  switch (Inst->getOp()) {
-  case IceInstArithmetic::Add:
-    TmpLo = legalizeOperandToVar(Src0Lo, Expansion);
-    Expansion.push_back(IceInstX8632Add::create(Cfg, TmpLo, Src1Lo));
-    Expansion.push_back(IceInstX8632Mov::create(Cfg, DestLo, TmpLo));
-    TmpHi = legalizeOperandToVar(Src0Hi, Expansion);
-    Expansion.push_back(IceInstX8632Adc::create(Cfg, TmpHi, Src1Hi));
-    Expansion.push_back(IceInstX8632Mov::create(Cfg, DestHi, TmpHi));
-    break;
-  case IceInstArithmetic::Sub:
-    TmpLo = legalizeOperandToVar(Src0Lo, Expansion);
-    Expansion.push_back(IceInstX8632Sub::create(Cfg, TmpLo, Src1Lo));
-    Expansion.push_back(IceInstX8632Mov::create(Cfg, DestLo, TmpLo));
-    TmpHi = legalizeOperandToVar(Src0Hi, Expansion);
-    Expansion.push_back(IceInstX8632Sbb::create(Cfg, TmpHi, Src1Hi));
-    Expansion.push_back(IceInstX8632Mov::create(Cfg, DestHi, TmpHi));
-    break;
-  case IceInstArithmetic::And:
-    TmpLo = legalizeOperandToVar(Src0Lo, Expansion);
-    Expansion.push_back(IceInstX8632And::create(Cfg, TmpLo, Src1Lo));
-    Expansion.push_back(IceInstX8632Mov::create(Cfg, DestLo, TmpLo));
-    TmpHi = legalizeOperandToVar(Src0Hi, Expansion);
-    Expansion.push_back(IceInstX8632And::create(Cfg, TmpHi, Src1Hi));
-    Expansion.push_back(IceInstX8632Mov::create(Cfg, DestHi, TmpHi));
-    break;
-  case IceInstArithmetic::Or:
-    TmpLo = legalizeOperandToVar(Src0Lo, Expansion);
-    Expansion.push_back(IceInstX8632Or::create(Cfg, TmpLo, Src1Lo));
-    Expansion.push_back(IceInstX8632Mov::create(Cfg, DestLo, TmpLo));
-    TmpHi = legalizeOperandToVar(Src0Hi, Expansion);
-    Expansion.push_back(IceInstX8632Or::create(Cfg, TmpHi, Src1Hi));
-    Expansion.push_back(IceInstX8632Mov::create(Cfg, DestHi, TmpHi));
-    break;
-  case IceInstArithmetic::Xor:
-    TmpLo = legalizeOperandToVar(Src0Lo, Expansion);
-    Expansion.push_back(IceInstX8632Xor::create(Cfg, TmpLo, Src1Lo));
-    Expansion.push_back(IceInstX8632Mov::create(Cfg, DestLo, TmpLo));
-    TmpHi = legalizeOperandToVar(Src0Hi, Expansion);
-    Expansion.push_back(IceInstX8632Xor::create(Cfg, TmpHi, Src1Hi));
-    Expansion.push_back(IceInstX8632Mov::create(Cfg, DestHi, TmpHi));
-    break;
-  case IceInstArithmetic::Mul: {
-    IceVariable *Tmp1, *Tmp2, *Tmp3;
-    IceVariable *Tmp4Lo = Cfg->makeVariable(IceType_i32, CurrentNode);
-    IceVariable *Tmp4Hi = Cfg->makeVariable(IceType_i32, CurrentNode);
-    Tmp4Lo->setRegNum(Reg_eax);
-    Tmp4Hi->setRegNum(Reg_edx);
-    // gcc does the following:
-    // a=b*c ==>
-    //   t1 = b.hi; t1 *=(imul) c.lo
-    //   t2 = c.hi; t2 *=(imul) b.lo
-    //   t3:eax = b.lo
-    //   t4.hi:edx,t4.lo:eax = t3:eax *(mul) c.lo
-    //   a.lo = t4.lo
-    //   t4.hi += t1
-    //   t4.hi += t2
-    //   a.hi = t4.hi
-    Tmp1 = legalizeOperandToVar(Src0Hi, Expansion);
-    Expansion.push_back(IceInstX8632Imul::create(Cfg, Tmp1, Src1Lo));
-    Tmp2 = legalizeOperandToVar(Src1Hi, Expansion);
-    Expansion.push_back(IceInstX8632Imul::create(Cfg, Tmp2, Src0Lo));
-    Tmp3 = legalizeOperandToVar(Src0Lo, Expansion, false, Reg_eax);
-    Expansion.push_back(IceInstX8632Mul::create(Cfg, Tmp4Lo, Tmp3, Src1Lo));
-    Expansion.push_back(IceInstX8632Mov::create(Cfg, DestLo, Tmp4Lo));
-    Expansion.push_back(IceInstFakeDef::create(Cfg, Tmp4Hi, Tmp4Lo));
-    Expansion.push_back(IceInstX8632Add::create(Cfg, Tmp4Hi, Tmp1));
-    Expansion.push_back(IceInstX8632Add::create(Cfg, Tmp4Hi, Tmp2));
-    Expansion.push_back(IceInstX8632Mov::create(Cfg, DestHi, Tmp4Hi));
-  } break;
-  case IceInstArithmetic::Shl: {
-    // TODO: Refactor the similarities between Shl, Lshr, and Ashr.
-    // gcc does the following:
-    // a=b<<c ==>
-    //   t1:ecx = c.lo & 0xff // via movzx, we can probably just t1=c.lo
-    //   t2 = b.lo
-    //   t3 = b.hi
-    //   t3 = shld t3, t2, t1
-    //   t2 = shl t2, t1
-    //   test t1, 0x20
-    //   je L1
-    //   use(t3)
-    //   t3 = t2
-    //   t2 = 0
-    // L1:
-    //   a.lo = t2
-    //   a.hi = t3
-    IceVariable *Tmp1, *Tmp2, *Tmp3;
-    IceConstant *BitTest = Cfg->getConstant(IceType_i32, 0x20);
-    uint64_t ZeroValue = 0;
-    IceConstant *Zero = Cfg->getConstant(IceType_i32, ZeroValue);
-    IceInstX8632Label *Label = IceInstX8632Label::create(Cfg, this);
-    Tmp1 = legalizeOperandToVar(Src1Lo, Expansion, false, Reg_ecx);
-    Tmp2 = legalizeOperandToVar(Src0Lo, Expansion);
-    Tmp3 = legalizeOperandToVar(Src0Hi, Expansion);
-    Expansion.push_back(IceInstX8632Shld::create(Cfg, Tmp3, Tmp2, Tmp1));
-    Expansion.push_back(IceInstX8632Shl::create(Cfg, Tmp2, Tmp1));
-    Expansion.push_back(IceInstX8632Test::create(Cfg, Tmp1, BitTest));
-    Expansion.push_back(IceInstX8632Br::create(Cfg, Label, IceInstIcmp::Eq));
-    Expansion.push_back(IceInstFakeUse::create(Cfg, Tmp3));
-    Expansion.push_back(IceInstX8632Mov::create(Cfg, Tmp3, Tmp2));
-    Expansion.push_back(IceInstX8632Mov::create(Cfg, Tmp2, Zero));
-    Expansion.push_back(Label);
-    Expansion.push_back(IceInstX8632Mov::create(Cfg, DestLo, Tmp2));
-    Expansion.push_back(IceInstX8632Mov::create(Cfg, DestHi, Tmp3));
-  } break;
-  case IceInstArithmetic::Lshr: {
-    // a=b>>c (unsigned) ==>
-    //   t1:ecx = c.lo & 0xff // via movzx, we can probably just t1=c.lo
-    //   t2 = b.lo
-    //   t3 = b.hi
-    //   t2 = shrd t2, t3, t1
-    //   t3 = shr t3, t1
-    //   test t1, 0x20
-    //   je L1
-    //   use(t2)
-    //   t2 = t3
-    //   t3 = 0
-    // L1:
-    //   a.lo = t2
-    //   a.hi = t3
-    IceVariable *Tmp1, *Tmp2, *Tmp3;
-    IceConstant *BitTest = Cfg->getConstant(IceType_i32, 0x20);
-    uint64_t ZeroValue = 0;
-    IceConstant *Zero = Cfg->getConstant(IceType_i32, ZeroValue);
-    IceInstX8632Label *Label = IceInstX8632Label::create(Cfg, this);
-    Tmp1 = legalizeOperandToVar(Src1Lo, Expansion, false, Reg_ecx);
-    Tmp2 = legalizeOperandToVar(Src0Lo, Expansion);
-    Tmp3 = legalizeOperandToVar(Src0Hi, Expansion);
-    Expansion.push_back(IceInstX8632Shrd::create(Cfg, Tmp2, Tmp3, Tmp1));
-    Expansion.push_back(IceInstX8632Shr::create(Cfg, Tmp3, Tmp1));
-    Expansion.push_back(IceInstX8632Test::create(Cfg, Tmp1, BitTest));
-    Expansion.push_back(IceInstX8632Br::create(Cfg, Label, IceInstIcmp::Eq));
-    Expansion.push_back(IceInstFakeUse::create(Cfg, Tmp2));
-    Expansion.push_back(IceInstX8632Mov::create(Cfg, Tmp2, Tmp3));
-    Expansion.push_back(IceInstX8632Mov::create(Cfg, Tmp3, Zero));
-    Expansion.push_back(Label);
-    Expansion.push_back(IceInstX8632Mov::create(Cfg, DestLo, Tmp2));
-    Expansion.push_back(IceInstX8632Mov::create(Cfg, DestHi, Tmp3));
-  } break;
-  case IceInstArithmetic::Ashr: {
-    // a=b>>c (signed) ==>
-    //   t1:ecx = c.lo & 0xff // via movzx, we can probably just t1=c.lo
-    //   t2 = b.lo
-    //   t3 = b.hi
-    //   t2 = shrd t2, t3, t1
-    //   t3 = sar t3, t1
-    //   test t1, 0x20
-    //   je L1
-    //   use(t2)
-    //   t2 = t3
-    //   t3 = sar t3, 0x1f
-    // L1:
-    //   a.lo = t2
-    //   a.hi = t3
-    IceVariable *Tmp1, *Tmp2, *Tmp3;
-    IceConstant *BitTest = Cfg->getConstant(IceType_i32, 0x20);
-    IceConstant *SignExtend = Cfg->getConstant(IceType_i32, 0x1f);
-    IceInstX8632Label *Label = IceInstX8632Label::create(Cfg, this);
-    Tmp1 = legalizeOperandToVar(Src1Lo, Expansion, false, Reg_ecx);
-    Tmp2 = legalizeOperandToVar(Src0Lo, Expansion);
-    Tmp3 = legalizeOperandToVar(Src0Hi, Expansion);
-    Expansion.push_back(IceInstX8632Shrd::create(Cfg, Tmp2, Tmp3, Tmp1));
-    Expansion.push_back(IceInstX8632Sar::create(Cfg, Tmp3, Tmp1));
-    Expansion.push_back(IceInstX8632Test::create(Cfg, Tmp1, BitTest));
-    Expansion.push_back(IceInstX8632Br::create(Cfg, Label, IceInstIcmp::Eq));
-    Expansion.push_back(IceInstFakeUse::create(Cfg, Tmp2));
-    Expansion.push_back(IceInstX8632Mov::create(Cfg, Tmp2, Tmp3));
-    // Expansion.push_back(IceInstX8632Mov::create(Cfg, Tmp3, Zero));
-    Expansion.push_back(IceInstX8632Sar::create(Cfg, Tmp3, SignExtend));
-    Expansion.push_back(Label);
-    Expansion.push_back(IceInstX8632Mov::create(Cfg, DestLo, Tmp2));
-    Expansion.push_back(IceInstX8632Mov::create(Cfg, DestHi, Tmp3));
-  } break;
-  case IceInstArithmetic::Udiv:
-  case IceInstArithmetic::Sdiv:
-  case IceInstArithmetic::Urem:
-  case IceInstArithmetic::Srem: {
-    IceString HelperName = "???";
-    switch (Inst->getOp()) {
-    case IceInstArithmetic::Udiv:
-      HelperName = "__udivdi3";
-      break;
-    case IceInstArithmetic::Sdiv:
-      HelperName = "__divdi3";
-      break;
-    case IceInstArithmetic::Urem:
-      HelperName = "__umoddi3";
-      break;
-    case IceInstArithmetic::Srem:
-      HelperName = "__moddi3";
-      break;
-    default:
-      assert(0);
-      break;
-    }
-    unsigned MaxSrcs = 2;
-    // TODO: Figure out how to properly construct CallTarget.
-    IceConstant *CallTarget =
-        Cfg->getConstant(IceType_i32, NULL, 0, HelperName);
-    bool Tailcall = false;
-    // TODO: This instruction leaks.
-    IceInstCall *Call = IceInstCall::create(Cfg, MaxSrcs, Inst->getDest(),
-                                            CallTarget, Tailcall);
-    Call->addArg(Inst->getSrc(0));
-    Call->addArg(Inst->getSrc(1));
-    return lowerCall(Call, NULL, DeleteNextInst);
-  } break;
-  case IceInstArithmetic::Fadd:
-  case IceInstArithmetic::Fsub:
-  case IceInstArithmetic::Fmul:
-  case IceInstArithmetic::Fdiv:
-  case IceInstArithmetic::Frem:
   case IceInstArithmetic::OpKind_NUM:
     assert(0);
     break;
