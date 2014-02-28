@@ -193,8 +193,7 @@ IceOstream &operator<<(IceOstream &Str, const IceOperand *O) {
 }
 
 void IceVariable::emit(IceOstream &Str, uint32_t Option) const {
-  const IceCfgNode *CurrentNode = Str.getCurrentNode();
-  assert(DefOrUseNode == NULL || DefOrUseNode == CurrentNode);
+  assert(DefOrUseNode == NULL || DefOrUseNode == Str.getCurrentNode());
   if (getRegNum() >= 0) {
     Str << Str.Cfg->physicalRegName(RegNum);
     return;
@@ -212,6 +211,7 @@ void IceVariable::emit(IceOstream &Str, uint32_t Option) const {
 
 void IceVariable::dump(IceOstream &Str) const {
   const IceCfgNode *CurrentNode = Str.getCurrentNode();
+  (void) CurrentNode;
   assert(CurrentNode == NULL || DefOrUseNode == NULL ||
          DefOrUseNode == CurrentNode);
   if (Str.isVerbose(IceV_RegOrigins) ||

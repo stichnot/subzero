@@ -484,9 +484,9 @@ IceInstList IceTargetX8632::lowerArithmetic(const IceInstArithmetic *Inst,
   IceOperand *Reg2 = Src1;
   uint64_t Zero = 0;
   bool LowerI64ToI32 = (Dest->getType() == IceType_i64);
-  IceVariable *DestLo, *DestHi;
-  IceVariable *TmpLo, *TmpHi;
-  IceOperand *Src0Lo, *Src0Hi, *Src1Lo, *Src1Hi;
+  IceVariable *DestLo = NULL, *DestHi = NULL;
+  IceVariable *TmpLo = NULL, *TmpHi = NULL;
+  IceOperand *Src0Lo = NULL, *Src0Hi = NULL, *Src1Lo = NULL, *Src1Hi = NULL;
   if (LowerI64ToI32) {
     DestLo = llvm::cast<IceVariable>(makeLowOperand(Dest));
     DestHi = llvm::cast<IceVariable>(makeHighOperand(Dest));
