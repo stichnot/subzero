@@ -476,31 +476,6 @@ IceInstList IceTargetX8632::lowerArithmetic(const IceInstArithmetic *Inst,
                                             const IceInst *Next,
                                             bool &DeleteNextInst) {
   IceInstList Expansion;
-  /*
-    +-----------+-------+----------+-------+--------+-----+--------------+
-    | a = b ? c | t1?b  | t0:edx=? | t2?c  | t1?=t2 | a=? | Note         |
-    |-----------+-------+----------+-------+--------+-----+--------------|
-    | Add       | =     |          | :=    | add    | t1  |              |
-    | Sub       | =     |          | :=    | sub    | t1  |              |
-    | And       | =     |          | :=    | and    | t1  |              |
-    | Or        | =     |          | :=    | or     | t1  |              |
-    | Xor       | =     |          | :=    | xor    | t1  |              |
-    | Mul c:imm |       |          | :=    | [note] | t1  | t1=imul b,t2 |
-    | Mul       | =     |          | :=    | imul   | t1  |              |
-    | Sdiv      | :eax= | cdq t1   | :=    | idiv   | t1  |              |
-    | Srem      | :eax= | cdq t1   | :=    | idiv   | t0  |              |
-    | Udiv      | :eax= | 0        | :=    | div    | t1  |              |
-    | Urem      | :eax= | 0        | :=    | div    | t0  |              |
-    | Shl       | =     |          | :ecx= | shl    | t1  |              |
-    | Lshr      | =     |          | :ecx= | shr    | t1  |              |
-    | Ashr      | =     |          | :ecx= | sar    | t1  |              |
-    +-----------+-------+----------+-------+--------+-----+--------------+
-    TODO: Fadd, Fsub, Fmul, Fdiv
-  */
-
-  // TODO: Strength-reduce multiplications by a constant, particularly
-  // -1 and powers of 2.  Advanced: use lea to multiply by 3, 5, 9.
-
   IceVariable *Dest = Inst->getDest();
   if (Dest->getType() == IceType_i64)
     return lowerArithmeticI64(Inst, Next, DeleteNextInst);
@@ -510,125 +485,97 @@ IceInstList IceTargetX8632::lowerArithmetic(const IceInstArithmetic *Inst,
   IceVariable *Reg1 = NULL;
   IceOperand *Reg2 = Src1;
   uint64_t Zero = 0;
-  bool PrecolorReg1WithEax = false;
-  bool ZeroExtendReg1 = false;
-  bool SignExtendReg1 = false;
-  bool Reg2InEcx = false;
-  bool ResultFromReg0 = false;
+
   switch (Inst->getOp()) {
   case IceInstArithmetic::Add:
-  case IceInstArithmetic::And:
-  case IceInstArithmetic::Or:
-  case IceInstArithmetic::Xor:
-  case IceInstArithmetic::Sub:
-    break;
-  case IceInstArithmetic::Mul:
-    // TODO: Optimize for llvm::isa<IceConstant>(Src1)
-    break;
-  case IceInstArithmetic::Udiv:
-    PrecolorReg1WithEax = true;
-    ZeroExtendReg1 = true;
-    break;
-  case IceInstArithmetic::Sdiv:
-    PrecolorReg1WithEax = true;
-    SignExtendReg1 = true;
-    break;
-  case IceInstArithmetic::Urem:
-    PrecolorReg1WithEax = true;
-    ZeroExtendReg1 = true;
-    ResultFromReg0 = true;
-    break;
-  case IceInstArithmetic::Srem:
-    PrecolorReg1WithEax = true;
-    SignExtendReg1 = true;
-    ResultFromReg0 = true;
-    break;
-  case IceInstArithmetic::Shl:
-  case IceInstArithmetic::Lshr:
-  case IceInstArithmetic::Ashr:
-    if (!llvm::isa<IceConstant>(Src1))
-      Reg2InEcx = true;
-    break;
-  case IceInstArithmetic::Fadd:
-  case IceInstArithmetic::Fsub:
-  case IceInstArithmetic::Fmul:
-  case IceInstArithmetic::Fdiv:
-  case IceInstArithmetic::Frem:
-    // TODO: implement
-    Cfg->setError("FP arithmetic lowering not implemented");
-    return Expansion;
-    break;
-  case IceInstArithmetic::OpKind_NUM:
-    assert(0);
-    break;
-  }
-
-  // Assign t1.
-  assert(Dest->getType() == Src0->getType());
-  Reg1 = legalizeOperandToVar(Src0, Expansion, false,
-                              PrecolorReg1WithEax ? Reg_eax : -1);
-  assert(Reg1);
-
-  // Assign t0:edx.
-  if (ZeroExtendReg1 || SignExtendReg1) {
-    Reg0 = Cfg->makeVariable(IceType_i32, CurrentNode);
-    Reg0->setRegNum(Reg_edx);
-    if (ZeroExtendReg1) {
-      IceConstant *ConstZero = Cfg->getConstant(IceType_i32, Zero);
-      Expansion.push_back(IceInstX8632Mov::create(Cfg, Reg0, ConstZero));
-    } else {
-      Expansion.push_back(IceInstX8632Cdq::create(Cfg, Reg0, Reg1));
-    }
-  }
-
-  // Assign t2.
-  if (Reg2InEcx) {
-    Reg2 = legalizeOperandToVar(Src1, Expansion, false, Reg_ecx);
-  } else {
+    Reg1 = legalizeOperandToVar(Src0, Expansion);
     Reg2 = legalizeOperand(Src1, Legal_All, Expansion);
-  }
-
-  // Generate the arithmetic instruction.
-  switch (Inst->getOp()) {
-  case IceInstArithmetic::Add:
     Expansion.push_back(IceInstX8632Add::create(Cfg, Reg1, Reg2));
     break;
   case IceInstArithmetic::And:
+    Reg1 = legalizeOperandToVar(Src0, Expansion);
+    Reg2 = legalizeOperand(Src1, Legal_All, Expansion);
     Expansion.push_back(IceInstX8632And::create(Cfg, Reg1, Reg2));
     break;
   case IceInstArithmetic::Or:
+    Reg1 = legalizeOperandToVar(Src0, Expansion);
+    Reg2 = legalizeOperand(Src1, Legal_All, Expansion);
     Expansion.push_back(IceInstX8632Or::create(Cfg, Reg1, Reg2));
     break;
   case IceInstArithmetic::Xor:
+    Reg1 = legalizeOperandToVar(Src0, Expansion);
+    Reg2 = legalizeOperand(Src1, Legal_All, Expansion);
     Expansion.push_back(IceInstX8632Xor::create(Cfg, Reg1, Reg2));
     break;
   case IceInstArithmetic::Sub:
+    Reg1 = legalizeOperandToVar(Src0, Expansion);
+    Reg2 = legalizeOperand(Src1, Legal_All, Expansion);
     Expansion.push_back(IceInstX8632Sub::create(Cfg, Reg1, Reg2));
     break;
   case IceInstArithmetic::Mul:
     // TODO: Optimize for llvm::isa<IceConstant>(Src1)
+    // TODO: Strength-reduce multiplications by a constant,
+    // particularly -1 and powers of 2.  Advanced: use lea to multiply
+    // by 3, 5, 9.
+    Reg1 = legalizeOperandToVar(Src0, Expansion);
+    Reg2 = legalizeOperand(Src1, Legal_All, Expansion);
     Expansion.push_back(IceInstX8632Imul::create(Cfg, Reg1, Reg2));
     break;
-  case IceInstArithmetic::Udiv:
-    Expansion.push_back(IceInstX8632Div::create(Cfg, Reg1, Reg2, Reg0));
-    break;
-  case IceInstArithmetic::Sdiv:
-    Expansion.push_back(IceInstX8632Idiv::create(Cfg, Reg1, Reg2, Reg0));
-    break;
-  case IceInstArithmetic::Urem:
-    Expansion.push_back(IceInstX8632Div::create(Cfg, Reg0, Reg2, Reg1));
-    break;
-  case IceInstArithmetic::Srem:
-    Expansion.push_back(IceInstX8632Idiv::create(Cfg, Reg0, Reg2, Reg1));
-    break;
   case IceInstArithmetic::Shl:
+    Reg1 = legalizeOperandToVar(Src0, Expansion);
+    if (!llvm::isa<IceConstant>(Src1))
+      Reg2 = legalizeOperandToVar(Src1, Expansion, false, Reg_ecx);
     Expansion.push_back(IceInstX8632Shl::create(Cfg, Reg1, Reg2));
     break;
   case IceInstArithmetic::Lshr:
+    Reg1 = legalizeOperandToVar(Src0, Expansion);
+    if (!llvm::isa<IceConstant>(Src1))
+      Reg2 = legalizeOperandToVar(Src1, Expansion, false, Reg_ecx);
     Expansion.push_back(IceInstX8632Shr::create(Cfg, Reg1, Reg2));
     break;
   case IceInstArithmetic::Ashr:
+    Reg1 = legalizeOperandToVar(Src0, Expansion);
+    if (!llvm::isa<IceConstant>(Src1))
+      Reg2 = legalizeOperandToVar(Src1, Expansion, false, Reg_ecx);
     Expansion.push_back(IceInstX8632Sar::create(Cfg, Reg1, Reg2));
+    break;
+  case IceInstArithmetic::Udiv: {
+    Reg1 = legalizeOperandToVar(Src0, Expansion, false, Reg_eax);
+    Reg0 = Cfg->makeVariable(IceType_i32, CurrentNode);
+    Reg0->setRegNum(Reg_edx);
+    IceConstant *ConstZero = Cfg->getConstant(IceType_i32, Zero);
+    Expansion.push_back(IceInstX8632Mov::create(Cfg, Reg0, ConstZero));
+    Reg2 = legalizeOperand(Src1, Legal_All, Expansion);
+    Expansion.push_back(IceInstX8632Div::create(Cfg, Reg1, Reg2, Reg0));
+    break;
+  }
+  case IceInstArithmetic::Sdiv:
+    Reg1 = legalizeOperandToVar(Src0, Expansion, false, Reg_eax);
+    Reg0 = Cfg->makeVariable(IceType_i32, CurrentNode);
+    Reg0->setRegNum(Reg_edx);
+    Expansion.push_back(IceInstX8632Cdq::create(Cfg, Reg0, Reg1));
+    Reg2 = legalizeOperand(Src1, Legal_All, Expansion);
+    Expansion.push_back(IceInstX8632Idiv::create(Cfg, Reg1, Reg2, Reg0));
+    break;
+  case IceInstArithmetic::Urem: {
+    Reg1 = legalizeOperandToVar(Src0, Expansion, false, Reg_eax);
+    Reg0 = Cfg->makeVariable(IceType_i32, CurrentNode);
+    Reg0->setRegNum(Reg_edx);
+    IceConstant *ConstZero = Cfg->getConstant(IceType_i32, Zero);
+    Expansion.push_back(IceInstX8632Mov::create(Cfg, Reg0, ConstZero));
+    Reg2 = legalizeOperand(Src1, Legal_All, Expansion);
+    Expansion.push_back(IceInstX8632Div::create(Cfg, Reg0, Reg2, Reg1));
+    Reg1 = Reg0;
+    break;
+  }
+  case IceInstArithmetic::Srem:
+    Reg1 = legalizeOperandToVar(Src0, Expansion, false, Reg_eax);
+    Reg0 = Cfg->makeVariable(IceType_i32, CurrentNode);
+    Reg0->setRegNum(Reg_edx);
+    Expansion.push_back(IceInstX8632Cdq::create(Cfg, Reg0, Reg1));
+    Reg2 = legalizeOperand(Src1, Legal_All, Expansion);
+    Expansion.push_back(IceInstX8632Idiv::create(Cfg, Reg0, Reg2, Reg1));
+    Reg1 = Reg0;
     break;
   case IceInstArithmetic::Fadd:
   case IceInstArithmetic::Fsub:
@@ -637,17 +584,12 @@ IceInstList IceTargetX8632::lowerArithmetic(const IceInstArithmetic *Inst,
   case IceInstArithmetic::Frem:
     // TODO: implement
     Cfg->setError("FP arithmetic lowering not implemented");
-    return Expansion;
     break;
   case IceInstArithmetic::OpKind_NUM:
     assert(0);
     break;
   }
-
-  // Assign Dest.
-  Expansion.push_back(
-      IceInstX8632Mov::create(Cfg, Dest, (ResultFromReg0 ? Reg0 : Reg1)));
-
+  Expansion.push_back(IceInstX8632Mov::create(Cfg, Dest, Reg1));
   return Expansion;
 }
 
