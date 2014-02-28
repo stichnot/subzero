@@ -65,9 +65,6 @@ PNaClABITypeChecker.o: PNaClABITypeChecker.cpp PNaClABITypeChecker.h
 llvm2ice.o: llvm2ice.cpp *.h
 	$(CXX) -c $(CXXFLAGS) $< -o $@
 
-IceTest.o: IceTest.cpp *.h
-	$(CXX) -c $(CXXFLAGS) $< -o $@
-
 # TODO: Be more precise than "*.h" here and elsewhere.
 $(OBJS): %.o: %.cpp *.h
 	$(CXX) -c $(CXXFLAGS) $< -o $@
