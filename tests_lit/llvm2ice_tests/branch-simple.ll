@@ -1,4 +1,5 @@
 ; RUN: %llvm2ice %s -verbose inst | FileCheck %s
+; RUN: %llvm2ice --verbose none %s | FileCheck --check-prefix=ERRORS %s
 
 define i32 @simple_cond_branch(i32 %foo, i32 %bar) {
 entry:
@@ -15,4 +16,4 @@ Unequal:
 ; CHECK:  ret i32 %bar
 }
 
-; CHECK-NOT: ICE translation error
+; ERRORS-NOT: ICE translation error

@@ -1,4 +1,5 @@
 ; RUN: %llvm2ice -verbose inst %s | FileCheck %s
+; RUN: %llvm2ice --verbose none %s | FileCheck --check-prefix=ERRORS %s
 
 define i32 @func_single_arg(i32 %a) {
 ; CHECK: define internal i32 func_single_arg
@@ -14,4 +15,4 @@ entry:
 ; CHECK: ret i32 %c
 }
 
-; CHECK-NOT: ICE translation error
+; ERRORS-NOT: ICE translation error

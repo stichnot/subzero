@@ -1,4 +1,5 @@
 ; RUN: %llvm2ice -verbose inst %s | FileCheck %s
+; RUN: %llvm2ice --verbose none %s | FileCheck --check-prefix=ERRORS %s
 
 ; This file is lowered from C code that does some simple aritmetic with
 ; struct members. It's also built with the PNaCl toolchain so this is the
@@ -49,4 +50,4 @@ entry:
 ; CHECK-NEXT:       ret i32 %sub12
 }
 
-; CHECK-NOT: ICE translation error
+; ERRORS-NOT: ICE translation error

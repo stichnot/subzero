@@ -1,4 +1,5 @@
 ; RUN: %llvm2ice -verbose inst %s | FileCheck %s
+; RUN: %llvm2ice --verbose none %s | FileCheck --check-prefix=ERRORS %s
 
 define void @foo() {
 ; CHECK: define internal void foo()
@@ -8,4 +9,4 @@ entry:
 ; CHECK-NEXT: ret void
 }
 
-; CHECK-NOT: ICE translation error
+; ERRORS-NOT: ICE translation error

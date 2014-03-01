@@ -1,4 +1,5 @@
 ; RUN: %llvm2ice %s | FileCheck %s
+; RUN: %llvm2ice --verbose none %s | FileCheck --check-prefix=ERRORS %s
 
 define void @testBool(i32 %a, i32 %b) {
 entry:
@@ -23,7 +24,7 @@ if.end7:                                          ; preds = %if.then5, %if.end
 
 declare void @use(i1 zeroext)
 
-; CHECK-NOT: ICE translation error
+; ERRORS-NOT: ICE translation error
 
 ; CHECK:      .globl testBool
 ; Two bool computations

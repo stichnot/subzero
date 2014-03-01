@@ -1,4 +1,5 @@
 ; RUN: %llvm2ice -verbose inst %s | FileCheck %s
+; RUN: %llvm2ice --verbose none %s | FileCheck --check-prefix=ERRORS %s
 
 define void @load_i64(i32 %addr_arg) {
 entry:
@@ -44,4 +45,4 @@ entry:
 ; CHECK-NEXT:  ret void
 }
 
-; CHECK-NOT: ICE translation error
+; ERRORS-NOT: ICE translation error

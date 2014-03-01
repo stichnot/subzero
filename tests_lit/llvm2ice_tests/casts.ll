@@ -1,4 +1,5 @@
 ; RUN: %llvm2ice -verbose inst %s | FileCheck %s
+; RUN: %llvm2ice --verbose none %s | FileCheck --check-prefix=ERRORS %s
 
 define i64 @simple_zext(i32 %arg) {
 entry:
@@ -10,4 +11,4 @@ entry:
 ; CHECK-NEXT:       ret i64 %c
 }
 
-; CHECK-NOT: ICE translation error
+; ERRORS-NOT: ICE translation error

@@ -1,4 +1,5 @@
 ; RUN: %llvm2ice -verbose inst %s | FileCheck %s
+; RUN: %llvm2ice --verbose none %s | FileCheck --check-prefix=ERRORS %s
 
 define void @dummy_inttoptr(i32 %addr_arg) {
 entry:
@@ -7,4 +8,4 @@ entry:
 ; CHECK: %ptr = i32 %addr_arg
 }
 
-; CHECK-NOT: ICE translation error
+; ERRORS-NOT: ICE translation error

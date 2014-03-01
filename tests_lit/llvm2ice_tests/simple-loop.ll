@@ -1,4 +1,5 @@
 ; RUN: %llvm2ice -verbose inst %s | FileCheck %s
+; RUN: %llvm2ice --verbose none %s | FileCheck --check-prefix=ERRORS %s
 
 define internal i32 @simple_loop(i32 %a, i32 %n) {
 entry:
@@ -29,8 +30,6 @@ for.end:
 ; CHECK:  %i.06 = phi i32 [ %inc, %for.body ], [ 0, %entry ]
 ; CHECK-NEXT:  %sum.05 = phi i32 [ %add, %for.body ], [ 0, %entry ]
 
-; CHECK-NOT: ICE translation error
-
 ; Checks for emitted assembly
 
 ; CHECK:      .globl simple_loop
@@ -47,3 +46,5 @@ for.end:
 ; CHECK-NEXT: mov [[ICMPREG:[a-z]+]], [[IREG]]
 ; CHECK:      cmp [[ICMPREG]], ecx
 ; CHECK-NEXT: jb {{.*}}for.body
+
+; ERRORS-NOT: ICE translation error

@@ -1,4 +1,5 @@
 ; RUN: %llvm2ice -verbose inst %s | FileCheck %s
+; RUN: %llvm2ice --verbose none %s | FileCheck --check-prefix=ERRORS %s
 
 
 define i64 @add_args_i64(i64 %arg1, i64 %arg2) {
@@ -19,8 +20,6 @@ entry:
   ret i32 %add
 }
 
-; CHECK-NOT: ICE translation error
-
 ; Checks for emitted assembly
 
 ; CHECK:      .globl add_args_i32
@@ -29,3 +28,5 @@ entry:
 ; CHECK-NEXT: add ecx, eax
 ; CHECK-NEXT: mov eax, ecx
 ; CHECK-NEXT: ret
+
+; ERRORS-NOT: ICE translation error

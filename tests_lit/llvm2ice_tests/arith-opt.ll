@@ -1,4 +1,5 @@
 ; RUN: %llvm2ice -verbose inst %s | FileCheck %s
+; RUN: %llvm2ice --verbose none %s | FileCheck --check-prefix=ERRORS %s
 
 define i32 @Add(i32 %a, i32 %b) #0 {
 ; CHECK: define internal i32 Add
@@ -104,4 +105,4 @@ entry:
   ret i32 %rem
 }
 
-; CHECK-NOT: ICE translation error
+; ERRORS-NOT: ICE translation error

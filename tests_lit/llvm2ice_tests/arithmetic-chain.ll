@@ -1,4 +1,5 @@
 ; RUN: %llvm2ice -verbose inst %s | FileCheck %s
+; RUN: %llvm2ice --verbose none %s | FileCheck --check-prefix=ERRORS %s
 
 define i64 @arithmetic_chain(i64 %foo, i64 %bar) {
 entry:
@@ -18,4 +19,4 @@ entry:
 ; CHECK-NEXT:  ret i64 %r5
 }
 
-; CHECK-NOT: ICE translation error
+; ERRORS-NOT: ICE translation error

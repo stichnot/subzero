@@ -1,4 +1,5 @@
 ; RUN: %llvm2ice -verbose inst %s | FileCheck %s
+; RUN: %llvm2ice --verbose none %s | FileCheck --check-prefix=ERRORS %s
 
 define void @dummy_icmp(i64 %foo, i64 %bar) {
 ; CHECK: define internal void dummy_icmp
@@ -12,4 +13,4 @@ entry:
 ; CHECK-NEXT:   ret void 
 }
 
-; CHECK-NOT: ICE translation error
+; ERRORS-NOT: ICE translation error

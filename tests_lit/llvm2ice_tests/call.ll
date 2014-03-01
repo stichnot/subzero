@@ -1,4 +1,5 @@
 ; RUN: %llvm2ice -verbose inst %s | FileCheck %s
+; RUN: %llvm2ice --verbose none %s | FileCheck --check-prefix=ERRORS %s
 
 define i32 @fib(i32 %n) #0 {
 ; CHECK: define internal i32 fib
@@ -60,4 +61,4 @@ if.end:                                           ; preds = %if.then, %entry
   ret void
 }
 
-; CHECK-NOT: ICE translation error
+; ERRORS-NOT: ICE translation error

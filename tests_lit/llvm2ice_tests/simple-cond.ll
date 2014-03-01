@@ -1,4 +1,5 @@
 ; RUN: %llvm2ice -verbose inst %s | FileCheck %s
+; RUN: %llvm2ice --verbose none %s | FileCheck --check-prefix=ERRORS %s
 
 define internal i32 @simple_cond(i32 %a, i32 %n) {
 entry:
@@ -24,4 +25,4 @@ if.end:
   ret i32 %result.0
 }
 
-; CHECK-NOT: ICE translation error
+; ERRORS-NOT: ICE translation error

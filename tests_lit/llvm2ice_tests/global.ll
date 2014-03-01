@@ -1,4 +1,5 @@
 ; RUN: %llvm2ice -verbose inst %s | FileCheck %s
+; RUN: %llvm2ice --verbose none %s | FileCheck --check-prefix=ERRORS %s
 
 @intern_global = global i32 12, align 4
 @extern_global = external global i32
@@ -17,4 +18,4 @@ entry:
   ret i32 %0
 }
 
-; CHECK-NOT: ICE translation error
+; ERRORS-NOT: ICE translation error

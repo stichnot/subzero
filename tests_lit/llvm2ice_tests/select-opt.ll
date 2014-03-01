@@ -1,4 +1,5 @@
 ; RUN: %llvm2ice %s | FileCheck %s
+; RUN: %llvm2ice --verbose none %s | FileCheck --check-prefix=ERRORS %s
 
 define void @testSelect(i32 %a, i32 %b) {
 entry:
@@ -13,8 +14,6 @@ entry:
 
 declare void @useInt(i32)
 
-; CHECK-NOT: ICE translation error
-
 ; CHECK:      .globl testSelect
 ; CHECK:      cmp
 ; CHECK:      cmp
@@ -23,3 +22,5 @@ declare void @useInt(i32)
 ; CHECK:      cmp
 ; CHECK:      call useInt
 ; CHECK:      ret
+
+; ERRORS-NOT: ICE translation error
