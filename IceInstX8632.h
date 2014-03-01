@@ -59,11 +59,14 @@ public:
     __Start = IceInst::Target,
     Adc,
     Add,
+    Addss,
     And,
     Br,
     Call,
     Cdq,
     Div,
+    Divss,
+    Fstp,
     Icmp,
     Idiv,
     Imul,
@@ -73,6 +76,7 @@ public:
     Movsx,
     Movzx,
     Mul,
+    Mulss,
     Or,
     Pop,
     Push,
@@ -85,6 +89,7 @@ public:
     Shrd,
     Store,
     Sub,
+    Subss,
     Test,
     Xor
   };
@@ -228,6 +233,20 @@ private:
   IceInstX8632Adc(IceCfg *Cfg, IceVariable *Dest, IceOperand *Source);
 };
 
+class IceInstX8632Addss : public IceInstX8632 {
+public:
+  static IceInstX8632Addss *create(IceCfg *Cfg, IceVariable *Dest,
+                                   IceOperand *Source) {
+    return new IceInstX8632Addss(Cfg, Dest, Source);
+  }
+  virtual void emit(IceOstream &Str, uint32_t Option) const;
+  virtual void dump(IceOstream &Str) const;
+  static bool classof(const IceInst *Inst) { return isClassof(Inst, Addss); }
+
+private:
+  IceInstX8632Addss(IceCfg *Cfg, IceVariable *Dest, IceOperand *Source);
+};
+
 class IceInstX8632Sub : public IceInstX8632 {
 public:
   static IceInstX8632Sub *create(IceCfg *Cfg, IceVariable *Dest,
@@ -254,6 +273,20 @@ public:
 
 private:
   IceInstX8632Sbb(IceCfg *Cfg, IceVariable *Dest, IceOperand *Source);
+};
+
+class IceInstX8632Subss : public IceInstX8632 {
+public:
+  static IceInstX8632Subss *create(IceCfg *Cfg, IceVariable *Dest,
+                                   IceOperand *Source) {
+    return new IceInstX8632Subss(Cfg, Dest, Source);
+  }
+  virtual void emit(IceOstream &Str, uint32_t Option) const;
+  virtual void dump(IceOstream &Str) const;
+  static bool classof(const IceInst *Inst) { return isClassof(Inst, Subss); }
+
+private:
+  IceInstX8632Subss(IceCfg *Cfg, IceVariable *Dest, IceOperand *Source);
 };
 
 class IceInstX8632And : public IceInstX8632 {
@@ -327,6 +360,20 @@ private:
                   IceOperand *Source2);
 };
 
+class IceInstX8632Mulss : public IceInstX8632 {
+public:
+  static IceInstX8632Mulss *create(IceCfg *Cfg, IceVariable *Dest,
+                                   IceOperand *Source) {
+    return new IceInstX8632Mulss(Cfg, Dest, Source);
+  }
+  virtual void emit(IceOstream &Str, uint32_t Option) const;
+  virtual void dump(IceOstream &Str) const;
+  static bool classof(const IceInst *Inst) { return isClassof(Inst, Mulss); }
+
+private:
+  IceInstX8632Mulss(IceCfg *Cfg, IceVariable *Dest, IceOperand *Source);
+};
+
 class IceInstX8632Idiv : public IceInstX8632 {
 public:
   static IceInstX8632Idiv *create(IceCfg *Cfg, IceVariable *Dest,
@@ -341,6 +388,7 @@ private:
   IceInstX8632Idiv(IceCfg *Cfg, IceVariable *Dest, IceOperand *Source,
                    IceVariable *Other);
 };
+
 class IceInstX8632Div : public IceInstX8632 {
 public:
   static IceInstX8632Div *create(IceCfg *Cfg, IceVariable *Dest,
@@ -354,6 +402,20 @@ public:
 private:
   IceInstX8632Div(IceCfg *Cfg, IceVariable *Dest, IceOperand *Source,
                   IceVariable *Other);
+};
+
+class IceInstX8632Divss : public IceInstX8632 {
+public:
+  static IceInstX8632Divss *create(IceCfg *Cfg, IceVariable *Dest,
+                                   IceOperand *Source) {
+    return new IceInstX8632Divss(Cfg, Dest, Source);
+  }
+  virtual void emit(IceOstream &Str, uint32_t Option) const;
+  virtual void dump(IceOstream &Str) const;
+  static bool classof(const IceInst *Inst) { return isClassof(Inst, Divss); }
+
+private:
+  IceInstX8632Divss(IceCfg *Cfg, IceVariable *Dest, IceOperand *Source);
 };
 
 class IceInstX8632Shl : public IceInstX8632 {
@@ -529,6 +591,19 @@ public:
 
 private:
   IceInstX8632Movzx(IceCfg *Cfg, IceVariable *Dest, IceOperand *Source);
+};
+
+class IceInstX8632Fstp : public IceInstX8632 {
+public:
+  static IceInstX8632Fstp *create(IceCfg *Cfg, IceVariable *Dest) {
+    return new IceInstX8632Fstp(Cfg, Dest);
+  }
+  virtual void emit(IceOstream &Str, uint32_t Option) const;
+  virtual void dump(IceOstream &Str) const;
+  static bool classof(const IceInst *Inst) { return isClassof(Inst, Fstp); }
+
+private:
+  IceInstX8632Fstp(IceCfg *Cfg, IceVariable *Dest);
 };
 
 class IceInstX8632Pop : public IceInstX8632 {

@@ -833,13 +833,40 @@ IceInstList IceTargetX8632::lowerArithmetic(const IceInstArithmetic *Inst,
     }
     break;
   case IceInstArithmetic::Fadd:
-  case IceInstArithmetic::Fsub:
-  case IceInstArithmetic::Fmul:
-  case IceInstArithmetic::Fdiv:
-  case IceInstArithmetic::Frem:
-    // TODO: implement
-    Cfg->setError("FP arithmetic lowering not implemented");
+    // t=src0; t=addss/addsd t, src1; dst=movss/movsd t
+    Reg1 = legalizeOperandToVar(Src0, Expansion);
+    Expansion.push_back(IceInstX8632Addss::create(Cfg, Reg1, Src1));
+    Expansion.push_back(IceInstX8632Mov::create(Cfg, Dest, Reg1));
     break;
+  case IceInstArithmetic::Fsub:
+    Reg1 = legalizeOperandToVar(Src0, Expansion);
+    Expansion.push_back(IceInstX8632Subss::create(Cfg, Reg1, Src1));
+    Expansion.push_back(IceInstX8632Mov::create(Cfg, Dest, Reg1));
+    break;
+  case IceInstArithmetic::Fmul:
+    Reg1 = legalizeOperandToVar(Src0, Expansion);
+    Expansion.push_back(IceInstX8632Mulss::create(Cfg, Reg1, Src1));
+    Expansion.push_back(IceInstX8632Mov::create(Cfg, Dest, Reg1));
+    break;
+  case IceInstArithmetic::Fdiv:
+    Reg1 = legalizeOperandToVar(Src0, Expansion);
+    Expansion.push_back(IceInstX8632Divss::create(Cfg, Reg1, Src1));
+    Expansion.push_back(IceInstX8632Mov::create(Cfg, Dest, Reg1));
+    break;
+  case IceInstArithmetic::Frem: {
+    unsigned MaxSrcs = 2;
+    IceType Type = Dest->getType();
+    // TODO: Figure out how to properly construct CallTarget.
+    IceConstant *CallTarget =
+        Cfg->getConstant(Type, NULL, 0, Type == IceType_f32 ? "fmodf" : "fmod");
+    bool Tailcall = false;
+    // TODO: This instruction leaks.
+    IceInstCall *Call = IceInstCall::create(Cfg, MaxSrcs, Inst->getDest(),
+                                            CallTarget, Tailcall);
+    Call->addArg(Inst->getSrc(0));
+    Call->addArg(Inst->getSrc(1));
+    return lowerCall(Call, NULL, DeleteNextInst);
+  } break;
   case IceInstArithmetic::OpKind_NUM:
     assert(0);
     break;
@@ -937,7 +964,9 @@ IceInstList IceTargetX8632::lowerCall(const IceInstCall *Inst,
       break;
     case IceType_f32:
     case IceType_f64:
-      assert(0);
+      Reg = NULL;
+      // Leave Reg==NULL, and capture the result with the fstp
+      // instruction.
       break;
     }
     // TODO: Reg_eax is only for 32-bit integer results.  For floating
@@ -973,7 +1002,7 @@ IceInstList IceTargetX8632::lowerCall(const IceInstCall *Inst,
   }
 
   // Generate Dest=Reg assignment.
-  if (Dest) {
+  if (Dest && Reg) {
     if (RegHi) {
       IceVariable *DestLo = Dest->getLow();
       IceVariable *DestHi = Dest->getHigh();
@@ -985,6 +1014,18 @@ IceInstList IceTargetX8632::lowerCall(const IceInstCall *Inst,
       Dest->setPreferredRegister(Reg, false);
       Expansion.push_back(IceInstX8632Mov::create(Cfg, Dest, Reg));
     }
+  }
+
+  // Special treatment for an FP function which returns its result in
+  // st(0).
+  if (Dest &&
+      (Dest->getType() == IceType_f32 || Dest->getType() == IceType_f64)) {
+    // TODO: If a function returns an FP result that the caller
+    // ignores, the Dest will be NULL so we need another way to detect
+    // the FP type and pop st(0).
+    Expansion.push_back(IceInstX8632Fstp::create(Cfg, Dest));
+    // If Dest ends up being a physical xmm register, the fstp emit
+    // code will route st(0) through a temporary stack slot.
   }
 
   // Add the appropriate offset to esp.
