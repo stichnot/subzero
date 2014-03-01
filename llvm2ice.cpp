@@ -160,8 +160,8 @@ private:
         return Cfg->getConstant(/*IceType_i32*/ convertType(GV->getType()), GV,
                                 0, GV->getName());
       } else if (const ConstantInt *CI = dyn_cast<ConstantInt>(Const)) {
-        return Cfg->getConstant(convertIntegerType(CI->getType()),
-                                CI->getZExtValue());
+        return Cfg->getConstantInt(convertIntegerType(CI->getType()),
+                                   CI->getZExtValue());
       } else if (const ConstantFP *CFP = dyn_cast<ConstantFP>(Const)) {
         IceType Type = convertType(CFP->getType());
         if (Type == IceType_f32)

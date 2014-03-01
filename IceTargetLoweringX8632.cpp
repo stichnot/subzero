@@ -143,7 +143,7 @@ void IceTargetX8632::setArgOffsetAndCopy(IceVariable *Arg,
     // assert(Type != IceType_i64);
     IceOperandX8632Mem *Mem = IceOperandX8632Mem::create(
         Cfg, Type, FramePtr,
-        Cfg->getConstant(IceType_i32, Arg->getStackOffset()));
+        Cfg->getConstantInt(IceType_i32, Arg->getStackOffset()));
     Expansion.push_back(IceInstX8632Mov::create(Cfg, Arg, Mem));
   }
   InArgsSizeBytes += typeWidthOnStack(Type);
@@ -232,7 +232,7 @@ void IceTargetX8632::addProlog(IceCfgNode *Node) {
   if (LocalsSizeBytes)
     Expansion.push_back(IceInstX8632Sub::create(
         Cfg, getPhysicalRegister(Reg_esp),
-        Cfg->getConstant(IceType_i32, LocalsSizeBytes)));
+        Cfg->getConstantInt(IceType_i32, LocalsSizeBytes)));
 
   resetStackAdjustment();
 
@@ -333,7 +333,7 @@ void IceTargetX8632::addEpilog(IceCfgNode *Node) {
     if (LocalsSizeBytes)
       Expansion.push_back(IceInstX8632Add::create(
           Cfg, getPhysicalRegister(Reg_esp),
-          Cfg->getConstant(IceType_i32, FrameSizeLocals)));
+          Cfg->getConstantInt(IceType_i32, FrameSizeLocals)));
   }
 
   // Add pop instructions for preserved registers.
@@ -394,7 +394,7 @@ IceOperand *IceTargetX8632::makeLowOperand(IceOperand *Operand) {
   }
   if (IceConstantInteger *Const = llvm::dyn_cast<IceConstantInteger>(Operand)) {
     uint64_t Mask = (1ul << 32) - 1;
-    return Cfg->getConstant(IceType_i32, Const->getIntValue() & Mask);
+    return Cfg->getConstantInt(IceType_i32, Const->getIntValue() & Mask);
   }
   if (IceOperandX8632Mem *Mem = llvm::dyn_cast<IceOperandX8632Mem>(Operand)) {
     return IceOperandX8632Mem::create(Cfg, IceType_i32, Mem->getBase(),
@@ -414,15 +414,15 @@ IceOperand *IceTargetX8632::makeHighOperand(IceOperand *Operand) {
     return Var->getHigh();
   }
   if (IceConstantInteger *Const = llvm::dyn_cast<IceConstantInteger>(Operand)) {
-    return Cfg->getConstant(IceType_i32, Const->getIntValue() >> 32);
+    return Cfg->getConstantInt(IceType_i32, Const->getIntValue() >> 32);
   }
   if (IceOperandX8632Mem *Mem = llvm::dyn_cast<IceOperandX8632Mem>(Operand)) {
     IceConstant *Offset = Mem->getOffset();
     if (Offset == NULL)
-      Offset = Cfg->getConstant(IceType_i32, 4);
+      Offset = Cfg->getConstantInt(IceType_i32, 4);
     else if (IceConstantInteger *IntOffset =
                  llvm::dyn_cast<IceConstantInteger>(Offset)) {
-      Offset = Cfg->getConstant(IceType_i32, 4 + IntOffset->getIntValue());
+      Offset = Cfg->getConstantInt(IceType_i32, 4 + IntOffset->getIntValue());
     } else if (IceConstantRelocatable *SymOffset =
                    llvm::dyn_cast<IceConstantRelocatable>(Offset)) {
       // TODO: This creates a new entry in the constant pool, instead
@@ -482,7 +482,6 @@ IceInstList IceTargetX8632::lowerArithmetic(const IceInstArithmetic *Inst,
   IceVariable *Reg0 = NULL;
   IceVariable *Reg1 = NULL;
   IceOperand *Reg2 = Src1;
-  uint64_t Zero = 0;
   bool LowerI64ToI32 = (Dest->getType() == IceType_i64);
   IceVariable *DestLo = NULL, *DestHi = NULL;
   IceVariable *TmpLo = NULL, *TmpHi = NULL;
@@ -630,9 +629,8 @@ IceInstList IceTargetX8632::lowerArithmetic(const IceInstArithmetic *Inst,
       //   a.lo = t2
       //   a.hi = t3
       IceVariable *Tmp1, *Tmp2, *Tmp3;
-      IceConstant *BitTest = Cfg->getConstant(IceType_i32, 0x20);
-      uint64_t ZeroValue = 0;
-      IceConstant *Zero = Cfg->getConstant(IceType_i32, ZeroValue);
+      IceConstant *BitTest = Cfg->getConstantInt(IceType_i32, 0x20);
+      IceConstant *Zero = Cfg->getConstantInt(IceType_i32, 0);
       IceInstX8632Label *Label = IceInstX8632Label::create(Cfg, this);
       Tmp1 = legalizeOperandToVar(Src1Lo, Expansion, false, Reg_ecx);
       Tmp2 = legalizeOperandToVar(Src0Lo, Expansion);
@@ -672,9 +670,8 @@ IceInstList IceTargetX8632::lowerArithmetic(const IceInstArithmetic *Inst,
       //   a.lo = t2
       //   a.hi = t3
       IceVariable *Tmp1, *Tmp2, *Tmp3;
-      IceConstant *BitTest = Cfg->getConstant(IceType_i32, 0x20);
-      uint64_t ZeroValue = 0;
-      IceConstant *Zero = Cfg->getConstant(IceType_i32, ZeroValue);
+      IceConstant *BitTest = Cfg->getConstantInt(IceType_i32, 0x20);
+      IceConstant *Zero = Cfg->getConstantInt(IceType_i32, 0);
       IceInstX8632Label *Label = IceInstX8632Label::create(Cfg, this);
       Tmp1 = legalizeOperandToVar(Src1Lo, Expansion, false, Reg_ecx);
       Tmp2 = legalizeOperandToVar(Src0Lo, Expansion);
@@ -714,8 +711,8 @@ IceInstList IceTargetX8632::lowerArithmetic(const IceInstArithmetic *Inst,
       //   a.lo = t2
       //   a.hi = t3
       IceVariable *Tmp1, *Tmp2, *Tmp3;
-      IceConstant *BitTest = Cfg->getConstant(IceType_i32, 0x20);
-      IceConstant *SignExtend = Cfg->getConstant(IceType_i32, 0x1f);
+      IceConstant *BitTest = Cfg->getConstantInt(IceType_i32, 0x20);
+      IceConstant *SignExtend = Cfg->getConstantInt(IceType_i32, 0x1f);
       IceInstX8632Label *Label = IceInstX8632Label::create(Cfg, this);
       Tmp1 = legalizeOperandToVar(Src1Lo, Expansion, false, Reg_ecx);
       Tmp2 = legalizeOperandToVar(Src0Lo, Expansion);
@@ -756,7 +753,7 @@ IceInstList IceTargetX8632::lowerArithmetic(const IceInstArithmetic *Inst,
       Reg1 = legalizeOperandToVar(Src0, Expansion, false, Reg_eax);
       Reg0 = Cfg->makeVariable(IceType_i32, CurrentNode);
       Reg0->setRegNum(Reg_edx);
-      IceConstant *ConstZero = Cfg->getConstant(IceType_i32, Zero);
+      IceConstant *ConstZero = Cfg->getConstantInt(IceType_i32, 0);
       Expansion.push_back(IceInstX8632Mov::create(Cfg, Reg0, ConstZero));
       Reg2 = legalizeOperand(Src1, Legal_All, Expansion);
       Expansion.push_back(IceInstX8632Div::create(Cfg, Reg1, Reg2, Reg0));
@@ -803,7 +800,7 @@ IceInstList IceTargetX8632::lowerArithmetic(const IceInstArithmetic *Inst,
       Reg1 = legalizeOperandToVar(Src0, Expansion, false, Reg_eax);
       Reg0 = Cfg->makeVariable(IceType_i32, CurrentNode);
       Reg0->setRegNum(Reg_edx);
-      IceConstant *ConstZero = Cfg->getConstant(IceType_i32, Zero);
+      IceConstant *ConstZero = Cfg->getConstantInt(IceType_i32, 0);
       Expansion.push_back(IceInstX8632Mov::create(Cfg, Reg0, ConstZero));
       Reg2 = legalizeOperand(Src1, Legal_All, Expansion);
       Expansion.push_back(IceInstX8632Div::create(Cfg, Reg0, Reg2, Reg1));
@@ -884,8 +881,7 @@ IceInstList IceTargetX8632::lowerBr(const IceInstBr *Inst, const IceInst *Next,
   }
   // cmp src, 0; br ne, labelTrue; br labelFalse
   IceOperand *Src = legalizeOperand(Inst->getSrc(0), Legal_All, Expansion);
-  uint64_t Zero = 0;
-  IceConstant *OpZero = Cfg->getConstant(IceType_i32, Zero);
+  IceConstant *OpZero = Cfg->getConstantInt(IceType_i32, 0);
   Expansion.push_back(IceInstX8632Icmp::create(Cfg, Src, OpZero));
   Expansion.push_back(IceInstX8632Br::create(
       Cfg, Inst->getTargetTrue(), Inst->getTargetFalse(), IceInstIcmp::Ne));
@@ -995,7 +991,7 @@ IceInstList IceTargetX8632::lowerCall(const IceInstCall *Inst,
   if (StackOffset) {
     IceVariable *Esp = Cfg->getTarget()->getPhysicalRegister(Reg_esp);
     Expansion.push_back(IceInstX8632Add::create(
-        Cfg, Esp, Cfg->getConstant(IceType_i32, StackOffset)));
+        Cfg, Esp, Cfg->getConstantInt(IceType_i32, StackOffset)));
   }
 
   return Expansion;
@@ -1027,7 +1023,7 @@ IceInstList IceTargetX8632::lowerCast(const IceInstCast *Inst,
       else
         Expansion.push_back(IceInstX8632Movsx::create(Cfg, DestLo, Reg));
       IceVariable *RegHi = Cfg->makeVariable(IceType_i32, CurrentNode);
-      IceConstant *Shift = Cfg->getConstant(IceType_i32, 31);
+      IceConstant *Shift = Cfg->getConstantInt(IceType_i32, 31);
       Expansion.push_back(IceInstX8632Mov::create(Cfg, RegHi, Reg));
       Expansion.push_back(IceInstX8632Sar::create(Cfg, RegHi, Shift));
       Expansion.push_back(IceInstX8632Mov::create(Cfg, DestHi, RegHi));
@@ -1038,8 +1034,7 @@ IceInstList IceTargetX8632::lowerCast(const IceInstCast *Inst,
   case IceInstCast::Zext:
     if (Dest->getType() == IceType_i64) {
       // t1=movzx src; dst.lo=t1; dst.hi=0
-      uint32_t ConstZero = 0;
-      IceConstant *Zero = Cfg->getConstant(IceType_i32, ConstZero);
+      IceConstant *Zero = Cfg->getConstantInt(IceType_i32, 0);
       IceVariable *DestLo = llvm::cast<IceVariable>(makeLowOperand(Dest));
       IceVariable *DestHi = llvm::cast<IceVariable>(makeHighOperand(Dest));
       if (Reg->getType() == IceType_i32)
@@ -1122,10 +1117,8 @@ IceInstList IceTargetX8632::lowerIcmp(const IceInstIcmp *Inst,
   // a=icmp cond, b, c ==> cmp b,c; a=1; br cond,L1; FakeUse(a); a=0; L1:
   //
   // Alternative without intra-block branch: cmp b,c; a=0; a=set<cond> {a}
-  uint64_t Zero = 0;
-  uint64_t One = 1;
-  IceOperand *ConstZero = Cfg->getConstant(IceType_i32, Zero);
-  IceOperand *ConstOne = Cfg->getConstant(IceType_i32, One);
+  IceOperand *ConstZero = Cfg->getConstantInt(IceType_i32, 0);
+  IceOperand *ConstOne = Cfg->getConstantInt(IceType_i32, 1);
   if (Src0->getType() == IceType_i64) {
     IceInstIcmp::IceICond Condition = Inst->getCondition();
     unsigned Index = static_cast<unsigned>(Condition);
@@ -1190,7 +1183,7 @@ IceInstList IceTargetX8632::lowerIcmp(const IceInstIcmp *Inst,
 
   // a = 1;
   Expansion.push_back(
-      IceInstX8632Mov::create(Cfg, Dest, Cfg->getConstant(IceType_i32, One)));
+      IceInstX8632Mov::create(Cfg, Dest, Cfg->getConstantInt(IceType_i32, 1)));
 
   // create Label
   IceInstX8632Label *Label = IceInstX8632Label::create(Cfg, this);
@@ -1204,7 +1197,7 @@ IceInstList IceTargetX8632::lowerIcmp(const IceInstIcmp *Inst,
 
   // a = 0
   Expansion.push_back(
-      IceInstX8632Mov::create(Cfg, Dest, Cfg->getConstant(IceType_i32, Zero)));
+      IceInstX8632Mov::create(Cfg, Dest, Cfg->getConstantInt(IceType_i32, 0)));
 
   // Label:
   Expansion.push_back(Label);
@@ -1409,7 +1402,7 @@ IceInstList IceTargetX8632::doAddressOptLoad(const IceInstLoad *Inst) {
   IceVariable *Base = llvm::dyn_cast<IceVariable>(Addr);
   computeAddressOpt(Cfg, Base, Index, Shift, Offset);
   if (Base && Addr != Base) {
-    IceConstant *OffsetOp = Cfg->getConstant(IceType_i32, Offset);
+    IceConstant *OffsetOp = Cfg->getConstantInt(IceType_i32, Offset);
     Addr = IceOperandX8632Mem::create(Cfg, Dest->getType(), Base, OffsetOp,
                                       Index, Shift);
     Expansion.push_back(IceInstLoad::create(Cfg, Dest, Addr));
@@ -1465,8 +1458,7 @@ IceInstList IceTargetX8632::lowerSelect(const IceInstSelect *Inst,
   IceInstList Expansion;
   IceOperand *Condition =
       legalizeOperand(Inst->getCondition(), Legal_All, Expansion);
-  uint64_t Zero = 0;
-  IceConstant *OpZero = Cfg->getConstant(IceType_i32, Zero);
+  IceConstant *OpZero = Cfg->getConstantInt(IceType_i32, 0);
   Expansion.push_back(IceInstX8632Icmp::create(Cfg, Condition, OpZero));
 
   IceVariable *Dest = Inst->getDest();
@@ -1570,7 +1562,7 @@ IceInstList IceTargetX8632::doAddressOptStore(const IceInstStore *Inst) {
   IceVariable *Base = llvm::dyn_cast<IceVariable>(Addr);
   computeAddressOpt(Cfg, Base, Index, Shift, Offset);
   if (Base && Addr != Base) {
-    IceConstant *OffsetOp = Cfg->getConstant(IceType_i32, Offset);
+    IceConstant *OffsetOp = Cfg->getConstantInt(IceType_i32, Offset);
     Addr = IceOperandX8632Mem::create(Cfg, Data->getType(), Base, OffsetOp,
                                       Index, Shift);
     Expansion.push_back(IceInstStore::create(Cfg, Data, Addr));
@@ -1593,7 +1585,7 @@ IceInstList IceTargetX8632::lowerSwitch(const IceInstSwitch *Inst,
   else
     Src = legalizeOperand(Src, Legal_All, Expansion, true);
   for (unsigned I = 0; I < NumCases; ++I) {
-    IceOperand *Value = Cfg->getConstant(IceType_i32, Inst->getValue(I));
+    IceOperand *Value = Cfg->getConstantInt(IceType_i32, Inst->getValue(I));
     Expansion.push_back(IceInstX8632Icmp::create(Cfg, Src, Value));
     Expansion.push_back(
         IceInstX8632Br::create(Cfg, Inst->getLabel(I), IceInstIcmp::Eq));

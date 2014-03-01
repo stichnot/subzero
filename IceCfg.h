@@ -36,8 +36,8 @@ public:
   unsigned getNumNodes(void) const { return Nodes.size(); }
   // getConstant() is not const because it might add something to the
   // constant pool.
-  IceConstant *getConstant(IceType Type, const void *ConstantBits);
-  IceConstant *getConstant(IceType Type, uint64_t ConstantInt64);
+  IceConstant *getConstantBits(IceType Type, const void *ConstantBits);
+  IceConstant *getConstantInt(IceType Type, uint64_t ConstantInt64);
   IceConstant *getConstantFloat(float Value);
   IceConstant *getConstantDouble(double Value);
   // Returns a symbolic constant.  For now, Handle would refer to
