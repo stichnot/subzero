@@ -159,7 +159,7 @@ private:
       if (const GlobalValue *GV = dyn_cast<GlobalValue>(Const)) {
         return Cfg->getConstant(/*IceType_i32*/ convertType(GV->getType()), GV,
                                 0, GV->getName());
-      } else if (const ConstantInt *CI = cast<ConstantInt>(Const)) {
+      } else if (const ConstantInt *CI = dyn_cast<ConstantInt>(Const)) {
         return Cfg->getConstant(convertIntegerType(CI->getType()),
                                 CI->getZExtValue());
       } else {
