@@ -239,6 +239,13 @@ IceInstIcmp::IceInstIcmp(IceCfg *Cfg, IceICond Condition, IceVariable *Dest,
   addSource(Source2);
 }
 
+IceInstFcmp::IceInstFcmp(IceCfg *Cfg, IceFCond Condition, IceVariable *Dest,
+                         IceOperand *Source1, IceOperand *Source2)
+    : IceInst(Cfg, IceInst::Fcmp, 2, Dest), Condition(Condition) {
+  addSource(Source1);
+  addSource(Source2);
+}
+
 IceInstLoad::IceInstLoad(IceCfg *Cfg, IceVariable *Dest, IceOperand *SourceAddr)
     : IceInst(Cfg, IceInst::Load, 1, Dest) {
   addSource(SourceAddr);
@@ -630,6 +637,64 @@ void IceInstIcmp::dump(IceOstream &Str) const {
     break;
   case None: // shouldn't happen
     Str << "<none>";
+    break;
+  }
+  Str << " " << getSrc(0)->getType() << " ";
+  dumpSources(Str);
+}
+
+void IceInstFcmp::dump(IceOstream &Str) const {
+  dumpDest(Str);
+  Str << " = fcmp ";
+
+  switch (Condition) {
+  case False:
+    Str << "false";
+    break;
+  case Oeq:
+    Str << "oeq";
+    break;
+  case Ogt:
+    Str << "ogt";
+    break;
+  case Oge:
+    Str << "oge";
+    break;
+  case Olt:
+    Str << "olt";
+    break;
+  case Ole:
+    Str << "ole";
+    break;
+  case One:
+    Str << "one";
+    break;
+  case Ord:
+    Str << "ord";
+    break;
+  case Ueq:
+    Str << "ueq";
+    break;
+  case Ugt:
+    Str << "ugt";
+    break;
+  case Uge:
+    Str << "uge";
+    break;
+  case Ult:
+    Str << "ult";
+    break;
+  case Ule:
+    Str << "ule";
+    break;
+  case Une:
+    Str << "une";
+    break;
+  case Uno:
+    Str << "uno";
+    break;
+  case True:
+    Str << "true";
     break;
   }
   Str << " " << getSrc(0)->getType() << " ";
