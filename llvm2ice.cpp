@@ -162,6 +162,14 @@ private:
       } else if (const ConstantInt *CI = dyn_cast<ConstantInt>(Const)) {
         return Cfg->getConstant(convertIntegerType(CI->getType()),
                                 CI->getZExtValue());
+      } else if (const ConstantFP *CFP = dyn_cast<ConstantFP>(Const)) {
+        IceType Type = convertType(CFP->getType());
+        if (Type == IceType_f32)
+          return Cfg->getConstantFloat(CFP->getValueAPF().convertToFloat());
+        else if (Type == IceType_f64)
+          return Cfg->getConstantDouble(CFP->getValueAPF().convertToDouble());
+        assert(0 && "Unexpected floating point type");
+        return NULL;
       } else {
         assert(0 && "Unhandled constant type");
         return NULL;

@@ -28,6 +28,7 @@ public:
     Constant,
     ConstantInteger,
     ConstantFloat,
+    ConstantDouble,
     ConstantRelocatable,
     Constant_Num,
     Variable,
@@ -98,6 +99,47 @@ private:
   IceConstantInteger(IceCfg *Cfg, IceType Type, uint64_t IntValue)
       : IceConstant(Cfg, ConstantInteger, Type), IntValue(IntValue) {}
   const uint64_t IntValue;
+};
+
+class IceConstantFloat : public IceConstant {
+public:
+  static IceConstantFloat *create(IceCfg *Cfg, float FloatValue) {
+    return new IceConstantFloat(Cfg, FloatValue);
+  }
+  float getFloatValue(void) const { return FloatValue; }
+  virtual void emit(IceOstream &Str, uint32_t Option) const;
+  virtual void dump(IceOstream &Str) const;
+
+  static bool classof(const IceOperand *Operand) {
+    OperandKind Kind = Operand->getKind();
+    return Kind == ConstantFloat;
+  }
+
+private:
+  IceConstantFloat(IceCfg *Cfg, float FloatValue)
+      : IceConstant(Cfg, ConstantFloat, IceType_f32), FloatValue(FloatValue) {}
+  const float FloatValue;
+};
+
+class IceConstantDouble : public IceConstant {
+public:
+  static IceConstantDouble *create(IceCfg *Cfg, double DoubleValue) {
+    return new IceConstantDouble(Cfg, DoubleValue);
+  }
+  double getDoubleValue(void) const { return DoubleValue; }
+  virtual void emit(IceOstream &Str, uint32_t Option) const;
+  virtual void dump(IceOstream &Str) const;
+
+  static bool classof(const IceOperand *Operand) {
+    OperandKind Kind = Operand->getKind();
+    return Kind == ConstantDouble;
+  }
+
+private:
+  IceConstantDouble(IceCfg *Cfg, double DoubleValue)
+      : IceConstant(Cfg, ConstantDouble, IceType_f32),
+        DoubleValue(DoubleValue) {}
+  const double DoubleValue;
 };
 
 class IceConstantRelocatable : public IceConstant {

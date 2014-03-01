@@ -151,6 +151,15 @@ IceConstant *IceCfg::getConstant(IceType Type, uint64_t ConstantInt64) {
   return IceConstantInteger::create(this, Type, ConstantInt64);
 }
 
+// TODO: Add float and double constants to the global constant pool.
+IceConstant *IceCfg::getConstantFloat(float ConstantFloat) {
+  return IceConstantFloat::create(this, ConstantFloat);
+}
+
+IceConstant *IceCfg::getConstantDouble(double ConstantDouble) {
+  return IceConstantDouble::create(this, ConstantDouble);
+}
+
 IceConstant *IceCfg::getConstant(IceType Type, const void *Handle,
                                  int64_t Offset, const IceString &Name) {
   return ConstantPool->getOrAddRelocatable(Type, Handle, Offset, Name);

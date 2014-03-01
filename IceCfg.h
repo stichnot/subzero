@@ -38,6 +38,8 @@ public:
   // constant pool.
   IceConstant *getConstant(IceType Type, const void *ConstantBits);
   IceConstant *getConstant(IceType Type, uint64_t ConstantInt64);
+  IceConstant *getConstantFloat(float Value);
+  IceConstant *getConstantDouble(double Value);
   // Returns a symbolic constant.  For now, Handle would refer to
   // something LLVM-specific to facilitate linking.
   IceConstant *getConstant(IceType Type, const void *Handle, int64_t Offset,

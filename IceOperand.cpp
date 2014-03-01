@@ -246,6 +246,18 @@ void IceConstantInteger::emit(IceOstream &Str, uint32_t Option) const {
 
 void IceConstantInteger::dump(IceOstream &Str) const { Str << IntValue; }
 
+void IceConstantFloat::emit(IceOstream &Str, uint32_t Option) const {
+  dump(Str);
+}
+
+void IceConstantFloat::dump(IceOstream &Str) const { Str << FloatValue; }
+
+void IceConstantDouble::emit(IceOstream &Str, uint32_t Option) const {
+  dump(Str);
+}
+
+void IceConstantDouble::dump(IceOstream &Str) const { Str << DoubleValue; }
+
 void IceConstantRelocatable::emit(IceOstream &Str, uint32_t Option) const {
   Str << Name;
   if (Offset) {
