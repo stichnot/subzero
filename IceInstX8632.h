@@ -64,6 +64,7 @@ public:
     Br,
     Call,
     Cdq,
+    Cvt,
     Div,
     Divss,
     Fstp,
@@ -503,6 +504,24 @@ public:
 
 private:
   IceInstX8632Cdq(IceCfg *Cfg, IceVariable *Dest, IceOperand *Source);
+};
+
+// Cvt instruction - wrapper for cvtsX2sY where X and Y are in {s,d,i}
+// as appropriate.  s=float, d=double, i=int.  X and Y are determined
+// from dest/src types.  Sign and zero extension on the integer
+// operand needs to be done separately.
+class IceInstX8632Cvt : public IceInstX8632 {
+public:
+  static IceInstX8632Cvt *create(IceCfg *Cfg, IceVariable *Dest,
+                                 IceOperand *Source) {
+    return new IceInstX8632Cvt(Cfg, Dest, Source);
+  }
+  virtual void emit(IceOstream &Str, uint32_t Option) const;
+  virtual void dump(IceOstream &Str) const;
+  static bool classof(const IceInst *Inst) { return isClassof(Inst, Cvt); }
+
+private:
+  IceInstX8632Cvt(IceCfg *Cfg, IceVariable *Dest, IceOperand *Source);
 };
 
 class IceInstX8632Icmp : public IceInstX8632 {

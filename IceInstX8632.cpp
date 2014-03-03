@@ -234,6 +234,12 @@ IceInstX8632Cdq::IceInstX8632Cdq(IceCfg *Cfg, IceVariable *Dest,
   addSource(Source);
 }
 
+IceInstX8632Cvt::IceInstX8632Cvt(IceCfg *Cfg, IceVariable *Dest,
+                                 IceOperand *Source)
+    : IceInstX8632(Cfg, IceInstX8632::Cvt, 1, Dest) {
+  addSource(Source);
+}
+
 IceInstX8632Icmp::IceInstX8632Icmp(IceCfg *Cfg, IceOperand *Src0,
                                    IceOperand *Src1)
     : IceInstX8632(Cfg, IceInstX8632::Icmp, 2, NULL) {
@@ -291,6 +297,9 @@ bool IceInstX8632Mov::isRedundantAssign(void) const {
   IceVariable *Src = llvm::dyn_cast<IceVariable>(getSrc(0));
   if (Src == NULL)
     return false;
+  // TODO: On x86-64, instructions like "mov eax, eax" are used to
+  // clear the upper 32 bits of rax.  We need to recognize and
+  // preserve these.
   return DestRegNum == Src->getRegNum();
 }
 
@@ -721,6 +730,45 @@ void IceInstX8632Cdq::emit(IceOstream &Str, uint32_t Option) const {
 void IceInstX8632Cdq::dump(IceOstream &Str) const {
   dumpDest(Str);
   Str << " = cdq." << getSrc(0)->getType() << " ";
+  dumpSources(Str);
+}
+
+static IceString getCvtTypeString(IceType Type) {
+  switch (Type) {
+  case IceType_i1:
+  case IceType_i8:
+  case IceType_i16:
+  case IceType_i32:
+  case IceType_i64:
+    return "i";
+    break;
+  case IceType_f32:
+    return "s";
+    break;
+  case IceType_f64:
+    return "d";
+    break;
+  case IceType_void:
+    assert(0);
+    break;
+  }
+  return "???";
+}
+
+void IceInstX8632Cvt::emit(IceOstream &Str, uint32_t Option) const {
+  assert(getSrcSize() == 1);
+  Str << "\tcvts" << getCvtTypeString(getSrc(0)->getType()) << "2s"
+      << getCvtTypeString(getDest()->getType()) << "\t";
+  getDest()->emit(Str, Option);
+  Str << ", ";
+  getSrc(0)->emit(Str, Option);
+  Str << "\n";
+}
+
+void IceInstX8632Cvt::dump(IceOstream &Str) const {
+  dumpDest(Str);
+  Str << " = cvts" << getCvtTypeString(getSrc(0)->getType()) << "2s"
+      << getCvtTypeString(getDest()->getType()) << " ";
   dumpSources(Str);
 }
 

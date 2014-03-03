@@ -1069,6 +1069,8 @@ IceInstList IceTargetX8632::lowerCast(const IceInstCast *Inst,
       Expansion.push_back(IceInstX8632Sar::create(Cfg, RegHi, Shift));
       Expansion.push_back(IceInstX8632Mov::create(Cfg, DestHi, RegHi));
     } else {
+      // TODO: Sign-extend an i1 via "shl reg, 31; sar reg, 31", and
+      // also copy to the high operand of a 64-bit variable.
       Expansion.push_back(IceInstX8632Movsx::create(Cfg, Dest, Reg));
     }
     break;
@@ -1093,7 +1095,78 @@ IceInstList IceTargetX8632::lowerCast(const IceInstCast *Inst,
     // to be needed.  Treat these as vanilla moves.
     if (Reg->getType() == IceType_i64)
       Reg = makeLowOperand(Reg);
+    // TODO: This will probably produce invalid assembly if Dest and
+    // Reg are both memory operands (e.g. on the stack).
     Expansion.push_back(IceInstX8632Mov::create(Cfg, Dest, Reg));
+    break;
+  case IceInstCast::Fptrunc:
+  case IceInstCast::Fpext:
+    Expansion.push_back(IceInstX8632Cvt::create(Cfg, Dest, Reg));
+    break;
+  case IceInstCast::Fptosi:
+    if (Dest->getType() == IceType_i64) {
+      // Use a helper for converting floating-point values to 64-bit
+      // integers.  SSE2 appears to have no way to convert from xmm
+      // registers to something like the edx:eax register pair, and
+      // gcc and clang both want to use x87 instructions complete with
+      // temporary manipulation of the status word.  This helper is
+      // not needed for x86-64.
+      split64(Dest);
+      unsigned MaxSrcs = 1;
+      IceType SrcType = Inst->getSrc(0)->getType();
+      // TODO: Figure out how to properly construct CallTarget.
+      IceConstant *CallTarget = Cfg->getConstant(
+          IceType_i64, NULL, 0,
+          SrcType == IceType_f32 ? "cvtftosi64" : "cvtdtosi64");
+      bool Tailcall = false;
+      // TODO: This instruction leaks.
+      IceInstCall *Call = IceInstCall::create(Cfg, MaxSrcs, Inst->getDest(),
+                                              CallTarget, Tailcall);
+      Call->addArg(Inst->getSrc(0));
+      return lowerCall(Call, NULL, DeleteNextInst);
+    } else {
+      Expansion.push_back(IceInstX8632Cvt::create(Cfg, Dest, Reg));
+      // Sign-extend the result if necessary.
+    }
+    break;
+  case IceInstCast::Fptoui:
+    if (Dest->getType() == IceType_i64) {
+      // Use a helper for both x86-32 and x86-64.
+      split64(Dest);
+      unsigned MaxSrcs = 1;
+      IceType SrcType = Inst->getSrc(0)->getType();
+      // TODO: Figure out how to properly construct CallTarget.
+      IceConstant *CallTarget = Cfg->getConstant(
+          IceType_i64, NULL, 0,
+          SrcType == IceType_f32 ? "cvtftoui64" : "cvtdtoui64");
+      bool Tailcall = false;
+      // TODO: This instruction leaks.
+      IceInstCall *Call = IceInstCall::create(Cfg, MaxSrcs, Inst->getDest(),
+                                              CallTarget, Tailcall);
+      Call->addArg(Inst->getSrc(0));
+      return lowerCall(Call, NULL, DeleteNextInst);
+    } else {
+      Expansion.push_back(IceInstX8632Cvt::create(Cfg, Dest, Reg));
+      // Zero-extend the result if necessary.
+    }
+    break;
+  case IceInstCast::Sitofp:
+    if (Dest->getType() == IceType_i64) {
+      // Use a helper for x86-32.
+      assert(0);
+    } else {
+      // Sign-extend the operand.
+      Expansion.push_back(IceInstX8632Cvt::create(Cfg, Dest, Reg));
+    }
+    break;
+  case IceInstCast::Uitofp:
+    if (Dest->getType() == IceType_i64) {
+      // Use a helper for x86-32 and x86-64.
+      assert(0);
+    } else {
+      // Zero-extend the operand.
+      Expansion.push_back(IceInstX8632Cvt::create(Cfg, Dest, Reg));
+    }
     break;
   }
   return Expansion;
