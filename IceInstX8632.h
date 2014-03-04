@@ -67,6 +67,7 @@ public:
     Cvt,
     Div,
     Divss,
+    Fld,
     Fstp,
     Icmp,
     Idiv,
@@ -639,6 +640,19 @@ public:
 
 private:
   IceInstX8632Movzx(IceCfg *Cfg, IceVariable *Dest, IceOperand *Source);
+};
+
+class IceInstX8632Fld : public IceInstX8632 {
+public:
+  static IceInstX8632Fld *create(IceCfg *Cfg, IceOperand *Src) {
+    return new IceInstX8632Fld(Cfg, Src);
+  }
+  virtual void emit(IceOstream &Str, uint32_t Option) const;
+  virtual void dump(IceOstream &Str) const;
+  static bool classof(const IceInst *Inst) { return isClassof(Inst, Fld); }
+
+private:
+  IceInstX8632Fld(IceCfg *Cfg, IceOperand *Src);
 };
 
 class IceInstX8632Fstp : public IceInstX8632 {

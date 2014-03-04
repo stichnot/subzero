@@ -287,6 +287,11 @@ IceInstX8632Movzx::IceInstX8632Movzx(IceCfg *Cfg, IceVariable *Dest,
   addSource(Source);
 }
 
+IceInstX8632Fld::IceInstX8632Fld(IceCfg *Cfg, IceOperand *Src)
+    : IceInstX8632(Cfg, IceInstX8632::Fld, 1, NULL) {
+  addSource(Src);
+}
+
 IceInstX8632Fstp::IceInstX8632Fstp(IceCfg *Cfg, IceVariable *Dest)
     : IceInstX8632(Cfg, IceInstX8632::Fstp, 0, Dest) {}
 
@@ -919,11 +924,33 @@ void IceInstX8632Movzx::dump(IceOstream &Str) const {
   dumpSources(Str);
 }
 
+void IceInstX8632Fld::emit(IceOstream &Str, uint32_t Option) const {
+  assert(getSrcSize() == 1);
+  bool isDouble = (getSrc(0)->getType() == IceType_f64);
+  IceVariable *Var = llvm::dyn_cast<IceVariable>(getSrc(0));
+  if (Var && Var->getRegNum() >= 0) {
+    // This is a physical xmm register, so we need to spill it to a
+    // temporary stack slot.
+    Str << "\tsub\tesp, " << (isDouble ? 8 : 4) << "\n";
+    Str << "\tmovs" << (isDouble ? "d" : "s") << "\t" << (isDouble ? "q" : "d")
+        << "word ptr [esp], ";
+    Var->emit(Str, Option);
+    Str << "\n";
+    Str << "\tfld\t" << (isDouble ? "q" : "d") << "word ptr [esp]\n";
+    Str << "\tadd\tesp, " << (isDouble ? 8 : 4) << "\n";
+    return;
+  }
+  Str << "\tfld\t";
+  getSrc(0)->emit(Str, Option);
+  Str << "\n";
+}
+
+void IceInstX8632Fld::dump(IceOstream &Str) const {
+  Str << "fld." << getSrc(0)->getType() << " ";
+  dumpSources(Str);
+}
+
 void IceInstX8632Fstp::emit(IceOstream &Str, uint32_t Option) const {
-  // TODO: The fstp instruction can only store into memory, not into
-  // an xmm register.  If the dest operand is a physical register,
-  // create a temporary stack slot, spill st(0) to the slot, load it
-  // into the physical register, and then deallocate the stack slot.
   assert(getSrcSize() == 0);
   if (getDest() == NULL) {
     Str << "\tfstp\tst(0)\n";

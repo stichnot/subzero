@@ -1031,7 +1031,7 @@ IceInstList IceTargetX8632::lowerCall(const IceInstCall *Inst,
   if (RegHi)
     Expansion.push_back(IceInstFakeDef::create(Cfg, RegHi));
 
-  // Insert some sort of register-kill pseudo instruction.
+  // Insert a register-kill pseudo instruction.
   IceVarList KilledRegs;
   for (unsigned i = 0; i < ScratchRegs.size(); ++i) {
     if (ScratchRegs[i])
@@ -1696,18 +1696,18 @@ IceInstList IceTargetX8632::lowerRet(const IceInstRet *Inst,
   IceInstList Expansion;
   IceVariable *Reg = NULL;
   if (Inst->getSrcSize()) {
-    IceOperand *Src0 = Inst->getSrc(0);
+    IceOperand *Src0 = legalizeOperand(Inst->getSrc(0), Legal_All, Expansion);
     if (Src0->getType() == IceType_i64) {
-      Src0 = legalizeOperand(Src0, Legal_All, Expansion);
       IceVariable *Src0Low =
           legalizeOperandToVar(makeLowOperand(Src0), Expansion, false, Reg_eax);
       IceVariable *Src0High = legalizeOperandToVar(makeHighOperand(Src0),
                                                    Expansion, false, Reg_edx);
       Reg = Src0Low;
       Expansion.push_back(IceInstFakeUse::create(Cfg, Src0High));
+    } else if (Src0->getType() == IceType_f32 ||
+               Src0->getType() == IceType_f64) {
+      Expansion.push_back(IceInstX8632Fld::create(Cfg, Src0));
     } else {
-      // TODO: For floating-point, make sure the source operand is
-      // spilled to memory and then push it to st(0).
       Reg = legalizeOperandToVar(Src0, Expansion, false, Reg_eax);
     }
   }
