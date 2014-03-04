@@ -214,7 +214,7 @@ IceString IceInstX8632Label::getName(IceCfg *Cfg) const {
 IceInstX8632Br::IceInstX8632Br(IceCfg *Cfg, IceCfgNode *TargetTrue,
                                IceCfgNode *TargetFalse,
                                IceInstX8632Label *Label,
-                               IceInstIcmp::IceICond Condition)
+                               IceInstX8632Br::BrCond Condition)
     : IceInstX8632(Cfg, IceInstX8632::Br, 0, NULL), Condition(Condition),
       TargetTrue(TargetTrue), TargetFalse(TargetFalse), Label(Label) {}
 
@@ -328,44 +328,50 @@ void IceInstX8632Label::dump(IceOstream &Str) const {
 void IceInstX8632Br::emit(IceOstream &Str, unsigned Option) const {
   Str << "\t";
   switch (Condition) {
-  case IceInstIcmp::Eq:
-    Str << "je";
-    break;
-  case IceInstIcmp::Ne:
-    Str << "jne";
-    break;
-  case IceInstIcmp::Ugt:
-    Str << "jg";
-    break;
-  case IceInstIcmp::Uge:
-    Str << "jge";
-    break;
-  case IceInstIcmp::Ult:
-    Str << "jl";
-    break;
-  case IceInstIcmp::Ule:
-    Str << "jle";
-    break;
-  case IceInstIcmp::Sgt:
+  case Br_a:
     Str << "ja";
     break;
-  case IceInstIcmp::Sge:
+  case Br_ae:
     Str << "jae";
     break;
-  case IceInstIcmp::Slt:
+  case Br_b:
     Str << "jb";
     break;
-  case IceInstIcmp::Sle:
+  case Br_be:
     Str << "jbe";
     break;
-  case IceInstIcmp::None:
+  case Br_e:
+    Str << "je";
+    break;
+  case Br_g:
+    Str << "jg";
+    break;
+  case Br_ge:
+    Str << "jge";
+    break;
+  case Br_l:
+    Str << "jl";
+    break;
+  case Br_le:
+    Str << "jle";
+    break;
+  case Br_ne:
+    Str << "jne";
+    break;
+  case Br_np:
+    Str << "jnp";
+    break;
+  case Br_p:
+    Str << "jp";
+    break;
+  case Br_None:
     Str << "jmp";
     break;
   }
   if (Label) {
     Str << "\t" << Label->getName(Str.Cfg) << "\n";
   } else {
-    if (Condition == IceInstIcmp::None) {
+    if (Condition == Br_None) {
       Str << "\t" << getTargetFalse()->getAsmName() << "\n";
     } else {
       Str << "\t" << getTargetTrue()->getAsmName() << "\n";
@@ -379,37 +385,43 @@ void IceInstX8632Br::emit(IceOstream &Str, unsigned Option) const {
 void IceInstX8632Br::dump(IceOstream &Str) const {
   Str << "br ";
   switch (Condition) {
-  case IceInstIcmp::Eq:
-    Str << "eq";
+  case Br_a:
+    Str << "a";
     break;
-  case IceInstIcmp::Ne:
+  case Br_ae:
+    Str << "ae";
+    break;
+  case Br_b:
+    Str << "b";
+    break;
+  case Br_be:
+    Str << "be";
+    break;
+  case Br_e:
+    Str << "e";
+    break;
+  case Br_g:
+    Str << "g";
+    break;
+  case Br_ge:
+    Str << "ge";
+    break;
+  case Br_l:
+    Str << "l";
+    break;
+  case Br_le:
+    Str << "le";
+    break;
+  case Br_ne:
     Str << "ne";
     break;
-  case IceInstIcmp::Ugt:
-    Str << "ugt";
+  case Br_np:
+    Str << "np";
     break;
-  case IceInstIcmp::Uge:
-    Str << "uge";
+  case Br_p:
+    Str << "p";
     break;
-  case IceInstIcmp::Ult:
-    Str << "ult";
-    break;
-  case IceInstIcmp::Ule:
-    Str << "ule";
-    break;
-  case IceInstIcmp::Sgt:
-    Str << "sgt";
-    break;
-  case IceInstIcmp::Sge:
-    Str << "sge";
-    break;
-  case IceInstIcmp::Slt:
-    Str << "slt";
-    break;
-  case IceInstIcmp::Sle:
-    Str << "sle";
-    break;
-  case IceInstIcmp::None:
+  case Br_None:
     Str << "label %"
         << (Label ? Label->getName(Str.Cfg) : getTargetFalse()->getName());
     return;

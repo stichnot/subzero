@@ -638,7 +638,8 @@ IceInstList IceTargetX8632::lowerArithmetic(const IceInstArithmetic *Inst,
       Expansion.push_back(IceInstX8632Shld::create(Cfg, Tmp3, Tmp2, Tmp1));
       Expansion.push_back(IceInstX8632Shl::create(Cfg, Tmp2, Tmp1));
       Expansion.push_back(IceInstX8632Test::create(Cfg, Tmp1, BitTest));
-      Expansion.push_back(IceInstX8632Br::create(Cfg, Label, IceInstIcmp::Eq));
+      Expansion.push_back(
+          IceInstX8632Br::create(Cfg, Label, IceInstX8632Br::Br_e));
       Expansion.push_back(IceInstFakeUse::create(Cfg, Tmp3));
       Expansion.push_back(IceInstX8632Mov::create(Cfg, Tmp3, Tmp2));
       Expansion.push_back(IceInstX8632Mov::create(Cfg, Tmp2, Zero));
@@ -679,7 +680,8 @@ IceInstList IceTargetX8632::lowerArithmetic(const IceInstArithmetic *Inst,
       Expansion.push_back(IceInstX8632Shrd::create(Cfg, Tmp2, Tmp3, Tmp1));
       Expansion.push_back(IceInstX8632Shr::create(Cfg, Tmp3, Tmp1));
       Expansion.push_back(IceInstX8632Test::create(Cfg, Tmp1, BitTest));
-      Expansion.push_back(IceInstX8632Br::create(Cfg, Label, IceInstIcmp::Eq));
+      Expansion.push_back(
+          IceInstX8632Br::create(Cfg, Label, IceInstX8632Br::Br_e));
       Expansion.push_back(IceInstFakeUse::create(Cfg, Tmp2));
       Expansion.push_back(IceInstX8632Mov::create(Cfg, Tmp2, Tmp3));
       Expansion.push_back(IceInstX8632Mov::create(Cfg, Tmp3, Zero));
@@ -720,7 +722,8 @@ IceInstList IceTargetX8632::lowerArithmetic(const IceInstArithmetic *Inst,
       Expansion.push_back(IceInstX8632Shrd::create(Cfg, Tmp2, Tmp3, Tmp1));
       Expansion.push_back(IceInstX8632Sar::create(Cfg, Tmp3, Tmp1));
       Expansion.push_back(IceInstX8632Test::create(Cfg, Tmp1, BitTest));
-      Expansion.push_back(IceInstX8632Br::create(Cfg, Label, IceInstIcmp::Eq));
+      Expansion.push_back(
+          IceInstX8632Br::create(Cfg, Label, IceInstX8632Br::Br_e));
       Expansion.push_back(IceInstFakeUse::create(Cfg, Tmp2));
       Expansion.push_back(IceInstX8632Mov::create(Cfg, Tmp2, Tmp3));
       // Expansion.push_back(IceInstX8632Mov::create(Cfg, Tmp3, Zero));
@@ -910,8 +913,9 @@ IceInstList IceTargetX8632::lowerBr(const IceInstBr *Inst, const IceInst *Next,
   IceOperand *Src = legalizeOperand(Inst->getSrc(0), Legal_All, Expansion);
   IceConstant *OpZero = Cfg->getConstantInt(IceType_i32, 0);
   Expansion.push_back(IceInstX8632Icmp::create(Cfg, Src, OpZero));
-  Expansion.push_back(IceInstX8632Br::create(
-      Cfg, Inst->getTargetTrue(), Inst->getTargetFalse(), IceInstIcmp::Ne));
+  Expansion.push_back(IceInstX8632Br::create(Cfg, Inst->getTargetTrue(),
+                                             Inst->getTargetFalse(),
+                                             IceInstX8632Br::Br_ne));
   return Expansion;
 }
 
@@ -1181,21 +1185,51 @@ IceInstList IceTargetX8632::lowerFcmp(const IceInstFcmp *Inst,
 }
 
 static struct {
-  IceInstIcmp::IceICond Cond, C1, C2, C3;
-} Icmp64NonEqNe[] = {
-    { IceInstIcmp::Eq, IceInstIcmp::Ne },
-    { IceInstIcmp::Ne, IceInstIcmp::Eq },
-    { IceInstIcmp::Ugt, IceInstIcmp::Ugt, IceInstIcmp::Ult, IceInstIcmp::Ugt },
-    { IceInstIcmp::Uge, IceInstIcmp::Ugt, IceInstIcmp::Ult, IceInstIcmp::Uge },
-    { IceInstIcmp::Ult, IceInstIcmp::Ult, IceInstIcmp::Ugt, IceInstIcmp::Ult },
-    { IceInstIcmp::Ule, IceInstIcmp::Ult, IceInstIcmp::Ugt, IceInstIcmp::Ule },
-    { IceInstIcmp::Sgt, IceInstIcmp::Sgt, IceInstIcmp::Slt, IceInstIcmp::Ugt },
-    { IceInstIcmp::Sge, IceInstIcmp::Sgt, IceInstIcmp::Slt, IceInstIcmp::Uge },
-    { IceInstIcmp::Slt, IceInstIcmp::Slt, IceInstIcmp::Sgt, IceInstIcmp::Ult },
-    { IceInstIcmp::Sle, IceInstIcmp::Slt, IceInstIcmp::Sgt, IceInstIcmp::Ule },
-  };
-const static unsigned Icmp64NonEqNeSize =
-    sizeof(Icmp64NonEqNe) / sizeof(*Icmp64NonEqNe);
+  IceInstIcmp::IceICond Cond;
+  IceInstX8632Br::BrCond C1, C2, C3;
+} TableIcmp64[] = { { IceInstIcmp::Eq, IceInstX8632Br::Br_ne },
+                    { IceInstIcmp::Ne, IceInstX8632Br::Br_e },
+                    { IceInstIcmp::Ugt, IceInstX8632Br::Br_g,
+                      IceInstX8632Br::Br_l, IceInstX8632Br::Br_g },
+                    { IceInstIcmp::Uge, IceInstX8632Br::Br_g,
+                      IceInstX8632Br::Br_l, IceInstX8632Br::Br_ge },
+                    { IceInstIcmp::Ult, IceInstX8632Br::Br_l,
+                      IceInstX8632Br::Br_g, IceInstX8632Br::Br_l },
+                    { IceInstIcmp::Ule, IceInstX8632Br::Br_l,
+                      IceInstX8632Br::Br_g, IceInstX8632Br::Br_le },
+                    { IceInstIcmp::Sgt, IceInstX8632Br::Br_a,
+                      IceInstX8632Br::Br_b, IceInstX8632Br::Br_g },
+                    { IceInstIcmp::Sge, IceInstX8632Br::Br_a,
+                      IceInstX8632Br::Br_b, IceInstX8632Br::Br_ge },
+                    { IceInstIcmp::Slt, IceInstX8632Br::Br_b,
+                      IceInstX8632Br::Br_a, IceInstX8632Br::Br_l },
+                    { IceInstIcmp::Sle, IceInstX8632Br::Br_b,
+                      IceInstX8632Br::Br_a, IceInstX8632Br::Br_le }, };
+const static unsigned TableIcmp64Size =
+    sizeof(TableIcmp64) / sizeof(*TableIcmp64);
+
+static struct {
+  IceInstIcmp::IceICond Cond;
+  IceInstX8632Br::BrCond Mapping;
+} TableIcmp32[] = { { IceInstIcmp::Eq, IceInstX8632Br::Br_e },
+                    { IceInstIcmp::Ne, IceInstX8632Br::Br_ne },
+                    { IceInstIcmp::Ugt, IceInstX8632Br::Br_g },
+                    { IceInstIcmp::Uge, IceInstX8632Br::Br_ge },
+                    { IceInstIcmp::Ult, IceInstX8632Br::Br_l },
+                    { IceInstIcmp::Ule, IceInstX8632Br::Br_le },
+                    { IceInstIcmp::Sgt, IceInstX8632Br::Br_a },
+                    { IceInstIcmp::Sge, IceInstX8632Br::Br_ae },
+                    { IceInstIcmp::Slt, IceInstX8632Br::Br_b },
+                    { IceInstIcmp::Sle, IceInstX8632Br::Br_be }, };
+const static unsigned TableIcmp32Size =
+    sizeof(TableIcmp32) / sizeof(*TableIcmp32);
+
+static IceInstX8632Br::BrCond getIcmp32Mapping(IceInstIcmp::IceICond Cond) {
+  unsigned Index = static_cast<unsigned>(Cond);
+  assert(Index < TableIcmp32Size);
+  assert(TableIcmp32[Index].Cond == Cond);
+  return TableIcmp32[Index].Mapping;
+}
 
 IceInstList IceTargetX8632::lowerIcmp(const IceInstIcmp *Inst,
                                       const IceInst *Next,
@@ -1221,9 +1255,9 @@ IceInstList IceTargetX8632::lowerIcmp(const IceInstIcmp *Inst,
     IceOperand *Reg = legalizeOperand(Src0, IsImmOrReg ? Legal_All : Legal_Reg,
                                       Expansion, true);
     Expansion.push_back(IceInstX8632Icmp::create(Cfg, Reg, Src1));
-    Expansion.push_back(IceInstX8632Br::create(Cfg, NextBr->getTargetTrue(),
-                                               NextBr->getTargetFalse(),
-                                               Inst->getCondition()));
+    Expansion.push_back(IceInstX8632Br::create(
+        Cfg, NextBr->getTargetTrue(), NextBr->getTargetFalse(),
+        getIcmp32Mapping(Inst->getCondition())));
     DeleteNextInst = true;
     return Expansion;
   }
@@ -1236,8 +1270,8 @@ IceInstList IceTargetX8632::lowerIcmp(const IceInstIcmp *Inst,
   if (Src0->getType() == IceType_i64) {
     IceInstIcmp::IceICond Condition = Inst->getCondition();
     unsigned Index = static_cast<unsigned>(Condition);
-    assert(Index < Icmp64NonEqNeSize);
-    assert(Icmp64NonEqNe[Index].Cond == Condition);
+    assert(Index < TableIcmp64Size);
+    assert(TableIcmp64[Index].Cond == Condition);
     IceInstX8632Label *LabelFalse = IceInstX8632Label::create(Cfg, this);
     IceInstX8632Label *LabelTrue = IceInstX8632Label::create(Cfg, this);
     Src0 = legalizeOperand(Src0, Legal_All, Expansion);
@@ -1249,13 +1283,13 @@ IceInstList IceTargetX8632::lowerIcmp(const IceInstIcmp *Inst,
       Expansion.push_back(
           IceInstX8632Icmp::create(Cfg, makeHighOperand(Src0), RegHi));
       Expansion.push_back(
-          IceInstX8632Br::create(Cfg, LabelFalse, Icmp64NonEqNe[Index].C1));
+          IceInstX8632Br::create(Cfg, LabelFalse, TableIcmp64[Index].C1));
       IceOperand *RegLo = legalizeOperand(makeLowOperand(Src1),
                                           Legal_Reg | Legal_Imm, Expansion);
       Expansion.push_back(
           IceInstX8632Icmp::create(Cfg, makeLowOperand(Src0), RegLo));
       Expansion.push_back(
-          IceInstX8632Br::create(Cfg, LabelFalse, Icmp64NonEqNe[Index].C1));
+          IceInstX8632Br::create(Cfg, LabelFalse, TableIcmp64[Index].C1));
       Expansion.push_back(LabelTrue);
       Expansion.push_back(IceInstFakeUse::create(Cfg, Dest));
       Expansion.push_back(IceInstX8632Mov::create(Cfg, Dest, ConstOne));
@@ -1267,15 +1301,15 @@ IceInstList IceTargetX8632::lowerIcmp(const IceInstIcmp *Inst,
       Expansion.push_back(
           IceInstX8632Icmp::create(Cfg, makeHighOperand(Src0), RegHi));
       Expansion.push_back(
-          IceInstX8632Br::create(Cfg, LabelTrue, Icmp64NonEqNe[Index].C1));
+          IceInstX8632Br::create(Cfg, LabelTrue, TableIcmp64[Index].C1));
       Expansion.push_back(
-          IceInstX8632Br::create(Cfg, LabelFalse, Icmp64NonEqNe[Index].C2));
+          IceInstX8632Br::create(Cfg, LabelFalse, TableIcmp64[Index].C2));
       IceOperand *RegLo = legalizeOperand(makeLowOperand(Src1),
                                           Legal_Reg | Legal_Imm, Expansion);
       Expansion.push_back(
           IceInstX8632Icmp::create(Cfg, makeLowOperand(Src0), RegLo));
       Expansion.push_back(
-          IceInstX8632Br::create(Cfg, LabelTrue, Icmp64NonEqNe[Index].C3));
+          IceInstX8632Br::create(Cfg, LabelTrue, TableIcmp64[Index].C3));
       Expansion.push_back(LabelFalse);
       Expansion.push_back(IceInstFakeUse::create(Cfg, Dest));
       Expansion.push_back(IceInstX8632Mov::create(Cfg, Dest, ConstZero));
@@ -1303,7 +1337,8 @@ IceInstList IceTargetX8632::lowerIcmp(const IceInstIcmp *Inst,
   IceInstX8632Label *Label = IceInstX8632Label::create(Cfg, this);
 
   // br cond, Label
-  Expansion.push_back(IceInstX8632Br::create(Cfg, Label, Inst->getCondition()));
+  Expansion.push_back(IceInstX8632Br::create(
+      Cfg, Label, getIcmp32Mapping(Inst->getCondition())));
 
   // FakeUse(a)
   IceInst *FakeUse = IceInstFakeUse::create(Cfg, Dest);
@@ -1599,7 +1634,8 @@ IceInstList IceTargetX8632::lowerSelect(const IceInstSelect *Inst,
   // create Label
   IceInstX8632Label *Label = IceInstX8632Label::create(Cfg, this);
 
-  Expansion.push_back(IceInstX8632Br::create(Cfg, Label, IceInstIcmp::Ne));
+  Expansion.push_back(
+      IceInstX8632Br::create(Cfg, Label, IceInstX8632Br::Br_ne));
 
   // FakeUse(a)
   if (IsI64) {
@@ -1702,7 +1738,7 @@ IceInstList IceTargetX8632::lowerSwitch(const IceInstSwitch *Inst,
     IceOperand *Value = Cfg->getConstantInt(IceType_i32, Inst->getValue(I));
     Expansion.push_back(IceInstX8632Icmp::create(Cfg, Src, Value));
     Expansion.push_back(
-        IceInstX8632Br::create(Cfg, Inst->getLabel(I), IceInstIcmp::Eq));
+        IceInstX8632Br::create(Cfg, Inst->getLabel(I), IceInstX8632Br::Br_e));
   }
 
   Expansion.push_back(IceInstX8632Br::create(Cfg, Inst->getLabelDefault()));

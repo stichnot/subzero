@@ -158,20 +158,34 @@ private:
 
 class IceInstX8632Br : public IceInstX8632 {
 public:
+  enum BrCond {
+    Br_a,
+    Br_ae,
+    Br_b,
+    Br_be,
+    Br_e,
+    Br_g,
+    Br_ge,
+    Br_l,
+    Br_le,
+    Br_ne,
+    Br_np,
+    Br_p,
+    Br_None
+  };
   static IceInstX8632Br *create(IceCfg *Cfg, IceCfgNode *TargetTrue,
-                                IceCfgNode *TargetFalse,
-                                IceInstIcmp::IceICond Condition) {
+                                IceCfgNode *TargetFalse, BrCond Condition) {
     return new IceInstX8632Br(Cfg, TargetTrue, TargetFalse, NULL, Condition);
   }
   static IceInstX8632Br *create(IceCfg *Cfg, IceCfgNode *Target) {
-    return new IceInstX8632Br(Cfg, NULL, Target, NULL, IceInstIcmp::None);
+    return new IceInstX8632Br(Cfg, NULL, Target, NULL, Br_None);
   }
   static IceInstX8632Br *create(IceCfg *Cfg, IceCfgNode *Target,
-                                IceInstIcmp::IceICond Condition) {
+                                BrCond Condition) {
     return new IceInstX8632Br(Cfg, Target, NULL, NULL, Condition);
   }
   static IceInstX8632Br *create(IceCfg *Cfg, IceInstX8632Label *Label,
-                                IceInstIcmp::IceICond Condition) {
+                                BrCond Condition) {
     return new IceInstX8632Br(Cfg, NULL, NULL, Label, Condition);
   }
   IceCfgNode *getTargetTrue(void) const { return TargetTrue; }
@@ -182,8 +196,8 @@ public:
 
 private:
   IceInstX8632Br(IceCfg *Cfg, IceCfgNode *TargetTrue, IceCfgNode *TargetFalse,
-                 IceInstX8632Label *Label, IceInstIcmp::IceICond Condition);
-  IceInstIcmp::IceICond Condition;
+                 IceInstX8632Label *Label, BrCond Condition);
+  BrCond Condition;
   IceCfgNode *TargetTrue;
   IceCfgNode *TargetFalse;
   IceInstX8632Label *Label; // Intra-block branch target
