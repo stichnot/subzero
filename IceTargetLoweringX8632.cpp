@@ -1022,12 +1022,6 @@ IceInstList IceTargetX8632::lowerCall(const IceInstCall *Inst,
       // instruction.
       break;
     }
-    // TODO: Reg_eax is only for 32-bit integer results.  For floating
-    // point, we need the appropriate FP register.  For a 64-bit
-    // integer result, after the Kill instruction add a
-    // "tmp:edx=FakeDef(Reg)" instruction for a call that can be
-    // dead-code eliminated, and "tmp:edx=FakeDef()" for a call that
-    // can't be eliminated.
   }
   IceOperand *CallTarget =
       legalizeOperand(Inst->getCallTarget(), Legal_All, Expansion);
@@ -1073,9 +1067,6 @@ IceInstList IceTargetX8632::lowerCall(const IceInstCall *Inst,
   // st(0).
   if (Dest &&
       (Dest->getType() == IceType_f32 || Dest->getType() == IceType_f64)) {
-    // TODO: If a function returns an FP result that the caller
-    // ignores, the Dest will be NULL so we need another way to detect
-    // the FP type and pop st(0).
     Expansion.push_back(IceInstX8632Fstp::create(Cfg, Dest));
     // If Dest ends up being a physical xmm register, the fstp emit
     // code will route st(0) through a temporary stack slot.

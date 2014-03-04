@@ -925,12 +925,27 @@ void IceInstX8632Fstp::emit(IceOstream &Str, uint32_t Option) const {
   // create a temporary stack slot, spill st(0) to the slot, load it
   // into the physical register, and then deallocate the stack slot.
   assert(getSrcSize() == 0);
-  Str << "\tfstp\t";
-  if (getDest())
+  if (getDest() == NULL) {
+    Str << "\tfstp\tst(0)\n";
+    return;
+  }
+  if (getDest()->getRegNum() < 0) {
+    Str << "\tfstp\t";
     getDest()->emit(Str, Option);
-  else
-    Str << "st(0)";
-  Str << "\n";
+    Str << "\n";
+    return;
+  }
+  // Dest is a physical (xmm) register, so st(0) needs to go through
+  // memory.  Hack this by creating a temporary stack slot, spilling
+  // st(0) there, loading it into the xmm register, and deallocating
+  // the stack slot.
+  unsigned Width = iceTypeWidth(getDest()->getType());
+  Str << "\tsub\tesp, " << Width << "\n";
+  Str << "\tfstp\t" << (Width == 8 ? "q" : "d") << "word ptr [esp]\n";
+  Str << "\tmovs" << (Width == 8 ? "d" : "s") << "\t";
+  getDest()->emit(Str, Option);
+  Str << ", " << (Width == 8 ? "q" : "d") << "word ptr [esp]\n";
+  Str << "\tadd\tesp, " << Width << "\n";
 }
 
 void IceInstX8632Fstp::dump(IceOstream &Str) const {
