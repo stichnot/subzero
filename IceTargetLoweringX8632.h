@@ -123,7 +123,6 @@ protected:
   int LocalsSizeBytes;
   llvm::SmallBitVector TypeToRegisterSet[IceType_NUM];
   llvm::SmallBitVector ScratchRegs;
-  llvm::SmallBitVector PreservedRegs;
   llvm::SmallBitVector RegsUsed;
   uint32_t NextLabelNumber;
   bool ComputedLiveRanges;

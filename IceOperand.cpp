@@ -143,45 +143,6 @@ bool IceLiveRange::containsValue(int Value) const {
   return false;
 }
 
-void IceLiveRange::unitTests(void) {
-  IceCfg Cfg;
-  IceOstream &Str = Cfg.Str;
-  IceLiveRange R1, R2, R3;
-  IceLiveRange Empty;
-  R1.addSegment(1, 10);
-  R2.addSegment(10, 20);
-  R3.addSegment(1, 11);
-
-  Str << "Empty = " << Empty << "\n";
-  Str << "R1 = " << R1 << "\n";
-  Str << "R2 = " << R2 << "\n";
-  Str << "R3 = " << R3 << "\n";
-  Str << "R1 endsBefore R2 = " << R1.endsBefore(R2) << "\n";
-  Str << "R1 endsBefore R3 = " << R1.endsBefore(R3) << "\n";
-  Str << "R2 endsBefore R1 = " << R2.endsBefore(R1) << "\n";
-  Str << "R2 endsBefore R3 = " << R2.endsBefore(R3) << "\n";
-  Str << "R3 endsBefore R1 = " << R3.endsBefore(R1) << "\n";
-  Str << "R3 endsBefore R2 = " << R3.endsBefore(R2) << "\n";
-
-  Str << "R1 overlaps Empty = " << R1.overlaps(Empty) << "\n";
-  Str << "Empty overlaps R1 = " << Empty.overlaps(R1) << "\n";
-  Str << "R1 overlaps R2 = " << R1.overlaps(R2) << "\n";
-  Str << "R2 overlaps R1 = " << R2.overlaps(R1) << "\n";
-  Str << "R3 overlaps R2 = " << R3.overlaps(R2) << "\n";
-  Str << "R2 overlaps R3 = " << R2.overlaps(R3) << "\n";
-
-  IceLiveRange R4;
-  R4.addSegment(1, 10);
-  R4.addSegment(20, 30);
-  Str << "R4 = " << R4 << "\n";
-  Str << "R2 endsBefore R4 = " << R2.endsBefore(R4) << "\n";
-  Str << "R4 endsBefore R2 = " << R4.endsBefore(R2) << "\n";
-  Str << "R2 overlaps R4 = " << R2.overlaps(R4) << "\n";
-  Str << "R4 overlaps R2 = " << R4.overlaps(R2) << "\n";
-  Str << "R3 overlaps R4 = " << R3.overlaps(R4) << "\n";
-  Str << "R4 overlaps R3 = " << R4.overlaps(R3) << "\n";
-}
-
 // ======================== dump routines ======================== //
 
 IceOstream &operator<<(IceOstream &Str, const IceOperand *O) {

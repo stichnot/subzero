@@ -29,6 +29,10 @@ IceTargetX8632::IceTargetX8632(IceCfg *Cfg)
   TypeToRegisterSet[IceType_i64] = IntegerRegisters;
   TypeToRegisterSet[IceType_f32] = FloatRegisters;
   TypeToRegisterSet[IceType_f64] = FloatRegisters;
+  ScratchRegs = FloatRegisters;
+  ScratchRegs[Reg_eax] = true;
+  ScratchRegs[Reg_ecx] = true;
+  ScratchRegs[Reg_edx] = true;
 }
 
 void IceTargetX8632::translate(void) {
@@ -970,6 +974,17 @@ IceInstList IceTargetX8632::lowerCall(const IceInstCall *Inst,
     if (Arg->getType() == IceType_i64) {
       Expansion.push_back(IceInstX8632Push::create(Cfg, makeHighOperand(Arg)));
       Expansion.push_back(IceInstX8632Push::create(Cfg, makeLowOperand(Arg)));
+    } else if (Arg->getType() == IceType_f64) {
+      // If the Arg turns out to be a memory operand, we need to push
+      // 8 bytes, which requires two push instructions.  This ends up
+      // being somewhat clumsy in the current IR, so we use a
+      // workaround.  Force the operand into a (xmm) register, and
+      // then push the register.  An xmm register push is actually not
+      // possible in x86, but the Push instruction emitter handles
+      // this by decrementing the stack pointer and directly writing
+      // the xmm register value.
+      IceVariable *Var = legalizeOperandToVar(Arg, Expansion);
+      Expansion.push_back(IceInstX8632Push::create(Cfg, Var));
     } else {
       Expansion.push_back(IceInstX8632Push::create(Cfg, Arg));
     }
@@ -1024,11 +1039,14 @@ IceInstList IceTargetX8632::lowerCall(const IceInstCall *Inst,
 
   // Insert some sort of register-kill pseudo instruction.
   IceVarList KilledRegs;
-  KilledRegs.push_back(Cfg->getTarget()->getPhysicalRegister(Reg_eax));
-  KilledRegs.push_back(Cfg->getTarget()->getPhysicalRegister(Reg_ecx));
-  KilledRegs.push_back(Cfg->getTarget()->getPhysicalRegister(Reg_edx));
-  IceInst *Kill = IceInstFakeKill::create(Cfg, KilledRegs, NewCall);
-  Expansion.push_back(Kill);
+  for (unsigned i = 0; i < ScratchRegs.size(); ++i) {
+    if (ScratchRegs[i])
+      KilledRegs.push_back(Cfg->getTarget()->getPhysicalRegister(i));
+  }
+  if (!KilledRegs.empty()) {
+    IceInst *Kill = IceInstFakeKill::create(Cfg, KilledRegs, NewCall);
+    Expansion.push_back(Kill);
+  }
 
   // Generate a FakeUse to keep the call live if necessary.
   bool HasSideEffects = true;
@@ -2022,8 +2040,10 @@ void IceTargetX8632Fast::postLower(const IceInstList &Expansion) {
           continue;
         if (!Var->getWeight().isInf())
           continue;
-        assert(!AvailableRegisters.empty());
-        RegNum = AvailableRegisters.find_first();
+        llvm::SmallBitVector AvailableTypedRegisters =
+            AvailableRegisters & getRegisterSetForType(Var->getType());
+        assert(!AvailableTypedRegisters.empty());
+        RegNum = AvailableTypedRegisters.find_first();
         Var->setRegNum(RegNum);
         AvailableRegisters[RegNum] = false;
       }

@@ -218,7 +218,6 @@ public:
   void setWeight(const IceRegWeight &NewWeight) { Weight = NewWeight; }
   void addWeight(uint32_t Delta) { Weight.addWeight(Delta); }
   void dump(IceOstream &Str) const;
-  static void unitTests(void);
 
 private:
   typedef std::pair<int, int> RangeElementType;
