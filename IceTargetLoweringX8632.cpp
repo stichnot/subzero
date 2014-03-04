@@ -1666,6 +1666,8 @@ IceInstList IceTargetX8632::lowerRet(const IceInstRet *Inst,
       Reg = Src0Low;
       Expansion.push_back(IceInstFakeUse::create(Cfg, Src0High));
     } else {
+      // TODO: For floating-point, make sure the source operand is
+      // spilled to memory and then push it to st(0).
       Reg = legalizeOperandToVar(Src0, Expansion, false, Reg_eax);
     }
   }
