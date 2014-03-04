@@ -247,6 +247,13 @@ IceInstX8632Icmp::IceInstX8632Icmp(IceCfg *Cfg, IceOperand *Src0,
   addSource(Src1);
 }
 
+IceInstX8632Ucomiss::IceInstX8632Ucomiss(IceCfg *Cfg, IceOperand *Src0,
+                                         IceOperand *Src1)
+    : IceInstX8632(Cfg, IceInstX8632::Ucomiss, 2, NULL) {
+  addSource(Src0);
+  addSource(Src1);
+}
+
 IceInstX8632Test::IceInstX8632Test(IceCfg *Cfg, IceOperand *Src1,
                                    IceOperand *Src2)
     : IceInstX8632(Cfg, IceInstX8632::Test, 2, NULL) {
@@ -795,6 +802,23 @@ void IceInstX8632Icmp::emit(IceOstream &Str, uint32_t Option) const {
 
 void IceInstX8632Icmp::dump(IceOstream &Str) const {
   Str << "cmp." << getSrc(0)->getType() << " ";
+  dumpSources(Str);
+}
+
+void IceInstX8632Ucomiss::emit(IceOstream &Str, uint32_t Option) const {
+  assert(getSrcSize() == 2);
+  if (getSrc(0)->getType() == IceType_f32)
+    Str << "\tucomiss\t";
+  else
+    Str << "\tucomisd\t";
+  getSrc(0)->emit(Str, Option);
+  Str << ", ";
+  getSrc(1)->emit(Str, Option);
+  Str << "\n";
+}
+
+void IceInstX8632Ucomiss::dump(IceOstream &Str) const {
+  Str << "ucomiss." << getSrc(0)->getType() << " ";
   dumpSources(Str);
 }
 

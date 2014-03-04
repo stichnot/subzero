@@ -92,6 +92,7 @@ public:
     Sub,
     Subss,
     Test,
+    Ucomiss,
     Xor
   };
   virtual void emit(IceOstream &Str, uint32_t Option) const = 0;
@@ -550,6 +551,20 @@ public:
 
 private:
   IceInstX8632Icmp(IceCfg *Cfg, IceOperand *Src1, IceOperand *Src2);
+};
+
+class IceInstX8632Ucomiss : public IceInstX8632 {
+public:
+  static IceInstX8632Ucomiss *create(IceCfg *Cfg, IceOperand *Src1,
+                                     IceOperand *Src2) {
+    return new IceInstX8632Ucomiss(Cfg, Src1, Src2);
+  }
+  virtual void emit(IceOstream &Str, uint32_t Option) const;
+  virtual void dump(IceOstream &Str) const;
+  static bool classof(const IceInst *Inst) { return isClassof(Inst, Ucomiss); }
+
+private:
+  IceInstX8632Ucomiss(IceCfg *Cfg, IceOperand *Src1, IceOperand *Src2);
 };
 
 class IceInstX8632Test : public IceInstX8632 {

@@ -1176,11 +1176,94 @@ IceInstList IceTargetX8632::lowerCast(const IceInstCast *Inst,
   return Expansion;
 }
 
+static struct {
+  IceInstFcmp::IceFCond Cond;
+  unsigned Default;
+  bool SwapOperands;
+  IceInstX8632Br::BrCond C1, C2;
+} TableFcmp[] = {
+    { IceInstFcmp::False, 0, false, IceInstX8632Br::Br_None,
+      IceInstX8632Br::Br_None },
+    { IceInstFcmp::Oeq, 0, false, IceInstX8632Br::Br_ne, IceInstX8632Br::Br_p },
+    { IceInstFcmp::Ogt, 1, false, IceInstX8632Br::Br_a,
+      IceInstX8632Br::Br_None },
+    { IceInstFcmp::Oge, 1, false, IceInstX8632Br::Br_ae,
+      IceInstX8632Br::Br_None },
+    { IceInstFcmp::Olt, 1, true, IceInstX8632Br::Br_a,
+      IceInstX8632Br::Br_None },
+    { IceInstFcmp::Ole, 1, true, IceInstX8632Br::Br_ae,
+      IceInstX8632Br::Br_None },
+    { IceInstFcmp::One, 1, false, IceInstX8632Br::Br_ne,
+      IceInstX8632Br::Br_None },
+    { IceInstFcmp::Ord, 1, false, IceInstX8632Br::Br_np,
+      IceInstX8632Br::Br_None },
+    { IceInstFcmp::Ueq, 1, false, IceInstX8632Br::Br_e,
+      IceInstX8632Br::Br_None },
+    { IceInstFcmp::Ugt, 1, true, IceInstX8632Br::Br_b,
+      IceInstX8632Br::Br_None },
+    { IceInstFcmp::Uge, 1, true, IceInstX8632Br::Br_be,
+      IceInstX8632Br::Br_None },
+    { IceInstFcmp::Ult, 1, false, IceInstX8632Br::Br_b,
+      IceInstX8632Br::Br_None },
+    { IceInstFcmp::Ule, 1, false, IceInstX8632Br::Br_be,
+      IceInstX8632Br::Br_None },
+    { IceInstFcmp::Une, 0, false, IceInstX8632Br::Br_e, IceInstX8632Br::Br_np },
+    { IceInstFcmp::Uno, 1, false, IceInstX8632Br::Br_p,
+      IceInstX8632Br::Br_None },
+    { IceInstFcmp::True, 1, false, IceInstX8632Br::Br_None,
+      IceInstX8632Br::Br_None },
+  };
+const static unsigned TableFcmpSize = sizeof(TableFcmp) / sizeof(*TableFcmp);
+
 IceInstList IceTargetX8632::lowerFcmp(const IceInstFcmp *Inst,
                                       const IceInst *Next,
                                       bool &DeleteNextInst) {
   IceInstList Expansion;
-  Cfg->setError("Fcmp lowering unimplemented");
+  IceOperand *Src0 = Inst->getSrc(0);
+  IceOperand *Src1 = Inst->getSrc(1);
+  IceVariable *Dest = Inst->getDest();
+  // Lowering a = fcmp cond, b, c
+  // ucomiss b, c (only if C1 != Br_None)
+  //   (but swap b,c order if SwapOperands==true)
+  // mov a, <default>
+  // j<C1> label (only if C1 != Br_None)
+  // j<C2> label (only if C2 != Br_None)
+  // FakeUse(a) (only if C1 != Br_None)
+  // mov a, !<default> (only if C1 != Br_None)
+  // label: (only if C1 != Br_None)
+  IceInstFcmp::IceFCond Condition = Inst->getCondition();
+  unsigned Index = static_cast<unsigned>(Condition);
+  assert(Index < TableFcmpSize);
+  assert(TableFcmp[Index].Cond == Condition);
+  if (TableFcmp[Index].SwapOperands) {
+    IceOperand *Tmp = Src0;
+    Src0 = Src1;
+    Src1 = Tmp;
+  }
+  bool HasC1 = (TableFcmp[Index].C1 != IceInstX8632Br::Br_None);
+  bool HasC2 = (TableFcmp[Index].C2 != IceInstX8632Br::Br_None);
+  if (HasC1) {
+    Src0 = legalizeOperandToVar(Src0, Expansion);
+    Src1 = legalizeOperand(Src1, Legal_All, Expansion);
+    Expansion.push_back(IceInstX8632Ucomiss::create(Cfg, Src0, Src1));
+  }
+  IceConstant *Default =
+      Cfg->getConstantInt(IceType_i32, TableFcmp[Index].Default);
+  Expansion.push_back(IceInstX8632Mov::create(Cfg, Dest, Default));
+  if (HasC1) {
+    IceInstX8632Label *Label = IceInstX8632Label::create(Cfg, this);
+    Expansion.push_back(
+        IceInstX8632Br::create(Cfg, Label, TableFcmp[Index].C1));
+    if (HasC2) {
+      Expansion.push_back(
+          IceInstX8632Br::create(Cfg, Label, TableFcmp[Index].C2));
+    }
+    Expansion.push_back(IceInstFakeUse::create(Cfg, Dest));
+    IceConstant *NonDefault =
+        Cfg->getConstantInt(IceType_i32, !TableFcmp[Index].Default);
+    Expansion.push_back(IceInstX8632Mov::create(Cfg, Dest, NonDefault));
+    Expansion.push_back(Label);
+  }
   return Expansion;
 }
 
