@@ -49,6 +49,7 @@ public:
   }
   bool isDeleted(void) const { return Deleted; }
   bool isLastUse(const IceOperand *Src) const;
+  bool hasSideEffects(void) const { return HasSideEffects; }
   // If an instruction is deleted as a result of replacing it with
   // equivalent instructions, only call setDeleted() *after* inserting
   // the new instructions because of the cascading deletes from

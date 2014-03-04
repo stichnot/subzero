@@ -106,7 +106,7 @@ void IceInst::liveness(IceLivenessMode Mode, int InstNumber,
       Live[VarNum] = false;
       LiveBegin[VarNum] = InstNumber;
     } else {
-      if (!HasSideEffects)
+      if (!hasSideEffects())
         Dead = true;
     }
   }

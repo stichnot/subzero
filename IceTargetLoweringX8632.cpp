@@ -1049,10 +1049,7 @@ IceInstList IceTargetX8632::lowerCall(const IceInstCall *Inst,
   }
 
   // Generate a FakeUse to keep the call live if necessary.
-  bool HasSideEffects = true;
-  // TODO: set HasSideEffects=false if it's a known intrinsic without
-  // side effects.
-  if (HasSideEffects && Reg) {
+  if (Inst->hasSideEffects() && Reg) {
     IceInst *FakeUse = IceInstFakeUse::create(Cfg, Reg);
     Expansion.push_back(FakeUse);
   }
