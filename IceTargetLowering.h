@@ -45,6 +45,8 @@ public:
   virtual llvm::SmallBitVector
   getRegisterSet(RegSetMask Include = RegMask_All,
                  RegSetMask Exclude = RegMask_None) const = 0;
+  virtual const llvm::SmallBitVector &
+  getRegisterSetForType(IceType Type) const = 0;
   virtual void addProlog(IceCfgNode *Node) = 0;
   virtual void addEpilog(IceCfgNode *Node) = 0;
 

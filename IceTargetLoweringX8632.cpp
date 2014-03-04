@@ -10,6 +10,27 @@
 #include "IceOperand.h"
 #include "IceTargetLoweringX8632.h"
 
+IceTargetX8632::IceTargetX8632(IceCfg *Cfg)
+    : IceTargetLowering(Cfg), IsEbpBasedFrame(false), FrameSizeLocals(0),
+      LocalsSizeBytes(0), NextLabelNumber(0), ComputedLiveRanges(false),
+      PhysicalRegisters(IceVarList(Reg_NUM)) {
+  llvm::SmallBitVector IntegerRegisters(Reg_NUM);
+  llvm::SmallBitVector FloatRegisters(Reg_NUM);
+  llvm::SmallBitVector InvalidRegisters(Reg_NUM);
+  for (unsigned i = Reg_eax; i <= Reg_edi; ++i)
+    IntegerRegisters[i] = true;
+  for (unsigned i = Reg_xmm0; i <= Reg_xmm7; ++i)
+    FloatRegisters[i] = true;
+  TypeToRegisterSet[IceType_void] = InvalidRegisters;
+  TypeToRegisterSet[IceType_i1] = IntegerRegisters;
+  TypeToRegisterSet[IceType_i8] = IntegerRegisters;
+  TypeToRegisterSet[IceType_i16] = IntegerRegisters;
+  TypeToRegisterSet[IceType_i32] = IntegerRegisters;
+  TypeToRegisterSet[IceType_i64] = IntegerRegisters;
+  TypeToRegisterSet[IceType_f32] = FloatRegisters;
+  TypeToRegisterSet[IceType_f64] = FloatRegisters;
+}
+
 void IceTargetX8632::translate(void) {
   IceTimer T_placePhiLoads;
   Cfg->placePhiLoads();
@@ -99,8 +120,10 @@ void IceTargetX8632::translate(void) {
   Cfg->dump();
 }
 
-IceString IceTargetX8632::RegNames[] = { "eax", "ecx", "edx", "ebx",
-                                         "esp", "ebp", "esi", "edi", };
+IceString IceTargetX8632::RegNames[] = { "eax",  "ecx",  "edx",  "ebx",
+                                         "esp",  "ebp",  "esi",  "edi",
+                                         "xmm0", "xmm1", "xmm2", "xmm3",
+                                         "xmm4", "xmm5", "xmm6", "xmm7" };
 
 IceVariable *IceTargetX8632::getPhysicalRegister(unsigned RegNum) {
   assert(RegNum < PhysicalRegisters.size());
@@ -454,6 +477,14 @@ llvm::SmallBitVector IceTargetX8632::getRegisterSet(RegSetMask Include,
     Registers[Reg_ebp] = false;
   Registers[Reg_esi] = Preserved;
   Registers[Reg_edi] = Preserved;
+  Registers[Reg_xmm0] = Scratch;
+  Registers[Reg_xmm1] = Scratch;
+  Registers[Reg_xmm2] = Scratch;
+  Registers[Reg_xmm3] = Scratch;
+  Registers[Reg_xmm4] = Scratch;
+  Registers[Reg_xmm5] = Scratch;
+  Registers[Reg_xmm6] = Scratch;
+  Registers[Reg_xmm7] = Scratch;
   return Registers;
 }
 
@@ -951,6 +982,9 @@ IceInstList IceTargetX8632::lowerCall(const IceInstCall *Inst,
   IceVariable *RegHi = NULL;
   if (Dest) {
     switch (Dest->getType()) {
+    case IceType_NUM:
+      assert(0);
+      break;
     case IceType_void:
       break;
     case IceType_i1:

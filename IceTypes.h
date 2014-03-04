@@ -15,7 +15,8 @@ enum IceType {
   IceType_i32,
   IceType_i64,
   IceType_f32,
-  IceType_f64
+  IceType_f64,
+  IceType_NUM
 };
 
 enum IceTargetArch {

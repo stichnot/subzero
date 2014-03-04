@@ -24,18 +24,16 @@ public:
   virtual llvm::SmallBitVector
   getRegisterSet(RegSetMask Include = RegMask_All,
                  RegSetMask Exclude = RegMask_None) const;
+  virtual const llvm::SmallBitVector &
+  getRegisterSetForType(IceType Type) const {
+    return TypeToRegisterSet[Type];
+  }
   virtual bool hasFramePointer(void) const { return IsEbpBasedFrame; }
   virtual unsigned getFrameOrStackReg(void) const {
     return IsEbpBasedFrame ? Reg_ebp : Reg_esp;
   }
   virtual uint32_t typeWidthOnStack(IceType Type) {
     return (iceTypeWidth(Type) + 3) & ~3;
-    switch (Type) {
-    case IceType_i1:
-      return 4;
-    default:
-      return iceTypeWidth(Type);
-    }
   }
   virtual void addProlog(IceCfgNode *Node);
   virtual void addEpilog(IceCfgNode *Node);
@@ -53,21 +51,26 @@ public:
   IceOperand *makeHighOperand(IceOperand *Operand);
   enum Registers {
     Reg_eax = 0,
-    Reg_ecx = 1,
-    Reg_edx = 2,
-    Reg_ebx = 3,
-    Reg_esp = 4,
-    Reg_ebp = 5,
-    Reg_esi = 6,
-    Reg_edi = 7,
-    Reg_NUM = 8
+    Reg_ecx = Reg_eax + 1,
+    Reg_edx = Reg_eax + 2,
+    Reg_ebx = Reg_eax + 3,
+    Reg_esp = Reg_eax + 4,
+    Reg_ebp = Reg_eax + 5,
+    Reg_esi = Reg_eax + 6,
+    Reg_edi = Reg_eax + 7,
+    Reg_xmm0,
+    Reg_xmm1 = Reg_xmm0 + 1,
+    Reg_xmm2 = Reg_xmm0 + 2,
+    Reg_xmm3 = Reg_xmm0 + 3,
+    Reg_xmm4 = Reg_xmm0 + 4,
+    Reg_xmm5 = Reg_xmm0 + 5,
+    Reg_xmm6 = Reg_xmm0 + 6,
+    Reg_xmm7 = Reg_xmm0 + 7,
+    Reg_NUM
   };
 
 protected:
-  IceTargetX8632(IceCfg *Cfg)
-      : IceTargetLowering(Cfg), IsEbpBasedFrame(false), FrameSizeLocals(0),
-        LocalsSizeBytes(0), NextLabelNumber(0), ComputedLiveRanges(false),
-        PhysicalRegisters(IceVarList(Reg_NUM)) {}
+  IceTargetX8632(IceCfg *Cfg);
 
   virtual IceInstList lowerAlloca(const IceInstAlloca *Inst,
                                   const IceInst *Next, bool &DeleteNextInst);
@@ -118,6 +121,9 @@ protected:
   bool IsEbpBasedFrame;
   int FrameSizeLocals;
   int LocalsSizeBytes;
+  llvm::SmallBitVector TypeToRegisterSet[IceType_NUM];
+  llvm::SmallBitVector ScratchRegs;
+  llvm::SmallBitVector PreservedRegs;
   llvm::SmallBitVector RegsUsed;
   uint32_t NextLabelNumber;
   bool ComputedLiveRanges;

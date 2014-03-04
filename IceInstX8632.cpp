@@ -769,6 +769,7 @@ static IceString getCvtTypeString(IceType Type) {
     return "d";
     break;
   case IceType_void:
+  case IceType_NUM:
     assert(0);
     break;
   }
@@ -952,10 +953,28 @@ void IceInstX8632Pop::dump(IceOstream &Str) const {
 
 void IceInstX8632Push::emit(IceOstream &Str, uint32_t Option) const {
   assert(getSrcSize() == 1);
-  Str << "\tpush\t";
-  getSrc(0)->emit(Str, Option);
-  Str << "\n";
-  Str.Cfg->getTarget()->updateStackAdjustment(4);
+  IceType Type = getSrc(0)->getType();
+  IceVariable *Var = llvm::dyn_cast<IceVariable>(getSrc(0));
+  if ((Type == IceType_f32 || Type == IceType_f64) && Var &&
+      Var->getRegNum() >= 0) {
+    // The xmm registers can't be directly pushed, so we fake it by
+    // decrementing esp and then storing to [esp].
+    Str << "\tsub\tesp, " << iceTypeWidth(Type) << "\n";
+    Str.Cfg->getTarget()->updateStackAdjustment(iceTypeWidth(Type));
+    Str << "\tmov" << (Type == IceType_f32 ? "ss" : "sd") << "\t[esp], ";
+    getSrc(0)->emit(Str, Option);
+    Str << "\n";
+  } else if (Type == IceType_f64 && (!Var || Var->getRegNum() < 0)) {
+    // A double on the stack has to be pushed as two halves.  Push the
+    // upper half followed by the lower half for little-endian.  TODO:
+    // implement.
+    assert(0 && "Missing support for pushing doubles from memory");
+  } else {
+    Str << "\tpush\t";
+    getSrc(0)->emit(Str, Option);
+    Str << "\n";
+    Str.Cfg->getTarget()->updateStackAdjustment(4);
+  }
 }
 
 void IceInstX8632Push::dump(IceOstream &Str) const {

@@ -24,6 +24,9 @@ uint32_t iceTypeWidth(IceType T) {
     return 4;
   case IceType_f64:
     return 8;
+  case IceType_NUM:
+    assert(0);
+    return 0;
   }
   assert(0);
   return 0;
@@ -57,6 +60,9 @@ IceOstream &operator<<(IceOstream &Str, IceType T) {
   case IceType_f64:
     Str << "double";
     return Str;
+  case IceType_NUM:
+    assert(0);
+    break;
   }
   Str << "???";
   return Str;

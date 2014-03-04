@@ -7,6 +7,7 @@
 #include "IceInst.h"
 #include "IceOperand.h"
 #include "IceRegAlloc.h"
+#include "IceTargetLowering.h"
 
 // Implements the linear-scan algorithm.  Based on "Linear Scan
 // Register Allocation in the Context of SSA Form and Register
@@ -63,6 +64,8 @@ void IceLinearScan::scan(const llvm::SmallBitVector &RegMask) {
     Unhandled.erase(Unhandled.begin());
     if (Cfg->Str.isVerbose(IceV_LinearScan))
       Cfg->Str << "\nConsidering  " << Cur << "\n";
+    const llvm::SmallBitVector &TypeMask =
+        Cfg->getTarget()->getRegisterSetForType(Cur.Var->getType());
 
     // Check for precolored ranges.  If Cur is precolored, it
     // definitely gets that register.  Previously processed live
@@ -138,7 +141,7 @@ void IceLinearScan::scan(const llvm::SmallBitVector &RegMask) {
     }
 
     // Calculate available registers into Free[].
-    llvm::SmallBitVector Free = RegMask;
+    llvm::SmallBitVector Free = RegMask & TypeMask;
     for (unsigned i = 0; i < RegMask.size(); ++i) {
       if (RegUses[i] > 0)
         Free[i] = false;
@@ -250,7 +253,7 @@ void IceLinearScan::scan(const llvm::SmallBitVector &RegMask) {
       // RegMask.any() test.
       assert(MinWeightIndex >= 0);
       for (unsigned i = MinWeightIndex + 1; i < Weights.size(); ++i) {
-        if (RegMask[i] && Weights[i] < Weights[MinWeightIndex])
+        if (RegMask[i] && TypeMask[i] && Weights[i] < Weights[MinWeightIndex])
           MinWeightIndex = i;
       }
 
