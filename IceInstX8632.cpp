@@ -221,6 +221,7 @@ IceInstX8632Br::IceInstX8632Br(IceCfg *Cfg, IceCfgNode *TargetTrue,
 IceInstX8632Call::IceInstX8632Call(IceCfg *Cfg, IceVariable *Dest,
                                    IceOperand *CallTarget, bool Tail)
     : IceInstX8632(Cfg, IceInstX8632::Call, 1, Dest), Tail(Tail) {
+  HasSideEffects = true;
   addSource(CallTarget);
 }
 

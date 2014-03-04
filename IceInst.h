@@ -86,6 +86,10 @@ protected:
   bool Deleted;
   // Dead means pending deletion after liveness analysis converges.
   bool Dead;
+  // HasSideEffects means the instruction is something like a function
+  // call or a volatile load that can't be removed even if its Dest
+  // variable is not live.
+  bool HasSideEffects;
   // TODO: use "IceVariable *const Dest".  The problem is that
   // IceInstPhi::lower() modifies its Dest.
   IceVariable *Dest;
@@ -217,6 +221,10 @@ private:
   IceInstCall(IceCfg *Cfg, unsigned NumArgs, IceVariable *Dest,
               IceOperand *CallTarget, bool Tail)
       : IceInst(Cfg, IceInst::Call, NumArgs + 1, Dest), Tail(Tail) {
+    // Set HasSideEffects so that the call instruction can't be
+    // dead-code eliminated.  TODO: Don't set this for a deletable
+    // intrinsic call.
+    HasSideEffects = true;
     addSource(CallTarget);
   }
   const bool Tail;

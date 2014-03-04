@@ -13,7 +13,7 @@
 IceInst::IceInst(IceCfg *Cfg, IceInstType Kind, unsigned MaxSrcs,
                  IceVariable *Dest)
     : Kind(Kind), MaxSrcs(MaxSrcs), NumSrcs(0), Deleted(false), Dead(false),
-      Dest(Dest), LiveRangesEnded(0) {
+      HasSideEffects(false), Dest(Dest), LiveRangesEnded(0) {
   Number = Cfg->newInstNumber();
   Srcs = Cfg->allocateArrayOf<IceOperand *>(MaxSrcs);
 }
@@ -106,7 +106,8 @@ void IceInst::liveness(IceLivenessMode Mode, int InstNumber,
       Live[VarNum] = false;
       LiveBegin[VarNum] = InstNumber;
     } else {
-      Dead = true;
+      if (!HasSideEffects)
+        Dead = true;
     }
   }
   if (Dead)
