@@ -52,9 +52,9 @@ private:
 IceOstream *GlobalStr;
 
 IceCfg::IceCfg(void)
-    : Str(std::cout, this), HasError(false), ErrorMessage(""),
-      Type(IceType_void), Target(NULL), Entry(NULL), Liveness(NULL),
-      NextInstNumber(1) {
+    : Str(std::cout, this), HasError(false), ErrorMessage(""), Name(""),
+      TestPrefix(""), Type(IceType_void), Target(NULL), Entry(NULL),
+      Liveness(NULL), NextInstNumber(1) {
   GlobalStr = &Str;
   ConstantPool = new IceConstantPool(this);
 }
@@ -77,6 +77,10 @@ void IceCfg::setError(const IceString &Message) {
 
 bool IceCfg::hasComputedFrame(void) const {
   return getTarget() && getTarget()->hasComputedFrame();
+}
+
+IceString IceCfg::mangleName(const IceString &Name) const {
+  return getTestPrefix() + Name;
 }
 
 void IceCfg::makeTarget(IceTargetArch Arch) {
@@ -454,18 +458,18 @@ void IceCfg::emit(uint32_t Option) const {
   // TODO: need a per-file emit in addition to per-CFG
   // TODO: emit to a specified file
   Str << "\t.text\n";
-  Str << "\t.globl\t" << Name << "\n";
-  Str << "\t.type\t" << Name << ",@function\n";
+  Str << "\t.globl\t" << mangleName(Name) << "\n";
+  Str << "\t.type\t" << mangleName(Name) << ",@function\n";
   uint32_t NumConsts = ConstantPool->getSize();
   for (uint32_t i = 0; i < NumConsts; ++i) {
     IceConstantRelocatable *Const = ConstantPool->getEntry(i);
     if (Const == NULL)
       continue;
-    Str << "\t.type\t" << Const->getName() << ",@object\n";
+    Str << "\t.type\t" << mangleName(Const->getName()) << ",@object\n";
     // TODO: .comm is necessary only when defining vs. declaring?
     uint32_t Width = iceTypeWidth(Const->getType());
-    Str << "\t.comm\t" << Const->getName() << "," << Width << "," << Width
-        << "\n";
+    Str << "\t.comm\t" << mangleName(Const->getName()) << "," << Width << ","
+        << Width << "\n";
   }
   for (IceNodeList::const_iterator I = LNodes.begin(), E = LNodes.end(); I != E;
        ++I) {

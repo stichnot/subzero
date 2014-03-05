@@ -41,6 +41,7 @@ IceString IceCfgNode::getName(void) const {
 }
 
 IceString IceCfgNode::getAsmName(void) const {
+  // These are internal labels, no need to apply Cfg name mangling.
   return ".L" + Cfg->getName() + "$" + getName();
 }
 
@@ -419,7 +420,7 @@ void IceCfgNode::livenessPostprocess(IceLivenessMode Mode,
 void IceCfgNode::emit(IceOstream &Str, uint32_t Option) const {
   Str.setCurrentNode(this);
   if (Cfg->getEntryNode() == this) {
-    Str << Cfg->getName() << ":\n";
+    Str << Cfg->mangleName(Cfg->getName()) << ":\n";
   }
   Str << getAsmName() << ":\n";
   // TODO: emit() should blow up in some way if any live phi

@@ -550,6 +550,9 @@ static cl::opt<std::string> OutputFilename("o",
                                            cl::desc("Override output filename"),
                                            cl::init("-"),
                                            cl::value_desc("filename"));
+static cl::opt<std::string>
+TestPrefix("prefix", cl::desc("Prepend a prefix to symbol names for testing"),
+           cl::init(""), cl::value_desc("prefix"));
 
 static cl::opt<bool> SubzeroTimingEnabled(
     "timing", cl::desc("Enable breakdown timing of Subzero translation"));
@@ -598,6 +601,7 @@ int main(int argc, char **argv) {
                 << ": " << TConvert.getElapsedSec() << " sec\n";
     }
 
+    Cfg->setTestPrefix(TestPrefix);
     Cfg->Str.Stream = &(OutputFilename == "-" ? std::cout : Ofs);
     Cfg->Str.setVerbose(VerboseMask);
     if (!DisableTranslation) {

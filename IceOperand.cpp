@@ -220,7 +220,7 @@ void IceConstantDouble::emit(IceOstream &Str, uint32_t Option) const {
 void IceConstantDouble::dump(IceOstream &Str) const { Str << DoubleValue; }
 
 void IceConstantRelocatable::emit(IceOstream &Str, uint32_t Option) const {
-  Str << Name;
+  Str << Str.Cfg->mangleName(Name);
   if (Offset) {
     if (Offset > 0)
       Str << "+";

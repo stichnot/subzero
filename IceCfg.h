@@ -22,6 +22,9 @@ public:
   bool hasComputedFrame(void) const;
   void setName(const IceString &FunctionName) { Name = FunctionName; }
   IceString getName(void) const { return Name; }
+  void setTestPrefix(const IceString &Prefix) { TestPrefix = Prefix; }
+  IceString getTestPrefix(void) const { return TestPrefix; }
+  IceString mangleName(const IceString &Name) const;
   void setReturnType(IceType ReturnType) { Type = ReturnType; }
   IceTargetLowering *getTarget(void) const { return Target; }
   void addArg(IceVariable *Arg);
@@ -88,8 +91,9 @@ private:
 
   bool HasError;
   IceString ErrorMessage;
-  IceString Name; // function name
-  IceType Type;   // return type
+  IceString Name;       // function name
+  IceString TestPrefix; // prepended to all symbol names, for testing
+  IceType Type;         // return type
   IceTargetLowering *Target;
   IceCfgNode *Entry; // entry basic block
   // Difference between Nodes and LNodes.  Nodes is the master list;
