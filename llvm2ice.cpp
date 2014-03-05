@@ -554,6 +554,8 @@ static cl::opt<std::string> OutputFilename("o",
 static cl::opt<std::string>
 TestPrefix("prefix", cl::desc("Prepend a prefix to symbol names for testing"),
            cl::init(""), cl::value_desc("prefix"));
+static cl::opt<bool>
+DisableInternal("external", cl::desc("Disable 'internal' linkage type for testing"));
 
 static cl::opt<bool> SubzeroTimingEnabled(
     "timing", cl::desc("Enable breakdown timing of Subzero translation"));
@@ -596,6 +598,8 @@ int main(int argc, char **argv) {
 
     IceTimer TConvert;
     IceCfg *Cfg = FunctionConverter.convertFunction(I);
+    if (DisableInternal)
+      Cfg->setInternal(false);
 
     if (SubzeroTimingEnabled) {
       std::cerr << "[Subzero timing] Convert function " << Cfg->getName()
