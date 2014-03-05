@@ -518,7 +518,7 @@ private:
   IceValueTranslation<const BasicBlock *> LabelTranslation;
 };
 
-cl::list<IceVerbose> VerboseList(
+static cl::list<IceVerbose> VerboseList(
     "verbose", cl::CommaSeparated,
     cl::desc("Verbose options (can be comma-separated):"),
     cl::values(
@@ -535,17 +535,17 @@ cl::list<IceVerbose> VerboseList(
         clEnumValN(IceV_Timing, "time", "Pass timing details"),
         clEnumValN(IceV_All, "all", "Use all verbose options"),
         clEnumValN(IceV_None, "none", "No verbosity"), clEnumValEnd));
-cl::opt<bool> DisableTranslation("notranslate",
-                                 cl::desc("Disable Subzero translation"));
-cl::opt<IceTargetArch> TargetArch(
+static cl::opt<bool>
+DisableTranslation("notranslate", cl::desc("Disable Subzero translation"));
+static cl::opt<IceTargetArch> TargetArch(
     "target", cl::desc("Target architecture:"), cl::init(IceTarget_X8632),
     cl::values(clEnumValN(IceTarget_X8632, "x8632", "x86-32"),
                clEnumValN(IceTarget_X8632Fast, "x8632fast", "x86-32 fast"),
                clEnumValN(IceTarget_X8664, "x8664", "x86-64"),
                clEnumValN(IceTarget_ARM32, "arm32", "ARM32"),
                clEnumValN(IceTarget_ARM64, "arm64", "ARM64"), clEnumValEnd));
-cl::opt<std::string> IRFilename(cl::Positional, cl::desc("<IR file>"),
-                                cl::Required);
+static cl::opt<std::string> IRFilename(cl::Positional, cl::desc("<IR file>"),
+                                       cl::Required);
 static cl::opt<std::string> OutputFilename("o",
                                            cl::desc("Override output filename"),
                                            cl::init("-"),
