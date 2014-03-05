@@ -36,7 +36,7 @@ for.end:
 
 ; CHECK:      mov ecx, dword ptr [esp+{{[0-9]+}}]
 ; CHECK:      cmp ecx, 0
-; CHECK-NEXT: ja {{.*}}for.body
+; CHECK-NEXT: jg {{.*}}for.body
 ; CHECK-NEXT: jmp {{.*}}for.end
 
 ; TODO: the mov from ebx to esi seems redundant here - so this may need to be
@@ -45,6 +45,6 @@ for.end:
 ; CHECK:      add [[IREG:[a-z]+]], 1
 ; CHECK-NEXT: mov [[ICMPREG:[a-z]+]], [[IREG]]
 ; CHECK:      cmp [[ICMPREG]], ecx
-; CHECK-NEXT: jb {{.*}}for.body
+; CHECK-NEXT: jl {{.*}}for.body
 
 ; ERRORS-NOT: ICE translation error

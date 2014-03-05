@@ -1336,14 +1336,15 @@ static struct {
   IceInstX8632Br::BrCond Mapping;
 } TableIcmp32[] = { { IceInstIcmp::Eq, IceInstX8632Br::Br_e },
                     { IceInstIcmp::Ne, IceInstX8632Br::Br_ne },
-                    { IceInstIcmp::Ugt, IceInstX8632Br::Br_g },
-                    { IceInstIcmp::Uge, IceInstX8632Br::Br_ge },
-                    { IceInstIcmp::Ult, IceInstX8632Br::Br_l },
-                    { IceInstIcmp::Ule, IceInstX8632Br::Br_le },
-                    { IceInstIcmp::Sgt, IceInstX8632Br::Br_a },
-                    { IceInstIcmp::Sge, IceInstX8632Br::Br_ae },
-                    { IceInstIcmp::Slt, IceInstX8632Br::Br_b },
-                    { IceInstIcmp::Sle, IceInstX8632Br::Br_be }, };
+                    { IceInstIcmp::Ugt, IceInstX8632Br::Br_a },
+                    { IceInstIcmp::Uge, IceInstX8632Br::Br_ae },
+                    { IceInstIcmp::Ult, IceInstX8632Br::Br_b },
+                    { IceInstIcmp::Ule, IceInstX8632Br::Br_be },
+                    { IceInstIcmp::Sgt, IceInstX8632Br::Br_g },
+                    { IceInstIcmp::Sge, IceInstX8632Br::Br_ge },
+                    { IceInstIcmp::Slt, IceInstX8632Br::Br_l },
+                    { IceInstIcmp::Sle, IceInstX8632Br::Br_le },
+};
 const static unsigned TableIcmp32Size =
     sizeof(TableIcmp32) / sizeof(*TableIcmp32);
 
