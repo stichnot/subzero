@@ -53,8 +53,8 @@ IceOstream *GlobalStr;
 
 IceCfg::IceCfg(void)
     : Str(std::cout, this), HasError(false), ErrorMessage(""), Name(""),
-      TestPrefix(""), Type(IceType_void), Target(NULL), Entry(NULL),
-      Liveness(NULL), NextInstNumber(1) {
+      IsInternal(false), TestPrefix(""), Type(IceType_void), Target(NULL),
+      Entry(NULL), Liveness(NULL), NextInstNumber(1) {
   GlobalStr = &Str;
   ConstantPool = new IceConstantPool(this);
 }
@@ -458,8 +458,10 @@ void IceCfg::emit(uint32_t Option) const {
   // TODO: need a per-file emit in addition to per-CFG
   // TODO: emit to a specified file
   Str << "\t.text\n";
-  Str << "\t.globl\t" << mangleName(Name) << "\n";
-  Str << "\t.type\t" << mangleName(Name) << ",@function\n";
+  if (!getInternal()) {
+    Str << "\t.globl\t" << mangleName(Name) << "\n";
+    Str << "\t.type\t" << mangleName(Name) << ",@function\n";
+  }
   uint32_t NumConsts = ConstantPool->getSize();
   for (uint32_t i = 0; i < NumConsts; ++i) {
     IceConstantRelocatable *Const = ConstantPool->getEntry(i);
@@ -484,7 +486,10 @@ void IceCfg::dump(void) const {
   Str.setCurrentNode(getEntryNode());
   // Print function name+args
   if (Str.isVerbose(IceV_Instructions)) {
-    Str << "define internal " << Type << " " << Name << "(";
+    Str << "define ";
+    if (getInternal())
+      Str << "internal ";
+    Str << Type << " " << Name << "(";
     for (unsigned i = 0; i < Args.size(); ++i) {
       if (i > 0)
         Str << ", ";

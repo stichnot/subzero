@@ -1343,8 +1343,7 @@ static struct {
                     { IceInstIcmp::Sgt, IceInstX8632Br::Br_g },
                     { IceInstIcmp::Sge, IceInstX8632Br::Br_ge },
                     { IceInstIcmp::Slt, IceInstX8632Br::Br_l },
-                    { IceInstIcmp::Sle, IceInstX8632Br::Br_le },
-};
+                    { IceInstIcmp::Sle, IceInstX8632Br::Br_le }, };
 const static unsigned TableIcmp32Size =
     sizeof(TableIcmp32) / sizeof(*TableIcmp32);
 

@@ -2,7 +2,7 @@
 ; RUN: %llvm2ice --verbose none %s | FileCheck --check-prefix=ERRORS %s
 
 define void @foo() {
-; CHECK: define internal void foo()
+; CHECK: define void foo()
 entry:
   ret void
 ; CHECK: entry

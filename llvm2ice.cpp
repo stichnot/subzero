@@ -53,6 +53,7 @@ public:
     Cfg = new IceCfg;
     Cfg->setName(F->getName());
     Cfg->setReturnType(convertType(F->getReturnType()));
+    Cfg->setInternal(F->hasInternalLinkage());
 
     // The initial definition/use of each arg is the entry node.
     CurrentNode = mapBasicBlockToNode(&F->getEntryBlock());

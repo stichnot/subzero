@@ -10,7 +10,7 @@ entry:
 
 ; Checks for verbose instruction output
 
-; CHECK: define internal i64 add_args
+; CHECK: define i64 add_args
 ; CHECK: %add = add i64 %arg2, %arg1
 ; CHECK-NEXT: ret i64 %add
 

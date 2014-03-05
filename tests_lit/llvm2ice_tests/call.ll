@@ -2,7 +2,7 @@
 ; RUN: %llvm2ice --verbose none %s | FileCheck --check-prefix=ERRORS %s
 
 define i32 @fib(i32 %n) #0 {
-; CHECK: define internal i32 fib
+; CHECK: define i32 fib
 entry:
   %cmp = icmp slt i32 %n, 2
   br i1 %cmp, label %return, label %if.end
@@ -20,7 +20,7 @@ return:                                           ; preds = %entry
 }
 
 define i32 @fact(i32 %n) #0 {
-; CHECK: define internal i32 fact
+; CHECK: define i32 fact
 entry:
   %cmp = icmp slt i32 %n, 2
   br i1 %cmp, label %return, label %if.end
@@ -36,7 +36,7 @@ return:                                           ; preds = %entry
 }
 
 define i32 @redirect(i32 %n) #1 {
-; CHECK: define internal i32 redirect
+; CHECK: define i32 redirect
 entry:
   %call = tail call i32 @redirect_target(i32 %n) #3
   ret i32 %call
@@ -45,7 +45,7 @@ entry:
 declare i32 @redirect_target(i32) #2
 
 define void @call_void(i32 %n) #1 {
-; CHECK: define internal void call_void
+; CHECK: define void call_void
 entry:
   %cmp2 = icmp sgt i32 %n, 0
   br i1 %cmp2, label %if.then, label %if.end

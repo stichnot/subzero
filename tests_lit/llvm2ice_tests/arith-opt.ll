@@ -2,7 +2,7 @@
 ; RUN: %llvm2ice --verbose none %s | FileCheck --check-prefix=ERRORS %s
 
 define i32 @Add(i32 %a, i32 %b) #0 {
-; CHECK: define internal i32 Add
+; CHECK: define i32 Add
 entry:
   %add = add nsw i32 %b, %a
 ; CHECK: add
@@ -14,7 +14,7 @@ entry:
 declare void @Use(i32) #1
 
 define i32 @And(i32 %a, i32 %b) #0 {
-; CHECK: define internal i32 And
+; CHECK: define i32 And
 entry:
   %and = and i32 %b, %a
 ; CHECK: and
@@ -24,7 +24,7 @@ entry:
 }
 
 define i32 @Or(i32 %a, i32 %b) #0 {
-; CHECK: define internal i32 Or
+; CHECK: define i32 Or
 entry:
   %or = or i32 %b, %a
 ; CHECK: or
@@ -34,7 +34,7 @@ entry:
 }
 
 define i32 @Xor(i32 %a, i32 %b) #0 {
-; CHECK: define internal i32 Xor
+; CHECK: define i32 Xor
 entry:
   %xor = xor i32 %b, %a
 ; CHECK: xor
@@ -44,7 +44,7 @@ entry:
 }
 
 define i32 @Sub(i32 %a, i32 %b) #0 {
-; CHECK: define internal i32 Sub
+; CHECK: define i32 Sub
 entry:
   %sub = sub nsw i32 %a, %b
 ; CHECK: sub
@@ -54,7 +54,7 @@ entry:
 }
 
 define i32 @Mul(i32 %a, i32 %b) #0 {
-; CHECK: define internal i32 Mul
+; CHECK: define i32 Mul
 entry:
   %mul = mul nsw i32 %b, %a
 ; CHECK: imul
@@ -64,7 +64,7 @@ entry:
 }
 
 define i32 @Sdiv(i32 %a, i32 %b) #0 {
-; CHECK: define internal i32 Sdiv
+; CHECK: define i32 Sdiv
 entry:
   %div = sdiv i32 %a, %b
 ; CHECK: cdq
@@ -75,7 +75,7 @@ entry:
 }
 
 define i32 @Srem(i32 %a, i32 %b) #0 {
-; CHECK: define internal i32 Srem
+; CHECK: define i32 Srem
 entry:
   %rem = srem i32 %a, %b
 ; CHECK: cdq
@@ -86,7 +86,7 @@ entry:
 }
 
 define i32 @Udiv(i32 %a, i32 %b) #0 {
-; CHECK: define internal i32 Udiv
+; CHECK: define i32 Udiv
 entry:
   %div = udiv i32 %a, %b
 ; CHECK: div
@@ -96,7 +96,7 @@ entry:
 }
 
 define i32 @Urem(i32 %a, i32 %b) #0 {
-; CHECK: define internal i32 Urem
+; CHECK: define i32 Urem
 entry:
   %rem = urem i32 %a, %b
 ; CHECK: div

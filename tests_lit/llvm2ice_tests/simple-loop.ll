@@ -1,7 +1,7 @@
 ; RUN: %llvm2ice -verbose inst %s | FileCheck %s
 ; RUN: %llvm2ice --verbose none %s | FileCheck --check-prefix=ERRORS %s
 
-define internal i32 @simple_loop(i32 %a, i32 %n) {
+define i32 @simple_loop(i32 %a, i32 %n) {
 entry:
   %cmp4 = icmp sgt i32 %n, 0
   br i1 %cmp4, label %for.body, label %for.end

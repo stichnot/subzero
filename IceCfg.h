@@ -22,6 +22,8 @@ public:
   bool hasComputedFrame(void) const;
   void setName(const IceString &FunctionName) { Name = FunctionName; }
   IceString getName(void) const { return Name; }
+  void setInternal(bool Internal) { IsInternal = Internal; }
+  bool getInternal(void) const { return IsInternal; }
   void setTestPrefix(const IceString &Prefix) { TestPrefix = Prefix; }
   IceString getTestPrefix(void) const { return TestPrefix; }
   IceString mangleName(const IceString &Name) const;
@@ -92,6 +94,7 @@ private:
   bool HasError;
   IceString ErrorMessage;
   IceString Name;       // function name
+  bool IsInternal;      // internal linkage
   IceString TestPrefix; // prepended to all symbol names, for testing
   IceType Type;         // return type
   IceTargetLowering *Target;
