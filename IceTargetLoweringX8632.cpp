@@ -1171,6 +1171,9 @@ IceInstList IceTargetX8632::lowerCast(const IceInstCast *Inst,
     // It appears that Trunc is purely used to cast down from one integral type
     // to a smaller integral type.  In the generated code this does not seem
     // to be needed.  Treat these as vanilla moves.
+    //
+    // TODO: I think truncation actually *is* needed when converting
+    // between IceVariables.
     if (Reg->getType() == IceType_i64)
       Reg = makeLowOperand(Reg);
     // TODO: This will probably produce invalid assembly if Dest and
@@ -1229,18 +1232,45 @@ IceInstList IceTargetX8632::lowerCast(const IceInstCast *Inst,
     }
     break;
   case IceInstCast::Sitofp:
-    if (Dest->getType() == IceType_i64) {
+    if (Reg->getType() == IceType_i64) {
       // Use a helper for x86-32.
-      assert(0);
+      unsigned MaxSrcs = 1;
+      IceType DestType = Inst->getDest()->getType();
+      // TODO: Figure out how to properly construct CallTarget.
+      IceConstant *CallTarget = Cfg->getConstant(
+          DestType, NULL, 0,
+          DestType == IceType_f32 ? "cvtsi64tof" : "cvtsi64tod");
+      bool Tailcall = false;
+      // TODO: This instruction leaks.
+      IceInstCall *Call = IceInstCall::create(Cfg, MaxSrcs, Inst->getDest(),
+                                              CallTarget, Tailcall);
+      Call->addArg(Inst->getSrc(0));
+      return lowerCall(Call, NULL, DeleteNextInst);
     } else {
       // Sign-extend the operand.
       Expansion.push_back(IceInstX8632Cvt::create(Cfg, Dest, Reg));
     }
     break;
   case IceInstCast::Uitofp:
-    if (Dest->getType() == IceType_i64) {
-      // Use a helper for x86-32 and x86-64.
-      assert(0);
+    if (Reg->getType() == IceType_i64 || Reg->getType() == IceType_i32) {
+      // Use a helper for x86-32 and x86-64.  Also use a helper for
+      // i32 on x86-32.
+      unsigned MaxSrcs = 1;
+      IceType DestType = Inst->getDest()->getType();
+      IceString SrcSubstring = (Reg->getType() == IceType_i64 ? "64" : "32");
+      IceString DstSubstring = (DestType == IceType_f32 ? "f" : "d");
+      // Possibilities are cvtui32tof, cvtui32tod, cvtui64tof, cvtui64tod
+      IceString TargetString = "cvtui" + SrcSubstring + "to" + DstSubstring;
+      // TODO: Figure out how to properly construct CallTarget.
+      IceConstant *CallTarget = Cfg->getConstant(
+          DestType, NULL, 0,
+          TargetString);
+      bool Tailcall = false;
+      // TODO: This instruction leaks.
+      IceInstCall *Call = IceInstCall::create(Cfg, MaxSrcs, Inst->getDest(),
+                                              CallTarget, Tailcall);
+      Call->addArg(Inst->getSrc(0));
+      return lowerCall(Call, NULL, DeleteNextInst);
     } else {
       // Zero-extend the operand.
       Expansion.push_back(IceInstX8632Cvt::create(Cfg, Dest, Reg));
