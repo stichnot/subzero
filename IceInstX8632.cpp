@@ -1004,7 +1004,8 @@ void IceInstX8632Push::emit(IceOstream &Str, uint32_t Option) const {
     // decrementing esp and then storing to [esp].
     Str << "\tsub\tesp, " << iceTypeWidth(Type) << "\n";
     Str.Cfg->getTarget()->updateStackAdjustment(iceTypeWidth(Type));
-    Str << "\tmov" << (Type == IceType_f32 ? "ss\td" : "sd\tq") << "word ptr [esp], ";
+    Str << "\tmov" << (Type == IceType_f32 ? "ss\td" : "sd\tq")
+        << "word ptr [esp], ";
     getSrc(0)->emit(Str, Option);
     Str << "\n";
   } else if (Type == IceType_f64 && (!Var || Var->getRegNum() < 0)) {
