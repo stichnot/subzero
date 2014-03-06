@@ -1262,9 +1262,8 @@ IceInstList IceTargetX8632::lowerCast(const IceInstCast *Inst,
       // Possibilities are cvtui32tof, cvtui32tod, cvtui64tof, cvtui64tod
       IceString TargetString = "cvtui" + SrcSubstring + "to" + DstSubstring;
       // TODO: Figure out how to properly construct CallTarget.
-      IceConstant *CallTarget = Cfg->getConstant(
-          DestType, NULL, 0,
-          TargetString);
+      IceConstant *CallTarget =
+          Cfg->getConstant(DestType, NULL, 0, TargetString);
       bool Tailcall = false;
       // TODO: This instruction leaks.
       IceInstCall *Call = IceInstCall::create(Cfg, MaxSrcs, Inst->getDest(),
