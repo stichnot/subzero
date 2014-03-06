@@ -342,7 +342,7 @@ entry:
 }
 ; CHECK: trunc64To1:
 ; CHECK:      mov     eax, dword ptr [esp+4]
-; CHECK-NEXT: movzx  eax, al
+; CHECK-NEXT: and     eax, 1
 ; CHECK-NEXT: ret
 
 define internal i64 @sext32To64(i32 %a) {

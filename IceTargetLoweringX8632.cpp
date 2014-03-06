@@ -1159,6 +1159,10 @@ IceInstList IceTargetX8632::lowerCast(const IceInstCast *Inst,
       else
         Expansion.push_back(IceInstX8632Movzx::create(Cfg, DestLo, Reg));
       Expansion.push_back(IceInstX8632Mov::create(Cfg, DestHi, Zero));
+    } else if (Reg->getType() == IceType_i1) {
+      IceOperand *ConstOne = Cfg->getConstantInt(IceType_i32, 1);
+      Expansion.push_back(IceInstX8632Mov::create(Cfg, Dest, Reg));
+      Expansion.push_back(IceInstX8632And::create(Cfg, Dest, ConstOne));
     } else {
       Expansion.push_back(IceInstX8632Movzx::create(Cfg, Dest, Reg));
     }
