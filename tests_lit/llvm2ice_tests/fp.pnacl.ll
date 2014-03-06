@@ -701,7 +701,7 @@ entry:
   ret i32 %cmp.ret_ext
 }
 ; CHECK: fcmpFalseFloat:
-; CHECK: mov eax, 0
+; CHECK: mov {{.*}}, 0
 
 define internal i32 @fcmpFalseDouble(double %a, double %b) {
 entry:
@@ -710,7 +710,7 @@ entry:
   ret i32 %cmp.ret_ext
 }
 ; CHECK: fcmpFalseDouble:
-; CHECK: mov eax, 0
+; CHECK: mov {{.*}}, 0
 
 define internal i32 @fcmpOeqFloat(float %a, float %b) {
 entry:
@@ -1003,7 +1003,7 @@ entry:
   ret i32 %cmp.ret_ext
 }
 ; CHECK: fcmpTrueFloat:
-; CHECK: mov eax, 1
+; CHECK: mov {{.*}}, 1
 
 define internal i32 @fcmpTrueDouble(double %a, double %b) {
 entry:
@@ -1012,7 +1012,7 @@ entry:
   ret i32 %cmp.ret_ext
 }
 ; CHECK: fcmpTrueDouble:
-; CHECK: mov eax, 1
+; CHECK: mov {{.*}}, 1
 
 define internal float @loadFloat(i32 %a) {
 entry:

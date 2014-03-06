@@ -157,7 +157,7 @@ IceOstream &operator<<(IceOstream &Str, const IceOperand *O) {
 void IceVariable::emit(IceOstream &Str, uint32_t Option) const {
   assert(DefOrUseNode == NULL || DefOrUseNode == Str.getCurrentNode());
   if (getRegNum() >= 0) {
-    Str << Str.Cfg->physicalRegName(RegNum, getType(), Option);
+    Str << Str.Cfg->physicalRegName(RegNum, getType());
     return;
   }
   switch (iceTypeWidth(getType())) {
@@ -179,7 +179,7 @@ void IceVariable::emit(IceOstream &Str, uint32_t Option) const {
   }
   Str << " ptr ["
       << Str.Cfg->physicalRegName(Str.Cfg->getTarget()->getFrameOrStackReg(),
-                                  IceType_i32, Option);
+                                  IceType_i32);
   int Offset = getStackOffset() + Str.Cfg->getTarget()->getStackAdjustment();
   if (Offset) {
     if (Offset > 0)

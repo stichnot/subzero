@@ -58,8 +58,7 @@ public:
   IceLiveness *getLiveness(void) const { return Liveness; }
   int newInstNumber(void);
 
-  IceString physicalRegName(int Reg, IceType Type = IceType_void,
-                            uint32_t Option = 0) const;
+  IceString physicalRegName(int Reg, IceType Type = IceType_void) const;
   void translate(IceTargetArch TargetArch);
   void renumberInstructions(void);
   void placePhiLoads(void);

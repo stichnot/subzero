@@ -496,7 +496,7 @@ private:
     // PNaCl bitcode only contains allocas of byte-granular objects.
     IceOperand *ByteCount = convertValue(Inst->getArraySize());
     uint32_t Align = Inst->getAlignment();
-    IceVariable *Dest = mapValueToIceVar(Inst);
+    IceVariable *Dest = mapValueToIceVar(Inst, IceType_i32);
 
     return IceInstAlloca::create(Cfg, ByteCount, Align, Dest);
   }

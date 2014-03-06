@@ -146,29 +146,25 @@ IceVariable *IceTargetX8632::getPhysicalRegister(unsigned RegNum) {
   return Reg;
 }
 
-IceString IceTargetX8632::getRegName(int RegNum, IceType Type,
-                                     uint32_t Option) const {
+IceString IceTargetX8632::getRegName(int RegNum, IceType Type) const {
   assert(RegNum >= 0);
   assert(RegNum < Reg_NUM);
   static IceString RegNames8[] = { "al", "cl", "dl", "bl" };
   static IceString RegNames16[] = { "ax", "cx", "dx", "bx",
                                     "sp", "bp", "si", "di" };
-  if (Option) {
-    switch (Type) {
-    case IceType_i1:
-    case IceType_i8:
-      assert(static_cast<unsigned>(RegNum) <
-             (sizeof(RegNames8) / sizeof(*RegNames8)));
-      return RegNames8[RegNum];
-    case IceType_i16:
-      assert(static_cast<unsigned>(RegNum) <
-             (sizeof(RegNames16) / sizeof(*RegNames16)));
-      return RegNames16[RegNum];
-    default:
-      break;
-    }
+  switch (Type) {
+  case IceType_i1:
+  case IceType_i8:
+    assert(static_cast<unsigned>(RegNum) <
+           (sizeof(RegNames8) / sizeof(*RegNames8)));
+    return RegNames8[RegNum];
+  case IceType_i16:
+    assert(static_cast<unsigned>(RegNum) <
+           (sizeof(RegNames16) / sizeof(*RegNames16)));
+    return RegNames16[RegNum];
+  default:
+    return RegNames[RegNum];
   }
-  return RegNames[RegNum];
 }
 
 // Helper function for addProlog().  Sets the frame offset for Arg,
@@ -1160,26 +1156,29 @@ IceInstList IceTargetX8632::lowerCast(const IceInstCast *Inst,
         Expansion.push_back(IceInstX8632Movzx::create(Cfg, DestLo, Reg));
       Expansion.push_back(IceInstX8632Mov::create(Cfg, DestHi, Zero));
     } else if (Reg->getType() == IceType_i1) {
+      // t = Reg; t &= 1; Dest = t
       IceOperand *ConstOne = Cfg->getConstantInt(IceType_i32, 1);
-      Expansion.push_back(IceInstX8632Mov::create(Cfg, Dest, Reg));
-      Expansion.push_back(IceInstX8632And::create(Cfg, Dest, ConstOne));
+      IceVariable *Tmp = Cfg->makeVariable(IceType_i32, CurrentNode);
+      Tmp->setWeightInfinite();
+      Expansion.push_back(IceInstX8632Movzx::create(Cfg, Tmp, Reg));
+      Expansion.push_back(IceInstX8632And::create(Cfg, Tmp, ConstOne));
+      Expansion.push_back(IceInstX8632Mov::create(Cfg, Dest, Tmp));
     } else {
       Expansion.push_back(IceInstX8632Movzx::create(Cfg, Dest, Reg));
     }
     break;
-  case IceInstCast::Trunc:
-    // It appears that Trunc is purely used to cast down from one integral type
-    // to a smaller integral type.  In the generated code this does not seem
-    // to be needed.  Treat these as vanilla moves.
-    //
-    // TODO: I think truncation actually *is* needed when converting
-    // between IceVariables.
+  case IceInstCast::Trunc: {
     if (Reg->getType() == IceType_i64)
       Reg = makeLowOperand(Reg);
-    // TODO: This will probably produce invalid assembly if Dest and
-    // Reg are both memory operands (e.g. on the stack).
-    Expansion.push_back(IceInstX8632Mov::create(Cfg, Dest, Reg));
+    // t1 = Reg; t2 = trunc t1; Dest = t2
+    IceVariable *Tmp1 = legalizeOperandToVar(Reg, Expansion);
+    IceVariable *Tmp2 = Cfg->makeVariable(Dest->getType(), CurrentNode);
+    Tmp2->setWeightInfinite();
+    Tmp2->setPreferredRegister(Tmp1, true);
+    Expansion.push_back(IceInstX8632Mov::create(Cfg, Tmp2, Tmp1));
+    Expansion.push_back(IceInstX8632Mov::create(Cfg, Dest, Tmp2));
     break;
+  }
   case IceInstCast::Fptrunc:
   case IceInstCast::Fpext:
     Expansion.push_back(IceInstX8632Cvt::create(Cfg, Dest, Reg));
