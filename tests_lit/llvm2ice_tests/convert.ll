@@ -23,11 +23,11 @@ define void @from_int8() nounwind {
   store i64 %4, i64* @i64v, align 8
   ret void
   ; CHECK: mov eax, byte ptr [
-  ; CHECK-NEXT: movsbw ecx, eax
+  ; CHECK-NEXT: movsx ecx, al
   ; CHECK-NEXT: mov word ptr [
-  ; CHECK-NEXT: movsbl ecx, eax
+  ; CHECK-NEXT: movsx ecx, al
   ; CHECK-NEXT: mov dword ptr [
-  ; CHECK-NEXT: movsbl ecx, eax
+  ; CHECK-NEXT: movsx ecx, al
   ; CHECK-NEXT: sar eax, 31
   ; CHECK-NEXT: mov dword ptr [i64v+4],
   ; CHECK-NEXT: mov dword ptr [i64v],
@@ -45,9 +45,9 @@ define void @from_int16() nounwind {
   ; CHECK: mov eax, word ptr [
   ; CHECK-NEXT: mov ecx, eax
   ; CHECK-NEXT: mov byte ptr [
-  ; CHECK-NEXT: movswl ecx, eax
+  ; CHECK-NEXT: movsx ecx, ax
   ; CHECK-NEXT: mov dword ptr [
-  ; CHECK-NEXT: movswl ecx, eax
+  ; CHECK-NEXT: movsx ecx, ax
   ; CHECK-NEXT: sar eax, 31
   ; CHECK-NEXT: mov dword ptr [i64v+4],
   ; CHECK-NEXT: mov dword ptr [i64v],
@@ -100,11 +100,11 @@ define void @from_uint8() nounwind {
   store i64 %4, i64* @i64v, align 8
   ret void
   ; CHECK: mov eax, byte ptr [
-  ; CHECK-NEXT: movzbw ecx, eax
+  ; CHECK-NEXT: movzx ecx, al
   ; CHECK-NEXT: mov word ptr [
-  ; CHECK-NEXT: movzbl ecx, eax
+  ; CHECK-NEXT: movzx ecx, al
   ; CHECK-NEXT: mov dword ptr [
-  ; CHECK-NEXT: movzbl eax, eax
+  ; CHECK-NEXT: movzx eax, al
   ; CHECK-NEXT: mov ecx, 0
   ; CHECK-NEXT: mov dword ptr [i64v+4],
   ; CHECK-NEXT: mov dword ptr [i64v],
@@ -122,9 +122,9 @@ define void @from_uint16() nounwind {
   ; CHECK: mov eax, word ptr [
   ; CHECK-NEXT: mov ecx, eax
   ; CHECK-NEXT: mov byte ptr [
-  ; CHECK-NEXT: movzwl ecx, eax
+  ; CHECK-NEXT: movzx ecx, ax
   ; CHECK-NEXT: mov dword ptr [
-  ; CHECK-NEXT: movzwl eax, eax
+  ; CHECK-NEXT: movzx eax, ax
   ; CHECK-NEXT: mov ecx, 0
   ; CHECK-NEXT: mov dword ptr [i64v+4],
   ; CHECK-NEXT: mov dword ptr [i64v],

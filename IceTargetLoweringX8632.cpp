@@ -15,15 +15,20 @@ IceTargetX8632::IceTargetX8632(IceCfg *Cfg)
       LocalsSizeBytes(0), NextLabelNumber(0), ComputedLiveRanges(false),
       PhysicalRegisters(IceVarList(Reg_NUM)) {
   llvm::SmallBitVector IntegerRegisters(Reg_NUM);
+  llvm::SmallBitVector IntegerRegistersNonI8(Reg_NUM);
   llvm::SmallBitVector FloatRegisters(Reg_NUM);
   llvm::SmallBitVector InvalidRegisters(Reg_NUM);
   for (unsigned i = Reg_eax; i <= Reg_edi; ++i)
     IntegerRegisters[i] = true;
+  IntegerRegistersNonI8[Reg_eax] = true;
+  IntegerRegistersNonI8[Reg_ecx] = true;
+  IntegerRegistersNonI8[Reg_edx] = true;
+  IntegerRegistersNonI8[Reg_ebx] = true;
   for (unsigned i = Reg_xmm0; i <= Reg_xmm7; ++i)
     FloatRegisters[i] = true;
   TypeToRegisterSet[IceType_void] = InvalidRegisters;
-  TypeToRegisterSet[IceType_i1] = IntegerRegisters;
-  TypeToRegisterSet[IceType_i8] = IntegerRegisters;
+  TypeToRegisterSet[IceType_i1] = IntegerRegistersNonI8;
+  TypeToRegisterSet[IceType_i8] = IntegerRegistersNonI8;
   TypeToRegisterSet[IceType_i16] = IntegerRegisters;
   TypeToRegisterSet[IceType_i32] = IntegerRegisters;
   TypeToRegisterSet[IceType_i64] = IntegerRegisters;
@@ -141,6 +146,31 @@ IceVariable *IceTargetX8632::getPhysicalRegister(unsigned RegNum) {
   return Reg;
 }
 
+IceString IceTargetX8632::getRegName(int RegNum, IceType Type,
+                                     uint32_t Option) const {
+  assert(RegNum >= 0);
+  assert(RegNum < Reg_NUM);
+  static IceString RegNames8[] = { "al", "cl", "dl", "bl" };
+  static IceString RegNames16[] = { "ax", "cx", "dx", "bx",
+                                    "sp", "bp", "si", "di" };
+  if (Option) {
+    switch (Type) {
+    case IceType_i1:
+    case IceType_i8:
+      assert(static_cast<unsigned>(RegNum) <
+             (sizeof(RegNames8) / sizeof(*RegNames8)));
+      return RegNames8[RegNum];
+    case IceType_i16:
+      assert(static_cast<unsigned>(RegNum) <
+             (sizeof(RegNames16) / sizeof(*RegNames16)));
+      return RegNames16[RegNum];
+    default:
+      break;
+    }
+  }
+  return RegNames[RegNum];
+}
+
 // Helper function for addProlog().  Sets the frame offset for Arg,
 // updates InArgsSizeBytes according to Arg's width, and generates an
 // instruction to copy Arg into its assigned register if applicable.
@@ -182,7 +212,7 @@ void IceTargetX8632::addProlog(IceCfgNode *Node) {
   int InArgsSizeBytes = 0;
   int RetIpSizeBytes = 4;
   int PreservedRegsSizeBytes = 0;
-  int LocalsSizeBytes = 0;
+  LocalsSizeBytes = 0;
 
   // Determine stack frame offsets for each IceVariable without a
   // register assignment.  This can be done as one variable per stack
@@ -356,11 +386,11 @@ void IceTargetX8632::addEpilog(IceCfgNode *Node) {
     Expansion.push_back(
         IceInstX8632Pop::create(Cfg, getPhysicalRegister(Reg_ebp)));
   } else {
-    // add esp, FrameSizeLocals
+    // add esp, LocalsSizeBytes
     if (LocalsSizeBytes)
       Expansion.push_back(IceInstX8632Add::create(
           Cfg, getPhysicalRegister(Reg_esp),
-          Cfg->getConstantInt(IceType_i32, FrameSizeLocals)));
+          Cfg->getConstantInt(IceType_i32, LocalsSizeBytes)));
   }
 
   // Add pop instructions for preserved registers.
@@ -1310,24 +1340,23 @@ IceInstList IceTargetX8632::lowerFcmp(const IceInstFcmp *Inst,
 static struct {
   IceInstIcmp::IceICond Cond;
   IceInstX8632Br::BrCond C1, C2, C3;
-} TableIcmp64[] = { { IceInstIcmp::Eq, IceInstX8632Br::Br_ne },
-                    { IceInstIcmp::Ne, IceInstX8632Br::Br_e },
-                    { IceInstIcmp::Ugt, IceInstX8632Br::Br_g,
-                      IceInstX8632Br::Br_l, IceInstX8632Br::Br_g },
-                    { IceInstIcmp::Uge, IceInstX8632Br::Br_g,
-                      IceInstX8632Br::Br_l, IceInstX8632Br::Br_ge },
-                    { IceInstIcmp::Ult, IceInstX8632Br::Br_l,
-                      IceInstX8632Br::Br_g, IceInstX8632Br::Br_l },
-                    { IceInstIcmp::Ule, IceInstX8632Br::Br_l,
-                      IceInstX8632Br::Br_g, IceInstX8632Br::Br_le },
-                    { IceInstIcmp::Sgt, IceInstX8632Br::Br_a,
-                      IceInstX8632Br::Br_b, IceInstX8632Br::Br_g },
-                    { IceInstIcmp::Sge, IceInstX8632Br::Br_a,
-                      IceInstX8632Br::Br_b, IceInstX8632Br::Br_ge },
-                    { IceInstIcmp::Slt, IceInstX8632Br::Br_b,
-                      IceInstX8632Br::Br_a, IceInstX8632Br::Br_l },
-                    { IceInstIcmp::Sle, IceInstX8632Br::Br_b,
-                      IceInstX8632Br::Br_a, IceInstX8632Br::Br_le }, };
+} TableIcmp64[] = { { IceInstIcmp::Eq }, { IceInstIcmp::Ne },
+                    { IceInstIcmp::Ugt, IceInstX8632Br::Br_a,
+                      IceInstX8632Br::Br_b, IceInstX8632Br::Br_a },
+                    { IceInstIcmp::Uge, IceInstX8632Br::Br_a,
+                      IceInstX8632Br::Br_b, IceInstX8632Br::Br_ae },
+                    { IceInstIcmp::Ult, IceInstX8632Br::Br_b,
+                      IceInstX8632Br::Br_a, IceInstX8632Br::Br_b },
+                    { IceInstIcmp::Ule, IceInstX8632Br::Br_b,
+                      IceInstX8632Br::Br_a, IceInstX8632Br::Br_be },
+                    { IceInstIcmp::Sgt, IceInstX8632Br::Br_g,
+                      IceInstX8632Br::Br_l, IceInstX8632Br::Br_a },
+                    { IceInstIcmp::Sge, IceInstX8632Br::Br_g,
+                      IceInstX8632Br::Br_l, IceInstX8632Br::Br_ae },
+                    { IceInstIcmp::Slt, IceInstX8632Br::Br_l,
+                      IceInstX8632Br::Br_g, IceInstX8632Br::Br_b },
+                    { IceInstIcmp::Sle, IceInstX8632Br::Br_l,
+                      IceInstX8632Br::Br_g, IceInstX8632Br::Br_be }, };
 const static unsigned TableIcmp64Size =
     sizeof(TableIcmp64) / sizeof(*TableIcmp64);
 
@@ -1400,22 +1429,24 @@ IceInstList IceTargetX8632::lowerIcmp(const IceInstIcmp *Inst,
     Src0 = legalizeOperand(Src0, Legal_All, Expansion);
     Src1 = legalizeOperand(Src1, Legal_All, Expansion);
     if (Condition == IceInstIcmp::Eq || Condition == IceInstIcmp::Ne) {
-      Expansion.push_back(IceInstX8632Mov::create(Cfg, Dest, ConstZero));
+      Expansion.push_back(IceInstX8632Mov::create(
+          Cfg, Dest, (Condition == IceInstIcmp::Eq ? ConstZero : ConstOne)));
       IceOperand *RegHi = legalizeOperand(makeHighOperand(Src1),
                                           Legal_Reg | Legal_Imm, Expansion);
       Expansion.push_back(
           IceInstX8632Icmp::create(Cfg, makeHighOperand(Src0), RegHi));
       Expansion.push_back(
-          IceInstX8632Br::create(Cfg, LabelFalse, TableIcmp64[Index].C1));
+          IceInstX8632Br::create(Cfg, LabelFalse, IceInstX8632Br::Br_ne));
       IceOperand *RegLo = legalizeOperand(makeLowOperand(Src1),
                                           Legal_Reg | Legal_Imm, Expansion);
       Expansion.push_back(
           IceInstX8632Icmp::create(Cfg, makeLowOperand(Src0), RegLo));
       Expansion.push_back(
-          IceInstX8632Br::create(Cfg, LabelFalse, TableIcmp64[Index].C1));
+          IceInstX8632Br::create(Cfg, LabelFalse, IceInstX8632Br::Br_ne));
       Expansion.push_back(LabelTrue);
       Expansion.push_back(IceInstFakeUse::create(Cfg, Dest));
-      Expansion.push_back(IceInstX8632Mov::create(Cfg, Dest, ConstOne));
+      Expansion.push_back(IceInstX8632Mov::create(
+          Cfg, Dest, (Condition == IceInstIcmp::Eq ? ConstOne : ConstZero)));
       Expansion.push_back(LabelFalse);
     } else {
       Expansion.push_back(IceInstX8632Mov::create(Cfg, Dest, ConstOne));

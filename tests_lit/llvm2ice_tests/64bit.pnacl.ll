@@ -288,7 +288,7 @@ entry:
 }
 ; CHECK: trunc64To16Signed:
 ; CHECK:      mov     eax, dword ptr [esp+4]
-; CHECK-NEXT: movswl  eax, eax
+; CHECK-NEXT: movsx  eax, ax
 ; CHECK-NEXT: ret
 
 define internal i32 @trunc64To8Signed(i64 %a) {
@@ -299,7 +299,7 @@ entry:
 }
 ; CHECK: trunc64To8Signed:
 ; CHECK:      mov     eax, dword ptr [esp+4]
-; CHECK-NEXT: movsbl  eax, eax
+; CHECK-NEXT: movsx  eax, al
 ; CHECK-NEXT: ret
 
 define internal i32 @trunc64To32Unsigned(i64 %a) {
@@ -319,7 +319,7 @@ entry:
 }
 ; CHECK: trunc64To16Unsigned:
 ; CHECK:      mov     eax, dword ptr [esp+4]
-; CHECK-NEXT: movzwl  eax, eax
+; CHECK-NEXT: movzx  eax, ax
 ; CHECK-NEXT: ret
 
 define internal i32 @trunc64To8Unsigned(i64 %a) {
@@ -330,7 +330,7 @@ entry:
 }
 ; CHECK: trunc64To8Unsigned:
 ; CHECK:      mov     eax, dword ptr [esp+4]
-; CHECK-NEXT: movzbl  eax, eax
+; CHECK-NEXT: movzx  eax, al
 ; CHECK-NEXT: ret
 
 define internal i32 @trunc64To1(i64 %a) {
@@ -342,7 +342,7 @@ entry:
 }
 ; CHECK: trunc64To1:
 ; CHECK:      mov     eax, dword ptr [esp+4]
-; CHECK-NEXT: movzbl  eax, eax
+; CHECK-NEXT: movzx  eax, al
 ; CHECK-NEXT: ret
 
 define internal i64 @sext32To64(i32 %a) {
@@ -361,7 +361,7 @@ entry:
   ret i64 %conv
 }
 ; CHECK: sext16To64:
-; CHECK: movswl
+; CHECK: movsx
 ; CHECK: sar {{.*}}, 31
 
 define internal i64 @sext8To64(i32 %a) {
@@ -371,7 +371,7 @@ entry:
   ret i64 %conv
 }
 ; CHECK: sext8To64:
-; CHECK: movsbl
+; CHECK: movsx
 ; CHECK: sar {{.*}}, 31
 
 define internal i64 @zext32To64(i32 %a) {
@@ -390,7 +390,7 @@ entry:
   ret i64 %conv
 }
 ; CHECK: zext16To64:
-; CHECK: movzwl
+; CHECK: movzx
 ; CHECK: mov {{.*}}, 0
 
 define internal i64 @zext8To64(i32 %a) {
@@ -400,7 +400,7 @@ entry:
   ret i64 %conv
 }
 ; CHECK: zext8To64:
-; CHECK: movzbl
+; CHECK: movzx
 ; CHECK: mov {{.*}}, 0
 
 define internal i64 @zext1To64(i32 %a) {
@@ -410,7 +410,7 @@ entry:
   ret i64 %conv
 }
 ; CHECK: zext1To64:
-; CHECK: movzbl
+; CHECK: movzx
 ; CHECK: mov {{.*}}, 0
 
 define internal void @icmpEq64(i64 %a, i64 %b, i64 %c, i64 %d) {
@@ -464,11 +464,11 @@ if.end3:                                          ; preds = %if.end, %if.then2
   ret void
 }
 ; CHECK: icmpNe64:
-; CHECK: je
-; CHECK: je
+; CHECK: jne
+; CHECK: jne
 ; CHECK: call
-; CHECK: je
-; CHECK: je
+; CHECK: jne
+; CHECK: jne
 ; CHECK: call
 
 define internal void @icmpGt64(i64 %a, i64 %b, i64 %c, i64 %d) {
@@ -492,13 +492,13 @@ if.end3:                                          ; preds = %if.then2, %if.end
   ret void
 }
 ; CHECK: icmpGt64:
-; CHECK: jg
-; CHECK: jl
-; CHECK: jg
-; CHECK: call
 ; CHECK: ja
 ; CHECK: jb
+; CHECK: ja
+; CHECK: call
 ; CHECK: jg
+; CHECK: jl
+; CHECK: ja
 ; CHECK: call
 
 define internal void @icmpGe64(i64 %a, i64 %b, i64 %c, i64 %d) {
@@ -522,13 +522,13 @@ if.end3:                                          ; preds = %if.end, %if.then2
   ret void
 }
 ; CHECK: icmpGe64:
-; CHECK: jg
-; CHECK: jl
-; CHECK: jge
-; CHECK: call
 ; CHECK: ja
 ; CHECK: jb
-; CHECK: jge
+; CHECK: jae
+; CHECK: call
+; CHECK: jg
+; CHECK: jl
+; CHECK: jae
 ; CHECK: call
 
 define internal void @icmpLt64(i64 %a, i64 %b, i64 %c, i64 %d) {
@@ -552,13 +552,13 @@ if.end3:                                          ; preds = %if.then2, %if.end
   ret void
 }
 ; CHECK: icmpLt64:
-; CHECK: jl
-; CHECK: jg
-; CHECK: jl
-; CHECK: call
 ; CHECK: jb
 ; CHECK: ja
+; CHECK: jb
+; CHECK: call
 ; CHECK: jl
+; CHECK: jg
+; CHECK: jb
 ; CHECK: call
 
 define internal void @icmpLe64(i64 %a, i64 %b, i64 %c, i64 %d) {
@@ -582,13 +582,13 @@ if.end3:                                          ; preds = %if.end, %if.then2
   ret void
 }
 ; CHECK: icmpLe64:
-; CHECK: jl
-; CHECK: jg
-; CHECK: jle
-; CHECK: call
 ; CHECK: jb
 ; CHECK: ja
-; CHECK: jle
+; CHECK: jbe
+; CHECK: call
+; CHECK: jl
+; CHECK: jg
+; CHECK: jbe
 ; CHECK: call
 
 define internal i32 @icmpEq64Bool(i64 %a, i64 %b) {
@@ -608,8 +608,8 @@ entry:
   ret i32 %cmp.ret_ext
 }
 ; CHECK: icmpNe64Bool:
-; CHECK: je
-; CHECK: je
+; CHECK: jne
+; CHECK: jne
 
 define internal i32 @icmpSgt64Bool(i64 %a, i64 %b) {
 entry:
@@ -619,10 +619,10 @@ entry:
 }
 ; CHECK: icmpSgt64Bool:
 ; CHECK: cmp
-; CHECK: ja
-; CHECK: jb
-; CHECK: cmp
 ; CHECK: jg
+; CHECK: jl
+; CHECK: cmp
+; CHECK: ja
 
 define internal i32 @icmpUgt64Bool(i64 %a, i64 %b) {
 entry:
@@ -632,10 +632,10 @@ entry:
 }
 ; CHECK: icmpUgt64Bool:
 ; CHECK: cmp
-; CHECK: jg
-; CHECK: jl
+; CHECK: ja
+; CHECK: jb
 ; CHECK: cmp
-; CHECK: jg
+; CHECK: ja
 
 define internal i32 @icmpSge64Bool(i64 %a, i64 %b) {
 entry:
@@ -645,10 +645,10 @@ entry:
 }
 ; CHECK: icmpSge64Bool:
 ; CHECK: cmp
-; CHECK: ja
-; CHECK: jb
+; CHECK: jg
+; CHECK: jl
 ; CHECK: cmp
-; CHECK: jge
+; CHECK: jae
 
 define internal i32 @icmpUge64Bool(i64 %a, i64 %b) {
 entry:
@@ -658,10 +658,10 @@ entry:
 }
 ; CHECK: icmpUge64Bool:
 ; CHECK: cmp
-; CHECK: jg
-; CHECK: jl
+; CHECK: ja
+; CHECK: jb
 ; CHECK: cmp
-; CHECK: jge
+; CHECK: jae
 
 define internal i32 @icmpSlt64Bool(i64 %a, i64 %b) {
 entry:
@@ -671,10 +671,10 @@ entry:
 }
 ; CHECK: icmpSlt64Bool:
 ; CHECK: cmp
-; CHECK: jb
-; CHECK: ja
-; CHECK: cmp
 ; CHECK: jl
+; CHECK: jg
+; CHECK: cmp
+; CHECK: jb
 
 define internal i32 @icmpUlt64Bool(i64 %a, i64 %b) {
 entry:
@@ -684,10 +684,10 @@ entry:
 }
 ; CHECK: icmpUlt64Bool:
 ; CHECK: cmp
-; CHECK: jl
-; CHECK: jg
+; CHECK: jb
+; CHECK: ja
 ; CHECK: cmp
-; CHECK: jl
+; CHECK: jb
 
 define internal i32 @icmpSle64Bool(i64 %a, i64 %b) {
 entry:
@@ -697,10 +697,10 @@ entry:
 }
 ; CHECK: icmpSle64Bool:
 ; CHECK: cmp
-; CHECK: jb
-; CHECK: ja
+; CHECK: jl
+; CHECK: jg
 ; CHECK: cmp
-; CHECK: jle
+; CHECK: jbe
 
 define internal i32 @icmpUle64Bool(i64 %a, i64 %b) {
 entry:
@@ -710,10 +710,10 @@ entry:
 }
 ; CHECK: icmpUle64Bool:
 ; CHECK: cmp
-; CHECK: jl
-; CHECK: jg
+; CHECK: jb
+; CHECK: ja
 ; CHECK: cmp
-; CHECK: jle
+; CHECK: jbe
 
 define internal i64 @load64(i32 %a) {
 entry:
@@ -756,10 +756,10 @@ entry:
 }
 ; CHECK: select64VarVar:
 ; CHECK: cmp
-; CHECK: jl
-; CHECK: jg
+; CHECK: jb
+; CHECK: ja
 ; CHECK: cmp
-; CHECK: jl
+; CHECK: jb
 ; CHECK: cmp
 ; CHECK: jne
 
@@ -771,10 +771,10 @@ entry:
 }
 ; CHECK: select64VarConst:
 ; CHECK: cmp
-; CHECK: jl
-; CHECK: jg
+; CHECK: jb
+; CHECK: ja
 ; CHECK: cmp
-; CHECK: jl
+; CHECK: jb
 ; CHECK: cmp
 ; CHECK: jne
 
@@ -786,10 +786,10 @@ entry:
 }
 ; CHECK: select64ConstVar:
 ; CHECK: cmp
-; CHECK: jl
-; CHECK: jg
+; CHECK: jb
+; CHECK: ja
 ; CHECK: cmp
-; CHECK: jl
+; CHECK: jb
 ; CHECK: cmp
 ; CHECK: jne
 

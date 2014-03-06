@@ -156,11 +156,12 @@ IceOstream &operator<<(IceOstream &Str, const IceOperand *O) {
 void IceVariable::emit(IceOstream &Str, uint32_t Option) const {
   assert(DefOrUseNode == NULL || DefOrUseNode == Str.getCurrentNode());
   if (getRegNum() >= 0) {
-    Str << Str.Cfg->physicalRegName(RegNum);
+    Str << Str.Cfg->physicalRegName(RegNum, getType(), Option);
     return;
   }
   Str << "["
-      << Str.Cfg->physicalRegName(Str.Cfg->getTarget()->getFrameOrStackReg());
+      << Str.Cfg->physicalRegName(Str.Cfg->getTarget()->getFrameOrStackReg(),
+                                  IceType_i32, Option);
   int Offset = getStackOffset() + Str.Cfg->getTarget()->getStackAdjustment();
   if (Offset) {
     if (Offset > 0)
@@ -181,12 +182,12 @@ void IceVariable::dump(IceOstream &Str) const {
   if (RegNum >= 0) {
     if (Str.isVerbose(IceV_RegOrigins))
       Str << ":";
-    Str << Str.Cfg->physicalRegName(RegNum);
+    Str << Str.Cfg->physicalRegName(RegNum, getType());
   } else if (Str.Cfg->hasComputedFrame()) {
     if (Str.isVerbose(IceV_RegOrigins))
       Str << ":";
-    Str << "["
-        << Str.Cfg->physicalRegName(Str.Cfg->getTarget()->getFrameOrStackReg());
+    Str << "[" << Str.Cfg->physicalRegName(
+                      Str.Cfg->getTarget()->getFrameOrStackReg(), IceType_i32);
     int Offset = getStackOffset();
     if (Offset) {
       if (Offset > 0)

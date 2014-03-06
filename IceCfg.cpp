@@ -192,9 +192,10 @@ int IceCfg::newInstNumber(void) {
   return Result;
 }
 
-IceString IceCfg::physicalRegName(int Reg) const {
+IceString IceCfg::physicalRegName(int Reg, IceType Type,
+                                  uint32_t Option) const {
   assert(getTarget());
-  return getTarget()->getRegName(Reg);
+  return getTarget()->getRegName(Reg, Type, Option);
 }
 
 void IceCfg::renumberInstructions(void) {

@@ -886,12 +886,15 @@ void IceInstX8632Mov::dump(IceOstream &Str) const {
 
 void IceInstX8632Movsx::emit(IceOstream &Str, uint32_t Option) const {
   assert(getSrcSize() == 1);
-  Str << "\tmovs" << OpcodeTypeFromIceType(getSrc(0)->getType());
-  Str << OpcodeTypeFromIceType(getDest()->getType());
-  Str << "\t";
+  Str << "\tmovsx\t";
   getDest()->emit(Str, Option);
   Str << ", ";
-  getSrc(0)->emit(Str, Option);
+  // TODO: Passing Option+1 is a hack to let the emitter selectively
+  // use the proper 8- or 16-bit register name in some contexts but
+  // not others.  The right way is to ensure in the lowering code that
+  // all integer operands are treated as 32-bit except in very limited
+  // cases like load, store, movsx, and movzx.
+  getSrc(0)->emit(Str, Option + 1);
   Str << "\n";
 }
 
@@ -906,12 +909,10 @@ void IceInstX8632Movsx::dump(IceOstream &Str) const {
 
 void IceInstX8632Movzx::emit(IceOstream &Str, uint32_t Option) const {
   assert(getSrcSize() == 1);
-  Str << "\tmovz" << OpcodeTypeFromIceType(getSrc(0)->getType());
-  Str << OpcodeTypeFromIceType(getDest()->getType());
-  Str << "\t";
+  Str << "\tmovzx\t";
   getDest()->emit(Str, Option);
   Str << ", ";
-  getSrc(0)->emit(Str, Option);
+  getSrc(0)->emit(Str, Option + 1);
   Str << "\n";
 }
 

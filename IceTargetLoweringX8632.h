@@ -16,11 +16,7 @@ public:
   virtual void translate(void);
 
   virtual IceVariable *getPhysicalRegister(unsigned RegNum);
-  virtual IceString getRegName(int RegNum) const {
-    assert(RegNum >= 0);
-    assert(RegNum < Reg_NUM);
-    return RegNames[RegNum];
-  }
+  virtual IceString getRegName(int RegNum, IceType Type, uint32_t Option) const;
   virtual llvm::SmallBitVector
   getRegisterSet(RegSetMask Include = RegMask_All,
                  RegSetMask Exclude = RegMask_None) const;

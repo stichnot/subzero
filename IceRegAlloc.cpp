@@ -181,8 +181,8 @@ void IceLinearScan::scan(const llvm::SmallBitVector &RegMask) {
     if (Cfg->Str.isVerbose(IceV_LinearScan)) {
       for (unsigned i = 0; i < RegMask.size(); ++i) {
         if (RegMask[i]) {
-          Cfg->Str << Cfg->physicalRegName(i) << "(U=" << RegUses[i]
-                   << ",F=" << Free[i] << ") ";
+          Cfg->Str << Cfg->physicalRegName(i, IceType_i32)
+                   << "(U=" << RegUses[i] << ",F=" << Free[i] << ") ";
         }
       }
       Cfg->Str << "\n";
@@ -337,8 +337,8 @@ void IceLinearScan::scan(const llvm::SmallBitVector &RegMask) {
       } else {
         Cfg->Str << (RegNum == Item.Var->getRegNum() ? "Reassigning "
                                                      : "Assigning ")
-                 << Cfg->physicalRegName(RegNum) << "(r" << RegNum << ") to "
-                 << Item.Var << "\n";
+                 << Cfg->physicalRegName(RegNum, IceType_i32) << "(r" << RegNum
+                 << ") to " << Item.Var << "\n";
       }
     }
     Item.Var->setRegNum(Item.Var->getRegNumTmp());
