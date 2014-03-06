@@ -153,13 +153,31 @@ IceOstream &operator<<(IceOstream &Str, const IceOperand *O) {
   return Str;
 }
 
+// TODO: This should be handed by the IceTargetLowering subclass.
 void IceVariable::emit(IceOstream &Str, uint32_t Option) const {
   assert(DefOrUseNode == NULL || DefOrUseNode == Str.getCurrentNode());
   if (getRegNum() >= 0) {
     Str << Str.Cfg->physicalRegName(RegNum, getType(), Option);
     return;
   }
-  Str << "["
+  switch (iceTypeWidth(getType())) {
+  case 1:
+    Str << "byte";
+    break;
+  case 2:
+    Str << "word";
+    break;
+  case 4:
+    Str << "dword";
+    break;
+  case 8:
+    Str << "qword";
+    break;
+  default:
+    assert(0);
+    break;
+  }
+  Str << " ptr ["
       << Str.Cfg->physicalRegName(Str.Cfg->getTarget()->getFrameOrStackReg(),
                                   IceType_i32, Option);
   int Offset = getStackOffset() + Str.Cfg->getTarget()->getStackAdjustment();
