@@ -32,6 +32,12 @@ entry:
   ret i32 %add3
 }
 ; CHECK: passFpArgs:
+; CHECK: push 123
+; CHECK: call ignoreFpArgsNoInline
+; CHECK: push 123
+; CHECK: call ignoreFpArgsNoInline
+; CHECK: push 123
+; CHECK: call ignoreFpArgsNoInline
 
 declare i32 @ignoreFpArgsNoInline(float, i32, double)
 
@@ -41,30 +47,36 @@ entry:
   ret i32 %call
 }
 ; CHECK: passFpConstArg:
+; CHECK: push 123
+; CHECK: call ignoreFpArgsNoInline
 
 define internal float @returnFloatArg(float %a) {
 entry:
   ret float %a
 }
 ; CHECK: returnFloatArg:
+; CHECK: fld dword ptr [esp
 
 define internal double @returnDoubleArg(double %a) {
 entry:
   ret double %a
 }
 ; CHECK: returnDoubleArg:
+; CHECK: fld qword ptr [esp
 
 define internal float @returnFloatConst() {
 entry:
   ret float 0x3FF3AE1480000000
 }
 ; CHECK: returnFloatConst:
+; CHECK: fld
 
 define internal double @returnDoubleConst() {
 entry:
   ret double 1.230000e+00
 }
 ; CHECK: returnDoubleConst:
+; CHECK: fld
 
 define internal float @addFloat(float %a, float %b) {
 entry:
@@ -72,6 +84,8 @@ entry:
   ret float %add
 }
 ; CHECK: addFloat:
+; CHECK: addss
+; CHECK: fld
 
 define internal double @addDouble(double %a, double %b) {
 entry:
@@ -79,6 +93,8 @@ entry:
   ret double %add
 }
 ; CHECK: addDouble:
+; CHECK: addsd
+; CHECK: fld
 
 define internal float @subFloat(float %a, float %b) {
 entry:
@@ -86,6 +102,8 @@ entry:
   ret float %sub
 }
 ; CHECK: subFloat:
+; CHECK: subss
+; CHECK: fld
 
 define internal double @subDouble(double %a, double %b) {
 entry:
@@ -93,6 +111,8 @@ entry:
   ret double %sub
 }
 ; CHECK: subDouble:
+; CHECK: subsd
+; CHECK: fld
 
 define internal float @mulFloat(float %a, float %b) {
 entry:
@@ -100,6 +120,8 @@ entry:
   ret float %mul
 }
 ; CHECK: mulFloat:
+; CHECK: mulss
+; CHECK: fld
 
 define internal double @mulDouble(double %a, double %b) {
 entry:
@@ -107,6 +129,8 @@ entry:
   ret double %mul
 }
 ; CHECK: mulDouble:
+; CHECK: mulsd
+; CHECK: fld
 
 define internal float @divFloat(float %a, float %b) {
 entry:
@@ -114,6 +138,8 @@ entry:
   ret float %div
 }
 ; CHECK: divFloat:
+; CHECK: divss
+; CHECK: fld
 
 define internal double @divDouble(double %a, double %b) {
 entry:
@@ -121,6 +147,8 @@ entry:
   ret double %div
 }
 ; CHECK: divDouble:
+; CHECK: divsd
+; CHECK: fld
 
 define internal float @remFloat(float %a, float %b) {
 entry:
@@ -128,6 +156,7 @@ entry:
   ret float %div
 }
 ; CHECK: remFloat:
+; CHECK: call fmodf
 
 define internal double @remDouble(double %a, double %b) {
 entry:
@@ -135,6 +164,7 @@ entry:
   ret double %div
 }
 ; CHECK: remDouble:
+; CHECK: call fmod
 
 define internal float @fptrunc(double %a) {
 entry:
@@ -142,6 +172,8 @@ entry:
   ret float %conv
 }
 ; CHECK: fptrunc:
+; CHECK: cvtsd2ss
+; CHECK: fld
 
 define internal double @fpext(float %a) {
 entry:
@@ -149,6 +181,8 @@ entry:
   ret double %conv
 }
 ; CHECK: fpext:
+; CHECK: cvtss2sd
+; CHECK: fld
 
 define internal i64 @doubleToSigned64(double %a) {
 entry:
@@ -156,6 +190,7 @@ entry:
   ret i64 %conv
 }
 ; CHECK: doubleToSigned64:
+; CHECK: call cvtdtosi64
 
 define internal i64 @floatToSigned64(float %a) {
 entry:
@@ -163,6 +198,7 @@ entry:
   ret i64 %conv
 }
 ; CHECK: floatToSigned64:
+; CHECK: call cvtftosi64
 
 define internal i64 @doubleToUnsigned64(double %a) {
 entry:
@@ -170,6 +206,7 @@ entry:
   ret i64 %conv
 }
 ; CHECK: doubleToUnsigned64:
+; CHECK: call cvtdtoui64
 
 define internal i64 @floatToUnsigned64(float %a) {
 entry:
@@ -177,6 +214,7 @@ entry:
   ret i64 %conv
 }
 ; CHECK: floatToUnsigned64:
+; CHECK: call cvtftoui64
 
 define internal i32 @doubleToSigned32(double %a) {
 entry:
@@ -184,6 +222,7 @@ entry:
   ret i32 %conv
 }
 ; CHECK: doubleToSigned32:
+; CHECK: cvtsd2si
 
 define internal i32 @floatToSigned32(float %a) {
 entry:
@@ -191,6 +230,7 @@ entry:
   ret i32 %conv
 }
 ; CHECK: floatToSigned32:
+; CHECK: cvtss2si
 
 define internal i32 @doubleToUnsigned32(double %a) {
 entry:
@@ -198,6 +238,7 @@ entry:
   ret i32 %conv
 }
 ; CHECK: doubleToUnsigned32:
+; CHECK: cvtsd2si
 
 define internal i32 @floatToUnsigned32(float %a) {
 entry:
@@ -205,6 +246,7 @@ entry:
   ret i32 %conv
 }
 ; CHECK: floatToUnsigned32:
+; CHECK: cvtss2si
 
 define internal i32 @doubleToSigned16(double %a) {
 entry:
@@ -213,6 +255,8 @@ entry:
   ret i32 %conv.ret_ext
 }
 ; CHECK: doubleToSigned16:
+; CHECK: cvtsd2si
+; CHECK: movsx
 
 define internal i32 @floatToSigned16(float %a) {
 entry:
@@ -221,6 +265,8 @@ entry:
   ret i32 %conv.ret_ext
 }
 ; CHECK: floatToSigned16:
+; CHECK: cvtss2si
+; CHECK: movsx
 
 define internal i32 @doubleToUnsigned16(double %a) {
 entry:
@@ -229,6 +275,8 @@ entry:
   ret i32 %conv.ret_ext
 }
 ; CHECK: doubleToUnsigned16:
+; CHECK: cvtsd2si
+; CHECK: movzx
 
 define internal i32 @floatToUnsigned16(float %a) {
 entry:
@@ -237,6 +285,8 @@ entry:
   ret i32 %conv.ret_ext
 }
 ; CHECK: floatToUnsigned16:
+; CHECK: cvtss2si
+; CHECK: movzx
 
 define internal i32 @doubleToSigned8(double %a) {
 entry:
@@ -245,6 +295,8 @@ entry:
   ret i32 %conv.ret_ext
 }
 ; CHECK: doubleToSigned8:
+; CHECK: cvtsd2si
+; CHECK: movsx
 
 define internal i32 @floatToSigned8(float %a) {
 entry:
@@ -253,6 +305,8 @@ entry:
   ret i32 %conv.ret_ext
 }
 ; CHECK: floatToSigned8:
+; CHECK: cvtss2si
+; CHECK: movsx
 
 define internal i32 @doubleToUnsigned8(double %a) {
 entry:
@@ -261,6 +315,8 @@ entry:
   ret i32 %conv.ret_ext
 }
 ; CHECK: doubleToUnsigned8:
+; CHECK: cvtsd2si
+; CHECK: movzx
 
 define internal i32 @floatToUnsigned8(float %a) {
 entry:
@@ -269,6 +325,8 @@ entry:
   ret i32 %conv.ret_ext
 }
 ; CHECK: floatToUnsigned8:
+; CHECK: cvtss2si
+; CHECK: movzx
 
 define internal i32 @doubleToUnsigned1(double %a) {
 entry:
@@ -277,6 +335,8 @@ entry:
   ret i32 %tobool.ret_ext
 }
 ; CHECK: doubleToUnsigned1:
+; CHECK: cvtsd2si
+; CHECK: and eax, 1
 
 define internal i32 @floatToUnsigned1(float %a) {
 entry:
@@ -285,6 +345,8 @@ entry:
   ret i32 %tobool.ret_ext
 }
 ; CHECK: floatToUnsigned1:
+; CHECK: cvtss2si
+; CHECK: and eax, 1
 
 define internal double @signed64ToDouble(i64 %a) {
 entry:
@@ -292,6 +354,8 @@ entry:
   ret double %conv
 }
 ; CHECK: signed64ToDouble:
+; CHECK: call cvtsi64tod
+; CHECK: fstp
 
 define internal float @signed64ToFloat(i64 %a) {
 entry:
@@ -299,6 +363,8 @@ entry:
   ret float %conv
 }
 ; CHECK: signed64ToFloat:
+; CHECK: call cvtsi64tof
+; CHECK: fstp
 
 define internal double @unsigned64ToDouble(i64 %a) {
 entry:
@@ -306,6 +372,8 @@ entry:
   ret double %conv
 }
 ; CHECK: unsigned64ToDouble:
+; CHECK: call cvtui64tod
+; CHECK: fstp
 
 define internal float @unsigned64ToFloat(i64 %a) {
 entry:
@@ -313,6 +381,8 @@ entry:
   ret float %conv
 }
 ; CHECK: unsigned64ToFloat:
+; CHECK: call cvtui64tof
+; CHECK: fstp
 
 define internal double @signed32ToDouble(i32 %a) {
 entry:
@@ -320,6 +390,8 @@ entry:
   ret double %conv
 }
 ; CHECK: signed32ToDouble:
+; CHECK: cvtsi2sd
+; CHECK: fld
 
 define internal float @signed32ToFloat(i32 %a) {
 entry:
@@ -327,6 +399,8 @@ entry:
   ret float %conv
 }
 ; CHECK: signed32ToFloat:
+; CHECK: cvtsi2ss
+; CHECK: fld
 
 define internal double @unsigned32ToDouble(i32 %a) {
 entry:
@@ -334,6 +408,8 @@ entry:
   ret double %conv
 }
 ; CHECK: unsigned32ToDouble:
+; CHECK: call cvtui32tod
+; CHECK: fstp
 
 define internal float @unsigned32ToFloat(i32 %a) {
 entry:
@@ -341,6 +417,8 @@ entry:
   ret float %conv
 }
 ; CHECK: unsigned32ToFloat:
+; CHECK: call cvtui32tof
+; CHECK: fstp
 
 define internal double @signed16ToDouble(i32 %a) {
 entry:
@@ -349,6 +427,8 @@ entry:
   ret double %conv
 }
 ; CHECK: signed16ToDouble:
+; CHECK: cvtsi2sd
+; CHECK: fld
 
 define internal float @signed16ToFloat(i32 %a) {
 entry:
@@ -357,6 +437,8 @@ entry:
   ret float %conv
 }
 ; CHECK: signed16ToFloat:
+; CHECK: cvtsi2ss
+; CHECK: fld
 
 define internal double @unsigned16ToDouble(i32 %a) {
 entry:
@@ -365,6 +447,8 @@ entry:
   ret double %conv
 }
 ; CHECK: unsigned16ToDouble:
+; CHECK: cvtsi2sd
+; CHECK: fld
 
 define internal float @unsigned16ToFloat(i32 %a) {
 entry:
@@ -373,6 +457,8 @@ entry:
   ret float %conv
 }
 ; CHECK: unsigned16ToFloat:
+; CHECK: cvtsi2ss
+; CHECK: fld
 
 define internal double @signed8ToDouble(i32 %a) {
 entry:
@@ -381,6 +467,8 @@ entry:
   ret double %conv
 }
 ; CHECK: signed8ToDouble:
+; CHECK: cvtsi2sd
+; CHECK: fld
 
 define internal float @signed8ToFloat(i32 %a) {
 entry:
@@ -389,6 +477,8 @@ entry:
   ret float %conv
 }
 ; CHECK: signed8ToFloat:
+; CHECK: cvtsi2ss
+; CHECK: fld
 
 define internal double @unsigned8ToDouble(i32 %a) {
 entry:
@@ -397,6 +487,8 @@ entry:
   ret double %conv
 }
 ; CHECK: unsigned8ToDouble:
+; CHECK: cvtsi2sd
+; CHECK: fld
 
 define internal float @unsigned8ToFloat(i32 %a) {
 entry:
@@ -405,6 +497,8 @@ entry:
   ret float %conv
 }
 ; CHECK: unsigned8ToFloat:
+; CHECK: cvtsi2ss
+; CHECK: fld
 
 define internal double @unsigned1ToDouble(i32 %a) {
 entry:
@@ -413,6 +507,8 @@ entry:
   ret double %conv
 }
 ; CHECK: unsigned1ToDouble:
+; CHECK: cvtsi2sd
+; CHECK: fld
 
 define internal float @unsigned1ToFloat(i32 %a) {
 entry:
@@ -421,6 +517,8 @@ entry:
   ret float %conv
 }
 ; CHECK: unsigned1ToFloat:
+; CHECK: cvtsi2ss
+; CHECK: fld
 
 define internal void @fcmpEq(float %a, float %b, double %c, double %d) {
 entry:
@@ -443,6 +541,14 @@ if.end3:                                          ; preds = %if.then2, %if.end
   ret void
 }
 ; CHECK: fcmpEq:
+; CHECK: ucomiss
+; CHECK: jne .
+; CHECK-NEXT: jp .
+; CHECK: call func
+; CHECK: ucomisd
+; CHECK: jne .
+; CHECK-NEXT: jp .
+; CHECK: call func
 
 declare void @func()
 
@@ -467,6 +573,14 @@ if.end3:                                          ; preds = %if.then2, %if.end
   ret void
 }
 ; CHECK: fcmpNe:
+; CHECK: ucomiss
+; CHECK: je .
+; CHECK-NEXT: jnp .
+; CHECK: call func
+; CHECK: ucomisd
+; CHECK: je .
+; CHECK-NEXT: jnp .
+; CHECK: call func
 
 define internal void @fcmpGt(float %a, float %b, double %c, double %d) {
 entry:
@@ -489,6 +603,12 @@ if.end3:                                          ; preds = %if.then2, %if.end
   ret void
 }
 ; CHECK: fcmpGt:
+; CHECK: ucomiss
+; CHECK: ja .
+; CHECK: call func
+; CHECK: ucomisd
+; CHECK: ja .
+; CHECK: call func
 
 define internal void @fcmpGe(float %a, float %b, double %c, double %d) {
 entry:
@@ -511,6 +631,12 @@ if.end3:                                          ; preds = %if.end, %if.then2
   ret void
 }
 ; CHECK: fcmpGe:
+; CHECK: ucomiss
+; CHECK: jb .
+; CHECK: call func
+; CHECK: ucomisd
+; CHECK: jb .
+; CHECK: call func
 
 define internal void @fcmpLt(float %a, float %b, double %c, double %d) {
 entry:
@@ -533,6 +659,12 @@ if.end3:                                          ; preds = %if.then2, %if.end
   ret void
 }
 ; CHECK: fcmpLt:
+; CHECK: ucomiss
+; CHECK: ja .
+; CHECK: call func
+; CHECK: ucomisd
+; CHECK: ja .
+; CHECK: call func
 
 define internal void @fcmpLe(float %a, float %b, double %c, double %d) {
 entry:
@@ -555,6 +687,12 @@ if.end3:                                          ; preds = %if.end, %if.then2
   ret void
 }
 ; CHECK: fcmpLe:
+; CHECK: ucomiss
+; CHECK: jb .
+; CHECK: call func
+; CHECK: ucomisd
+; CHECK: jb .
+; CHECK: call func
 
 define internal i32 @fcmpFalseFloat(float %a, float %b) {
 entry:
@@ -563,6 +701,7 @@ entry:
   ret i32 %cmp.ret_ext
 }
 ; CHECK: fcmpFalseFloat:
+; CHECK: mov eax, 0
 
 define internal i32 @fcmpFalseDouble(double %a, double %b) {
 entry:
@@ -571,6 +710,7 @@ entry:
   ret i32 %cmp.ret_ext
 }
 ; CHECK: fcmpFalseDouble:
+; CHECK: mov eax, 0
 
 define internal i32 @fcmpOeqFloat(float %a, float %b) {
 entry:
@@ -579,6 +719,9 @@ entry:
   ret i32 %cmp.ret_ext
 }
 ; CHECK: fcmpOeqFloat:
+; CHECK: ucomiss
+; CHECK: jne .
+; CHECK: jp .
 
 define internal i32 @fcmpOeqDouble(double %a, double %b) {
 entry:
@@ -587,6 +730,9 @@ entry:
   ret i32 %cmp.ret_ext
 }
 ; CHECK: fcmpOeqDouble:
+; CHECK: ucomisd
+; CHECK: jne .
+; CHECK: jp .
 
 define internal i32 @fcmpOgtFloat(float %a, float %b) {
 entry:
@@ -595,6 +741,8 @@ entry:
   ret i32 %cmp.ret_ext
 }
 ; CHECK: fcmpOgtFloat:
+; CHECK: ucomiss
+; CHECK: ja .
 
 define internal i32 @fcmpOgtDouble(double %a, double %b) {
 entry:
@@ -603,6 +751,8 @@ entry:
   ret i32 %cmp.ret_ext
 }
 ; CHECK: fcmpOgtDouble:
+; CHECK: ucomisd
+; CHECK: ja .
 
 define internal i32 @fcmpOgeFloat(float %a, float %b) {
 entry:
@@ -611,6 +761,8 @@ entry:
   ret i32 %cmp.ret_ext
 }
 ; CHECK: fcmpOgeFloat:
+; CHECK: ucomiss
+; CHECK: jae .
 
 define internal i32 @fcmpOgeDouble(double %a, double %b) {
 entry:
@@ -619,6 +771,8 @@ entry:
   ret i32 %cmp.ret_ext
 }
 ; CHECK: fcmpOgeDouble:
+; CHECK: ucomisd
+; CHECK: jae .
 
 define internal i32 @fcmpOltFloat(float %a, float %b) {
 entry:
@@ -627,6 +781,8 @@ entry:
   ret i32 %cmp.ret_ext
 }
 ; CHECK: fcmpOltFloat:
+; CHECK: ucomiss
+; CHECK: ja .
 
 define internal i32 @fcmpOltDouble(double %a, double %b) {
 entry:
@@ -635,6 +791,8 @@ entry:
   ret i32 %cmp.ret_ext
 }
 ; CHECK: fcmpOltDouble:
+; CHECK: ucomisd
+; CHECK: ja .
 
 define internal i32 @fcmpOleFloat(float %a, float %b) {
 entry:
@@ -643,6 +801,8 @@ entry:
   ret i32 %cmp.ret_ext
 }
 ; CHECK: fcmpOleFloat:
+; CHECK: ucomiss
+; CHECK: jae .
 
 define internal i32 @fcmpOleDouble(double %a, double %b) {
 entry:
@@ -651,6 +811,8 @@ entry:
   ret i32 %cmp.ret_ext
 }
 ; CHECK: fcmpOleDouble:
+; CHECK: ucomisd
+; CHECK: jae .
 
 define internal i32 @fcmpOneFloat(float %a, float %b) {
 entry:
@@ -659,6 +821,8 @@ entry:
   ret i32 %cmp.ret_ext
 }
 ; CHECK: fcmpOneFloat:
+; CHECK: ucomiss
+; CHECK: jne .
 
 define internal i32 @fcmpOneDouble(double %a, double %b) {
 entry:
@@ -667,6 +831,8 @@ entry:
   ret i32 %cmp.ret_ext
 }
 ; CHECK: fcmpOneDouble:
+; CHECK: ucomisd
+; CHECK: jne .
 
 define internal i32 @fcmpOrdFloat(float %a, float %b) {
 entry:
@@ -675,6 +841,8 @@ entry:
   ret i32 %cmp.ret_ext
 }
 ; CHECK: fcmpOrdFloat:
+; CHECK: ucomiss
+; CHECK: jnp .
 
 define internal i32 @fcmpOrdDouble(double %a, double %b) {
 entry:
@@ -683,6 +851,8 @@ entry:
   ret i32 %cmp.ret_ext
 }
 ; CHECK: fcmpOrdDouble:
+; CHECK: ucomisd
+; CHECK: jnp .
 
 define internal i32 @fcmpUeqFloat(float %a, float %b) {
 entry:
@@ -691,6 +861,8 @@ entry:
   ret i32 %cmp.ret_ext
 }
 ; CHECK: fcmpUeqFloat:
+; CHECK: ucomiss
+; CHECK: je .
 
 define internal i32 @fcmpUeqDouble(double %a, double %b) {
 entry:
@@ -699,6 +871,8 @@ entry:
   ret i32 %cmp.ret_ext
 }
 ; CHECK: fcmpUeqDouble:
+; CHECK: ucomisd
+; CHECK: je .
 
 define internal i32 @fcmpUgtFloat(float %a, float %b) {
 entry:
@@ -707,6 +881,8 @@ entry:
   ret i32 %cmp.ret_ext
 }
 ; CHECK: fcmpUgtFloat:
+; CHECK: ucomiss
+; CHECK: jb .
 
 define internal i32 @fcmpUgtDouble(double %a, double %b) {
 entry:
@@ -715,6 +891,8 @@ entry:
   ret i32 %cmp.ret_ext
 }
 ; CHECK: fcmpUgtDouble:
+; CHECK: ucomisd
+; CHECK: jb .
 
 define internal i32 @fcmpUgeFloat(float %a, float %b) {
 entry:
@@ -723,6 +901,8 @@ entry:
   ret i32 %cmp.ret_ext
 }
 ; CHECK: fcmpUgeFloat:
+; CHECK: ucomiss
+; CHECK: jbe .
 
 define internal i32 @fcmpUgeDouble(double %a, double %b) {
 entry:
@@ -731,6 +911,8 @@ entry:
   ret i32 %cmp.ret_ext
 }
 ; CHECK: fcmpUgeDouble:
+; CHECK: ucomisd
+; CHECK: jbe .
 
 define internal i32 @fcmpUltFloat(float %a, float %b) {
 entry:
@@ -739,6 +921,8 @@ entry:
   ret i32 %cmp.ret_ext
 }
 ; CHECK: fcmpUltFloat:
+; CHECK: ucomiss
+; CHECK: jb .
 
 define internal i32 @fcmpUltDouble(double %a, double %b) {
 entry:
@@ -747,6 +931,8 @@ entry:
   ret i32 %cmp.ret_ext
 }
 ; CHECK: fcmpUltDouble:
+; CHECK: ucomisd
+; CHECK: jb .
 
 define internal i32 @fcmpUleFloat(float %a, float %b) {
 entry:
@@ -755,6 +941,8 @@ entry:
   ret i32 %cmp.ret_ext
 }
 ; CHECK: fcmpUleFloat:
+; CHECK: ucomiss
+; CHECK: jbe .
 
 define internal i32 @fcmpUleDouble(double %a, double %b) {
 entry:
@@ -763,6 +951,8 @@ entry:
   ret i32 %cmp.ret_ext
 }
 ; CHECK: fcmpUleDouble:
+; CHECK: ucomisd
+; CHECK: jbe .
 
 define internal i32 @fcmpUneFloat(float %a, float %b) {
 entry:
@@ -771,6 +961,9 @@ entry:
   ret i32 %cmp.ret_ext
 }
 ; CHECK: fcmpUneFloat:
+; CHECK: ucomiss
+; CHECK: je .
+; CHECK: jnp .
 
 define internal i32 @fcmpUneDouble(double %a, double %b) {
 entry:
@@ -779,6 +972,9 @@ entry:
   ret i32 %cmp.ret_ext
 }
 ; CHECK: fcmpUneDouble:
+; CHECK: ucomisd
+; CHECK: je .
+; CHECK: jnp .
 
 define internal i32 @fcmpUnoFloat(float %a, float %b) {
 entry:
@@ -787,6 +983,8 @@ entry:
   ret i32 %cmp.ret_ext
 }
 ; CHECK: fcmpUnoFloat:
+; CHECK: ucomiss
+; CHECK: jp .
 
 define internal i32 @fcmpUnoDouble(double %a, double %b) {
 entry:
@@ -795,6 +993,8 @@ entry:
   ret i32 %cmp.ret_ext
 }
 ; CHECK: fcmpUnoDouble:
+; CHECK: ucomisd
+; CHECK: jp .
 
 define internal i32 @fcmpTrueFloat(float %a, float %b) {
 entry:
@@ -803,6 +1003,7 @@ entry:
   ret i32 %cmp.ret_ext
 }
 ; CHECK: fcmpTrueFloat:
+; CHECK: mov eax, 1
 
 define internal i32 @fcmpTrueDouble(double %a, double %b) {
 entry:
@@ -811,6 +1012,7 @@ entry:
   ret i32 %cmp.ret_ext
 }
 ; CHECK: fcmpTrueDouble:
+; CHECK: mov eax, 1
 
 define internal float @loadFloat(i32 %a) {
 entry:
@@ -819,6 +1021,8 @@ entry:
   ret float %0
 }
 ; CHECK: loadFloat:
+; CHECK: movss
+; CHECK: fld
 
 define internal double @loadDouble(i32 %a) {
 entry:
@@ -827,6 +1031,8 @@ entry:
   ret double %0
 }
 ; CHECK: loadDouble:
+; CHECK: movsd
+; CHECK: fld
 
 define internal void @storeFloat(i32 %a, float %value) {
 entry:
@@ -835,6 +1041,7 @@ entry:
   ret void
 }
 ; CHECK: storeFloat:
+; CHECK: movss
 
 define internal void @storeDouble(i32 %a, double %value) {
 entry:
@@ -843,6 +1050,7 @@ entry:
   ret void
 }
 ; CHECK: storeDouble:
+; CHECK: movsd
 
 define internal void @storeFloatConst(i32 %a) {
 entry:
@@ -851,6 +1059,8 @@ entry:
   ret void
 }
 ; CHECK: storeFloatConst:
+; CHECK: mov
+; CHECK: mov
 
 define internal void @storeDoubleConst(i32 %a) {
 entry:
@@ -859,6 +1069,8 @@ entry:
   ret void
 }
 ; CHECK: storeDoubleConst:
+; CHECK: mov
+; CHECK: mov
 
 define internal float @selectFloatVarVar(float %a, float %b) {
 entry:
@@ -867,6 +1079,9 @@ entry:
   ret float %cond
 }
 ; CHECK: selectFloatVarVar:
+; CHECK: ucomiss
+; CHECK: ja .
+; CHECK: fld
 
 define internal double @selectDoubleVarVar(double %a, double %b) {
 entry:
@@ -875,6 +1090,9 @@ entry:
   ret double %cond
 }
 ; CHECK: selectDoubleVarVar:
+; CHECK: ucomisd
+; CHECK: ja .
+; CHECK: fld
 
 define internal i32 @nacl_tp_tdb_offset(i32) {
 entry:
