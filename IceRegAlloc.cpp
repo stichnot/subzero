@@ -20,8 +20,8 @@
 // Requires running IceCfg::liveness(IceLiveness_RangesFull) in
 // preparation.  Results are assigned to IceVariable::RegNum for each
 // IceVariable.
-void IceLinearScan::scan(const llvm::SmallBitVector &RegMask) {
-  if (!RegMask.any())
+void IceLinearScan::scan(const llvm::SmallBitVector &RegMaskFull) {
+  if (!RegMaskFull.any())
     return;
   Unhandled.clear();
   Handled.clear();
@@ -44,14 +44,16 @@ void IceLinearScan::scan(const llvm::SmallBitVector &RegMask) {
     if (Var->getLiveRange().isEmpty())
       continue;
     Unhandled.insert(IceLiveRangeWrapper(Var));
-    if (Var->getRegNum() >= 0)
+    if (Var->getRegNum() >= 0) {
+      Var->setRegNumTmp(Var->getRegNum());
       Var->setLiveRangeInfiniteWeight();
+    }
   }
 
   // RegUses[I] is the number of live ranges (variables) that register
   // I is currently assigned to.  It can be greater than 1 as a result
   // of IceVariable::AllowRegisterOverlap.
-  std::vector<int> RegUses(RegMask.size());
+  std::vector<int> RegUses(RegMaskFull.size());
   // Unhandled is already set to all ranges in increasing order of
   // start points.
   assert(Active.empty());
@@ -64,7 +66,8 @@ void IceLinearScan::scan(const llvm::SmallBitVector &RegMask) {
     Unhandled.erase(Unhandled.begin());
     if (Cfg->Str.isVerbose(IceV_LinearScan))
       Cfg->Str << "\nConsidering  " << Cur << "\n";
-    const llvm::SmallBitVector &TypeMask =
+    const llvm::SmallBitVector RegMask =
+        RegMaskFull &
         Cfg->getTarget()->getRegisterSetForType(Cur.Var->getType());
 
     // Check for precolored ranges.  If Cur is precolored, it
@@ -141,7 +144,7 @@ void IceLinearScan::scan(const llvm::SmallBitVector &RegMask) {
     }
 
     // Calculate available registers into Free[].
-    llvm::SmallBitVector Free = RegMask & TypeMask;
+    llvm::SmallBitVector Free = RegMask;
     for (unsigned i = 0; i < RegMask.size(); ++i) {
       if (RegUses[i] > 0)
         Free[i] = false;
@@ -253,7 +256,7 @@ void IceLinearScan::scan(const llvm::SmallBitVector &RegMask) {
       // RegMask.any() test.
       assert(MinWeightIndex >= 0);
       for (unsigned i = MinWeightIndex + 1; i < Weights.size(); ++i) {
-        if (RegMask[i] && TypeMask[i] && Weights[i] < Weights[MinWeightIndex])
+        if (RegMask[i] && Weights[i] < Weights[MinWeightIndex])
           MinWeightIndex = i;
       }
 
