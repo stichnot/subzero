@@ -14,11 +14,14 @@ def shellcmd(command, echo=True):
 
 if __name__ == '__main__':
     argparser = argparse.ArgumentParser()
-    argparser.add_argument('--test', help='C/C++ file with test functions')
-    argparser.add_argument('--driver', help='Driver program')
-    argparser.add_argument('--prefix',
+    argparser.add_argument('--test', required=True,
+                           help='C/C++ file with test functions')
+    argparser.add_argument('--driver', required=True,
+                           help='Driver program')
+    argparser.add_argument('--prefix', required=True,
                            help='String prepended to Subzero symbol names')
-    argparser.add_argument('--output', '-o', help='Executable to produce')
+    argparser.add_argument('--output', '-o', required=True,
+                           help='Executable to produce')
     args = argparser.parse_args()
 
     shellcmd(' '.join(['../ir_samples/build-pnacl-ir.py', args.test]))
