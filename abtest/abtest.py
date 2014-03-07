@@ -15,7 +15,7 @@ def shellcmd(command, echo=True):
 if __name__ == '__main__':
     argparser = argparse.ArgumentParser()
     argparser.add_argument('--test', required=True,
-                           help='C/C++ file with test functions')
+                           help='C/C++/.ll file with test functions')
     argparser.add_argument('--driver', required=True,
                            help='Driver program')
     argparser.add_argument('--prefix', required=True,
@@ -24,13 +24,17 @@ if __name__ == '__main__':
                            help='Executable to produce')
     args = argparser.parse_args()
 
-    shellcmd(' '.join(['../ir_samples/build-pnacl-ir.py', args.test]))
-    base = os.path.splitext(args.test)[0]
-    bitcode = base + '.pnacl.ll'
-    asm_sz = base + '.pnacl.sz.s'
+    (base, ext) = os.path.splitext(args.test)
+    if ext == '.ll':
+        bitcode = args.test
+    else:
+        bitcode = base + '.pnacl.ll'
+        shellcmd(' '.join(['../ir_samples/build-pnacl-ir.py', args.test]))
+        shellcmd('sed -i "s/^define internal /define /" ' + bitcode)
+
+    asm_sz = base + '.sz.s'
     obj_sz = base + '.sz.o'
     obj_llc = base + '.llc.o'
-    shellcmd("sed -i 's/^define internal /define /' " + bitcode)
     shellcmd(' '.join(['../llvm2ice',
                        '--prefix=' + args.prefix,
                        '-o',
@@ -54,5 +58,6 @@ if __name__ == '__main__':
                        args.driver,
                        obj_llc,
                        obj_sz,
+                       '-lm',
                        '-o',
                        args.output]))
