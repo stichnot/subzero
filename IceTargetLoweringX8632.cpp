@@ -1309,7 +1309,7 @@ static struct {
       IceInstX8632Br::Br_None },
     { IceInstFcmp::Ule, 1, false, IceInstX8632Br::Br_be,
       IceInstX8632Br::Br_None },
-    { IceInstFcmp::Une, 0, false, IceInstX8632Br::Br_e, IceInstX8632Br::Br_np },
+    { IceInstFcmp::Une, 1, false, IceInstX8632Br::Br_ne, IceInstX8632Br::Br_p },
     { IceInstFcmp::Uno, 1, false, IceInstX8632Br::Br_p,
       IceInstX8632Br::Br_None },
     { IceInstFcmp::True, 1, false, IceInstX8632Br::Br_None,

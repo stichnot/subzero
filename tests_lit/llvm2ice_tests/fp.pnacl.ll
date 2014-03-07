@@ -574,12 +574,12 @@ if.end3:                                          ; preds = %if.then2, %if.end
 }
 ; CHECK: fcmpNe:
 ; CHECK: ucomiss
-; CHECK: je .
-; CHECK-NEXT: jnp .
+; CHECK: jne .
+; CHECK-NEXT: jp .
 ; CHECK: call func
 ; CHECK: ucomisd
-; CHECK: je .
-; CHECK-NEXT: jnp .
+; CHECK: jne .
+; CHECK-NEXT: jp .
 ; CHECK: call func
 
 define internal void @fcmpGt(float %a, float %b, double %c, double %d) {
@@ -962,8 +962,8 @@ entry:
 }
 ; CHECK: fcmpUneFloat:
 ; CHECK: ucomiss
-; CHECK: je .
-; CHECK: jnp .
+; CHECK: jne .
+; CHECK: jp .
 
 define internal i32 @fcmpUneDouble(double %a, double %b) {
 entry:
@@ -973,8 +973,8 @@ entry:
 }
 ; CHECK: fcmpUneDouble:
 ; CHECK: ucomisd
-; CHECK: je .
-; CHECK: jnp .
+; CHECK: jne .
+; CHECK: jp .
 
 define internal i32 @fcmpUnoFloat(float %a, float %b) {
 entry:
