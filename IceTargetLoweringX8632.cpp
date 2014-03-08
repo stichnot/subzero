@@ -1205,7 +1205,15 @@ IceInstList IceTargetX8632::lowerCast(const IceInstCast *Inst,
       Call->addArg(Inst->getSrc(0));
       return lowerCall(Call, NULL, DeleteNextInst);
     } else {
-      Expansion.push_back(IceInstX8632Cvt::create(Cfg, Dest, Reg));
+      // t1.i32 = cvt Reg; t2.dest_type = t1; Dest = t2.dest_type
+      IceVariable *Tmp1 = Cfg->makeVariable(IceType_i32, CurrentNode);
+      Tmp1->setWeightInfinite();
+      Expansion.push_back(IceInstX8632Cvt::create(Cfg, Tmp1, Reg));
+      IceVariable *Tmp2 = Cfg->makeVariable(Dest->getType(), CurrentNode);
+      Tmp2->setWeightInfinite();
+      Tmp2->setPreferredRegister(Tmp1, true);
+      Expansion.push_back(IceInstX8632Mov::create(Cfg, Tmp2, Tmp1));
+      Expansion.push_back(IceInstX8632Mov::create(Cfg, Dest, Tmp2));
       // Sign-extend the result if necessary.
     }
     break;
@@ -1226,7 +1234,15 @@ IceInstList IceTargetX8632::lowerCast(const IceInstCast *Inst,
       Call->addArg(Inst->getSrc(0));
       return lowerCall(Call, NULL, DeleteNextInst);
     } else {
-      Expansion.push_back(IceInstX8632Cvt::create(Cfg, Dest, Reg));
+      // t1.i32 = cvt Reg; t2.dest_type = t1; Dest = t2.dest_type
+      IceVariable *Tmp1 = Cfg->makeVariable(IceType_i32, CurrentNode);
+      Tmp1->setWeightInfinite();
+      Expansion.push_back(IceInstX8632Cvt::create(Cfg, Tmp1, Reg));
+      IceVariable *Tmp2 = Cfg->makeVariable(Dest->getType(), CurrentNode);
+      Tmp2->setWeightInfinite();
+      Tmp2->setPreferredRegister(Tmp1, true);
+      Expansion.push_back(IceInstX8632Mov::create(Cfg, Tmp2, Tmp1));
+      Expansion.push_back(IceInstX8632Mov::create(Cfg, Dest, Tmp2));
       // Zero-extend the result if necessary.
     }
     break;
@@ -1247,7 +1263,17 @@ IceInstList IceTargetX8632::lowerCast(const IceInstCast *Inst,
       return lowerCall(Call, NULL, DeleteNextInst);
     } else {
       // Sign-extend the operand.
-      Expansion.push_back(IceInstX8632Cvt::create(Cfg, Dest, Reg));
+      // t1.i32 = movsx Reg; t2 = Cvt t1.i32; Dest = t2
+      IceVariable *Tmp1 = Cfg->makeVariable(IceType_i32, CurrentNode);
+      Tmp1->setWeightInfinite();
+      if (Reg->getType() == IceType_i32)
+        Expansion.push_back(IceInstX8632Mov::create(Cfg, Tmp1, Reg));
+      else
+        Expansion.push_back(IceInstX8632Movsx::create(Cfg, Tmp1, Reg));
+      IceVariable *Tmp2 = Cfg->makeVariable(Dest->getType(), CurrentNode);
+      Tmp2->setWeightInfinite();
+      Expansion.push_back(IceInstX8632Cvt::create(Cfg, Tmp2, Tmp1));
+      Expansion.push_back(IceInstX8632Mov::create(Cfg, Dest, Tmp2));
     }
     break;
   case IceInstCast::Uitofp:
@@ -1271,7 +1297,17 @@ IceInstList IceTargetX8632::lowerCast(const IceInstCast *Inst,
       return lowerCall(Call, NULL, DeleteNextInst);
     } else {
       // Zero-extend the operand.
-      Expansion.push_back(IceInstX8632Cvt::create(Cfg, Dest, Reg));
+      // t1.i32 = movzx Reg; t2 = Cvt t1.i32; Dest = t2
+      IceVariable *Tmp1 = Cfg->makeVariable(IceType_i32, CurrentNode);
+      Tmp1->setWeightInfinite();
+      if (Reg->getType() == IceType_i32)
+        Expansion.push_back(IceInstX8632Mov::create(Cfg, Tmp1, Reg));
+      else
+        Expansion.push_back(IceInstX8632Movzx::create(Cfg, Tmp1, Reg));
+      IceVariable *Tmp2 = Cfg->makeVariable(Dest->getType(), CurrentNode);
+      Tmp2->setWeightInfinite();
+      Expansion.push_back(IceInstX8632Cvt::create(Cfg, Tmp2, Tmp1));
+      Expansion.push_back(IceInstX8632Mov::create(Cfg, Dest, Tmp2));
     }
     break;
   }
