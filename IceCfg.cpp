@@ -405,6 +405,7 @@ void IceCfg::regAlloc(void) {
     RegExclude |= IceTargetLowering::RegMask_FramePointer;
   llvm::SmallBitVector RegMask =
       getTarget()->getRegisterSet(RegInclude, RegExclude);
+  Str.setCurrentNode(NULL);
   LinearScan.scan(RegMask);
 }
 
