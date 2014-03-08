@@ -165,8 +165,12 @@ IceConstant *IceCfg::getConstantDouble(double ConstantDouble) {
 }
 
 IceConstant *IceCfg::getConstant(IceType Type, const void *Handle,
-                                 int64_t Offset, const IceString &Name) {
-  return ConstantPool->getOrAddRelocatable(Type, Handle, Offset, Name);
+                                 int64_t Offset, const IceString &Name,
+                                 bool SuppressMangling) {
+  IceConstantRelocatable *Const =
+      ConstantPool->getOrAddRelocatable(Type, Handle, Offset, Name);
+  Const->setSuppressMangling(SuppressMangling);
+  return Const;
 }
 
 IceVariable *IceCfg::getVariable(uint32_t Index) const {
@@ -468,11 +472,13 @@ void IceCfg::emit(uint32_t Option) const {
     IceConstantRelocatable *Const = ConstantPool->getEntry(i);
     if (Const == NULL)
       continue;
-    Str << "\t.type\t" << mangleName(Const->getName()) << ",@object\n";
+    IceString ConstName = Const->getName();
+    if (!Const->getSuppressMangling())
+      ConstName = mangleName(ConstName);
+    Str << "\t.type\t" << ConstName << ",@object\n";
     // TODO: .comm is necessary only when defining vs. declaring?
     uint32_t Width = iceTypeWidth(Const->getType());
-    Str << "\t.comm\t" << mangleName(Const->getName()) << "," << Width << ","
-        << Width << "\n";
+    Str << "\t.comm\t" << ConstName << "," << Width << "," << Width << "\n";
   }
   for (IceNodeList::const_iterator I = LNodes.begin(), E = LNodes.end(); I != E;
        ++I) {

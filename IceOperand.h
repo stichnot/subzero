@@ -154,6 +154,8 @@ public:
   const void *getHandle(void) const { return Handle; }
   int64_t getOffset(void) const { return Offset; }
   IceString getName(void) const { return Name; }
+  void setSuppressMangling(bool Value) { SuppressMangling = Value; }
+  bool getSuppressMangling(void) const { return SuppressMangling; }
   virtual void emit(IceOstream &Str, uint32_t Option) const;
   virtual void dump(IceOstream &Str) const;
 
@@ -167,11 +169,12 @@ private:
                          int64_t Offset, const IceString &Name,
                          uint32_t CPIndex)
       : IceConstant(Cfg, ConstantRelocatable, Type), CPIndex(CPIndex),
-        Handle(Handle), Offset(Offset), Name(Name) {}
+        Handle(Handle), Offset(Offset), Name(Name), SuppressMangling(false) {}
   const uint32_t CPIndex;   // index into ICE constant pool
   const void *const Handle; // opaque handle e.g. to LLVM
   const int64_t Offset;     // fixed offset to add
   const IceString Name;     // optional for debug/dump
+  bool SuppressMangling;
 };
 
 class IceRegWeight {

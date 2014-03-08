@@ -48,7 +48,8 @@ public:
   // Returns a symbolic constant.  For now, Handle would refer to
   // something LLVM-specific to facilitate linking.
   IceConstant *getConstant(IceType Type, const void *Handle, int64_t Offset,
-                           const IceString &Name = "");
+                           const IceString &Name = "",
+                           bool SuppressMangling = false);
   IceVariable *getVariable(uint32_t Index) const;
   IceVariable *makeVariable(IceType Type, const IceCfgNode *Node,
                             uint32_t Index = -1, const IceString &Name = "");

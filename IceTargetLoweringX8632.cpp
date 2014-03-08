@@ -804,8 +804,9 @@ IceInstList IceTargetX8632::lowerArithmetic(const IceInstArithmetic *Inst,
     if (LowerI64ToI32) {
       unsigned MaxSrcs = 2;
       // TODO: Figure out how to properly construct CallTarget.
+      bool SuppressMangling = true;
       IceConstant *CallTarget =
-          Cfg->getConstant(IceType_i32, NULL, 0, "__udivdi3");
+          Cfg->getConstant(IceType_i32, NULL, 0, "__udivdi3", SuppressMangling);
       bool Tailcall = false;
       // TODO: This instruction leaks.
       IceInstCall *Call = IceInstCall::create(Cfg, MaxSrcs, Inst->getDest(),
@@ -828,8 +829,9 @@ IceInstList IceTargetX8632::lowerArithmetic(const IceInstArithmetic *Inst,
     if (LowerI64ToI32) {
       unsigned MaxSrcs = 2;
       // TODO: Figure out how to properly construct CallTarget.
+      bool SuppressMangling = true;
       IceConstant *CallTarget =
-          Cfg->getConstant(IceType_i32, NULL, 0, "__divdi3");
+          Cfg->getConstant(IceType_i32, NULL, 0, "__divdi3", SuppressMangling);
       bool Tailcall = false;
       // TODO: This instruction leaks.
       IceInstCall *Call = IceInstCall::create(Cfg, MaxSrcs, Inst->getDest(),
@@ -851,8 +853,9 @@ IceInstList IceTargetX8632::lowerArithmetic(const IceInstArithmetic *Inst,
     if (LowerI64ToI32) {
       unsigned MaxSrcs = 2;
       // TODO: Figure out how to properly construct CallTarget.
+      bool SuppressMangling = true;
       IceConstant *CallTarget =
-          Cfg->getConstant(IceType_i32, NULL, 0, "__umoddi3");
+          Cfg->getConstant(IceType_i32, NULL, 0, "__umoddi3", SuppressMangling);
       bool Tailcall = false;
       // TODO: This instruction leaks.
       IceInstCall *Call = IceInstCall::create(Cfg, MaxSrcs, Inst->getDest(),
@@ -876,8 +879,9 @@ IceInstList IceTargetX8632::lowerArithmetic(const IceInstArithmetic *Inst,
     if (LowerI64ToI32) {
       unsigned MaxSrcs = 2;
       // TODO: Figure out how to properly construct CallTarget.
+      bool SuppressMangling = true;
       IceConstant *CallTarget =
-          Cfg->getConstant(IceType_i32, NULL, 0, "__moddi3");
+          Cfg->getConstant(IceType_i32, NULL, 0, "__moddi3", SuppressMangling);
       bool Tailcall = false;
       // TODO: This instruction leaks.
       IceInstCall *Call = IceInstCall::create(Cfg, MaxSrcs, Inst->getDest(),
@@ -921,8 +925,10 @@ IceInstList IceTargetX8632::lowerArithmetic(const IceInstArithmetic *Inst,
     unsigned MaxSrcs = 2;
     IceType Type = Dest->getType();
     // TODO: Figure out how to properly construct CallTarget.
+    bool SuppressMangling = true;
     IceConstant *CallTarget =
-        Cfg->getConstant(Type, NULL, 0, Type == IceType_f32 ? "fmodf" : "fmod");
+        Cfg->getConstant(Type, NULL, 0, Type == IceType_f32 ? "fmodf" : "fmod",
+                         SuppressMangling);
     bool Tailcall = false;
     // TODO: This instruction leaks.
     IceInstCall *Call = IceInstCall::create(Cfg, MaxSrcs, Inst->getDest(),
@@ -1195,9 +1201,11 @@ IceInstList IceTargetX8632::lowerCast(const IceInstCast *Inst,
       unsigned MaxSrcs = 1;
       IceType SrcType = Inst->getSrc(0)->getType();
       // TODO: Figure out how to properly construct CallTarget.
-      IceConstant *CallTarget = Cfg->getConstant(
-          IceType_i64, NULL, 0,
-          SrcType == IceType_f32 ? "cvtftosi64" : "cvtdtosi64");
+      bool SuppressMangling = true;
+      IceConstant *CallTarget =
+          Cfg->getConstant(IceType_i64, NULL, 0,
+                           SrcType == IceType_f32 ? "cvtftosi64" : "cvtdtosi64",
+                           SuppressMangling);
       bool Tailcall = false;
       // TODO: This instruction leaks.
       IceInstCall *Call = IceInstCall::create(Cfg, MaxSrcs, Inst->getDest(),
@@ -1224,9 +1232,11 @@ IceInstList IceTargetX8632::lowerCast(const IceInstCast *Inst,
       unsigned MaxSrcs = 1;
       IceType SrcType = Inst->getSrc(0)->getType();
       // TODO: Figure out how to properly construct CallTarget.
-      IceConstant *CallTarget = Cfg->getConstant(
-          IceType_i64, NULL, 0,
-          SrcType == IceType_f32 ? "cvtftoui64" : "cvtdtoui64");
+      bool SuppressMangling = true;
+      IceConstant *CallTarget =
+          Cfg->getConstant(IceType_i64, NULL, 0,
+                           SrcType == IceType_f32 ? "cvtftoui64" : "cvtdtoui64",
+                           SuppressMangling);
       bool Tailcall = false;
       // TODO: This instruction leaks.
       IceInstCall *Call = IceInstCall::create(Cfg, MaxSrcs, Inst->getDest(),
@@ -1252,9 +1262,11 @@ IceInstList IceTargetX8632::lowerCast(const IceInstCast *Inst,
       unsigned MaxSrcs = 1;
       IceType DestType = Inst->getDest()->getType();
       // TODO: Figure out how to properly construct CallTarget.
+      bool SuppressMangling = true;
       IceConstant *CallTarget = Cfg->getConstant(
           DestType, NULL, 0,
-          DestType == IceType_f32 ? "cvtsi64tof" : "cvtsi64tod");
+          DestType == IceType_f32 ? "cvtsi64tof" : "cvtsi64tod",
+          SuppressMangling);
       bool Tailcall = false;
       // TODO: This instruction leaks.
       IceInstCall *Call = IceInstCall::create(Cfg, MaxSrcs, Inst->getDest(),
@@ -1287,8 +1299,9 @@ IceInstList IceTargetX8632::lowerCast(const IceInstCast *Inst,
       // Possibilities are cvtui32tof, cvtui32tod, cvtui64tof, cvtui64tod
       IceString TargetString = "cvtui" + SrcSubstring + "to" + DstSubstring;
       // TODO: Figure out how to properly construct CallTarget.
+      bool SuppressMangling = true;
       IceConstant *CallTarget =
-          Cfg->getConstant(DestType, NULL, 0, TargetString);
+          Cfg->getConstant(DestType, NULL, 0, TargetString, SuppressMangling);
       bool Tailcall = false;
       // TODO: This instruction leaks.
       IceInstCall *Call = IceInstCall::create(Cfg, MaxSrcs, Inst->getDest(),
