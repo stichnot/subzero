@@ -2,15 +2,9 @@
 
 import argparse
 import os, sys
-from subprocess import Popen, PIPE
 import tempfile
+from utils import shellcmd
 
-def shellcmd(command, echo=True):
-    if echo: print '[cmd]', command
-    sb = Popen(command, stdout=PIPE, shell=True)
-    stdout_result = sb.communicate()[0]
-    if echo: sys.stdout.write(stdout_result)
-    return stdout_result
 
 def find_llvm_bin():
     if os.path.exists(os.path.expandvars('$LLVMSVN/clang')):
@@ -46,5 +40,3 @@ if __name__ == '__main__':
             cname, llname))
         shellcmd(toolpath('opt') + ' -O3 -S {0} > {1}'.format(
             llname, optllname))
-
-

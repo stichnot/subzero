@@ -2,15 +2,8 @@
 
 import argparse
 import os, sys
-from subprocess import Popen, PIPE
 import tempfile
-
-def shellcmd(command, echo=True):
-    if echo: print '[cmd]', command
-    sb = Popen(command, stdout=PIPE, shell=True)
-    stdout_result = sb.communicate()[0]
-    if echo: sys.stdout.write(stdout_result)
-    return stdout_result
+from utils import shellcmd
 
 if __name__ == '__main__':
     argparser = argparse.ArgumentParser()
@@ -51,5 +44,3 @@ Please set the NACL_SDK_ROOT environment variable or pass the path through
              ' -verify-pnaclabi-module -verify-pnaclabi-functions') +
             ' -pnaclabi-allow-debug-metadata -disable-simplify-libcalls'
             ' {0} -S -o {1}'.format(llname, pnaclname))
-
-
