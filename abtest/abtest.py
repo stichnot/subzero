@@ -27,6 +27,8 @@ if __name__ == '__main__':
         bitcode = base + '.pnacl.ll'
         shellcmd(['../ir_samples/build-pnacl-ir.py', args.test])
         shellcmd('sed -i "s/^define internal /define /" ' + bitcode)
+        # Leaving the 'target' lines sometimes causes llc assertion failures.
+        shellcmd('sed -i "s/^target /;target /" ' + bitcode)
 
     asm_sz = base + '.sz.s'
     obj_sz = base + '.sz.o'
