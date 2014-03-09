@@ -238,7 +238,7 @@ entry:
   ret i32 %conv
 }
 ; CHECK: doubleToUnsigned32:
-; CHECK: cvtsd2si
+; CHECK: call cvtdtoui32
 
 define internal i32 @floatToUnsigned32(float %a) {
 entry:
@@ -246,7 +246,7 @@ entry:
   ret i32 %conv
 }
 ; CHECK: floatToUnsigned32:
-; CHECK: cvtss2si
+; CHECK: call cvtftoui32
 
 define internal i32 @doubleToSigned16(double %a) {
 entry:

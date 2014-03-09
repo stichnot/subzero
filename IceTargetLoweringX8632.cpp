@@ -1226,16 +1226,21 @@ IceInstList IceTargetX8632::lowerCast(const IceInstCast *Inst,
     }
     break;
   case IceInstCast::Fptoui:
-    if (Dest->getType() == IceType_i64) {
+    if (Dest->getType() == IceType_i64 || Dest->getType() == IceType_i32) {
       // Use a helper for both x86-32 and x86-64.
       split64(Dest);
       unsigned MaxSrcs = 1;
+      IceType DestType = Inst->getDest()->getType();
       IceType SrcType = Inst->getSrc(0)->getType();
+      IceString DstSubstring = (DestType == IceType_i64 ? "64" : "32");
+      IceString SrcSubstring = (SrcType == IceType_f32 ? "f" : "d");
+      // Possibilities are cvtftoui32, cvtdtoui32, cvtftoui64, cvtdtoui64
+      IceString TargetString = "cvt" + SrcSubstring + "toui" + DstSubstring;
       // TODO: Figure out how to properly construct CallTarget.
       bool SuppressMangling = true;
       IceConstant *CallTarget =
           Cfg->getConstant(IceType_i64, NULL, 0,
-                           SrcType == IceType_f32 ? "cvtftoui64" : "cvtdtoui64",
+                           TargetString,
                            SuppressMangling);
       bool Tailcall = false;
       // TODO: This instruction leaks.
