@@ -1238,10 +1238,8 @@ IceInstList IceTargetX8632::lowerCast(const IceInstCast *Inst,
       IceString TargetString = "cvt" + SrcSubstring + "toui" + DstSubstring;
       // TODO: Figure out how to properly construct CallTarget.
       bool SuppressMangling = true;
-      IceConstant *CallTarget =
-          Cfg->getConstant(IceType_i64, NULL, 0,
-                           TargetString,
-                           SuppressMangling);
+      IceConstant *CallTarget = Cfg->getConstant(
+          IceType_i64, NULL, 0, TargetString, SuppressMangling);
       bool Tailcall = false;
       // TODO: This instruction leaks.
       IceInstCall *Call = IceInstCall::create(Cfg, MaxSrcs, Inst->getDest(),
