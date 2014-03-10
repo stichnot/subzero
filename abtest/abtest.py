@@ -54,7 +54,7 @@ if __name__ == '__main__':
              '-g',
              '-m32',
              args.driver,
-             obj_llc,
+             bitcode,#obj_llc,
              obj_sz,
              '-lm',
              '-o',
