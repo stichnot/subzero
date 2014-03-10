@@ -1,6 +1,7 @@
 #include <stdint.h>
 
 extern "C" {
+#if 0
   // The bitcode for *ToUi1() needs to be hand-modified to change the
   // icmp back to trunc or fptoui.
   bool castUi64ToUi1(uint64_t a) { return (bool) a; }
@@ -12,8 +13,9 @@ extern "C" {
   bool castUi8ToUi1(unsigned char a) { return (bool) a; }
   bool castSi8ToUi1(signed char a) { return (bool) a; }
   bool castUi1ToUi1(bool a) { return (bool) a; }
-  //bool castF64ToUi1(double a) { return (bool) a; }
-  //bool castF32ToUi1(float a) { return (bool) a; }
+  bool castF64ToUi1(double a) { return (bool) a; }
+  bool castF32ToUi1(float a) { return (bool) a; }
+#endif
 
   signed char castUi64ToSi8(uint64_t a) { return (signed char) a; }
   signed char castSi64ToSi8(int64_t a) { return (signed char) a; }

@@ -1,4 +1,4 @@
-// abtest.py --test=test_cast.cpp --driver=test_cast_main.cpp --prefix=Subzero_ --output=test_cast
+// abtest.py --test=test_cast.cpp --test=test_cast_to_u1.ll --driver=test_cast_main.cpp --prefix=Subzero_ --output=test_cast
 
 #include <stdio.h>
 #include <stdint.h>
