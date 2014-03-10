@@ -13,13 +13,13 @@
 
 #include <list>
 #include <map>
-#include <ostream>
 #include <set>
 #include <string>
 #include <vector>
 
 // See http://llvm.org/docs/ProgrammersManual.html#isa
 #include "llvm/Support/Casting.h"
+#include "llvm/Support/raw_ostream.h"
 #include "llvm/Support/Timer.h"
 #include "llvm/ADT/BitVector.h"
 #include "llvm/ADT/SmallBitVector.h"
@@ -47,9 +47,9 @@ typedef std::vector<IceOperand *> IceOpList;
 typedef std::vector<IceVariable *> IceVarList;
 typedef std::vector<IceCfgNode *> IceNodeList;
 
-// The IceOstream class wraps a std::ostream and an IceCfg pointer, so
-// that dump routines have access to the IceCfg object and can print
-// labels and variable names.
+// The IceOstream class wraps an output stream and an IceCfg pointer,
+// so that dump routines have access to the IceCfg object and can
+// print labels and variable names.
 
 enum IceVerbose {
   IceV_None = 0,
@@ -113,8 +113,8 @@ private:
 
 class IceOstream {
 public:
-  IceOstream(std::ostream &Stream, IceCfg *Cfg)
-      : Stream(&Stream), Cfg(Cfg), Verbose(IceV_Instructions | IceV_Preds),
+  IceOstream(IceCfg *Cfg)
+      : Stream(NULL), Cfg(Cfg), Verbose(IceV_Instructions | IceV_Preds),
         CurrentNode(NULL) {}
   bool isVerbose(IceVerboseMask Mask = (IceV_All & ~IceV_Timing)) {
     return Verbose & Mask;
@@ -124,9 +124,7 @@ public:
   void subVerbose(IceVerboseMask Mask) { Verbose &= ~Mask; }
   void setCurrentNode(const IceCfgNode *Node) { CurrentNode = Node; }
   const IceCfgNode *getCurrentNode(void) const { return CurrentNode; }
-  // TODO: Use LLVM's raw_ostream instead.
-  // http://llvm.org/docs/CodingStandards.html#use-raw-ostream
-  std::ostream *Stream;
+  llvm::raw_ostream *Stream;
   IceCfg *const Cfg;
 
 private:
@@ -137,37 +135,44 @@ private:
 };
 
 inline IceOstream &operator<<(IceOstream &Str, const char *S) {
-  *(Str.Stream) << S;
+  if (Str.Stream)
+    *(Str.Stream) << S;
   return Str;
 }
 
 inline IceOstream &operator<<(IceOstream &Str, const IceString &S) {
-  *(Str.Stream) << S;
+  if (Str.Stream)
+    *(Str.Stream) << S;
   return Str;
 }
 
 inline IceOstream &operator<<(IceOstream &Str, uint32_t U) {
-  *(Str.Stream) << U;
+  if (Str.Stream)
+    *(Str.Stream) << U;
   return Str;
 }
 
 inline IceOstream &operator<<(IceOstream &Str, int32_t I) {
-  *(Str.Stream) << I;
+  if (Str.Stream)
+    *(Str.Stream) << I;
   return Str;
 }
 
 inline IceOstream &operator<<(IceOstream &Str, uint64_t U) {
-  *(Str.Stream) << U;
+  if (Str.Stream)
+    *(Str.Stream) << U;
   return Str;
 }
 
 inline IceOstream &operator<<(IceOstream &Str, int64_t I) {
-  *(Str.Stream) << I;
+  if (Str.Stream)
+    *(Str.Stream) << I;
   return Str;
 }
 
 inline IceOstream &operator<<(IceOstream &Str, double D) {
-  *(Str.Stream) << D;
+  if (Str.Stream)
+    *(Str.Stream) << D;
   return Str;
 }
 

@@ -52,9 +52,9 @@ private:
 IceOstream *GlobalStr;
 
 IceCfg::IceCfg(void)
-    : Str(std::cout, this), HasError(false), ErrorMessage(""), Name(""),
-      IsInternal(false), TestPrefix(""), Type(IceType_void), Target(NULL),
-      Entry(NULL), Liveness(NULL), NextInstNumber(1) {
+    : Str(this), HasError(false), ErrorMessage(""), Name(""), IsInternal(false),
+      TestPrefix(""), Type(IceType_void), Target(NULL), Entry(NULL),
+      Liveness(NULL), NextInstNumber(1) {
   GlobalStr = &Str;
   ConstantPool = new IceConstantPool(this);
 }

@@ -20,7 +20,7 @@
 #include "llvm/IRReader/IRReader.h"
 #include "llvm/Support/CommandLine.h"
 #include "llvm/Support/ErrorHandling.h"
-#include "llvm/Support/raw_ostream.h"
+#include "llvm/Support/raw_os_ostream.h"
 #include "llvm/Support/SourceMgr.h"
 
 #include <fstream>
@@ -591,6 +591,9 @@ int main(int argc, char **argv) {
   if (OutputFilename != "-") {
     Ofs.open(OutputFilename.c_str(), std::ofstream::out);
   }
+  raw_os_ostream *Os =
+      new raw_os_ostream(OutputFilename == "-" ? std::cout : Ofs);
+  Os->SetUnbuffered();
 
   for (Module::const_iterator I = Mod->begin(), E = Mod->end(); I != E; ++I) {
     if (I->empty())
@@ -608,7 +611,7 @@ int main(int argc, char **argv) {
     }
 
     Cfg->setTestPrefix(TestPrefix);
-    Cfg->Str.Stream = &(OutputFilename == "-" ? std::cout : Ofs);
+    Cfg->Str.Stream = Os;
     Cfg->Str.setVerbose(VerboseMask);
     if (!DisableTranslation) {
       IceTimer TTranslate;
