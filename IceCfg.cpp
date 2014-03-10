@@ -467,19 +467,6 @@ void IceCfg::emit(uint32_t Option) const {
     Str << "\t.globl\t" << mangleName(Name) << "\n";
     Str << "\t.type\t" << mangleName(Name) << ",@function\n";
   }
-  uint32_t NumConsts = ConstantPool->getSize();
-  for (uint32_t i = 0; i < NumConsts; ++i) {
-    IceConstantRelocatable *Const = ConstantPool->getEntry(i);
-    if (Const == NULL)
-      continue;
-    IceString ConstName = Const->getName();
-    if (!Const->getSuppressMangling())
-      ConstName = mangleName(ConstName);
-    Str << "\t.type\t" << ConstName << ",@object\n";
-    // TODO: .comm is necessary only when defining vs. declaring?
-    uint32_t Width = iceTypeWidth(Const->getType());
-    Str << "\t.comm\t" << ConstName << "," << Width << "," << Width << "\n";
-  }
   for (IceNodeList::const_iterator I = LNodes.begin(), E = LNodes.end(); I != E;
        ++I) {
     (*I)->emit(Str, Option);
