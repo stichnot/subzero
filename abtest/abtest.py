@@ -10,8 +10,8 @@ from utils import shellcmd
 
 if __name__ == '__main__':
     argparser = argparse.ArgumentParser()
-    argparser.add_argument('--test', required=True,
-                           help='C/C++/.ll file with test functions')
+    argparser.add_argument('--test', required=True, action='append',
+                           help='List of C/C++/.ll files with test functions')
     argparser.add_argument('--driver', required=True,
                            help='Driver program')
     argparser.add_argument('--prefix', required=True,
@@ -20,42 +20,41 @@ if __name__ == '__main__':
                            help='Executable to produce')
     args = argparser.parse_args()
 
-    base, ext = os.path.splitext(args.test)
-    if ext == '.ll':
-        bitcode = args.test
-    else:
-        bitcode = base + '.pnacl.ll'
-        shellcmd(['../ir_samples/build-pnacl-ir.py', args.test])
-        shellcmd('sed -i "s/^define internal /define /" ' + bitcode)
-        # Leaving the 'target' lines sometimes causes llc assertion failures.
-        shellcmd('sed -i "s/^target /;target /" ' + bitcode)
+    objs = []
+    for arg in args.test:
+        base, ext = os.path.splitext(arg)
+        if ext == '.ll':
+            bitcode = arg
+        else:
+            bitcode = base + '.pnacl.ll'
+            shellcmd(['../ir_samples/build-pnacl-ir.py', arg])
+            shellcmd('sed -i "s/^define internal /define /" ' + bitcode)
+            # Leaving the 'target' lines sometimes causes llc
+            # assertion failures.
+            shellcmd('sed -i "s/^target /;target /" ' + bitcode)
 
-    asm_sz = base + '.sz.s'
-    obj_sz = base + '.sz.o'
-    obj_llc = base + '.llc.o'
-    shellcmd(['../llvm2ice',
-              '--prefix=' + args.prefix,
-              '-o',
-              asm_sz,
-              bitcode])
-    shellcmd(['$LLVM_BIN_PATH/llvm-mc',
-             '-arch=x86',
-             '-x86-asm-syntax=intel',
-             '-filetype=obj',
-             '-o=' + obj_sz,
-             asm_sz])
-    shellcmd(['$LLVM_BIN_PATH/llc',
-             '-march=x86',
-             '-filetype=obj',
-             '-o',
-             obj_llc,
-             bitcode])
-    shellcmd(['$LLVM_BIN_PATH/clang',
-             '-g',
-             '-m32',
-             args.driver,
-             bitcode,#obj_llc,
-             obj_sz,
-             '-lm',
-             '-o',
-             args.output])
+        asm_sz = base + '.sz.s'
+        obj_sz = base + '.sz.o'
+        obj_llc = base + '.llc.o'
+        shellcmd(['../llvm2ice',
+                  '--prefix=' + args.prefix,
+                  '-o=' + asm_sz,
+                  bitcode])
+        shellcmd(['$LLVM_BIN_PATH/llvm-mc',
+                  '-arch=x86',
+                  '-x86-asm-syntax=intel',
+                  '-filetype=obj',
+                  '-o=' + obj_sz,
+                  asm_sz])
+        shellcmd(['$LLVM_BIN_PATH/llc',
+                  '-march=x86',
+                  '-filetype=obj',
+                  '-o=' + obj_llc,
+                  bitcode])
+        objs.append(obj_sz)
+        objs.append(bitcode)
+        #objs.append(obj_llc)
+
+    shellcmd(['$LLVM_BIN_PATH/clang', '-g', '-m32', args.driver] +
+             objs +
+             ['-lm', '-o', args.output])
