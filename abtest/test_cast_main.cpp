@@ -270,9 +270,6 @@ extern "C" {
   double Subzero_castF32ToF64(float a);
 }
 
-//extern "C" ToCName cast #FromIceName To #ToIceName(FromCName);
-//extern "C" ToCName Subzero_cast #FromIceName To #ToIceName(FromCName);
-
 #define XSTR(s) STR(s)
 #define STR(s) #s
 #define COMPARE(FromCName, FromIceName, FromPrintf, ToCName, ToIceName, ToPrintf, Input) \
@@ -372,7 +369,14 @@ int main(int argc, char **argv) {
   static const unsigned NumValsF32 = sizeof(ValsF32) / sizeof(*ValsF32);
 
   static const double ValsF64[] = {
-    0, 1, 0x7e, 0x7f, 0x80, 0x81, 0xfe, 0xff
+    0, 1, 0x7e, 0x7f, 0x80, 0x81, 0xfe, 0xff,
+    0x7ffe, 0x7fff, 0x8000, 0x8001, 0xfffe, 0xffff,
+    0x7ffffffe, 0x7fffffff, 0x80000000, 0x80000001,
+    0xfffffffe, 0xffffffff,
+    0x100000000ll, 0x100000001ll,
+    0x7ffffffffffffffell, 0x7fffffffffffffffll,
+    0x8000000000000000ll, 0x8000000000000001ll,
+    0xfffffffffffffffell, 0xffffffffffffffffll
   };
   static const unsigned NumValsF64 = sizeof(ValsF64) / sizeof(*ValsF64);
 
@@ -468,8 +472,8 @@ int main(int argc, char **argv) {
       COMPARE(unsigned, Ui32, "%u", int32_t, Si32, "%d", Val);
       COMPARE(unsigned, Ui32, "%u", uint64_t, Ui64, "%llu", Val);
       COMPARE(unsigned, Ui32, "%u", int64_t, Si64, "%lld", Val);
-      //COMPARE(unsigned, Ui32, "%u", float, F32, "%f", Val);
-      //COMPARE(unsigned, Ui32, "%u", double, F64, "%f", Val);
+      COMPARE(unsigned, Ui32, "%u", float, F32, "%f", Val);
+      COMPARE(unsigned, Ui32, "%u", double, F64, "%f", Val);
     }
   }
   for (unsigned i = 0; i < NumValsSi32; ++i) {
@@ -484,8 +488,8 @@ int main(int argc, char **argv) {
       COMPARE(int, Si32, "%d", int32_t, Si32, "%d", Val);
       COMPARE(int, Si32, "%d", uint64_t, Ui64, "%llu", Val);
       COMPARE(int, Si32, "%d", int64_t, Si64, "%lld", Val);
-      //COMPARE(int, Si32, "%d", float, F32, "%f", Val);
-      //COMPARE(int, Si32, "%d", double, F64, "%f", Val);
+      COMPARE(int, Si32, "%d", float, F32, "%f", Val);
+      COMPARE(int, Si32, "%d", double, F64, "%f", Val);
     }
   }
   for (unsigned i = 0; i < NumValsUi64; ++i) {
@@ -500,8 +504,8 @@ int main(int argc, char **argv) {
       COMPARE(uint64_t, Ui64, "%llu", int32_t, Si32, "%d", Val);
       COMPARE(uint64_t, Ui64, "%llu", uint64_t, Ui64, "%llu", Val);
       COMPARE(uint64_t, Ui64, "%llu", int64_t, Si64, "%lld", Val);
-      //COMPARE(uint64_t, Ui64, "%llu", float, F32, "%f", Val);
-      //COMPARE(uint64_t, Ui64, "%llu", double, F64, "%f", Val);
+      COMPARE(uint64_t, Ui64, "%llu", float, F32, "%f", Val);
+      COMPARE(uint64_t, Ui64, "%llu", double, F64, "%f", Val);
     }
   }
   for (unsigned i = 0; i < NumValsSi64; ++i) {
@@ -516,8 +520,8 @@ int main(int argc, char **argv) {
       COMPARE(int64_t, Si64, "%lld", int32_t, Si32, "%d", Val);
       COMPARE(int64_t, Si64, "%lld", uint64_t, Ui64, "%llu", Val);
       COMPARE(int64_t, Si64, "%lld", int64_t, Si64, "%lld", Val);
-      //COMPARE(int64_t, Si64, "%lld", float, F32, "%f", Val);
-      //COMPARE(int64_t, Si64, "%lld", double, F64, "%f", Val);
+      COMPARE(int64_t, Si64, "%lld", float, F32, "%f", Val);
+      COMPARE(int64_t, Si64, "%lld", double, F64, "%f", Val);
     }
   }
   for (unsigned i = 0; i < NumValsF32; ++i) {
@@ -528,10 +532,10 @@ int main(int argc, char **argv) {
       COMPARE(float, F32, "%f", signed char, Si8, "%d", Val);
       COMPARE(float, F32, "%f", unsigned short, Ui16, "%u", Val);
       COMPARE(float, F32, "%f", short, Si16, "%d", Val);
-      //COMPARE(float, F32, "%f", uint32_t, Ui32, "%u", Val);
+      COMPARE(float, F32, "%f", uint32_t, Ui32, "%u", Val);
       COMPARE(float, F32, "%f", int32_t, Si32, "%d", Val);
-      //COMPARE(float, F32, "%f", uint64_t, Ui64, "%llu", Val);
-      //COMPARE(float, F32, "%f", int64_t, Si64, "%lld", Val);
+      COMPARE(float, F32, "%f", uint64_t, Ui64, "%llu", Val);
+      COMPARE(float, F32, "%f", int64_t, Si64, "%lld", Val);
       COMPARE(float, F32, "%f", float, F32, "%f", Val);
       COMPARE(float, F32, "%f", double, F64, "%f", Val);
     }
@@ -544,10 +548,10 @@ int main(int argc, char **argv) {
       COMPARE(double, F64, "%f", signed char, Si8, "%d", Val);
       COMPARE(double, F64, "%f", unsigned short, Ui16, "%u", Val);
       COMPARE(double, F64, "%f", short, Si16, "%d", Val);
-      //COMPARE(double, F64, "%f", uint32_t, Ui32, "%u", Val);
+      COMPARE(double, F64, "%f", uint32_t, Ui32, "%u", Val);
       COMPARE(double, F64, "%f", int32_t, Si32, "%d", Val);
-      //COMPARE(double, F64, "%f", uint64_t, Ui64, "%llu", Val);
-      //COMPARE(double, F64, "%f", int64_t, Si64, "%lld", Val);
+      COMPARE(double, F64, "%f", uint64_t, Ui64, "%llu", Val);
+      COMPARE(double, F64, "%f", int64_t, Si64, "%lld", Val);
       COMPARE(double, F64, "%f", float, F32, "%f", Val);
       COMPARE(double, F64, "%f", double, F64, "%f", Val);
     }
@@ -555,4 +559,69 @@ int main(int argc, char **argv) {
 
   printf("TotalTests=%u Passes=%u Failures=%u\n", TotalTests, Passes, Failures);
   return Failures;
+}
+
+////////////////////////////////////////////////////////////////
+
+// The following are helper definitions that should be part of the
+// Subzero runtime.
+
+extern "C"
+uint32_t cvtdtoui32(double a) {
+  return (uint32_t)a;
+}
+
+extern "C"
+uint32_t cvtftoui32(float a) {
+  return (uint32_t)a;
+}
+
+extern "C"
+int64_t cvtdtosi64(double a) {
+  return (int64_t)a;
+}
+
+extern "C"
+int64_t cvtftosi64(float a) {
+  return (int64_t)a;
+}
+
+extern "C"
+uint64_t cvtdtoui64(double a) {
+  return (uint64_t)a;
+}
+
+extern "C"
+uint64_t cvtftoui64(float a) {
+  return (uint64_t)a;
+}
+
+extern "C"
+float cvtui64tof(uint64_t a) {
+  return (float)a;
+}
+
+extern "C"
+double cvtui64tod(uint64_t a) {
+  return (double)a;
+}
+
+extern "C"
+float cvtsi64tof(int64_t a) {
+  return (float)a;
+}
+
+extern "C"
+float cvtui32tof(uint32_t a) {
+  return (float)a;
+}
+
+extern "C"
+double cvtui32tod(uint32_t a) {
+  return (double)a;
+}
+
+extern "C"
+double cvtsi64tod(int64_t a) {
+  return (double)a;
 }
