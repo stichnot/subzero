@@ -188,7 +188,8 @@ void IceVariable::emit(IceOstream &Str, uint32_t Option) const {
   Str << " ptr ["
       << Str.Cfg->getTarget()->getRegName(
              Str.Cfg->getTarget()->getFrameOrStackReg(), IceType_i32);
-  int32_t Offset = getStackOffset() + Str.Cfg->getTarget()->getStackAdjustment();
+  int32_t Offset =
+      getStackOffset() + Str.Cfg->getTarget()->getStackAdjustment();
   if (Offset) {
     if (Offset > 0)
       Str << "+";
@@ -200,8 +201,7 @@ void IceVariable::emit(IceOstream &Str, uint32_t Option) const {
 void IceVariable::dump(IceOstream &Str) const {
   const IceCfgNode *CurrentNode = Str.getCurrentNode();
   (void)CurrentNode;
-  assert(CurrentNode == NULL || DefNode == NULL ||
-         DefNode == CurrentNode);
+  assert(CurrentNode == NULL || DefNode == NULL || DefNode == CurrentNode);
   if (Str.isVerbose(IceV_RegOrigins) ||
       (RegNum < 0 && !Str.Cfg->hasComputedFrame()))
     Str << "%" << getName();

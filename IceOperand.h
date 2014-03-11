@@ -76,11 +76,10 @@ protected:
 };
 
 // IceConstantPrimitive<> wraps a primitive type.
-template<typename T, IceOperand::OperandKind K>
+template <typename T, IceOperand::OperandKind K>
 class IceConstantPrimitive : public IceConstant {
 public:
-  static IceConstantPrimitive *create(IceCfg *Cfg, IceType Type,
-                                      T Value) {
+  static IceConstantPrimitive *create(IceCfg *Cfg, IceType Type, T Value) {
     return new IceConstantPrimitive(Cfg, Type, Value);
   }
   T getValue(void) const { return Value; }
@@ -97,9 +96,11 @@ private:
   const T Value;
 };
 
-typedef IceConstantPrimitive<uint64_t, IceOperand::ConstantInteger> IceConstantInteger;
+typedef IceConstantPrimitive<uint64_t, IceOperand::ConstantInteger>
+IceConstantInteger;
 typedef IceConstantPrimitive<float, IceOperand::ConstantFloat> IceConstantFloat;
-typedef IceConstantPrimitive<double, IceOperand::ConstantDouble> IceConstantDouble;
+typedef IceConstantPrimitive<double, IceOperand::ConstantDouble>
+IceConstantDouble;
 
 // IceConstantRelocatable represents a symbolic constant combined with
 // a fixed offset.
@@ -146,7 +147,7 @@ public:
   IceRegWeight(void) : Weight(0) {}
   IceRegWeight(uint32_t Weight) : Weight(Weight) {}
   const static uint32_t Inf = ~0;
-   void addWeight(uint32_t Delta) {
+  void addWeight(uint32_t Delta) {
     if (Delta == Inf)
       Weight = Inf;
     else if (Weight != Inf)
@@ -184,18 +185,20 @@ public:
   bool overlaps(const IceLiveRange &Other) const;
   bool containsValue(int32_t Value) const;
   bool isEmpty(void) const { return Range.empty(); }
-  int32_t getStart(void) const { return Range.empty() ? -1 : Range.begin()->first; }
+  int32_t getStart(void) const {
+    return Range.empty() ? -1 : Range.begin()->first;
+  }
 
   IceRegWeight getWeight(void) const { return Weight; }
   void setWeight(const IceRegWeight &NewWeight) { Weight = NewWeight; }
   void addWeight(uint32_t Delta) { Weight.addWeight(Delta); }
   void dump(IceOstream &Str) const;
 
-// Defining USE_SET uses std::set to hold the segments instead of
-// std::list.  Using std::list will be slightly faster, but is more
-// restrictive because new segments cannot be added in the middle.
+  // Defining USE_SET uses std::set to hold the segments instead of
+  // std::list.  Using std::list will be slightly faster, but is more
+  // restrictive because new segments cannot be added in the middle.
 
-//#define USE_SET
+  //#define USE_SET
 
 private:
   typedef std::pair<int, int> RangeElementType;
