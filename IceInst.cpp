@@ -429,6 +429,7 @@ void IceInst::emit(IceOstream &Str, uint32_t Option) const {
   Str << "??? ";
   dump(Str);
   Str << "\n";
+  Str.Cfg->setError("emit() called on a non-lowered instruction");
 }
 
 void IceInst::dump(IceOstream &Str) const {

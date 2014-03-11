@@ -180,12 +180,14 @@ void IceCfg::renumberInstructions(void) {
   }
 }
 
+// placePhiLoads() must be called before placePhiStores().
 void IceCfg::placePhiLoads(void) {
   for (IceNodeList::iterator I = Nodes.begin(), E = Nodes.end(); I != E; ++I) {
     (*I)->placePhiLoads();
   }
 }
 
+// placePhiStores() must be called after placePhiLoads().
 void IceCfg::placePhiStores(void) {
   for (IceNodeList::iterator I = Nodes.begin(), E = Nodes.end(); I != E; ++I) {
     (*I)->placePhiStores();
@@ -222,7 +224,7 @@ void IceCfg::genFrame(void) {
   // list.  Or keep a separate list of exit nodes.
   for (IceNodeList::iterator I = Nodes.begin(), E = Nodes.end(); I != E; ++I) {
     IceCfgNode *Node = *I;
-    if (Node->hasReturn())
+    if (Node->getHasReturn())
       getTarget()->addEpilog(Node);
   }
 }
@@ -290,7 +292,7 @@ void IceCfg::liveness(IceLivenessMode Mode) {
     // the trivial live range [1,1) and will *not* interfere with
     // other arguments.  So if the first instruction of the method is
     // "r=arg1+arg2", both args may be assigned the same register.
-    for (unsigned I = 0; I < Args.size(); ++I) {
+    for (uint32_t I = 0; I < Args.size(); ++I) {
       IceVariable *Arg = Args[I];
       if (!Liveness->getLiveRange(Arg).isEmpty()) {
         // Add live range [-1,0) with weight 0.
@@ -354,11 +356,11 @@ bool IceCfg::validateLiveness(void) const {
           assert(Valid);
         }
       }
-      unsigned VarIndex = 0;
-      for (unsigned I = 0; I < Inst->getSrcSize(); ++I) {
+      uint32_t VarIndex = 0;
+      for (uint32_t I = 0; I < Inst->getSrcSize(); ++I) {
         IceOperand *Src = Inst->getSrc(I);
-        unsigned NumVars = Src->getNumVars();
-        for (unsigned J = 0; J < NumVars; ++J, ++VarIndex) {
+        uint32_t NumVars = Src->getNumVars();
+        for (uint32_t J = 0; J < NumVars; ++J, ++VarIndex) {
           const IceVariable *Var = Src->getVar(J);
           if (!Var->getLiveRange().containsValue(InstNumber)) {
             Valid = false;
@@ -431,7 +433,7 @@ void IceCfg::dump(void) const {
     if (getInternal())
       Str << "internal ";
     Str << Type << " " << Name << "(";
-    for (unsigned i = 0; i < Args.size(); ++i) {
+    for (uint32_t i = 0; i < Args.size(); ++i) {
       if (i > 0)
         Str << ", ";
       Str << Args[i]->getType() << " " << Args[i];
