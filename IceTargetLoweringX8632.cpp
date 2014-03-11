@@ -420,16 +420,15 @@ void IceTargetX8632::split64(IceVariable *Var) {
     break;
   }
   IceVariable *Low = Var->getLow();
+  IceVariable *High = Var->getHigh();
   if (Low) {
-    assert(Var->getHigh());
+    assert(High);
     return;
   }
+  assert(High == NULL);
   Low = Cfg->makeVariable(IceType_i32, CurrentNode, Var->getName() + "__lo");
-  Var->setLow(Low);
-  assert(Var->getHigh() == NULL);
-  IceVariable *High =
-      Cfg->makeVariable(IceType_i32, CurrentNode, Var->getName() + "__hi");
-  Var->setHigh(High);
+  High = Cfg->makeVariable(IceType_i32, CurrentNode, Var->getName() + "__hi");
+  Var->setLowHigh(Low, High);
   if (Var->getIsArg()) {
     Low->setIsArg(Cfg);
     High->setIsArg(Cfg);
@@ -446,7 +445,7 @@ IceOperand *IceTargetX8632::makeLowOperand(IceOperand *Operand) {
   }
   if (IceConstantInteger *Const = llvm::dyn_cast<IceConstantInteger>(Operand)) {
     uint64_t Mask = (1ul << 32) - 1;
-    return Cfg->getConstantInt(IceType_i32, Const->getIntValue() & Mask);
+    return Cfg->getConstantInt(IceType_i32, Const->getValue() & Mask);
   }
   if (IceOperandX8632Mem *Mem = llvm::dyn_cast<IceOperandX8632Mem>(Operand)) {
     return IceOperandX8632Mem::create(Cfg, IceType_i32, Mem->getBase(),
@@ -466,7 +465,7 @@ IceOperand *IceTargetX8632::makeHighOperand(IceOperand *Operand) {
     return Var->getHigh();
   }
   if (IceConstantInteger *Const = llvm::dyn_cast<IceConstantInteger>(Operand)) {
-    return Cfg->getConstantInt(IceType_i32, Const->getIntValue() >> 32);
+    return Cfg->getConstantInt(IceType_i32, Const->getValue() >> 32);
   }
   if (IceOperandX8632Mem *Mem = llvm::dyn_cast<IceOperandX8632Mem>(Operand)) {
     IceConstant *Offset = Mem->getOffset();
@@ -474,7 +473,7 @@ IceOperand *IceTargetX8632::makeHighOperand(IceOperand *Operand) {
       Offset = Cfg->getConstantInt(IceType_i32, 4);
     else if (IceConstantInteger *IntOffset =
                  llvm::dyn_cast<IceConstantInteger>(Offset)) {
-      Offset = Cfg->getConstantInt(IceType_i32, 4 + IntOffset->getIntValue());
+      Offset = Cfg->getConstantInt(IceType_i32, 4 + IntOffset->getValue());
     } else if (IceConstantRelocatable *SymOffset =
                    llvm::dyn_cast<IceConstantRelocatable>(Offset)) {
       // TODO: This creates a new entry in the constant pool, instead
@@ -1666,7 +1665,7 @@ static void computeAddressOpt(IceCfg *Cfg, IceVariable *&Base,
           llvm::dyn_cast<IceConstantInteger>(IndexOperand1);
       if (ArithInst->getOp() == IceInstArithmetic::Mul && IndexVariable0 &&
           IndexOperand1->getType() == IceType_i32 && IndexConstant1) {
-        uint32_t Mult = IndexConstant1->getIntValue();
+        uint32_t Mult = IndexConstant1->getValue();
         uint32_t LogMult;
         switch (Mult) {
         case 1:

@@ -125,11 +125,11 @@ IceConstant *IceCfg::getConstantInt(IceType Type, uint64_t ConstantInt64) {
 // TODO: Add float and double constants to the global constant pool,
 // instead of creating a new instance each time.
 IceConstant *IceCfg::getConstantFloat(float ConstantFloat) {
-  return IceConstantFloat::create(this, ConstantFloat);
+  return IceConstantFloat::create(this, IceType_f32, ConstantFloat);
 }
 
 IceConstant *IceCfg::getConstantDouble(double ConstantDouble) {
-  return IceConstantDouble::create(this, ConstantDouble);
+  return IceConstantDouble::create(this, IceType_f64, ConstantDouble);
 }
 
 IceConstant *IceCfg::getConstantSym(IceType Type, const void *Handle,

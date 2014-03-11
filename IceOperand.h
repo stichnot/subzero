@@ -10,18 +10,6 @@
 #include "IceDefs.h"
 #include "IceTypes.h"
 
-/*
-  Operand (rvalue)
-    Constant
-      ActualInteger
-      ActualFloat (bits that go into module constant pool)
-      Symbolic
-      Symbolic+Integer (e.g. address)
-    Variable (stack or register - lvalue)
-  load/store instructions can take a global (constant?)
-  or maybe a TLS address
- */
-
 class IceOperand {
 public:
   enum OperandKind {
@@ -32,17 +20,22 @@ public:
     ConstantRelocatable,
     Constant_Num,
     Variable,
-    // Target-specific operand classes can use Target as their
-    // starting type.
+    // Target-specific operand classes use Target as the starting
+    // point for their Kind enum space.
     Target
   };
-  IceType getType(void) const { return Type; }
   OperandKind getKind(void) const { return Kind; }
-  IceVariable *getVar(unsigned I) const {
+  IceType getType(void) const { return Type; }
+
+  // Every IceOperand keeps an array of the IceVariables referenced in
+  // the operand.  This is so that the liveness operations can get
+  // quick access to the variables of interest, without having to dig
+  // so far into the operand.
+  uint32_t getNumVars(void) const { return NumVars; }
+  IceVariable *getVar(uint32_t I) const {
     assert(I < getNumVars());
     return Vars[I];
   }
-  unsigned getNumVars(void) const { return NumVars; }
   virtual void setUse(const IceInst *Inst, const IceCfgNode *Node) {}
   virtual void emit(IceOstream &Str, uint32_t Option) const;
   virtual void dump(IceOstream &Str) const;
@@ -54,12 +47,14 @@ protected:
       : Type(Type), Kind(Kind) {}
   const IceType Type;
   const OperandKind Kind;
+  // Vars and NumVars are initialized by the derived class.
+  uint32_t NumVars;
   IceVariable **Vars;
-  unsigned NumVars;
 };
 
 IceOstream &operator<<(IceOstream &Str, const IceOperand *O);
 
+// IceConstant is the abstract base class for constants.
 // TODO: better design of a minimal per-module constant pool,
 // including synchronized access for parallel translation.
 class IceConstant : public IceOperand {
@@ -80,68 +75,34 @@ protected:
   }
 };
 
-class IceConstantInteger : public IceConstant {
+// IceConstantPrimitive<> wraps a primitive type.
+template<typename T, IceOperand::OperandKind K>
+class IceConstantPrimitive : public IceConstant {
 public:
-  static IceConstantInteger *create(IceCfg *Cfg, IceType Type,
-                                    uint64_t IntValue) {
-    return new IceConstantInteger(Cfg, Type, IntValue);
+  static IceConstantPrimitive *create(IceCfg *Cfg, IceType Type,
+                                      T Value) {
+    return new IceConstantPrimitive(Cfg, Type, Value);
   }
-  uint64_t getIntValue(void) const { return IntValue; }
-  virtual void emit(IceOstream &Str, uint32_t Option) const;
-  virtual void dump(IceOstream &Str) const;
+  T getValue(void) const { return Value; }
+  virtual void emit(IceOstream &Str, uint32_t Option) const { dump(Str); }
+  virtual void dump(IceOstream &Str) const { Str << getValue(); }
 
   static bool classof(const IceOperand *Operand) {
-    OperandKind Kind = Operand->getKind();
-    return Kind == ConstantInteger;
+    return Operand->getKind() == K;
   }
 
 private:
-  IceConstantInteger(IceCfg *Cfg, IceType Type, uint64_t IntValue)
-      : IceConstant(Cfg, ConstantInteger, Type), IntValue(IntValue) {}
-  const uint64_t IntValue;
+  IceConstantPrimitive(IceCfg *Cfg, IceType Type, T Value)
+      : IceConstant(Cfg, K, Type), Value(Value) {}
+  const T Value;
 };
 
-class IceConstantFloat : public IceConstant {
-public:
-  static IceConstantFloat *create(IceCfg *Cfg, float FloatValue) {
-    return new IceConstantFloat(Cfg, FloatValue);
-  }
-  float getFloatValue(void) const { return FloatValue; }
-  virtual void emit(IceOstream &Str, uint32_t Option) const;
-  virtual void dump(IceOstream &Str) const;
+typedef IceConstantPrimitive<uint64_t, IceOperand::ConstantInteger> IceConstantInteger;
+typedef IceConstantPrimitive<float, IceOperand::ConstantFloat> IceConstantFloat;
+typedef IceConstantPrimitive<double, IceOperand::ConstantDouble> IceConstantDouble;
 
-  static bool classof(const IceOperand *Operand) {
-    OperandKind Kind = Operand->getKind();
-    return Kind == ConstantFloat;
-  }
-
-private:
-  IceConstantFloat(IceCfg *Cfg, float FloatValue)
-      : IceConstant(Cfg, ConstantFloat, IceType_f32), FloatValue(FloatValue) {}
-  const float FloatValue;
-};
-
-class IceConstantDouble : public IceConstant {
-public:
-  static IceConstantDouble *create(IceCfg *Cfg, double DoubleValue) {
-    return new IceConstantDouble(Cfg, DoubleValue);
-  }
-  double getDoubleValue(void) const { return DoubleValue; }
-  virtual void emit(IceOstream &Str, uint32_t Option) const;
-  virtual void dump(IceOstream &Str) const;
-
-  static bool classof(const IceOperand *Operand) {
-    OperandKind Kind = Operand->getKind();
-    return Kind == ConstantDouble;
-  }
-
-private:
-  IceConstantDouble(IceCfg *Cfg, double DoubleValue)
-      : IceConstant(Cfg, ConstantDouble, IceType_f32),
-        DoubleValue(DoubleValue) {}
-  const double DoubleValue;
-};
-
+// IceConstantRelocatable represents a symbolic constant combined with
+// a fixed offset.
 class IceConstantRelocatable : public IceConstant {
 public:
   static IceConstantRelocatable *create(IceCfg *Cfg, uint32_t CPIndex,
@@ -177,12 +138,15 @@ private:
   bool SuppressMangling;
 };
 
+// IceRegWeight is a wrapper for a uint32_t weight value, with a
+// special value that represents infinite weight, and an addWeight()
+// method that ensures that W+infinity=infinity.
 class IceRegWeight {
 public:
   IceRegWeight(void) : Weight(0) {}
   IceRegWeight(uint32_t Weight) : Weight(Weight) {}
   const static uint32_t Inf = ~0;
-  void addWeight(uint32_t Delta) {
+   void addWeight(uint32_t Delta) {
     if (Delta == Inf)
       Weight = Inf;
     else if (Weight != Inf)
@@ -200,27 +164,38 @@ IceOstream &operator<<(IceOstream &Str, const IceRegWeight &W);
 bool operator<(const IceRegWeight &A, const IceRegWeight &B);
 bool operator<=(const IceRegWeight &A, const IceRegWeight &B);
 
-// USE_SET uses std::set to hold the segments instead of std::list.
-// Using std::list will be slightly faster, but is more restrictive
-// because new segments cannot be added in the middle.
-//#define USE_SET
+// IceLiveRange is a set of instruction number intervals representing
+// a variable's live range.  Generally there is one interval per basic
+// block where the variable is live, but adjacent intervals get
+// coalesced into a single interval.  IceLiveRange also includes a
+// weight, in case e.g. we want a live range to have higher weight
+// inside a loop.
 class IceLiveRange {
 public:
   IceLiveRange(void) : Weight(0) {}
-  int getStart(void) const { return Range.empty() ? -1 : Range.begin()->first; }
+
   void reset(void) {
     Range.clear();
     Weight.setWeight(0);
   }
-  void addSegment(int Start, int End);
+  void addSegment(int32_t Start, int32_t End);
+
   bool endsBefore(const IceLiveRange &Other) const;
   bool overlaps(const IceLiveRange &Other) const;
-  bool containsValue(int Value) const;
+  bool containsValue(int32_t Value) const;
   bool isEmpty(void) const { return Range.empty(); }
+  int32_t getStart(void) const { return Range.empty() ? -1 : Range.begin()->first; }
+
   IceRegWeight getWeight(void) const { return Weight; }
   void setWeight(const IceRegWeight &NewWeight) { Weight = NewWeight; }
   void addWeight(uint32_t Delta) { Weight.addWeight(Delta); }
   void dump(IceOstream &Str) const;
+
+// Defining USE_SET uses std::set to hold the segments instead of
+// std::list.  Using std::list will be slightly faster, but is more
+// restrictive because new segments cannot be added in the middle.
+
+//#define USE_SET
 
 private:
   typedef std::pair<int, int> RangeElementType;
@@ -235,55 +210,57 @@ private:
 
 IceOstream &operator<<(IceOstream &Str, const IceLiveRange &L);
 
-// Stack operand, or virtual or physical register
+// IceVariable represents an operand that is register-allocated or
+// stack-allocated.  If it is register-allocated, it will ultimately
+// have a non-negative RegNum field.
 class IceVariable : public IceOperand {
 public:
   static IceVariable *create(IceCfg *Cfg, IceType Type, const IceCfgNode *Node,
                              uint32_t Index, const IceString &Name) {
     return new IceVariable(Cfg, Type, Node, Index, Name);
   }
-  void setUse(const IceInst *Inst, const IceCfgNode *Node);
+
   uint32_t getIndex(void) const { return Number; }
+  IceString getName(void) const;
+
   IceInst *getDefinition(void) const { return DefInst; }
   void setDefinition(IceInst *Inst, const IceCfgNode *Node);
   void replaceDefinition(IceInst *Inst, const IceCfgNode *Node);
-  // TODO: consider initializing IsArgument in the ctor.
+
+  const IceCfgNode *getLocalUseNode() const { return DefNode; }
+  bool isMultiblockLife(void) const { return (DefNode == NULL); }
+  void setUse(const IceInst *Inst, const IceCfgNode *Node);
+
   bool getIsArg(void) const { return IsArgument; }
   void setIsArg(IceCfg *Cfg);
-  IceVariable *getLow(void) const { return LowVar; }
-  IceVariable *getHigh(void) const { return HighVar; }
-  void setLow(IceVariable *Low) {
-    assert(LowVar == NULL);
-    LowVar = Low;
-  }
-  void setHigh(IceVariable *High) {
-    assert(HighVar == NULL);
-    HighVar = High;
-  }
-  bool isMultiblockLife(void) const { return (DefOrUseNode == NULL); }
-  const IceCfgNode *getLocalUseNode() const { return DefOrUseNode; }
-  void setRegNum(int NewRegNum) {
-    assert(RegNum < 0 ||
-           RegNum == NewRegNum); // shouldn't set it more than once
+
+  int32_t getStackOffset(void) const { return StackOffset; }
+  void setStackOffset(int32_t Offset) { StackOffset = Offset; }
+
+  int32_t getRegNum(void) const { return RegNum; }
+  void setRegNum(int32_t NewRegNum) {
+    // Regnum shouldn't be set more than once.
+    assert(RegNum < 0 || RegNum == NewRegNum);
     RegNum = NewRegNum;
   }
-  int getRegNum(void) const { return RegNum; }
-  void setRegNumTmp(int NewRegNum) { RegNumTmp = NewRegNum; }
-  int getRegNumTmp(void) const { return RegNumTmp; }
-  void setStackOffset(int Offset) { StackOffset = Offset; }
-  int getStackOffset(void) const { return StackOffset; }
+  int32_t getRegNumTmp(void) const { return RegNumTmp; }
+  void setRegNumTmp(int32_t NewRegNum) { RegNumTmp = NewRegNum; }
+
+  IceRegWeight getWeight(void) const { return Weight; }
   void setWeight(uint32_t NewWeight) { Weight = NewWeight; }
   void setWeightInfinite(void) { Weight = IceRegWeight::Inf; }
-  IceRegWeight getWeight(void) const { return Weight; }
+
+  IceVariable *getPreferredRegister(void) const { return RegisterPreference; }
+  bool getRegisterOverlap(void) const { return AllowRegisterOverlap; }
   void setPreferredRegister(IceVariable *Prefer, bool Overlap) {
     RegisterPreference = Prefer;
     AllowRegisterOverlap = Overlap;
   }
-  IceVariable *getPreferredRegister(void) const { return RegisterPreference; }
-  bool getRegisterOverlap(void) const { return AllowRegisterOverlap; }
-  void resetLiveRange(void) { LiveRange.reset(); }
+
+  const IceLiveRange &getLiveRange(void) const { return LiveRange; }
   void setLiveRange(const IceLiveRange &Range) { LiveRange = Range; }
-  void addLiveRange(int Start, int End, uint32_t WeightDelta) {
+  void resetLiveRange(void) { LiveRange.reset(); }
+  void addLiveRange(int32_t Start, int32_t End, uint32_t WeightDelta) {
     assert(WeightDelta != IceRegWeight::Inf);
     LiveRange.addSegment(Start, End);
     if (Weight.isInf())
@@ -291,11 +268,19 @@ public:
     else
       LiveRange.addWeight(WeightDelta * Weight.getWeight());
   }
-  const IceLiveRange &getLiveRange(void) const { return LiveRange; }
   void setLiveRangeInfiniteWeight(void) {
     LiveRange.setWeight(IceRegWeight::Inf);
   }
-  IceString getName(void) const;
+
+  IceVariable *getLow(void) const { return LowVar; }
+  IceVariable *getHigh(void) const { return HighVar; }
+  void setLowHigh(IceVariable *Low, IceVariable *High) {
+    assert(LowVar == NULL);
+    assert(HighVar == NULL);
+    LowVar = Low;
+    HighVar = High;
+  }
+
   virtual void emit(IceOstream &Str, uint32_t Option) const;
   virtual void dump(IceOstream &Str) const;
 
@@ -307,30 +292,45 @@ private:
   IceVariable(IceCfg *Cfg, IceType Type, const IceCfgNode *Node, uint32_t Index,
               const IceString &Name)
       : IceOperand(Cfg, Variable, Type), Number(Index), Name(Name),
-        DefInst(NULL), DefOrUseNode(Node), IsArgument(false), StackOffset(0),
+        DefInst(NULL), DefNode(Node), IsArgument(false), StackOffset(0),
         RegNum(-1), RegNumTmp(-1), Weight(1), RegisterPreference(NULL),
         AllowRegisterOverlap(false), LowVar(NULL), HighVar(NULL) {
     Vars = new IceVariable *[1];
     Vars[0] = this;
     NumVars = 1;
   }
+  // Number is unique across all variables, and is used as a
+  // (bit)vector index for liveness analysis.
   const uint32_t Number;
+  // Name is optional.
   const IceString Name;
-  // TODO: A Phi instruction lowers into several assignment
-  // instructions with the same dest.  These should all be tracked
-  // here so that they can all be deleted when this variable's use
-  // count reaches zero.
+  // DefInst is the instruction that produces this variable as its
+  // dest.
   IceInst *DefInst;
-  const IceCfgNode *DefOrUseNode; // for detecting isMultiblockLife()
+  // DefOrUseNode is the node where this variable was produced, and is
+  // reset to NULL if it is used outside that node.  This is used for
+  // detecting isMultiblockLife().
+  const IceCfgNode *DefNode;
   bool IsArgument;
-  int
-  StackOffset; // Canonical location on stack (only if RegNum==-1 || IsArgument)
-  int RegNum;  // Allocated register; -1 for no allocation
-  int RegNumTmp;       // Tentative assignment during register allocation
+  // StackOffset is the canonical location on stack (only if
+  // RegNum<0 || IsArgument).
+  int StackOffset;
+  // RegNum is the allocated register, or -1 if it isn't
+  // register-allocated.
+  int32_t RegNum;
+  // RegNumTmp is the tentative assignment during register allocation.
+  int32_t RegNumTmp;
   IceRegWeight Weight; // Register allocation priority
+  // RegisterPreference says that if possible, the register allocator
+  // should prefer the register that was assigned to this linked
+  // variable.
   IceVariable *RegisterPreference;
+  // AllowRegisterOverlap says that it is OK to honor
+  // RegisterPreference and "share" a register even if the two live
+  // ranges overlap.
   bool AllowRegisterOverlap;
   IceLiveRange LiveRange;
+  // LowVar and HighVar are needed for lowering from 64 to 32 bits.
   // When lowering from I64 to I32 on a 32-bit architecture, we split
   // the variable into two machine-size pieces.  LowVar is the
   // low-order machine-size portion, and HighVar is the remaining

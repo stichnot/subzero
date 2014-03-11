@@ -1078,8 +1078,8 @@ void IceOperandX8632Mem::emit(IceOstream &Str, uint32_t Option) const {
     OffsetIsZero = true;
   } else if (IceConstantInteger *CI =
                  llvm::dyn_cast<IceConstantInteger>(Offset)) {
-    OffsetIsZero = (CI->getIntValue() == 0);
-    OffsetIsNegative = (static_cast<int64_t>(CI->getIntValue()) < 0);
+    OffsetIsZero = (CI->getValue() == 0);
+    OffsetIsNegative = (static_cast<int64_t>(CI->getValue()) < 0);
   }
   if (!OffsetIsZero) { // Suppress if Offset is known to be 0
     if (Dumped) {
@@ -1113,8 +1113,8 @@ void IceOperandX8632Mem::dump(IceOstream &Str) const {
     OffsetIsZero = true;
   } else if (IceConstantInteger *CI =
                  llvm::dyn_cast<IceConstantInteger>(Offset)) {
-    OffsetIsZero = (CI->getIntValue() == 0);
-    OffsetIsNegative = (static_cast<int64_t>(CI->getIntValue()) < 0);
+    OffsetIsZero = (CI->getValue() == 0);
+    OffsetIsNegative = (static_cast<int64_t>(CI->getValue()) < 0);
   }
   if (!OffsetIsZero) { // Suppress if Offset is known to be 0
     if (Dumped) {

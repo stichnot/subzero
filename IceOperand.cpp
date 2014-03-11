@@ -15,46 +15,7 @@ bool operator<=(const IceRegWeight &A, const IceRegWeight &B) {
   return !(B < A);
 }
 
-void IceVariable::setUse(const IceInst *Inst, const IceCfgNode *Node) {
-  if (DefOrUseNode == NULL)
-    return;
-  if (llvm::isa<IceInstPhi>(Inst) || Node != DefOrUseNode)
-    DefOrUseNode = NULL;
-}
-
-void IceVariable::setDefinition(IceInst *Inst, const IceCfgNode *Node) {
-  if (DefOrUseNode == NULL)
-    return;
-  // Can first check preexisting DefInst if we care about multi-def vars.
-  DefInst = Inst;
-  if (Node != DefOrUseNode)
-    DefOrUseNode = NULL;
-}
-
-void IceVariable::replaceDefinition(IceInst *Inst, const IceCfgNode *Node) {
-  DefInst = NULL;
-  setDefinition(Inst, Node);
-}
-
-void IceVariable::setIsArg(IceCfg *Cfg) {
-  IsArgument = true;
-  if (DefOrUseNode == NULL)
-    return;
-  IceCfgNode *Entry = Cfg->getEntryNode();
-  if (DefOrUseNode == Entry)
-    return;
-  DefOrUseNode = NULL;
-}
-
-IceString IceVariable::getName(void) const {
-  if (Name != "")
-    return Name;
-  char buf[30];
-  sprintf(buf, "__%u", getIndex());
-  return buf;
-}
-
-void IceLiveRange::addSegment(int Start, int End) {
+void IceLiveRange::addSegment(int32_t Start, int32_t End) {
 #ifdef USE_SET
   RangeElementType Element(Start, End);
   RangeType::iterator Next = Range.lower_bound(Element);
@@ -96,7 +57,7 @@ void IceLiveRange::addSegment(int Start, int End) {
     Range.push_front(RangeElementType(Start, End));
     return;
   }
-  int CurrentEnd = Range.back().second;
+  int32_t CurrentEnd = Range.back().second;
   assert(Start >= CurrentEnd);
   // Check for merge opportunity.
   if (Start == CurrentEnd) {
@@ -107,15 +68,20 @@ void IceLiveRange::addSegment(int Start, int End) {
 #endif
 }
 
+// Returns true if this live range ends before Other's live range
+// starts.  This means that the highest instruction number in this
+// live range is less than or equal to the lowest instruction number
+// of the Other live range.
 bool IceLiveRange::endsBefore(const IceLiveRange &Other) const {
   // Neither range should be empty, but let's be graceful.
   if (Range.empty() || Other.Range.empty())
     return true;
-  int MyEnd = (*Range.rbegin()).second;
-  int OtherStart = (*Other.Range.begin()).first;
+  int32_t MyEnd = (*Range.rbegin()).second;
+  int32_t OtherStart = (*Other.Range.begin()).first;
   return MyEnd <= OtherStart;
 }
 
+// Returns true if there is any overlap between the two live ranges.
 bool IceLiveRange::overlaps(const IceLiveRange &Other) const {
   // Do a two-finger walk through the two sorted lists of segments.
   RangeType::const_iterator I1 = Range.begin(), I2 = Other.Range.begin();
@@ -134,13 +100,55 @@ bool IceLiveRange::overlaps(const IceLiveRange &Other) const {
   return false;
 }
 
-bool IceLiveRange::containsValue(int Value) const {
+// Returns true if the live range contains the given instruction
+// number.  This is only used for validating the live range
+// calculation.
+bool IceLiveRange::containsValue(int32_t Value) const {
   for (RangeType::const_iterator I = Range.begin(), E = Range.end(); I != E;
        ++I) {
     if (I->first <= Value && Value <= I->second)
       return true;
   }
   return false;
+}
+
+void IceVariable::setUse(const IceInst *Inst, const IceCfgNode *Node) {
+  if (DefNode == NULL)
+    return;
+  if (llvm::isa<IceInstPhi>(Inst) || Node != DefNode)
+    DefNode = NULL;
+}
+
+void IceVariable::setDefinition(IceInst *Inst, const IceCfgNode *Node) {
+  if (DefNode == NULL)
+    return;
+  // Can first check preexisting DefInst if we care about multi-def vars.
+  DefInst = Inst;
+  if (Node != DefNode)
+    DefNode = NULL;
+}
+
+void IceVariable::replaceDefinition(IceInst *Inst, const IceCfgNode *Node) {
+  DefInst = NULL;
+  setDefinition(Inst, Node);
+}
+
+void IceVariable::setIsArg(IceCfg *Cfg) {
+  IsArgument = true;
+  if (DefNode == NULL)
+    return;
+  IceCfgNode *Entry = Cfg->getEntryNode();
+  if (DefNode == Entry)
+    return;
+  DefNode = NULL;
+}
+
+IceString IceVariable::getName(void) const {
+  if (Name != "")
+    return Name;
+  char buf[30];
+  sprintf(buf, "__%u", getIndex());
+  return buf;
 }
 
 // ======================== dump routines ======================== //
@@ -155,7 +163,7 @@ IceOstream &operator<<(IceOstream &Str, const IceOperand *O) {
 
 // TODO: This should be handed by the IceTargetLowering subclass.
 void IceVariable::emit(IceOstream &Str, uint32_t Option) const {
-  assert(DefOrUseNode == NULL || DefOrUseNode == Str.getCurrentNode());
+  assert(DefNode == NULL || DefNode == Str.getCurrentNode());
   if (getRegNum() >= 0) {
     Str << Str.Cfg->getTarget()->getRegName(RegNum, getType());
     return;
@@ -180,7 +188,7 @@ void IceVariable::emit(IceOstream &Str, uint32_t Option) const {
   Str << " ptr ["
       << Str.Cfg->getTarget()->getRegName(
              Str.Cfg->getTarget()->getFrameOrStackReg(), IceType_i32);
-  int Offset = getStackOffset() + Str.Cfg->getTarget()->getStackAdjustment();
+  int32_t Offset = getStackOffset() + Str.Cfg->getTarget()->getStackAdjustment();
   if (Offset) {
     if (Offset > 0)
       Str << "+";
@@ -192,8 +200,8 @@ void IceVariable::emit(IceOstream &Str, uint32_t Option) const {
 void IceVariable::dump(IceOstream &Str) const {
   const IceCfgNode *CurrentNode = Str.getCurrentNode();
   (void)CurrentNode;
-  assert(CurrentNode == NULL || DefOrUseNode == NULL ||
-         DefOrUseNode == CurrentNode);
+  assert(CurrentNode == NULL || DefNode == NULL ||
+         DefNode == CurrentNode);
   if (Str.isVerbose(IceV_RegOrigins) ||
       (RegNum < 0 && !Str.Cfg->hasComputedFrame()))
     Str << "%" << getName();
@@ -206,7 +214,7 @@ void IceVariable::dump(IceOstream &Str) const {
       Str << ":";
     Str << "[" << Str.Cfg->getTarget()->getRegName(
                       Str.Cfg->getTarget()->getFrameOrStackReg(), IceType_i32);
-    int Offset = getStackOffset();
+    int32_t Offset = getStackOffset();
     if (Offset) {
       if (Offset > 0)
         Str << "+";
@@ -219,24 +227,6 @@ void IceVariable::dump(IceOstream &Str) const {
 void IceOperand::emit(IceOstream &Str, uint32_t Option) const { dump(Str); }
 
 void IceOperand::dump(IceOstream &Str) const { Str << "IceOperand<?>"; }
-
-void IceConstantInteger::emit(IceOstream &Str, uint32_t Option) const {
-  dump(Str);
-}
-
-void IceConstantInteger::dump(IceOstream &Str) const { Str << IntValue; }
-
-void IceConstantFloat::emit(IceOstream &Str, uint32_t Option) const {
-  dump(Str);
-}
-
-void IceConstantFloat::dump(IceOstream &Str) const { Str << FloatValue; }
-
-void IceConstantDouble::emit(IceOstream &Str, uint32_t Option) const {
-  dump(Str);
-}
-
-void IceConstantDouble::dump(IceOstream &Str) const { Str << DoubleValue; }
 
 void IceConstantRelocatable::emit(IceOstream &Str, uint32_t Option) const {
   if (SuppressMangling)
