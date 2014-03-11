@@ -64,7 +64,7 @@ void IceLiveness::init(void) {
   assert(NumGlobals == TmpNumGlobals);
 
   // Process each node.
-  const IceNodeList &LNodes = Cfg->getLNodes();
+  const IceNodeList &LNodes = Cfg->getNodes();
   unsigned NumLNodes = LNodes.size();
   for (uint32_t i = 0; i < NumLNodes; ++i) {
     IceLivenessNode &Node = Nodes[LNodes[i]->getIndex()];

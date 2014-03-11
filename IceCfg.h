@@ -16,51 +16,77 @@ class IceCfg {
 public:
   IceCfg(void);
   ~IceCfg();
-  bool hasError(void) const { return HasError; }
-  IceString getError(void) const { return ErrorMessage; }
-  void setError(const IceString &Message);
-  bool hasComputedFrame(void) const;
+
+  // Manage the name and return type of the function being translated.
   void setName(const IceString &FunctionName) { Name = FunctionName; }
   IceString getName(void) const { return Name; }
-  void setInternal(bool Internal) { IsInternal = Internal; }
-  bool getInternal(void) const { return IsInternal; }
+  void setReturnType(IceType ReturnType) { Type = ReturnType; }
+
+  // When emitting assembly, we allow a string to be prepended to
+  // names of translated functions.  This makes it easier to create an
+  // execution test against a reference translator like llc, with both
+  // translators using the same bitcode as input.
   void setTestPrefix(const IceString &Prefix) { TestPrefix = Prefix; }
   IceString getTestPrefix(void) const { return TestPrefix; }
-  IceString mangleName(const IceString &Name) const;
-  void setReturnType(IceType ReturnType) { Type = ReturnType; }
-  IceTargetLowering *getTarget(void) const { return Target; }
-  void addArg(IceVariable *Arg);
-  void setEntryNode(IceCfgNode *EntryNode);
+  IceString mangleName(const IceString &Name) const {
+    return getTestPrefix() + Name;
+  }
+
+  // Manage the "internal" attribute of the function.
+  void setInternal(bool Internal) { IsInternal = Internal; }
+  bool getInternal(void) const { return IsInternal; }
+
+  // Translation error flagging.  If support for some construct is
+  // known to be missing, instead of an assertion failure, setError()
+  // should be called and the error should be propagated back up.
+  // This way, we can gracefully fail to translate and let a fallback
+  // translator handle the function.
+  void setError(const IceString &Message);
+  bool hasError(void) const { return HasError; }
+  IceString getError(void) const { return ErrorMessage; }
+
+  // Manage nodes (a.k.a. basic blocks, IceCfgNodes).
+  void setEntryNode(IceCfgNode *EntryNode) { Entry = EntryNode; }
   IceCfgNode *getEntryNode(void) const { return Entry; }
-  void registerEdges(void);
-  void addNode(IceCfgNode *Node, uint32_t LabelIndex);
+  // Create a node and append it to the end of the linearized list.
+  IceCfgNode *makeNode(IceString Name = "");
+  uint32_t getNumNodes(void) const { return Nodes.size(); }
+  const IceNodeList &getNodes(void) const { return Nodes; }
   IceCfgNode *splitEdge(IceCfgNode *From, IceCfgNode *To);
-  IceCfgNode *getNode(uint32_t LabelIndex) const;
-  IceCfgNode *makeNode(uint32_t LabelIndex = -1, IceString Name = "");
-  const IceNodeList &getLNodes(void) const { return LNodes; }
-  unsigned getNumNodes(void) const { return Nodes.size(); }
-  // getConstant() is not const because it might add something to the
-  // constant pool.
-  IceConstant *getConstantBits(IceType Type, const void *ConstantBits);
+
+  // Manage instruction numbering.
+  int newInstNumber(void) { return NextInstNumber++; }
+
+  // Manage IceVariables.
+  IceVariable *makeVariable(IceType Type, const IceCfgNode *Node,
+                            const IceString &Name = "");
+  uint32_t getNumVariables(void) const { return Variables.size(); }
+  const IceVarList &getVariables(void) const { return Variables; }
+
+  // Manage arguments to the function.
+  void addArg(IceVariable *Arg);
+  const IceVarList &getArgs(void) const { return Args; }
+
+  // Manage IceConstants.
+  // getConstant*() functions are not const because they might add
+  // something to the constant pool.
   IceConstant *getConstantInt(IceType Type, uint64_t ConstantInt64);
   IceConstant *getConstantFloat(float Value);
   IceConstant *getConstantDouble(double Value);
-  // Returns a symbolic constant.  For now, Handle would refer to
-  // something LLVM-specific to facilitate linking.
-  IceConstant *getConstant(IceType Type, const void *Handle, int64_t Offset,
-                           const IceString &Name = "",
-                           bool SuppressMangling = false);
-  IceVariable *getVariable(uint32_t Index) const;
-  IceVariable *makeVariable(IceType Type, const IceCfgNode *Node,
-                            uint32_t Index = -1, const IceString &Name = "");
-  const IceVarList &getVariables(void) const { return Variables; }
-  const IceVarList &getArgs(void) const { return Args; }
-  unsigned getNumVariables(void) const { return Variables.size(); }
-  IceLiveness *getLiveness(void) const { return Liveness; }
-  int newInstNumber(void);
+  // Returns a symbolic constant.  Handle is currently unused but is
+  // reserved to hold something LLVM-specific to facilitate linking.
+  IceConstant *getConstantSym(IceType Type, const void *Handle, int64_t Offset,
+                              const IceString &Name = "",
+                              bool SuppressMangling = false);
 
-  IceString physicalRegName(int Reg, IceType Type = IceType_void) const;
+  // Miscellaneous accessors.
+  IceTargetLowering *getTarget(void) const { return Target; }
+  IceLiveness *getLiveness(void) const { return Liveness; }
+  bool hasComputedFrame(void) const;
+
+  // Passes over the CFG.
   void translate(IceTargetArch TargetArch);
+  void registerEdges(void);
   void renumberInstructions(void);
   void placePhiLoads(void);
   void placePhiStores(void);
@@ -92,32 +118,27 @@ private:
   // implementation over at a later point.
   llvm::BumpPtrAllocator Allocator;
 
-  bool HasError;
-  IceString ErrorMessage;
   IceString Name;       // function name
-  bool IsInternal;      // internal linkage
   IceString TestPrefix; // prepended to all symbol names, for testing
   IceType Type;         // return type
-  IceTargetLowering *Target;
+  bool IsInternal;      // internal linkage
+  bool HasError;
+  IceString ErrorMessage;
   IceCfgNode *Entry; // entry basic block
-  // Difference between Nodes and LNodes.  Nodes is the master list;
-  // IceCfgNode::NameIndex is a permanent index into Nodes[]; some
-  // entries of Nodes may be NULL; Nodes is ideally a vector
-  // container.  LNodes is the linearization; does not contain NULL
-  // entries; is a permutation of the non-NULL Nodes entries; is
-  // ideally a list container.
-  IceNodeList Nodes;  // node list
-  IceNodeList LNodes; // linearized node list; Entry should be first
+  IceNodeList Nodes; // linearized node list; Entry should be first
+  int NextInstNumber;
   IceVarList Variables;
-  IceVarList Args; // densely packed vector, subset of Variables
+  IceVarList Args; // subset of Variables, in argument order
   class IceConstantPool *ConstantPool;
+  IceTargetLowering *Target;
   IceLiveness *Liveness;
 
-  int NextInstNumber;
   void makeTarget(IceTargetArch Arch);
 
   // TODO: This is a hack, and should be moved into a global context
-  // guarded with a mutex.
+  // guarded with a mutex.  The purpose is to add a header comment at
+  // the beginning of emission, doing it once per file rather than
+  // once per function.
   static bool HasEmittedFirstMethod;
 };
 

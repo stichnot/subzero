@@ -62,8 +62,7 @@ IceRegManager::IceRegManager(IceCfg *Cfg, IceCfgNode *Node, unsigned NumReg)
   for (unsigned i = 0; i < NumReg; ++i) {
     char Buf[100];
     sprintf(Buf, "r%u_%u", i + 1, Node->getIndex());
-    IceVariable *Reg =
-        Cfg->makeVariable(IceType_i32, Node, Cfg->getNumVariables(), Buf);
+    IceVariable *Reg = Cfg->makeVariable(IceType_i32, Node, Buf);
     Queue.push_back(IceRegManagerEntry::create(Cfg, Reg, NumReg));
   }
 }

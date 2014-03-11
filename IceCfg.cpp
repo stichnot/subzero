@@ -49,12 +49,13 @@ private:
   std::vector<IceConstantRelocatable *> RelocatablePool;
 };
 
-IceOstream *GlobalStr;
+IceOstream *GlobalStr = NULL;
+bool IceCfg::HasEmittedFirstMethod = false;
 
 IceCfg::IceCfg(void)
-    : Str(this), HasError(false), ErrorMessage(""), Name(""), IsInternal(false),
-      TestPrefix(""), Type(IceType_void), Target(NULL), Entry(NULL),
-      Liveness(NULL), NextInstNumber(1) {
+    : Str(this), Name(""), TestPrefix(""), Type(IceType_void),
+      IsInternal(false), HasError(false), ErrorMessage(""), Entry(NULL),
+      NextInstNumber(1), Target(NULL), Liveness(NULL) {
   GlobalStr = &Str;
   ConstantPool = new IceConstantPool(this);
 }
@@ -70,56 +71,30 @@ IceCfg::~IceCfg() {
 void IceCfg::setError(const IceString &Message) {
   HasError = true;
   ErrorMessage = Message;
-  if (true || Str.isVerbose()) {
-    Str << "ICE translation error: " << ErrorMessage << "\n";
-  }
+  Str << "ICE translation error: " << ErrorMessage << "\n";
 }
 
-bool IceCfg::hasComputedFrame(void) const {
-  return getTarget() && getTarget()->hasComputedFrame();
-}
-
-IceString IceCfg::mangleName(const IceString &Name) const {
-  return getTestPrefix() + Name;
-}
-
-void IceCfg::makeTarget(IceTargetArch Arch) {
-  Target = IceTargetLowering::createLowering(Arch, this);
-}
-
-void IceCfg::addArg(IceVariable *Arg) {
-  Arg->setIsArg(this);
-  Args.push_back(Arg);
-}
-
-void IceCfg::setEntryNode(IceCfgNode *EntryNode) { Entry = EntryNode; }
-
-// We assume that the initial CFG construction calls addNode() in the
-// desired topological/linearization order.
-void IceCfg::addNode(IceCfgNode *Node, uint32_t LabelIndex) {
-  if (Nodes.size() <= LabelIndex)
-    Nodes.resize(LabelIndex + 1);
-  assert(Nodes[LabelIndex] == NULL);
-  Nodes[LabelIndex] = Node;
-  LNodes.push_back(Node);
+IceCfgNode *IceCfg::makeNode(IceString Name) {
+  uint32_t LabelIndex = Nodes.size();
+  IceCfgNode *Node = IceCfgNode::create(this, LabelIndex, Name);
+  Nodes.push_back(Node);
+  return Node;
 }
 
 IceCfgNode *IceCfg::splitEdge(IceCfgNode *From, IceCfgNode *To) {
   // Create the new node.
   IceString NewNodeName = "s__" + From->getName() + "__" + To->getName();
-  IceCfgNode *NewNode = makeNode(-1, NewNodeName);
-  // TODO: It's ugly that LNodes has to be manipulated this way.
-  assert(NewNode == LNodes.back());
-  LNodes.pop_back();
+  IceCfgNode *NewNode = makeNode(NewNodeName);
 
   // Decide where "this" should go in the linearization.  The two
   // obvious choices are right after the From node, and right before
   // the To node.  For now, let's do the latter.
-  for (IceNodeList::iterator I = LNodes.begin(), E = LNodes.end(); I != E;
-       ++I) {
+  assert(NewNode == Nodes.back());
+  Nodes.pop_back();
+  for (IceNodeList::iterator I = Nodes.begin(), E = Nodes.end(); I != E; ++I) {
     IceCfgNode *Node = *I;
     if (Node == To) {
-      LNodes.insert(I, NewNode);
+      Nodes.insert(I, NewNode);
       break;
     }
   }
@@ -129,33 +104,26 @@ IceCfgNode *IceCfg::splitEdge(IceCfgNode *From, IceCfgNode *To) {
   return NewNode;
 }
 
-IceCfgNode *IceCfg::getNode(uint32_t LabelIndex) const {
-  assert(LabelIndex < Nodes.size());
-  return Nodes[LabelIndex];
+// Create a new IceVariable with a particular type and an optional
+// name.  The Node argument is the node where the variable is defined.
+IceVariable *IceCfg::makeVariable(IceType Type, const IceCfgNode *Node,
+                                  const IceString &Name) {
+  uint32_t Index = Variables.size();
+  Variables.push_back(IceVariable::create(this, Type, Node, Index, Name));
+  return Variables[Index];
 }
 
-IceCfgNode *IceCfg::makeNode(uint32_t LabelIndex, IceString Name) {
-  if (LabelIndex == (uint32_t) - 1)
-    LabelIndex = Nodes.size();
-  if (Nodes.size() <= LabelIndex)
-    Nodes.resize(LabelIndex + 1);
-  if (Nodes[LabelIndex] == NULL) {
-    IceCfgNode *Node = IceCfgNode::create(this, LabelIndex, Name);
-    Nodes[LabelIndex] = Node;
-    // TODO: This ends up creating LNodes in the order that nodes are
-    // resolved, not the compacted order they end up in Nodes.  It
-    // would be a good idea to reconstruct LNodes right after initial
-    // ICE formation.
-    LNodes.push_back(Node);
-  }
-  return Nodes[LabelIndex];
+void IceCfg::addArg(IceVariable *Arg) {
+  Arg->setIsArg(this);
+  Args.push_back(Arg);
 }
 
 IceConstant *IceCfg::getConstantInt(IceType Type, uint64_t ConstantInt64) {
   return IceConstantInteger::create(this, Type, ConstantInt64);
 }
 
-// TODO: Add float and double constants to the global constant pool.
+// TODO: Add float and double constants to the global constant pool,
+// instead of creating a new instance each time.
 IceConstant *IceCfg::getConstantFloat(float ConstantFloat) {
   return IceConstantFloat::create(this, ConstantFloat);
 }
@@ -164,82 +132,74 @@ IceConstant *IceCfg::getConstantDouble(double ConstantDouble) {
   return IceConstantDouble::create(this, ConstantDouble);
 }
 
-IceConstant *IceCfg::getConstant(IceType Type, const void *Handle,
-                                 int64_t Offset, const IceString &Name,
-                                 bool SuppressMangling) {
+IceConstant *IceCfg::getConstantSym(IceType Type, const void *Handle,
+                                    int64_t Offset, const IceString &Name,
+                                    bool SuppressMangling) {
   IceConstantRelocatable *Const =
       ConstantPool->getOrAddRelocatable(Type, Handle, Offset, Name);
   Const->setSuppressMangling(SuppressMangling);
   return Const;
 }
 
-IceVariable *IceCfg::getVariable(uint32_t Index) const {
-  assert(Variables.size() > Index);
-  assert(Variables[Index]);
-  return Variables[Index];
+// Returns whether the stack frame layout has been computed yet.  This
+// is used for dumping the stack frame location of IceVariables.
+bool IceCfg::hasComputedFrame(void) const {
+  return getTarget() && getTarget()->hasComputedFrame();
 }
 
-IceVariable *IceCfg::makeVariable(IceType Type, const IceCfgNode *Node,
-                                  uint32_t Index, const IceString &Name) {
-  if (Index == (uint32_t) - 1)
-    Index = Variables.size();
-  if (Variables.size() <= Index)
-    Variables.resize(Index + 1);
-  if (Variables[Index] == NULL)
-    Variables[Index] = IceVariable::create(this, Type, Node, Index, Name);
-  return Variables[Index];
-}
+void IceCfg::translate(IceTargetArch TargetArch) {
+  makeTarget(TargetArch);
+  if (hasError())
+    return;
 
-int IceCfg::newInstNumber(void) {
-  int Result = NextInstNumber;
-  NextInstNumber += 1;
-  return Result;
-}
+  if (Str.isVerbose())
+    Str << "================ Initial CFG ================\n";
+  dump();
 
-IceString IceCfg::physicalRegName(int Reg, IceType Type) const {
-  assert(getTarget());
-  return getTarget()->getRegName(Reg, Type);
-}
+  IceTimer T_translate;
+  // The set of translation passes and their order are determined by
+  // the target.
+  getTarget()->translate();
+  T_translate.printElapsedUs(Str, "translate()");
 
-void IceCfg::renumberInstructions(void) {
-  NextInstNumber = 1;
-  for (IceNodeList::iterator I = LNodes.begin(), E = LNodes.end(); I != E;
-       ++I) {
-    (*I)->renumberInstructions();
-  }
+  if (Str.isVerbose())
+    Str << "================ Final output ================\n";
+  dump();
 }
 
 void IceCfg::registerEdges(void) {
-  for (IceNodeList::iterator I = LNodes.begin(), E = LNodes.end(); I != E;
-       ++I) {
+  for (IceNodeList::iterator I = Nodes.begin(), E = Nodes.end(); I != E; ++I) {
     (*I)->registerEdges();
   }
 }
 
+void IceCfg::renumberInstructions(void) {
+  NextInstNumber = 1;
+  for (IceNodeList::iterator I = Nodes.begin(), E = Nodes.end(); I != E; ++I) {
+    (*I)->renumberInstructions();
+  }
+}
+
 void IceCfg::placePhiLoads(void) {
-  for (IceNodeList::iterator I = LNodes.begin(), E = LNodes.end(); I != E;
-       ++I) {
+  for (IceNodeList::iterator I = Nodes.begin(), E = Nodes.end(); I != E; ++I) {
     (*I)->placePhiLoads();
   }
 }
 
 void IceCfg::placePhiStores(void) {
-  for (IceNodeList::iterator I = LNodes.begin(), E = LNodes.end(); I != E;
-       ++I) {
+  for (IceNodeList::iterator I = Nodes.begin(), E = Nodes.end(); I != E; ++I) {
     (*I)->placePhiStores();
   }
 }
 
 void IceCfg::deletePhis(void) {
-  for (IceNodeList::iterator I = LNodes.begin(), E = LNodes.end(); I != E;
-       ++I) {
+  for (IceNodeList::iterator I = Nodes.begin(), E = Nodes.end(); I != E; ++I) {
     (*I)->deletePhis();
   }
 }
 
 void IceCfg::doAddressOpt(void) {
-  for (IceNodeList::iterator I = LNodes.begin(), E = LNodes.end(); I != E;
-       ++I) {
+  for (IceNodeList::iterator I = Nodes.begin(), E = Nodes.end(); I != E; ++I) {
     (*I)->doAddressOpt();
   }
 }
@@ -249,9 +209,21 @@ void IceCfg::genCode(void) {
     setError("IceCfg::makeTarget() wasn't called.");
     return;
   }
-  for (IceNodeList::iterator I = LNodes.begin(), E = LNodes.end(); I != E;
-       ++I) {
+  for (IceNodeList::iterator I = Nodes.begin(), E = Nodes.end(); I != E; ++I) {
     (*I)->genCode();
+  }
+}
+
+// Compute the stack frame layout.
+void IceCfg::genFrame(void) {
+  getTarget()->addProlog(Entry);
+  // TODO: Consider folding epilog generation into the final
+  // emission/assembly pass to avoid an extra iteration over the node
+  // list.  Or keep a separate list of exit nodes.
+  for (IceNodeList::iterator I = Nodes.begin(), E = Nodes.end(); I != E; ++I) {
+    IceCfgNode *Node = *I;
+    if (Node->hasReturn())
+      getTarget()->addEpilog(Node);
   }
 }
 
@@ -259,7 +231,9 @@ void IceCfg::liveness(IceLivenessMode Mode) {
   delete Liveness;
   Liveness = NULL;
   if (Mode == IceLiveness_LREndLightweight) {
-    for (IceNodeList::iterator I = LNodes.begin(), E = LNodes.end(); I != E;
+    // Lightweight liveness is a quick single pass and doesn't need to
+    // iterate until convergence.
+    for (IceNodeList::iterator I = Nodes.begin(), E = Nodes.end(); I != E;
          ++I) {
       (*I)->liveness(Mode, Liveness);
     }
@@ -269,21 +243,21 @@ void IceCfg::liveness(IceLivenessMode Mode) {
   Liveness = new IceLiveness(this, Mode);
   Liveness->init();
   llvm::BitVector NeedToProcess(Nodes.size());
-  // Mark all nodes as needing to be processed
-  for (IceNodeList::iterator I = LNodes.begin(), E = LNodes.end(); I != E;
-       ++I) {
+  // Mark all nodes as needing to be processed.
+  for (IceNodeList::iterator I = Nodes.begin(), E = Nodes.end(); I != E; ++I) {
     NeedToProcess[(*I)->getIndex()] = true;
   }
   while (NeedToProcess.any()) {
     // Iterate in reverse topological order to speed up convergence.
-    for (IceNodeList::reverse_iterator I = LNodes.rbegin(), E = LNodes.rend();
+    for (IceNodeList::reverse_iterator I = Nodes.rbegin(), E = Nodes.rend();
          I != E; ++I) {
       IceCfgNode *Node = *I;
       if (NeedToProcess[Node->getIndex()]) {
         NeedToProcess[Node->getIndex()] = false;
         bool Changed = Node->liveness(Mode, Liveness);
         if (Changed) {
-          // Mark all in-edges as needing to be processed
+          // If the beginning-of-block liveness changed since the last
+          // iteration, mark all in-edges as needing to be processed.
           const IceNodeList &InEdges = Node->getInEdges();
           for (IceNodeList::const_iterator I1 = InEdges.begin(),
                                            E1 = InEdges.end();
@@ -303,53 +277,51 @@ void IceCfg::liveness(IceLivenessMode Mode) {
         Var->resetLiveRange();
     }
   }
-  if (Mode != IceLiveness_LREndLightweight) {
-    IceTimer T_liveRange;
-    // Make a final pass over instructions to delete dead instructions
-    // and build each IceVariable's live range.
-    for (IceNodeList::iterator I = LNodes.begin(), E = LNodes.end(); I != E;
-         ++I) {
-      (*I)->livenessPostprocess(Mode, Liveness);
-    }
-    if (Mode == IceLiveness_RangesFull) {
-      // Special treatment for live in-args.  Their liveness needs to
-      // extend beyond the beginning of the function, otherwise an arg
-      // whose only use is in the first instruction will end up having
-      // the trivial live range [1,1) and will *not* interfere with
-      // other arguments.  So if the first instruction of the method is
-      // "r=arg1+arg2", both args may be assigned the same register.
-      for (unsigned I = 0; I < Args.size(); ++I) {
-        IceVariable *Arg = Args[I];
-        if (!Liveness->getLiveRange(Arg).isEmpty()) {
-          // Add live range [-1,0) with weight 0.
-          Liveness->addLiveRange(Arg, -1, 0, 0);
-        }
-        IceVariable *Low = Arg->getLow();
-        if (Low && !Liveness->getLiveRange(Low).isEmpty())
-          Liveness->addLiveRange(Low, -1, 0, 0);
-        IceVariable *High = Arg->getHigh();
-        if (High && !Liveness->getLiveRange(High).isEmpty())
-          Liveness->addLiveRange(High, -1, 0, 0);
-      }
-      // Copy IceLiveness::LiveRanges into individual variables.  TODO:
-      // Remove IceVariable::LiveRange and redirect to
-      // IceLiveness::LiveRanges.  TODO: make sure IceVariable weights
-      // are applied properly.
-      uint32_t NumVars = Variables.size();
-      for (uint32_t i = 0; i < NumVars; ++i) {
-        IceVariable *Var = Variables[i];
-        if (Var == NULL)
-          continue;
-        Var->setLiveRange(Liveness->getLiveRange(Var));
-        if (Var->getWeight().isInf())
-          Var->setLiveRangeInfiniteWeight();
-        Str.setCurrentNode(NULL);
-      }
-    }
-    T_liveRange.printElapsedUs(Str, "live range construction");
+  IceTimer T_liveRange;
+  // Make a final pass over instructions to delete dead instructions
+  // and build each IceVariable's live range.
+  for (IceNodeList::iterator I = Nodes.begin(), E = Nodes.end(); I != E; ++I) {
+    (*I)->livenessPostprocess(Mode, Liveness);
   }
   if (Mode == IceLiveness_RangesFull) {
+    // Special treatment for live in-args.  Their liveness needs to
+    // extend beyond the beginning of the function, otherwise an arg
+    // whose only use is in the first instruction will end up having
+    // the trivial live range [1,1) and will *not* interfere with
+    // other arguments.  So if the first instruction of the method is
+    // "r=arg1+arg2", both args may be assigned the same register.
+    for (unsigned I = 0; I < Args.size(); ++I) {
+      IceVariable *Arg = Args[I];
+      if (!Liveness->getLiveRange(Arg).isEmpty()) {
+        // Add live range [-1,0) with weight 0.
+        Liveness->addLiveRange(Arg, -1, 0, 0);
+      }
+      IceVariable *Low = Arg->getLow();
+      if (Low && !Liveness->getLiveRange(Low).isEmpty())
+        Liveness->addLiveRange(Low, -1, 0, 0);
+      IceVariable *High = Arg->getHigh();
+      if (High && !Liveness->getLiveRange(High).isEmpty())
+        Liveness->addLiveRange(High, -1, 0, 0);
+    }
+    // Copy IceLiveness::LiveRanges into individual variables.  TODO:
+    // Remove IceVariable::LiveRange and redirect to
+    // IceLiveness::LiveRanges.  TODO: make sure IceVariable weights
+    // are applied properly.
+    uint32_t NumVars = Variables.size();
+    for (uint32_t i = 0; i < NumVars; ++i) {
+      IceVariable *Var = Variables[i];
+      if (Var == NULL)
+        continue;
+      Var->setLiveRange(Liveness->getLiveRange(Var));
+      if (Var->getWeight().isInf())
+        Var->setLiveRangeInfiniteWeight();
+      Str.setCurrentNode(NULL);
+    }
+    T_liveRange.printElapsedUs(Str, "live range construction");
     dump();
+    // TODO: validateLiveness() is a heavyweight operation inside an
+    // assert().  In a Release build with asserts enabled, we may want
+    // to disable this call.
     assert(validateLiveness());
   }
 }
@@ -358,7 +330,7 @@ void IceCfg::liveness(IceLivenessMode Mode) {
 // appears within the IceVariable's computed live range.
 bool IceCfg::validateLiveness(void) const {
   bool Valid = true;
-  for (IceNodeList::const_iterator I1 = LNodes.begin(), E1 = LNodes.end();
+  for (IceNodeList::const_iterator I1 = Nodes.begin(), E1 = Nodes.end();
        I1 != E1; ++I1) {
     IceCfgNode *Node = *I1;
     IceInstList &Insts = Node->getInsts();
@@ -399,6 +371,9 @@ bool IceCfg::validateLiveness(void) const {
   return Valid;
 }
 
+// TODO: Move regAlloc() into IceTargetLowering and let it deal with
+// issues of caller-save registers, callee-save registers, frame
+// pointers, etc.
 void IceCfg::regAlloc(void) {
   IceLinearScan LinearScan(this);
   IceTargetLowering::RegSetMask RegInclude = 0, RegExclude = 0;
@@ -413,36 +388,8 @@ void IceCfg::regAlloc(void) {
   LinearScan.scan(RegMask);
 }
 
-// Compute the stack frame layout.
-void IceCfg::genFrame(void) {
-  getTarget()->addProlog(Entry);
-  // TODO: Consider folding epilog generation into the final
-  // emission/assembly pass to avoid an extra iteration over the node
-  // list.  Or keep a separate list of exit nodes.
-  for (IceNodeList::iterator I = LNodes.begin(), E = LNodes.end(); I != E;
-       ++I) {
-    IceCfgNode *Node = *I;
-    if (Node->hasReturn())
-      getTarget()->addEpilog(Node);
-  }
-}
-
-void IceCfg::translate(IceTargetArch TargetArch) {
-  makeTarget(TargetArch);
-  if (hasError())
-    return;
-
-  if (Str.isVerbose())
-    Str << "================ Initial CFG ================\n";
-  dump();
-
-  IceTimer T_translate;
-  getTarget()->translate();
-  T_translate.printElapsedUs(Str, "translate()");
-
-  if (Str.isVerbose())
-    Str << "================ Final output ================\n";
-  dump();
+void IceCfg::makeTarget(IceTargetArch Arch) {
+  Target = IceTargetLowering::createLowering(Arch, this);
 }
 
 // ======================== Dump routines ======================== //
@@ -467,7 +414,7 @@ void IceCfg::emit(uint32_t Option) const {
     Str << "\t.globl\t" << mangleName(Name) << "\n";
     Str << "\t.type\t" << mangleName(Name) << ",@function\n";
   }
-  for (IceNodeList::const_iterator I = LNodes.begin(), E = LNodes.end(); I != E;
+  for (IceNodeList::const_iterator I = Nodes.begin(), E = Nodes.end(); I != E;
        ++I) {
     (*I)->emit(Str, Option);
   }
@@ -506,7 +453,7 @@ void IceCfg::dump(void) const {
     }
   }
   // Print each basic block
-  for (IceNodeList::const_iterator I = LNodes.begin(), E = LNodes.end(); I != E;
+  for (IceNodeList::const_iterator I = Nodes.begin(), E = Nodes.end(); I != E;
        ++I) {
     (*I)->dump(Str);
   }
@@ -514,5 +461,3 @@ void IceCfg::dump(void) const {
     Str << "}\n";
   }
 }
-
-bool IceCfg::HasEmittedFirstMethod = false;

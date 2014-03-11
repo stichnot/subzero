@@ -17,26 +17,23 @@
 #include <string>
 #include <vector>
 
-// See http://llvm.org/docs/ProgrammersManual.html#isa
+#include "llvm/ADT/BitVector.h"
+#include "llvm/ADT/SmallBitVector.h"
 #include "llvm/Support/Casting.h"
 #include "llvm/Support/raw_ostream.h"
 #include "llvm/Support/Timer.h"
-#include "llvm/ADT/BitVector.h"
-#include "llvm/ADT/SmallBitVector.h"
 
 class IceCfg;
 class IceCfgNode;
+class IceConstant;
 class IceInst;
 class IceInstPhi;
 class IceInstTarget;
-class IceLiveness;
 class IceLiveRange;
+class IceLiveness;
 class IceOperand;
-class IceVariable;
-class IceConstant;
 class IceTargetLowering;
-
-// typedefs of containers
+class IceVariable;
 
 // TODO: Switch over to LLVM's ADT container classes.
 // http://llvm.org/docs/ProgrammersManual.html#picking-the-right-data-structure-for-a-task
@@ -46,27 +43,6 @@ typedef std::list<IceInstPhi *> IcePhiList;
 typedef std::vector<IceOperand *> IceOpList;
 typedef std::vector<IceVariable *> IceVarList;
 typedef std::vector<IceCfgNode *> IceNodeList;
-
-// The IceOstream class wraps an output stream and an IceCfg pointer,
-// so that dump routines have access to the IceCfg object and can
-// print labels and variable names.
-
-enum IceVerbose {
-  IceV_None = 0,
-  IceV_Instructions = 1 << 0,
-  IceV_Deleted = 1 << 1,
-  IceV_InstNumbers = 1 << 2,
-  IceV_Preds = 1 << 3,
-  IceV_Succs = 1 << 4,
-  IceV_Liveness = 1 << 5,
-  IceV_RegManager = 1 << 6,
-  IceV_RegOrigins = 1 << 7,
-  IceV_LinearScan = 1 << 8,
-  IceV_Frame = 1 << 9,
-  IceV_Timing = 1 << 10,
-  IceV_All = ~IceV_None
-};
-typedef uint32_t IceVerboseMask;
 
 enum IceLivenessMode {
   // Lightweight version of live-range-end calculation.  Marks the
@@ -87,11 +63,7 @@ enum IceLivenessMode {
 };
 
 // This is a convenience templated class that provides a mapping
-// between a parameterized type and small unsigned integers.  The
-// small integer is meant to be the index for an IceCfgNode or
-// IceVariable.  If the ICE is generated directly from the bitcode,
-// this won't be necessary, but it is helpful for manual generation or
-// generation from a different IR such as translating from LLVM.
+// between a parameterized type and small unsigned integers.
 template <typename T> class IceValueTranslation {
 public:
   typedef typename std::map<const T, uint32_t> ContainerType;
@@ -102,7 +74,6 @@ public:
     if (Iter != Entries.end())
       return Iter->second;
     uint32_t Index = Entries.size();
-    Index *= 2; // TODO: this adds holes to the index space for testing; remove.
     Entries[Value] = Index;
     return Index;
   }
@@ -111,26 +82,58 @@ private:
   ContainerType Entries;
 };
 
+enum IceVerbose {
+  IceV_None = 0,
+  IceV_Instructions = 1 << 0,
+  IceV_Deleted = 1 << 1,
+  IceV_InstNumbers = 1 << 2,
+  IceV_Preds = 1 << 3,
+  IceV_Succs = 1 << 4,
+  IceV_Liveness = 1 << 5,
+  IceV_RegManager = 1 << 6,
+  IceV_RegOrigins = 1 << 7,
+  IceV_LinearScan = 1 << 8,
+  IceV_Frame = 1 << 9,
+  IceV_Timing = 1 << 10,
+  IceV_All = ~IceV_None
+};
+typedef uint32_t IceVerboseMask;
+
+// The IceOstream class wraps an output stream and an IceCfg pointer,
+// so that dump routines have access to the IceCfg object and can
+// print labels and variable names.
+
 class IceOstream {
 public:
   IceOstream(IceCfg *Cfg)
       : Stream(NULL), Cfg(Cfg), Verbose(IceV_Instructions | IceV_Preds),
         CurrentNode(NULL) {}
+
+  // Returns true if any of the specified options in the verbose mask
+  // are set.  If the argument is omitted, it checks if any verbose
+  // options at all are set.  IceV_Timing is treated specially, so
+  // that running with just IceV_Timing verbosity doesn't trigger an
+  // avalanche of extra output.
   bool isVerbose(IceVerboseMask Mask = (IceV_All & ~IceV_Timing)) {
     return Verbose & Mask;
   }
   void setVerbose(IceVerboseMask Mask) { Verbose = Mask; }
   void addVerbose(IceVerboseMask Mask) { Verbose |= Mask; }
   void subVerbose(IceVerboseMask Mask) { Verbose &= ~Mask; }
+
   void setCurrentNode(const IceCfgNode *Node) { CurrentNode = Node; }
   const IceCfgNode *getCurrentNode(void) const { return CurrentNode; }
+
   llvm::raw_ostream *Stream;
   IceCfg *const Cfg;
 
 private:
   IceVerboseMask Verbose;
   // CurrentNode is maintained during dumping/emitting just for
-  // validating IceVariable::DefOrUseNode.
+  // validating IceVariable::DefOrUseNode.  Normally, a traversal over
+  // IceCfgNodes maintains this, but before global operations like
+  // register allocation, setCurrentNode(NULL) should be called to
+  // avoid spurious validation failures.
   const IceCfgNode *CurrentNode;
 };
 
@@ -194,8 +197,11 @@ public:
     return End.getWallTime() - Start.getWallTime();
   }
   void printElapsedUs(IceOstream &Str, const IceString &Tag) const {
-    if (Str.isVerbose(IceV_Timing))
+    if (Str.isVerbose(IceV_Timing)) {
+      // Prefixing with '#' allows timing strings to be included
+      // without error in textual assembly output.
       Str << "# " << getElapsedUs() << " usec " << Tag << "\n";
+    }
   }
 
 private:

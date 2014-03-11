@@ -48,8 +48,8 @@ public:
   LLVM2ICEConverter() : Cfg(NULL), CurrentNode(NULL) {}
 
   IceCfg *convertFunction(const Function *F) {
-    VariableTranslation.clear();
-    LabelTranslation.clear();
+    VarMap.clear();
+    NodeMap.clear();
     Cfg = new IceCfg;
     Cfg->setName(F->getName());
     Cfg->setReturnType(convertType(F->getReturnType()));
@@ -85,9 +85,11 @@ private:
   IceVariable *mapValueToIceVar(const Value *V, IceType IceTy) {
     if (IceTy == IceType_void)
       return NULL;
-    assert(CurrentNode);
-    return Cfg->makeVariable(IceTy, CurrentNode,
-                             VariableTranslation.translate(V), V->getName());
+    if (VarMap.find(V) == VarMap.end()) {
+      assert(CurrentNode);
+      VarMap[V] = Cfg->makeVariable(IceTy, CurrentNode, V->getName());
+    }
+    return VarMap[V];
   }
 
   IceVariable *mapValueToIceVar(const Value *V) {
@@ -95,7 +97,10 @@ private:
   }
 
   IceCfgNode *mapBasicBlockToNode(const BasicBlock *BB) {
-    return Cfg->makeNode(LabelTranslation.translate(BB), BB->getName());
+    if (NodeMap.find(BB) == NodeMap.end()) {
+      NodeMap[BB] = Cfg->makeNode(BB->getName());
+    }
+    return NodeMap[BB];
   }
 
   IceType convertIntegerType(const IntegerType *IntTy) {
@@ -158,8 +163,8 @@ private:
       // For now only constant integers are supported.
       // TODO: support all kinds of constants
       if (const GlobalValue *GV = dyn_cast<GlobalValue>(Const)) {
-        return Cfg->getConstant(/*IceType_i32*/ convertType(GV->getType()), GV,
-                                0, GV->getName());
+        return Cfg->getConstantSym(convertType(GV->getType()), GV, 0,
+                                   GV->getName());
       } else if (const ConstantInt *CI = dyn_cast<ConstantInt>(Const)) {
         return Cfg->getConstantInt(convertIntegerType(CI->getType()),
                                    CI->getZExtValue());
@@ -515,8 +520,8 @@ private:
   // Data
   IceCfg *Cfg;
   IceCfgNode *CurrentNode;
-  IceValueTranslation<const Value *> VariableTranslation;
-  IceValueTranslation<const BasicBlock *> LabelTranslation;
+  std::map<const Value *, IceVariable *> VarMap;
+  std::map<const BasicBlock *, IceCfgNode *> NodeMap;
 };
 
 static cl::list<IceVerbose> VerboseList(

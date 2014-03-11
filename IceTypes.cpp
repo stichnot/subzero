@@ -8,8 +8,6 @@
 
 uint32_t iceTypeWidth(IceType T) {
   switch (T) {
-  case IceType_void:
-    return 0;
   case IceType_i1:
     return 1;
   case IceType_i8:
@@ -24,11 +22,11 @@ uint32_t iceTypeWidth(IceType T) {
     return 4;
   case IceType_f64:
     return 8;
+  case IceType_void:
   case IceType_NUM:
-    assert(0);
-    return 0;
+    break;
   }
-  assert(0);
+  assert(0 && "Invalid type for iceTypeWidth()");
   return 0;
 }
 
@@ -61,7 +59,8 @@ IceOstream &operator<<(IceOstream &Str, IceType T) {
     Str << "double";
     return Str;
   case IceType_NUM:
-    assert(0);
+  default:
+    assert(0 && "Invalid type for printing");
     break;
   }
   Str << "???";

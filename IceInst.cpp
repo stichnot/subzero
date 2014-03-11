@@ -318,7 +318,7 @@ IceInst *IceInstPhi::lower(IceCfg *Cfg, IceCfgNode *Node) {
   assert(getDest());
   IceVariable *Dest = getDest();
   IceString PhiName = Dest->getName() + "_phi";
-  IceVariable *NewSrc = Cfg->makeVariable(Dest->getType(), Node, -1, PhiName);
+  IceVariable *NewSrc = Cfg->makeVariable(Dest->getType(), Node, PhiName);
   this->Dest = NewSrc;
   IceInstAssign *NewInst = IceInstAssign::create(Cfg, Dest, NewSrc);
   Dest->setPreferredRegister(NewSrc, false);
