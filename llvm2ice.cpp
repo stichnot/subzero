@@ -347,7 +347,7 @@ private:
   }
 
   IceInst *convertCastInstruction(const Instruction *Inst,
-                                  IceInstCast::IceCastKind CastKind) {
+                                  IceInstCast::OpKind CastKind) {
     IceOperand *Src = convertOperand(Inst, 0);
     IceVariable *Dest = mapValueToIceVar(Inst);
     return IceInstCast::create(Cfg, CastKind, Dest, Src);
@@ -358,7 +358,7 @@ private:
     IceOperand *Src1 = convertOperand(Inst, 1);
     IceVariable *Dest = mapValueToIceVar(Inst);
 
-    IceInstIcmp::IceICond Cond;
+    IceInstIcmp::ICond Cond;
     switch (Inst->getPredicate()) {
     default:
       llvm_unreachable("ICmpInst predicate");
@@ -402,7 +402,7 @@ private:
     IceOperand *Src1 = convertOperand(Inst, 1);
     IceVariable *Dest = mapValueToIceVar(Inst);
 
-    IceInstFcmp::IceFCond Cond;
+    IceInstFcmp::FCond Cond;
     switch (Inst->getPredicate()) {
 
     default:

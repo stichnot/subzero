@@ -971,8 +971,9 @@ IceInstList IceTargetX8632::lowerAssign(const IceInstAssign *Inst,
 IceInstList IceTargetX8632::lowerBr(const IceInstBr *Inst, const IceInst *Next,
                                     bool &DeleteNextInst) {
   IceInstList Expansion;
-  if (Inst->getTargetTrue() == NULL) { // unconditional branch
-    Expansion.push_back(IceInstX8632Br::create(Cfg, Inst->getTargetFalse()));
+  if (Inst->isUnconditional()) {
+    Expansion.push_back(
+        IceInstX8632Br::create(Cfg, Inst->getTargetUnconditional()));
     return Expansion;
   }
   // cmp src, 0; br ne, labelTrue; br labelFalse
@@ -1118,7 +1119,7 @@ IceInstList IceTargetX8632::lowerCast(const IceInstCast *Inst,
                                       bool &DeleteNextInst) {
   // a = cast(b) ==> t=cast(b); a=t; (link t->b, link a->t, no overlap)
   IceInstList Expansion;
-  IceInstCast::IceCastKind CastKind = Inst->getCastKind();
+  IceInstCast::OpKind CastKind = Inst->getCastKind();
   IceVariable *Dest = Inst->getDest();
   IceOperand *Src0 = Inst->getSrc(0);
   IceOperand *Reg =
@@ -1330,7 +1331,7 @@ IceInstList IceTargetX8632::lowerCast(const IceInstCast *Inst,
 }
 
 static struct {
-  IceInstFcmp::IceFCond Cond;
+  IceInstFcmp::FCond Cond;
   unsigned Default;
   bool SwapOperands;
   IceInstX8632Br::BrCond C1, C2;
@@ -1384,7 +1385,7 @@ IceInstList IceTargetX8632::lowerFcmp(const IceInstFcmp *Inst,
   // FakeUse(a) (only if C1 != Br_None)
   // mov a, !<default> (only if C1 != Br_None)
   // label: (only if C1 != Br_None)
-  IceInstFcmp::IceFCond Condition = Inst->getCondition();
+  IceInstFcmp::FCond Condition = Inst->getCondition();
   unsigned Index = static_cast<unsigned>(Condition);
   assert(Index < TableFcmpSize);
   assert(TableFcmp[Index].Cond == Condition);
@@ -1421,7 +1422,7 @@ IceInstList IceTargetX8632::lowerFcmp(const IceInstFcmp *Inst,
 }
 
 static struct {
-  IceInstIcmp::IceICond Cond;
+  IceInstIcmp::ICond Cond;
   IceInstX8632Br::BrCond C1, C2, C3;
 } TableIcmp64[] = { { IceInstIcmp::Eq }, { IceInstIcmp::Ne },
                     { IceInstIcmp::Ugt, IceInstX8632Br::Br_a,
@@ -1444,7 +1445,7 @@ const static unsigned TableIcmp64Size =
     sizeof(TableIcmp64) / sizeof(*TableIcmp64);
 
 static struct {
-  IceInstIcmp::IceICond Cond;
+  IceInstIcmp::ICond Cond;
   IceInstX8632Br::BrCond Mapping;
 } TableIcmp32[] = { { IceInstIcmp::Eq, IceInstX8632Br::Br_e },
                     { IceInstIcmp::Ne, IceInstX8632Br::Br_ne },
@@ -1459,7 +1460,7 @@ static struct {
 const static unsigned TableIcmp32Size =
     sizeof(TableIcmp32) / sizeof(*TableIcmp32);
 
-static IceInstX8632Br::BrCond getIcmp32Mapping(IceInstIcmp::IceICond Cond) {
+static IceInstX8632Br::BrCond getIcmp32Mapping(IceInstIcmp::ICond Cond) {
   unsigned Index = static_cast<unsigned>(Cond);
   assert(Index < TableIcmp32Size);
   assert(TableIcmp32[Index].Cond == Cond);
@@ -1473,28 +1474,28 @@ IceInstList IceTargetX8632::lowerIcmp(const IceInstIcmp *Inst,
   IceOperand *Src0 = Inst->getSrc(0);
   IceOperand *Src1 = Inst->getSrc(1);
   IceVariable *Dest = Inst->getDest();
-  if (Src0->getType() != IceType_i64 && Next && llvm::isa<IceInstBr>(Next) &&
-      Next->getSrcSize() > 0 && Dest == Next->getSrc(0) &&
-      Next->isLastUse(Dest)) {
-    const IceInstBr *NextBr = llvm::cast<IceInstBr>(Next);
-    // This is basically identical to an Arithmetic instruction,
-    // except there is no Dest variable to store.
-    // cmp a,b ==> mov t,a; cmp t,b
-    bool IsImmOrReg = false;
-    if (llvm::isa<IceConstant>(Src1))
-      IsImmOrReg = true;
-    else if (IceVariable *Var = llvm::dyn_cast<IceVariable>(Src1)) {
-      if (Var->getRegNum() >= 0)
+  if (const IceInstBr *NextBr = llvm::dyn_cast_or_null<const IceInstBr>(Next)) {
+    if (Src0->getType() != IceType_i64 && !NextBr->isUnconditional() &&
+        Dest == NextBr->getSrc(0) && NextBr->isLastUse(Dest)) {
+      // This is basically identical to an Arithmetic instruction,
+      // except there is no Dest variable to store.
+      // cmp a,b ==> mov t,a; cmp t,b
+      bool IsImmOrReg = false;
+      if (llvm::isa<IceConstant>(Src1))
         IsImmOrReg = true;
+      else if (IceVariable *Var = llvm::dyn_cast<IceVariable>(Src1)) {
+        if (Var->getRegNum() >= 0)
+          IsImmOrReg = true;
+      }
+      IceOperand *Reg = legalizeOperand(
+          Src0, IsImmOrReg ? Legal_All : Legal_Reg, Expansion, true);
+      Expansion.push_back(IceInstX8632Icmp::create(Cfg, Reg, Src1));
+      Expansion.push_back(IceInstX8632Br::create(
+          Cfg, NextBr->getTargetTrue(), NextBr->getTargetFalse(),
+          getIcmp32Mapping(Inst->getCondition())));
+      DeleteNextInst = true;
+      return Expansion;
     }
-    IceOperand *Reg = legalizeOperand(Src0, IsImmOrReg ? Legal_All : Legal_Reg,
-                                      Expansion, true);
-    Expansion.push_back(IceInstX8632Icmp::create(Cfg, Reg, Src1));
-    Expansion.push_back(IceInstX8632Br::create(
-        Cfg, NextBr->getTargetTrue(), NextBr->getTargetFalse(),
-        getIcmp32Mapping(Inst->getCondition())));
-    DeleteNextInst = true;
-    return Expansion;
   }
 
   // a=icmp cond, b, c ==> cmp b,c; a=1; br cond,L1; FakeUse(a); a=0; L1:
@@ -1503,7 +1504,7 @@ IceInstList IceTargetX8632::lowerIcmp(const IceInstIcmp *Inst,
   IceOperand *ConstZero = Cfg->getConstantInt(IceType_i32, 0);
   IceOperand *ConstOne = Cfg->getConstantInt(IceType_i32, 1);
   if (Src0->getType() == IceType_i64) {
-    IceInstIcmp::IceICond Condition = Inst->getCondition();
+    IceInstIcmp::ICond Condition = Inst->getCondition();
     unsigned Index = static_cast<unsigned>(Condition);
     assert(Index < TableIcmp64Size);
     assert(TableIcmp64[Index].Cond == Condition);

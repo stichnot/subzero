@@ -12,8 +12,7 @@
 
 class IceInst {
 public:
-  enum IceInstType {
-    // Alphabetical order
+  enum InstKind {
     Alloca,
     Arithmetic,
     Assign, // not part of LLVM/PNaCl bitcode
@@ -34,55 +33,67 @@ public:
     Target    // target-specific low-level ICE
               // Anything >= Target is an IceInstTarget subclass.
   };
-  int getNumber(void) const { return Number; }
+  InstKind getKind(void) const { return Kind; }
+
+  int32_t getNumber(void) const { return Number; }
   void renumber(IceCfg *Cfg);
-  IceInstType getKind(void) const { return Kind; }
+
+  bool isDeleted(void) const { return Deleted; }
+  void setDeleted(void) { Deleted = true; }
+  void deleteIfDead(void);
+
+  bool hasSideEffects(void) const { return HasSideEffects; }
+
   IceVariable *getDest(void) const { return Dest; }
-  IceOperand *getSrc(unsigned I) const {
+
+  uint32_t getSrcSize(void) const { return NumSrcs; }
+  IceOperand *getSrc(uint32_t I) const {
     assert(I < getSrcSize());
     return Srcs[I];
   }
-  unsigned getSrcSize(void) const { return NumSrcs; }
+
+  bool isLastUse(const IceOperand *Src) const;
+
+  // Returns a list of out-edges corresponding to a terminator
+  // instruction, which is the last instruction of the block.
   virtual IceNodeList getTerminatorEdges(void) const {
     assert(0);
     return IceNodeList();
   }
-  bool isDeleted(void) const { return Deleted; }
-  bool isLastUse(const IceOperand *Src) const;
-  bool hasSideEffects(void) const { return HasSideEffects; }
-  // If an instruction is deleted as a result of replacing it with
-  // equivalent instructions, only call setDeleted() *after* inserting
-  // the new instructions because of the cascading deletes from
-  // reference counting.
-  void setDeleted(void) { Deleted = true; }
-  void deleteIfDead(void);
+
+  // Updates the status of the IceVariables contained within the
+  // instruction.  In particular, it marks where the Dest variable is
+  // first assigned, and it tracks whether variables are live across
+  // basic blocks, i.e. used in a different block from their definition.
   void updateVars(IceCfgNode *Node);
-  void liveness(IceLivenessMode Mode, int InstNumber, llvm::BitVector &Live,
+
+  void liveness(IceLivenessMode Mode, int32_t InstNumber, llvm::BitVector &Live,
                 IceLiveness *Liveness, const IceCfgNode *Node);
   virtual void emit(IceOstream &Str, uint32_t Option) const;
   virtual void dump(IceOstream &Str) const;
   virtual void dumpExtras(IceOstream &Str) const;
   void dumpSources(IceOstream &Str) const;
   void dumpDest(IceOstream &Str) const;
-  // isRedundantAssign() is only used for dumping, so (for now) it's
-  // OK that it's virtual.
   virtual bool isRedundantAssign(void) const { return false; }
 
   virtual ~IceInst() {}
 
 protected:
-  IceInst(IceCfg *Cfg, IceInstType Kind, unsigned MaxSrcs, IceVariable *Dest);
-  void addSource(IceOperand *Src);
-  void setLastUse(unsigned VarIndex) {
+  IceInst(IceCfg *Cfg, InstKind Kind, uint32_t MaxSrcs, IceVariable *Dest);
+  void addSource(IceOperand *Src) {
+    assert(Src);
+    assert(NumSrcs < MaxSrcs);
+    Srcs[NumSrcs++] = Src;
+  }
+  void setLastUse(uint32_t VarIndex) {
     if (VarIndex < 8 * sizeof(LiveRangesEnded))
       LiveRangesEnded |= (1u << VarIndex);
   }
   void resetLastUses(void) { LiveRangesEnded = 0; }
 
-  const IceInstType Kind;
-  const unsigned MaxSrcs; // only used for assert
-  unsigned NumSrcs;
-  int Number; // the instruction number for describing live ranges
+  const InstKind Kind;
+  // Number is the instruction number for describing live ranges.
+  int32_t Number;
   // Deleted means irrevocably deleted.
   bool Deleted;
   // Dead means pending deletion after liveness analysis converges.
@@ -91,15 +102,19 @@ protected:
   // call or a volatile load that can't be removed even if its Dest
   // variable is not live.
   bool HasSideEffects;
-  // TODO: use "IceVariable *const Dest".  The problem is that
-  // IceInstPhi::lower() modifies its Dest.
+
   IceVariable *Dest;
-  IceOperand **Srcs;        // TODO: possibly delete[] in destructor
+  const uint32_t MaxSrcs; // only used for assert
+  uint32_t NumSrcs;
+  IceOperand **Srcs; // TODO: possibly delete[] in destructor
+
   uint32_t LiveRangesEnded; // only first 32 src operands tracked, sorry
 };
 
 IceOstream &operator<<(IceOstream &Str, const IceInst *I);
 
+// Alloca instruction.  This captures the size in bytes as getSrc(0),
+// and the alignment.
 class IceInstAlloca : public IceInst {
 public:
   static IceInstAlloca *create(IceCfg *Cfg, IceOperand *ByteCount,
@@ -118,6 +133,8 @@ private:
   const uint32_t Align;
 };
 
+// Binary arithmetic instruction.  The source operands are captured in
+// getSrc(0) and getSrc(1).
 class IceInstArithmetic : public IceInst {
 public:
   enum OpKind {
@@ -162,6 +179,12 @@ private:
   const OpKind Op;
 };
 
+// Assignment instruction.  The source operand is captured in
+// getSrc(0).  This is not part of the LLVM bitcode, but is a useful
+// abstraction for some of the lowering.  E.g., if Phi instruction
+// lowering happens before target lowering, or for representing an
+// Inttoptr instruction, or as an intermediate step for lowering a
+// Load instruction.
 class IceInstAssign : public IceInst {
 public:
   static IceInstAssign *create(IceCfg *Cfg, IceVariable *Dest,
@@ -176,6 +199,8 @@ private:
   IceInstAssign(IceCfg *Cfg, IceVariable *Dest, IceOperand *Source);
 };
 
+// Branch instruction.  This represents both conditional and
+// unconditional branches.
 class IceInstBr : public IceInst {
 public:
   static IceInstBr *create(IceCfg *Cfg, IceOperand *Source,
@@ -186,8 +211,13 @@ public:
   static IceInstBr *create(IceCfg *Cfg, IceCfgNode *Target) {
     return new (Cfg->allocateInst<IceInstBr>()) IceInstBr(Cfg, Target);
   }
+  bool isUnconditional(void) const { return getTargetTrue() == NULL; }
   IceCfgNode *getTargetTrue(void) const { return TargetTrue; }
   IceCfgNode *getTargetFalse(void) const { return TargetFalse; }
+  IceCfgNode *getTargetUnconditional(void) const {
+    assert(isUnconditional());
+    return getTargetFalse();
+  }
   virtual IceNodeList getTerminatorEdges(void) const;
   virtual void dump(IceOstream &Str) const;
   static bool classof(const IceInst *Inst) { return Inst->getKind() == Br; }
@@ -199,27 +229,29 @@ private:
   // Unconditional branch
   IceInstBr(IceCfg *Cfg, IceCfgNode *Target);
 
-  IceCfgNode *const TargetFalse;
-  IceCfgNode *const TargetTrue; // NULL if unconditional branch
+  IceCfgNode *const TargetFalse; // Doubles as unconditional branch target
+  IceCfgNode *const TargetTrue;  // NULL if unconditional branch
 };
 
+// Call instruction.  The call target is captured as getSrc(0), and
+// arg I is captured as getSrc(I+1).
 class IceInstCall : public IceInst {
 public:
-  static IceInstCall *create(IceCfg *Cfg, unsigned NumArgs, IceVariable *Dest,
+  static IceInstCall *create(IceCfg *Cfg, uint32_t NumArgs, IceVariable *Dest,
                              IceOperand *CallTarget, bool Tail) {
     return new (Cfg->allocateInst<IceInstCall>())
         IceInstCall(Cfg, NumArgs, Dest, CallTarget, Tail);
   }
   void addArg(IceOperand *Arg) { addSource(Arg); }
   IceOperand *getCallTarget(void) const { return getSrc(0); }
-  IceOperand *getArg(unsigned I) const { return getSrc(I + 1); }
-  unsigned getNumArgs(void) const { return getSrcSize() - 1; }
+  IceOperand *getArg(uint32_t I) const { return getSrc(I + 1); }
+  uint32_t getNumArgs(void) const { return getSrcSize() - 1; }
   bool isTail(void) const { return Tail; }
   virtual void dump(IceOstream &Str) const;
   static bool classof(const IceInst *Inst) { return Inst->getKind() == Call; }
 
 private:
-  IceInstCall(IceCfg *Cfg, unsigned NumArgs, IceVariable *Dest,
+  IceInstCall(IceCfg *Cfg, uint32_t NumArgs, IceVariable *Dest,
               IceOperand *CallTarget, bool Tail)
       : IceInst(Cfg, IceInst::Call, NumArgs + 1, Dest), Tail(Tail) {
     // Set HasSideEffects so that the call instruction can't be
@@ -231,9 +263,10 @@ private:
   const bool Tail;
 };
 
+// Cast instruction (a.k.a. conversion operation).
 class IceInstCast : public IceInst {
 public:
-  enum IceCastKind {
+  enum OpKind {
     // Ordered by http://llvm.org/docs/LangRef.html#conversion-operations
     Trunc,
     Zext,
@@ -248,24 +281,26 @@ public:
     Inttoptr,
     Bitcast
   };
-  static IceInstCast *create(IceCfg *Cfg, IceCastKind CastKind,
-                             IceVariable *Dest, IceOperand *Source) {
+  static IceInstCast *create(IceCfg *Cfg, OpKind CastKind, IceVariable *Dest,
+                             IceOperand *Source) {
     return new (Cfg->allocateInst<IceInstCast>())
         IceInstCast(Cfg, CastKind, Dest, Source);
   }
-  IceCastKind getCastKind() const { return CastKind; }
+  OpKind getCastKind() const { return CastKind; }
   virtual void dump(IceOstream &Str) const;
   static bool classof(const IceInst *Inst) { return Inst->getKind() == Cast; }
 
 private:
-  IceInstCast(IceCfg *Cfg, IceCastKind CastKind, IceVariable *Dest,
+  IceInstCast(IceCfg *Cfg, OpKind CastKind, IceVariable *Dest,
               IceOperand *Source);
-  IceCastKind CastKind;
+  OpKind CastKind;
 };
 
+// Floating-point comparison instruction.  The source operands are
+// captured in getSrc(0) and getSrc(1).
 class IceInstFcmp : public IceInst {
 public:
-  enum IceFCond {
+  enum FCond {
     // Ordered by http://llvm.org/docs/LangRef.html#id254
     False,
     Oeq,
@@ -284,24 +319,26 @@ public:
     Uno,
     True
   };
-  static IceInstFcmp *create(IceCfg *Cfg, IceFCond Condition, IceVariable *Dest,
+  static IceInstFcmp *create(IceCfg *Cfg, FCond Condition, IceVariable *Dest,
                              IceOperand *Source1, IceOperand *Source2) {
     return new (Cfg->allocateInst<IceInstFcmp>())
         IceInstFcmp(Cfg, Condition, Dest, Source1, Source2);
   }
-  IceFCond getCondition(void) const { return Condition; }
+  FCond getCondition(void) const { return Condition; }
   virtual void dump(IceOstream &Str) const;
   static bool classof(const IceInst *Inst) { return Inst->getKind() == Fcmp; }
 
 private:
-  IceInstFcmp(IceCfg *Cfg, IceFCond Condition, IceVariable *Dest,
+  IceInstFcmp(IceCfg *Cfg, FCond Condition, IceVariable *Dest,
               IceOperand *Source1, IceOperand *Source2);
-  IceFCond Condition;
+  FCond Condition;
 };
 
+// Integer comparison instruction.  The source operands are captured
+// in getSrc(0) and getSrc(1).
 class IceInstIcmp : public IceInst {
 public:
-  enum IceICond {
+  enum ICond {
     // Ordered by http://llvm.org/docs/LangRef.html#id249
     Eq,
     Ne,
@@ -315,21 +352,22 @@ public:
     Sle,
     None // not part of LLVM; used for unconditional branch
   };
-  static IceInstIcmp *create(IceCfg *Cfg, IceICond Condition, IceVariable *Dest,
+  static IceInstIcmp *create(IceCfg *Cfg, ICond Condition, IceVariable *Dest,
                              IceOperand *Source1, IceOperand *Source2) {
     return new (Cfg->allocateInst<IceInstIcmp>())
         IceInstIcmp(Cfg, Condition, Dest, Source1, Source2);
   }
-  IceICond getCondition(void) const { return Condition; }
+  ICond getCondition(void) const { return Condition; }
   virtual void dump(IceOstream &Str) const;
   static bool classof(const IceInst *Inst) { return Inst->getKind() == Icmp; }
 
 private:
-  IceInstIcmp(IceCfg *Cfg, IceICond Condition, IceVariable *Dest,
+  IceInstIcmp(IceCfg *Cfg, ICond Condition, IceVariable *Dest,
               IceOperand *Source1, IceOperand *Source2);
-  IceICond Condition;
+  ICond Condition;
 };
 
+// Load instruction.  The source address is captured in getSrc(0);
 class IceInstLoad : public IceInst {
 public:
   static IceInstLoad *create(IceCfg *Cfg, IceVariable *Dest,
@@ -344,25 +382,32 @@ private:
   IceInstLoad(IceCfg *Cfg, IceVariable *Dest, IceOperand *SourceAddr);
 };
 
+// Phi instruction.  For incoming edge I, the node is Labels[I] and
+// the Phi source operand is getSrc(I).
 class IceInstPhi : public IceInst {
 public:
-  static IceInstPhi *create(IceCfg *Cfg, unsigned MaxSrcs, IceVariable *Dest) {
+  static IceInstPhi *create(IceCfg *Cfg, uint32_t MaxSrcs, IceVariable *Dest) {
     return new (Cfg->allocateInst<IceInstPhi>()) IceInstPhi(Cfg, MaxSrcs, Dest);
   }
   void addArgument(IceOperand *Source, IceCfgNode *Label);
-  IceOperand *getArgument(IceCfgNode *Label) const;
-  IceInst *lower(IceCfg *Cfg, IceCfgNode *Node);
   IceOperand *getOperandForTarget(IceCfgNode *Target) const;
   void livenessPhiOperand(llvm::BitVector &Live, IceCfgNode *Target,
                           IceLiveness *Liveness);
+  IceInst *lower(IceCfg *Cfg, IceCfgNode *Node);
   virtual void dump(IceOstream &Str) const;
   static bool classof(const IceInst *Inst) { return Inst->getKind() == Phi; }
 
 private:
-  IceInstPhi(IceCfg *Cfg, unsigned MaxSrcs, IceVariable *Dest);
-  IceNodeList Labels; // corresponding to Srcs
+  IceInstPhi(IceCfg *Cfg, uint32_t MaxSrcs, IceVariable *Dest);
+  // Labels[] duplicates the InEdges[] information in the enclosing
+  // IceCfgNode, but the Phi instruction is created before InEdges[]
+  // is available, so it's more complicated to share the list.
+  IceCfgNode **Labels;
 };
 
+// Ret instruction.  The return value is captured in getSrc(0), but if
+// there is no return value (void-type function), then
+// getSrcSize()==0.
 class IceInstRet : public IceInst {
 public:
   static IceInstRet *create(IceCfg *Cfg, IceOperand *Source = NULL) {
@@ -376,6 +421,7 @@ private:
   IceInstRet(IceCfg *Cfg, IceOperand *Source);
 };
 
+// Select instruction.  The condition, true, and false operands are captured.
 class IceInstSelect : public IceInst {
 public:
   static IceInstSelect *create(IceCfg *Cfg, IceVariable *Dest,
@@ -395,13 +441,13 @@ private:
                 IceOperand *Source1, IceOperand *Source2);
 };
 
-// SourceData as Srcs[0] and SourceAddr as Srcs[1]
+// Store instruction.  The address operand is captured, along with the
+// data operand to be stored into the address.
 class IceInstStore : public IceInst {
 public:
-  static IceInstStore *create(IceCfg *Cfg, IceOperand *SourceData,
-                              IceOperand *SourceAddr) {
+  static IceInstStore *create(IceCfg *Cfg, IceOperand *Data, IceOperand *Addr) {
     return new (Cfg->allocateInst<IceInstStore>())
-        IceInstStore(Cfg, SourceData, SourceAddr);
+        IceInstStore(Cfg, Data, Addr);
   }
   IceOperand *getAddr(void) const { return getSrc(1); }
   IceOperand *getData(void) const { return getSrc(0); }
@@ -409,40 +455,54 @@ public:
   static bool classof(const IceInst *Inst) { return Inst->getKind() == Store; }
 
 private:
-  IceInstStore(IceCfg *Cfg, IceOperand *SourceData, IceOperand *SourceAddr);
+  IceInstStore(IceCfg *Cfg, IceOperand *Data, IceOperand *Addr);
 };
 
+// Switch instruction.  The single source operand is captured as
+// getSrc(0).
 class IceInstSwitch : public IceInst {
 public:
-  static IceInstSwitch *create(IceCfg *Cfg, unsigned NumCases,
+  static IceInstSwitch *create(IceCfg *Cfg, uint32_t NumCases,
                                IceOperand *Source, IceCfgNode *LabelDefault) {
     return new (Cfg->allocateInst<IceInstSwitch>())
         IceInstSwitch(Cfg, NumCases, Source, LabelDefault);
   }
   IceCfgNode *getLabelDefault(void) const { return LabelDefault; }
-  unsigned getNumCases(void) const { return NumCases; }
-  uint64_t getValue(unsigned I) const {
+  uint32_t getNumCases(void) const { return NumCases; }
+  uint64_t getValue(uint32_t I) const {
     assert(I < NumCases);
     return Values[I];
   }
-  IceCfgNode *getLabel(unsigned I) const {
+  IceCfgNode *getLabel(uint32_t I) const {
     assert(I < NumCases);
     return Labels[I];
   }
-  void addBranch(unsigned CaseIndex, uint64_t Value, IceCfgNode *Label);
+  void addBranch(uint32_t CaseIndex, uint64_t Value, IceCfgNode *Label);
   virtual IceNodeList getTerminatorEdges(void) const;
   virtual void dump(IceOstream &Str) const;
   static bool classof(const IceInst *Inst) { return Inst->getKind() == Switch; }
 
 private:
-  IceInstSwitch(IceCfg *Cfg, unsigned NumCases, IceOperand *Source,
+  IceInstSwitch(IceCfg *Cfg, uint32_t NumCases, IceOperand *Source,
                 IceCfgNode *LabelDefault);
   IceCfgNode *LabelDefault;
-  unsigned NumCases;   // not including the default case
+  uint32_t NumCases;   // not including the default case
   uint64_t *Values;    // size is NumCases
   IceCfgNode **Labels; // size is NumCases
 };
 
+// FakeDef instruction.  This creates a fake definition of a variable,
+// which is how we represent the case when an instruction produces
+// multiple results.  This doesn't happen with high-level ICE
+// instructions, but might with lowered instructions.  For example,
+// this would be a way to represent condition flags being modified by
+// an instruction.
+//
+// It's generally useful to set the optional source operand to be the
+// dest variable of the instruction that actually produces the FakeDef
+// dest.  Otherwise, the original instruction could be dead-code
+// eliminated if its dest operand is unused, and therefore the FakeDef
+// dest wouldn't be properly initialized.
 class IceInstFakeDef : public IceInst {
 public:
   static IceInstFakeDef *create(IceCfg *Cfg, IceVariable *Dest,
@@ -460,6 +520,11 @@ private:
   IceInstFakeDef(IceCfg *Cfg, IceVariable *Dest, IceVariable *Src);
 };
 
+// FakeUse instruction.  This creates a fake use of a variable, to
+// keep the instruction that produces that variable from being
+// dead-code eliminated.  This is useful in a variety of lowering
+// situations.  The FakeUse instruction has no dest, so it can itself
+// never be dead-code eliminated.
 class IceInstFakeUse : public IceInst {
 public:
   static IceInstFakeUse *create(IceCfg *Cfg, IceVariable *Src) {
@@ -475,6 +540,15 @@ private:
   IceInstFakeUse(IceCfg *Cfg, IceVariable *Src);
 };
 
+// FakeKill instruction.  This "kills" a set of variables by adding a
+// trivial live range at this instruction to each variable.  The
+// primary use is to indicate that scratch registers are killed after
+// a call, so that the register allocator won't assign a scratch
+// register to a variable whose live range spans a call.
+//
+// The FakeKill instruction also holds a pointer to the instruction
+// that kills the set of variables, so that if that linked instruction
+// gets dead-code eliminated, the FakeKill instruction will as well.
 class IceInstFakeKill : public IceInst {
 public:
   static IceInstFakeKill *create(IceCfg *Cfg, const IceVarList &KilledRegs,
@@ -496,6 +570,8 @@ private:
   const IceInst *Linked;
 };
 
+// The Target instruction is the base class for all target-specific
+// instructions.
 class IceInstTarget : public IceInst {
 public:
   virtual void emit(IceOstream &Str, uint32_t Option) const = 0;
@@ -504,13 +580,10 @@ public:
   static bool classof(const IceInst *Inst) { return Inst->getKind() >= Target; }
 
 protected:
-  IceInstTarget(IceCfg *Cfg, IceInstType Kind, unsigned MaxSrcs,
-                IceVariable *Dest)
+  IceInstTarget(IceCfg *Cfg, InstKind Kind, uint32_t MaxSrcs, IceVariable *Dest)
       : IceInst(Cfg, Kind, MaxSrcs, Dest) {
     assert(Kind >= Target);
   }
-
-private:
 };
 
 #endif // _IceInst_h

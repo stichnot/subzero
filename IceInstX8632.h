@@ -55,7 +55,7 @@ private:
 
 class IceInstX8632 : public IceInstTarget {
 public:
-  enum IceInstTypeX8632 {
+  enum InstKindX8632 {
     __Start = IceInst::Target,
     Adc,
     Add,
@@ -100,11 +100,11 @@ public:
   virtual void dump(IceOstream &Str) const;
 
 protected:
-  IceInstX8632(IceCfg *Cfg, IceInstTypeX8632 Kind, unsigned Maxsrcs,
+  IceInstX8632(IceCfg *Cfg, InstKindX8632 Kind, unsigned Maxsrcs,
                IceVariable *Dest)
-      : IceInstTarget(Cfg, static_cast<IceInstType>(Kind), Maxsrcs, Dest) {}
-  static bool isClassof(const IceInst *Inst, IceInstTypeX8632 MyKind) {
-    return Inst->getKind() == static_cast<IceInstType>(MyKind);
+      : IceInstTarget(Cfg, static_cast<InstKind>(Kind), Maxsrcs, Dest) {}
+  static bool isClassof(const IceInst *Inst, InstKindX8632 MyKind) {
+    return Inst->getKind() == static_cast<InstKind>(MyKind);
   }
 };
 
