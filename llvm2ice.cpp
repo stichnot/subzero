@@ -36,6 +36,9 @@ template <typename T> static std::string LLVMObjectAsString(const T *O) {
   return Stream.str();
 }
 
+static cl::opt<bool>
+DisableTranslation("notranslate", cl::desc("Disable Subzero translation"));
+
 // Converter from LLVM to ICE. The entry point is the convertFunction method.
 //
 // Note: this currently assumes that the given IR was verified to be valid PNaCl
@@ -332,9 +335,17 @@ private:
 
   IceInst *convertIntToPtrInstruction(const IntToPtrInst *Inst) {
     IceOperand *Src = convertOperand(Inst, 0);
-    IceVariable *Dest = mapValueToIceVar(Inst, IceType_i32);
+    IceVariable *Dest;
+    IceInst *Result;
+    if (DisableTranslation) {
+      Dest = mapValueToIceVar(Inst);
+      Result = IceInstCast::create(Cfg, IceInstCast::Inttoptr, Dest, Src);
+    } else {
+      Dest = mapValueToIceVar(Inst, IceType_i32);
+      Result = IceInstAssign::create(Cfg, Dest, Src);
+    }
+    return Result;
 
-    return IceInstAssign::create(Cfg, Dest, Src);
   }
 
   IceInst *convertRetInstruction(const ReturnInst *Inst) {
@@ -541,8 +552,6 @@ static cl::list<IceVerbose> VerboseList(
         clEnumValN(IceV_Timing, "time", "Pass timing details"),
         clEnumValN(IceV_All, "all", "Use all verbose options"),
         clEnumValN(IceV_None, "none", "No verbosity"), clEnumValEnd));
-static cl::opt<bool>
-DisableTranslation("notranslate", cl::desc("Disable Subzero translation"));
 static cl::opt<IceTargetArch> TargetArch(
     "target", cl::desc("Target architecture:"), cl::init(IceTarget_X8632),
     cl::values(clEnumValN(IceTarget_X8632, "x8632", "x86-32"),
