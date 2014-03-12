@@ -272,7 +272,8 @@ public:
   static bool classof(const IceInst *Inst) { return isClassof(Inst, K); }
 
 private:
-  IceInstX8632Ternop(IceCfg *Cfg, IceVariable *Dest, IceOperand *Source1, IceOperand *Source2)
+  IceInstX8632Ternop(IceCfg *Cfg, IceVariable *Dest, IceOperand *Source1,
+                     IceOperand *Source2)
       : IceInstX8632(Cfg, K, 3, Dest) {
     addSource(Dest);
     addSource(Source1);

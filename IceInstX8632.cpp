@@ -349,9 +349,8 @@ void IceInstX8632Call::dump(IceOstream &Str) const {
   Str << "call " << getCallTarget();
 }
 
-void IceEmitTwoAddress(const char *Opcode, const IceInst *Inst,
-                       IceOstream &Str, uint32_t Option,
-                       bool ShiftHack) {
+void IceEmitTwoAddress(const char *Opcode, const IceInst *Inst, IceOstream &Str,
+                       uint32_t Option, bool ShiftHack) {
   assert(Inst->getSrcSize() == 2);
   assert(Inst->getDest() == Inst->getSrc(0));
   Str << "\t" << Opcode << "\t";
@@ -390,26 +389,26 @@ template <> const char *IceInstX8632Sar::Opcode = "sar";
 
 template <>
 void IceInstX8632Addss::emit(IceOstream &Str, uint32_t Option) const {
-  IceEmitTwoAddress(getDest()->getType() == IceType_f32 ? "addss" : "addsd", this,
-                 Str, Option);
+  IceEmitTwoAddress(getDest()->getType() == IceType_f32 ? "addss" : "addsd",
+                    this, Str, Option);
 }
 
 template <>
 void IceInstX8632Subss::emit(IceOstream &Str, unsigned Option) const {
-  IceEmitTwoAddress(getDest()->getType() == IceType_f32 ? "subss" : "subsd", this,
-                 Str, Option);
+  IceEmitTwoAddress(getDest()->getType() == IceType_f32 ? "subss" : "subsd",
+                    this, Str, Option);
 }
 
 template <>
 void IceInstX8632Mulss::emit(IceOstream &Str, uint32_t Option) const {
-  IceEmitTwoAddress(getDest()->getType() == IceType_f32 ? "mulss" : "mulsd", this,
-                 Str, Option);
+  IceEmitTwoAddress(getDest()->getType() == IceType_f32 ? "mulss" : "mulsd",
+                    this, Str, Option);
 }
 
 template <>
 void IceInstX8632Divss::emit(IceOstream &Str, uint32_t Option) const {
-  IceEmitTwoAddress(getDest()->getType() == IceType_f32 ? "divss" : "divsd", this,
-                 Str, Option);
+  IceEmitTwoAddress(getDest()->getType() == IceType_f32 ? "divss" : "divsd",
+                    this, Str, Option);
 }
 
 void IceInstX8632Mul::emit(IceOstream &Str, uint32_t Option) const {
