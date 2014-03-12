@@ -618,7 +618,9 @@ int main(int argc, char **argv) {
     Cfg->setTestPrefix(TestPrefix);
     Cfg->Str.Stream = Os;
     Cfg->Str.setVerbose(VerboseMask);
-    if (!DisableTranslation) {
+    if (DisableTranslation) {
+      Cfg->dump();
+    } else {
       IceTimer TTranslate;
       Cfg->translate(TargetArch);
       if (SubzeroTimingEnabled) {
