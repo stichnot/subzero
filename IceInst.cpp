@@ -543,11 +543,16 @@ void IceInstCall::dump(IceOstream &Str) const {
   }
   if (Tail)
     Str << "tail ";
-  Str << "call " << getCallTarget() << "(";
+  Str << "call ";
+  if (getDest())
+    Str << getDest()->getType();
+  else
+    Str << "void";
+  Str << " @" << getCallTarget() << "(";
   for (uint32_t I = 0; I < getNumArgs(); ++I) {
     if (I > 0)
       Str << ", ";
-    Str << getArg(I);
+    Str << getArg(I)->getType() << " " << getArg(I);
   }
   Str << ")";
 }
@@ -714,7 +719,7 @@ void IceInstLoad::dump(IceOstream &Str) const {
 
 void IceInstStore::dump(IceOstream &Str) const {
   IceType Type = getData()->getType();
-  Str << "store " << Type << " " << getData() << ", " << Type << " *"
+  Str << "store " << Type << " " << getData() << ", " << Type << "* "
       << getAddr() << ", align ";
   switch (Type) {
   case IceType_f32:
@@ -752,8 +757,11 @@ void IceInstPhi::dump(IceOstream &Str) const {
 
 void IceInstRet::dump(IceOstream &Str) const {
   IceType Type = getSrcSize() == 0 ? IceType_void : getSrc(0)->getType();
-  Str << "ret " << Type << " ";
-  dumpSources(Str);
+  Str << "ret " << Type;
+  if (getSrcSize()) {
+    Str << " ";
+    dumpSources(Str);
+  }
 }
 
 void IceInstSelect::dump(IceOstream &Str) const {

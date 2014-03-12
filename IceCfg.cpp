@@ -432,7 +432,7 @@ void IceCfg::dump(void) const {
     Str << "define ";
     if (getInternal())
       Str << "internal ";
-    Str << Type << " " << Name << "(";
+    Str << Type << " @" << Name << "(";
     for (uint32_t i = 0; i < Args.size(); ++i) {
       if (i > 0)
         Str << ", ";
