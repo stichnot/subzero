@@ -592,10 +592,15 @@ void IceInstCast::dump(IceOstream &Str) const {
   case Sitofp:
     Str << "sitofp";
     break;
+  case Inttoptr:
+    Str << "inttoptr";
+    break;
   }
   Str << " " << getSrc(0)->getType() << " ";
   dumpSources(Str);
   Str << " to " << getDest()->getType();
+  if (getCastKind() == Inttoptr)
+    Str << "*";
 }
 
 void IceInstIcmp::dump(IceOstream &Str) const {
