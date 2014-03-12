@@ -64,22 +64,6 @@ IceInstX8632Mul::IceInstX8632Mul(IceCfg *Cfg, IceVariable *Dest,
   addSource(Source2);
 }
 
-IceInstX8632Idiv::IceInstX8632Idiv(IceCfg *Cfg, IceVariable *Dest,
-                                   IceOperand *Source, IceVariable *Other)
-    : IceInstX8632(Cfg, IceInstX8632::Idiv, 3, Dest) {
-  addSource(Dest);
-  addSource(Source);
-  addSource(Other);
-}
-
-IceInstX8632Div::IceInstX8632Div(IceCfg *Cfg, IceVariable *Dest,
-                                 IceOperand *Source, IceVariable *Other)
-    : IceInstX8632(Cfg, IceInstX8632::Div, 3, Dest) {
-  addSource(Dest);
-  addSource(Source);
-  addSource(Other);
-}
-
 IceInstX8632Shld::IceInstX8632Shld(IceCfg *Cfg, IceVariable *Dest,
                                    IceVariable *Source1, IceVariable *Source2)
     : IceInstX8632(Cfg, IceInstX8632::Shld, 3, Dest) {
@@ -365,9 +349,9 @@ void IceInstX8632Call::dump(IceOstream &Str) const {
   Str << "call " << getCallTarget();
 }
 
-static void emitTwoAddress(const char *Opcode, const IceInst *Inst,
-                           IceOstream &Str, uint32_t Option,
-                           bool ShiftHack = false) {
+void IceEmitTwoAddress(const char *Opcode, const IceInst *Inst,
+                       IceOstream &Str, uint32_t Option,
+                       bool ShiftHack) {
   assert(Inst->getSrcSize() == 2);
   assert(Inst->getDest() == Inst->getSrc(0));
   Str << "\t" << Opcode << "\t";
@@ -386,11 +370,6 @@ static void emitTwoAddress(const char *Opcode, const IceInst *Inst,
   Str << "\n";
 }
 
-void IceEmitTwoAddress(const char *Opcode, const IceInst *Inst, IceOstream &Str,
-                       uint32_t Option, bool ShiftHack) {
-  emitTwoAddress(Opcode, Inst, Str, Option, ShiftHack);
-}
-
 template <> const char *IceInstX8632Add::Opcode = "add";
 template <> const char *IceInstX8632Adc::Opcode = "adc";
 template <> const char *IceInstX8632Addss::Opcode = "addss";
@@ -402,6 +381,8 @@ template <> const char *IceInstX8632Or::Opcode = "or";
 template <> const char *IceInstX8632Xor::Opcode = "xor";
 template <> const char *IceInstX8632Imul::Opcode = "imul";
 template <> const char *IceInstX8632Mulss::Opcode = "mulss";
+template <> const char *IceInstX8632Div::Opcode = "div";
+template <> const char *IceInstX8632Idiv::Opcode = "idiv";
 template <> const char *IceInstX8632Divss::Opcode = "divss";
 template <> const char *IceInstX8632Shl::Opcode = "shl";
 template <> const char *IceInstX8632Shr::Opcode = "shr";
@@ -409,25 +390,25 @@ template <> const char *IceInstX8632Sar::Opcode = "sar";
 
 template <>
 void IceInstX8632Addss::emit(IceOstream &Str, uint32_t Option) const {
-  emitTwoAddress(getDest()->getType() == IceType_f32 ? "addss" : "addsd", this,
+  IceEmitTwoAddress(getDest()->getType() == IceType_f32 ? "addss" : "addsd", this,
                  Str, Option);
 }
 
 template <>
 void IceInstX8632Subss::emit(IceOstream &Str, unsigned Option) const {
-  emitTwoAddress(getDest()->getType() == IceType_f32 ? "subss" : "subsd", this,
+  IceEmitTwoAddress(getDest()->getType() == IceType_f32 ? "subss" : "subsd", this,
                  Str, Option);
 }
 
 template <>
 void IceInstX8632Mulss::emit(IceOstream &Str, uint32_t Option) const {
-  emitTwoAddress(getDest()->getType() == IceType_f32 ? "mulss" : "mulsd", this,
+  IceEmitTwoAddress(getDest()->getType() == IceType_f32 ? "mulss" : "mulsd", this,
                  Str, Option);
 }
 
 template <>
 void IceInstX8632Divss::emit(IceOstream &Str, uint32_t Option) const {
-  emitTwoAddress(getDest()->getType() == IceType_f32 ? "divss" : "divsd", this,
+  IceEmitTwoAddress(getDest()->getType() == IceType_f32 ? "divss" : "divsd", this,
                  Str, Option);
 }
 
@@ -445,32 +426,6 @@ void IceInstX8632Mul::emit(IceOstream &Str, uint32_t Option) const {
 void IceInstX8632Mul::dump(IceOstream &Str) const {
   dumpDest(Str);
   Str << " = mul." << getDest()->getType() << " ";
-  dumpSources(Str);
-}
-
-void IceInstX8632Idiv::emit(IceOstream &Str, uint32_t Option) const {
-  assert(getSrcSize() == 3);
-  Str << "\tidiv\t";
-  getSrc(1)->emit(Str, Option);
-  Str << "\n";
-}
-
-void IceInstX8632Idiv::dump(IceOstream &Str) const {
-  dumpDest(Str);
-  Str << " = idiv." << getDest()->getType() << " ";
-  dumpSources(Str);
-}
-
-void IceInstX8632Div::emit(IceOstream &Str, uint32_t Option) const {
-  assert(getSrcSize() == 3);
-  Str << "\tdiv\t";
-  getSrc(1)->emit(Str, Option);
-  Str << "\n";
-}
-
-void IceInstX8632Div::dump(IceOstream &Str) const {
-  dumpDest(Str);
-  Str << " = div." << getDest()->getType() << " ";
   dumpSources(Str);
 }
 
