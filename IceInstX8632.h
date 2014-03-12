@@ -222,11 +222,10 @@ private:
   const bool Tail;
 };
 
-void IceEmitTwoAddress(const char *Opcode, const IceInst *Inst,
-                       IceOstream &Str, uint32_t Option,
-                       bool ShiftHack = false);
+void IceEmitTwoAddress(const char *Opcode, const IceInst *Inst, IceOstream &Str,
+                       uint32_t Option, bool ShiftHack = false);
 
-template<IceInstX8632::InstKindX8632 K>
+template <bool ShiftHack, IceInstX8632::InstKindX8632 K>
 class IceInstX8632Binop : public IceInstX8632 {
 public:
   static IceInstX8632Binop *create(IceCfg *Cfg, IceVariable *Dest,
@@ -234,7 +233,7 @@ public:
     return new IceInstX8632Binop(Cfg, Dest, Source);
   }
   virtual void emit(IceOstream &Str, uint32_t Option) const {
-    IceEmitTwoAddress(Opcode, this, Str, Option, false);
+    IceEmitTwoAddress(Opcode, this, Str, Option, ShiftHack);
   }
   virtual void dump(IceOstream &Str) const {
     dumpDest(Str);
@@ -245,25 +244,28 @@ public:
 
 private:
   IceInstX8632Binop(IceCfg *Cfg, IceVariable *Dest, IceOperand *Source)
-    : IceInstX8632(Cfg, K, 2, Dest) {
+      : IceInstX8632(Cfg, K, 2, Dest) {
     addSource(Dest);
     addSource(Source);
   }
   static const char *Opcode;
 };
 
-typedef IceInstX8632Binop<IceInstX8632::Add> IceInstX8632Add;
-typedef IceInstX8632Binop<IceInstX8632::Adc> IceInstX8632Adc;
-typedef IceInstX8632Binop<IceInstX8632::Addss> IceInstX8632Addss;
-typedef IceInstX8632Binop<IceInstX8632::Sub> IceInstX8632Sub;
-typedef IceInstX8632Binop<IceInstX8632::Subss> IceInstX8632Subss;
-typedef IceInstX8632Binop<IceInstX8632::Sbb> IceInstX8632Sbb;
-typedef IceInstX8632Binop<IceInstX8632::And> IceInstX8632And;
-typedef IceInstX8632Binop<IceInstX8632::Or> IceInstX8632Or;
-typedef IceInstX8632Binop<IceInstX8632::Xor> IceInstX8632Xor;
-typedef IceInstX8632Binop<IceInstX8632::Imul> IceInstX8632Imul;
-typedef IceInstX8632Binop<IceInstX8632::Mulss> IceInstX8632Mulss;
-typedef IceInstX8632Binop<IceInstX8632::Divss> IceInstX8632Divss;
+typedef IceInstX8632Binop<false, IceInstX8632::Add> IceInstX8632Add;
+typedef IceInstX8632Binop<false, IceInstX8632::Adc> IceInstX8632Adc;
+typedef IceInstX8632Binop<false, IceInstX8632::Addss> IceInstX8632Addss;
+typedef IceInstX8632Binop<false, IceInstX8632::Sub> IceInstX8632Sub;
+typedef IceInstX8632Binop<false, IceInstX8632::Subss> IceInstX8632Subss;
+typedef IceInstX8632Binop<false, IceInstX8632::Sbb> IceInstX8632Sbb;
+typedef IceInstX8632Binop<false, IceInstX8632::And> IceInstX8632And;
+typedef IceInstX8632Binop<false, IceInstX8632::Or> IceInstX8632Or;
+typedef IceInstX8632Binop<false, IceInstX8632::Xor> IceInstX8632Xor;
+typedef IceInstX8632Binop<false, IceInstX8632::Imul> IceInstX8632Imul;
+typedef IceInstX8632Binop<false, IceInstX8632::Mulss> IceInstX8632Mulss;
+typedef IceInstX8632Binop<false, IceInstX8632::Divss> IceInstX8632Divss;
+typedef IceInstX8632Binop<true, IceInstX8632::Shl> IceInstX8632Shl;
+typedef IceInstX8632Binop<true, IceInstX8632::Shr> IceInstX8632Shr;
+typedef IceInstX8632Binop<true, IceInstX8632::Sar> IceInstX8632Sar;
 
 class IceInstX8632Mul : public IceInstX8632 {
 public:
@@ -310,20 +312,6 @@ private:
                   IceVariable *Other);
 };
 
-class IceInstX8632Shl : public IceInstX8632 {
-public:
-  static IceInstX8632Shl *create(IceCfg *Cfg, IceVariable *Dest,
-                                 IceOperand *Source) {
-    return new IceInstX8632Shl(Cfg, Dest, Source);
-  }
-  virtual void emit(IceOstream &Str, uint32_t Option) const;
-  virtual void dump(IceOstream &Str) const;
-  static bool classof(const IceInst *Inst) { return isClassof(Inst, Shl); }
-
-private:
-  IceInstX8632Shl(IceCfg *Cfg, IceVariable *Dest, IceOperand *Source);
-};
-
 class IceInstX8632Shld : public IceInstX8632 {
 public:
   static IceInstX8632Shld *create(IceCfg *Cfg, IceVariable *Dest,
@@ -339,20 +327,6 @@ private:
                    IceVariable *Source2);
 };
 
-class IceInstX8632Shr : public IceInstX8632 {
-public:
-  static IceInstX8632Shr *create(IceCfg *Cfg, IceVariable *Dest,
-                                 IceOperand *Source) {
-    return new IceInstX8632Shr(Cfg, Dest, Source);
-  }
-  virtual void emit(IceOstream &Str, uint32_t Option) const;
-  virtual void dump(IceOstream &Str) const;
-  static bool classof(const IceInst *Inst) { return isClassof(Inst, Shr); }
-
-private:
-  IceInstX8632Shr(IceCfg *Cfg, IceVariable *Dest, IceOperand *Source);
-};
-
 class IceInstX8632Shrd : public IceInstX8632 {
 public:
   static IceInstX8632Shrd *create(IceCfg *Cfg, IceVariable *Dest,
@@ -366,20 +340,6 @@ public:
 private:
   IceInstX8632Shrd(IceCfg *Cfg, IceVariable *Dest, IceVariable *Source1,
                    IceVariable *Source2);
-};
-
-class IceInstX8632Sar : public IceInstX8632 {
-public:
-  static IceInstX8632Sar *create(IceCfg *Cfg, IceVariable *Dest,
-                                 IceOperand *Source) {
-    return new IceInstX8632Sar(Cfg, Dest, Source);
-  }
-  virtual void emit(IceOstream &Str, uint32_t Option) const;
-  virtual void dump(IceOstream &Str) const;
-  static bool classof(const IceInst *Inst) { return isClassof(Inst, Sar); }
-
-private:
-  IceInstX8632Sar(IceCfg *Cfg, IceVariable *Dest, IceOperand *Source);
 };
 
 // Sign-extend eax into edx
