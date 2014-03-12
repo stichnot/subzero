@@ -548,7 +548,7 @@ void IceInstCall::dump(IceOstream &Str) const {
     Str << getDest()->getType();
   else
     Str << "void";
-  Str << " @" << getCallTarget() << "(";
+  Str << " " << getCallTarget() << "(";
   for (uint32_t I = 0; I < getNumArgs(); ++I) {
     if (I > 0)
       Str << ", ";
