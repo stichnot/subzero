@@ -4,7 +4,7 @@
 
 define i64 @add_args_i64(i64 %arg1, i64 %arg2) {
 entry:
-  %add = add nsw i64 %arg2, %arg1
+  %add = add i64 %arg2, %arg1
   ret i64 %add
 }
 
@@ -16,7 +16,7 @@ entry:
 
 define i32 @add_args_i32(i32 %arg1, i32 %arg2) {
 entry:
-  %add = add nsw i32 %arg2, %arg1
+  %add = add i32 %arg2, %arg1
   ret i32 %add
 }
 

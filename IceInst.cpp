@@ -708,16 +708,15 @@ void IceInstLoad::dump(IceOstream &Str) const {
   IceType Type = getDest()->getType();
   Str << " = load " << Type << "* ";
   dumpSources(Str);
-  Str << ", align ";
   switch (Type) {
   case IceType_f32:
-    Str << "4";
+    Str << ", align 4";
     break;
   case IceType_f64:
-    Str << "8";
+    Str << ", align 8";
     break;
   default:
-    Str << "1";
+    Str << ", align 1";
     break;
   }
 }

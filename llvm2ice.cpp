@@ -36,9 +36,6 @@ template <typename T> static std::string LLVMObjectAsString(const T *O) {
   return Stream.str();
 }
 
-static cl::opt<bool>
-DisableTranslation("notranslate", cl::desc("Disable Subzero translation"));
-
 // Converter from LLVM to ICE. The entry point is the convertFunction method.
 //
 // Note: this currently assumes that the given IR was verified to be valid PNaCl
@@ -200,6 +197,8 @@ private:
       return convertRetInstruction(cast<ReturnInst>(Inst));
     case Instruction::IntToPtr:
       return convertIntToPtrInstruction(cast<IntToPtrInst>(Inst));
+    case Instruction::PtrToInt:
+      return convertPtrToIntInstruction(cast<PtrToIntInst>(Inst));
     case Instruction::ICmp:
       return convertICmpInstruction(cast<ICmpInst>(Inst));
     case Instruction::FCmp:
@@ -335,17 +334,14 @@ private:
 
   IceInst *convertIntToPtrInstruction(const IntToPtrInst *Inst) {
     IceOperand *Src = convertOperand(Inst, 0);
-    IceVariable *Dest;
-    IceInst *Result;
-    if (DisableTranslation) {
-      Dest = mapValueToIceVar(Inst);
-      Result = IceInstCast::create(Cfg, IceInstCast::Inttoptr, Dest, Src);
-    } else {
-      Dest = mapValueToIceVar(Inst, IceType_i32);
-      Result = IceInstAssign::create(Cfg, Dest, Src);
-    }
-    return Result;
+    IceVariable *Dest = mapValueToIceVar(Inst, IceType_i32);
+    return IceInstAssign::create(Cfg, Dest, Src);
+  }
 
+  IceInst *convertPtrToIntInstruction(const PtrToIntInst *Inst) {
+    IceOperand *Src = convertOperand(Inst, 0);
+    IceVariable *Dest = mapValueToIceVar(Inst);
+    return IceInstAssign::create(Cfg, Dest, Src);
   }
 
   IceInst *convertRetInstruction(const ReturnInst *Inst) {
@@ -571,6 +567,8 @@ TestPrefix("prefix", cl::desc("Prepend a prefix to symbol names for testing"),
 static cl::opt<bool>
 DisableInternal("external",
                 cl::desc("Disable 'internal' linkage type for testing"));
+static cl::opt<bool>
+DisableTranslation("notranslate", cl::desc("Disable Subzero translation"));
 
 static cl::opt<bool> SubzeroTimingEnabled(
     "timing", cl::desc("Enable breakdown timing of Subzero translation"));

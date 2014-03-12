@@ -16,12 +16,12 @@ if.else:
   %gep_array = mul i32 %n, 4
   %gep = add i32 %a, %gep_array
   %gep.asptr = inttoptr i32 %gep to i32*
-  %0 = load i32* %gep.asptr, align 1
+  %v0 = load i32* %gep.asptr, align 1
   br label %if.end
 
 if.end:
-  %result.0 = phi i32 [ %sub, %if.then ], [ %0, %if.else ]
-; CHECK: %result.0 = phi i32 [ %sub, %if.then ], [ %{{[0-9_]+}}, %if.else ]
+  %result.0 = phi i32 [ %sub, %if.then ], [ %v0, %if.else ]
+; CHECK: %result.0 = phi i32 [ %sub, %if.then ], [ %v0, %if.else ]
   ret i32 %result.0
 }
 

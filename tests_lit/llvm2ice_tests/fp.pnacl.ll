@@ -1017,8 +1017,8 @@ entry:
 define internal float @loadFloat(i32 %a) {
 entry:
   %a.asptr = inttoptr i32 %a to float*
-  %0 = load float* %a.asptr, align 4
-  ret float %0
+  %v0 = load float* %a.asptr, align 4
+  ret float %v0
 }
 ; CHECK: loadFloat:
 ; CHECK: movss
@@ -1027,8 +1027,8 @@ entry:
 define internal double @loadDouble(i32 %a) {
 entry:
   %a.asptr = inttoptr i32 %a to double*
-  %0 = load double* %a.asptr, align 8
-  ret double %0
+  %v0 = load double* %a.asptr, align 8
+  ret double %v0
 }
 ; CHECK: loadDouble:
 ; CHECK: movsd
@@ -1093,16 +1093,5 @@ entry:
 ; CHECK: ucomisd
 ; CHECK: ja .
 ; CHECK: fld
-
-define internal i32 @nacl_tp_tdb_offset(i32) {
-entry:
-  ret i32 0
-}
-
-define internal i32 @nacl_tp_tls_offset(i32 %size) {
-entry:
-  %result = sub i32 0, %size
-  ret i32 %result
-}
 
 ; ERRORS-NOT: ICE translation error

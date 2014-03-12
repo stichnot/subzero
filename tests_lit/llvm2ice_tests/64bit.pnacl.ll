@@ -718,8 +718,8 @@ entry:
 define internal i64 @load64(i32 %a) {
 entry:
   %a.asptr = inttoptr i32 %a to i64*
-  %0 = load i64* %a.asptr, align 1
-  ret i64 %0
+  %v0 = load i64* %a.asptr, align 1
+  ret i64 %v0
 }
 ; CHECK: load64:
 ; CHECK: mov e[[REGISTER:[a-z]+]], dword ptr [esp+4]

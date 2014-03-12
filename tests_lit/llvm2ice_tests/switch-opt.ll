@@ -14,7 +14,7 @@ entry:
   ]
 
 sw.default:                                       ; preds = %entry
-  %add = add nsw i32 %a, 27
+  %add = add i32 %a, 27
   br label %sw.epilog
 
 sw.bb1:                                           ; preds = %entry, %entry

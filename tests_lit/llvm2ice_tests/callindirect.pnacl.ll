@@ -22,15 +22,4 @@ entry:
 ; CHECK: call [[REGISTER]]
 ; CHECK: call [[REGISTER]]
 
-define internal i32 @nacl_tp_tdb_offset(i32) {
-entry:
-  ret i32 0
-}
-
-define internal i32 @nacl_tp_tls_offset(i32 %size) {
-entry:
-  %result = sub i32 0, %size
-  ret i32 %result
-}
-
 ; ERRORS-NOT: ICE translation error
