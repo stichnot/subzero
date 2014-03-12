@@ -2,7 +2,7 @@
 ; RUN: %llvm2ice --verbose none %s | FileCheck --check-prefix=ERRORS %s
 
 define i32 @func_single_arg(i32 %a) {
-; CHECK: define i32 func_single_arg
+; CHECK: define i32 @func_single_arg
 entry:
   ret i32 %a
 ; CHECK: ret i32 %a

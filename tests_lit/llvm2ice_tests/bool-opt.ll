@@ -1,10 +1,10 @@
 ; RUN: %llvm2ice -verbose inst %s | FileCheck %s
 ; RUN: %llvm2ice --verbose none %s | FileCheck --check-prefix=ERRORS %s
 
-define void @testBool(i32 %a, i32 %b) #0 {
+define void @testBool(i32 %a, i32 %b) {
 entry:
   %cmp = icmp eq i32 %a, %b
-  tail call void @use(i1 zeroext %cmp) #2
+  tail call void @use(i1 %cmp)
   ret void
 }
 

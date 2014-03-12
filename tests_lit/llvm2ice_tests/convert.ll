@@ -13,7 +13,7 @@
 @u1 = common global i32 0, align 4
 @u2 = common global i32 0, align 4
 
-define void @from_int8() nounwind {
+define void @from_int8() {
   %1 = load i8* @i8v, align 1
   %2 = sext i8 %1 to i16
   store i16 %2, i16* @i16v, align 2
@@ -33,7 +33,7 @@ define void @from_int8() nounwind {
   ; CHECK-NEXT: mov dword ptr [i64v],
 }
 
-define void @from_int16() nounwind {
+define void @from_int16() {
   %1 = load i16* @i16v, align 2
   %2 = trunc i16 %1 to i8
   store i8 %2, i8* @i8v, align 1
@@ -53,7 +53,7 @@ define void @from_int16() nounwind {
   ; CHECK-NEXT: mov dword ptr [i64v],
 }
 
-define void @from_int32() nounwind {
+define void @from_int32() {
   %1 = load i32* @i32v, align 4
   %2 = trunc i32 %1 to i8
   store i8 %2, i8* @i8v, align 1
@@ -73,7 +73,7 @@ define void @from_int32() nounwind {
   ; CHECK-NEXT: mov dword ptr [i64v],
 }
 
-define void @from_int64() nounwind {
+define void @from_int64() {
   %1 = load i64* @i64v, align 8
   %2 = trunc i64 %1 to i8
   store i8 %2, i8* @i8v, align 1
@@ -90,7 +90,7 @@ define void @from_int64() nounwind {
   ; CHECK-NEXT: mov dword ptr [
 }
 
-define void @from_uint8() nounwind {
+define void @from_uint8() {
   %1 = load i8* @u8v, align 1
   %2 = zext i8 %1 to i16
   store i16 %2, i16* @i16v, align 2
@@ -110,7 +110,7 @@ define void @from_uint8() nounwind {
   ; CHECK-NEXT: mov dword ptr [i64v],
 }
 
-define void @from_uint16() nounwind {
+define void @from_uint16() {
   %1 = load i16* @u16v, align 2
   %2 = trunc i16 %1 to i8
   store i8 %2, i8* @i8v, align 1
@@ -130,7 +130,7 @@ define void @from_uint16() nounwind {
   ; CHECK-NEXT: mov dword ptr [i64v],
 }
 
-define void @from_uint32() nounwind {
+define void @from_uint32() {
   %1 = load i32* @u32v, align 4
   %2 = trunc i32 %1 to i8
   store i8 %2, i8* @i8v, align 1
@@ -149,7 +149,7 @@ define void @from_uint32() nounwind {
   ; CHECK-NEXT: mov dword ptr [i64v],
 }
 
-define void @from_uint64() nounwind {
+define void @from_uint64() {
   %1 = load i64* @u64v, align 8
   %2 = trunc i64 %1 to i8
   store i8 %2, i8* @i8v, align 1

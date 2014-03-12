@@ -8,14 +8,14 @@ entry:
   br i1 %cmp, label %if.then, label %if.end
 
 if.then:                                          ; preds = %entry
-  tail call void @use(i1 zeroext %cmp)
+  tail call void @use(i1 %cmp)
   br label %if.end
 
 if.end:                                           ; preds = %if.then, %entry
   br i1 %cmp1, label %if.then5, label %if.end7
 
 if.then5:                                         ; preds = %if.end
-  tail call void @use(i1 zeroext %cmp1)
+  tail call void @use(i1 %cmp1)
   br label %if.end7
 
 if.end7:                                          ; preds = %if.then5, %if.end
