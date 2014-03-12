@@ -57,88 +57,11 @@ void IceOperandX8632Mem::setUse(const IceInst *Inst, const IceCfgNode *Node) {
     getIndex()->setUse(Inst, Node);
 }
 
-IceInstX8632Add::IceInstX8632Add(IceCfg *Cfg, IceVariable *Dest,
-                                 IceOperand *Source)
-    : IceInstX8632(Cfg, IceInstX8632::Add, 2, Dest) {
-  addSource(Dest);
-  addSource(Source);
-}
-
-IceInstX8632Adc::IceInstX8632Adc(IceCfg *Cfg, IceVariable *Dest,
-                                 IceOperand *Source)
-    : IceInstX8632(Cfg, IceInstX8632::Adc, 2, Dest) {
-  addSource(Dest);
-  addSource(Source);
-}
-
-IceInstX8632Addss::IceInstX8632Addss(IceCfg *Cfg, IceVariable *Dest,
-                                     IceOperand *Source)
-    : IceInstX8632(Cfg, IceInstX8632::Addss, 2, Dest) {
-  addSource(Dest);
-  addSource(Source);
-}
-
-IceInstX8632Sub::IceInstX8632Sub(IceCfg *Cfg, IceVariable *Dest,
-                                 IceOperand *Source)
-    : IceInstX8632(Cfg, IceInstX8632::Sub, 2, Dest) {
-  addSource(Dest);
-  addSource(Source);
-}
-
-IceInstX8632Sbb::IceInstX8632Sbb(IceCfg *Cfg, IceVariable *Dest,
-                                 IceOperand *Source)
-    : IceInstX8632(Cfg, IceInstX8632::Sbb, 2, Dest) {
-  addSource(Dest);
-  addSource(Source);
-}
-
-IceInstX8632Subss::IceInstX8632Subss(IceCfg *Cfg, IceVariable *Dest,
-                                     IceOperand *Source)
-    : IceInstX8632(Cfg, IceInstX8632::Subss, 2, Dest) {
-  addSource(Dest);
-  addSource(Source);
-}
-
-IceInstX8632And::IceInstX8632And(IceCfg *Cfg, IceVariable *Dest,
-                                 IceOperand *Source)
-    : IceInstX8632(Cfg, IceInstX8632::And, 2, Dest) {
-  addSource(Dest);
-  addSource(Source);
-}
-
-IceInstX8632Or::IceInstX8632Or(IceCfg *Cfg, IceVariable *Dest,
-                               IceOperand *Source)
-    : IceInstX8632(Cfg, IceInstX8632::Or, 2, Dest) {
-  addSource(Dest);
-  addSource(Source);
-}
-
-IceInstX8632Xor::IceInstX8632Xor(IceCfg *Cfg, IceVariable *Dest,
-                                 IceOperand *Source)
-    : IceInstX8632(Cfg, IceInstX8632::Xor, 2, Dest) {
-  addSource(Dest);
-  addSource(Source);
-}
-
-IceInstX8632Imul::IceInstX8632Imul(IceCfg *Cfg, IceVariable *Dest,
-                                   IceOperand *Source)
-    : IceInstX8632(Cfg, IceInstX8632::Imul, 2, Dest) {
-  addSource(Dest);
-  addSource(Source);
-}
-
 IceInstX8632Mul::IceInstX8632Mul(IceCfg *Cfg, IceVariable *Dest,
                                  IceVariable *Source1, IceOperand *Source2)
     : IceInstX8632(Cfg, IceInstX8632::Mul, 2, Dest) {
   addSource(Source1);
   addSource(Source2);
-}
-
-IceInstX8632Mulss::IceInstX8632Mulss(IceCfg *Cfg, IceVariable *Dest,
-                                     IceOperand *Source)
-    : IceInstX8632(Cfg, IceInstX8632::Mulss, 2, Dest) {
-  addSource(Dest);
-  addSource(Source);
 }
 
 IceInstX8632Idiv::IceInstX8632Idiv(IceCfg *Cfg, IceVariable *Dest,
@@ -155,13 +78,6 @@ IceInstX8632Div::IceInstX8632Div(IceCfg *Cfg, IceVariable *Dest,
   addSource(Dest);
   addSource(Source);
   addSource(Other);
-}
-
-IceInstX8632Divss::IceInstX8632Divss(IceCfg *Cfg, IceVariable *Dest,
-                                     IceOperand *Source)
-    : IceInstX8632(Cfg, IceInstX8632::Divss, 2, Dest) {
-  addSource(Dest);
-  addSource(Source);
 }
 
 IceInstX8632Shl::IceInstX8632Shl(IceCfg *Cfg, IceVariable *Dest,
@@ -491,106 +407,47 @@ static void emitTwoAddress(const char *Opcode, const IceInst *Inst,
   Str << "\n";
 }
 
-void IceInstX8632Add::emit(IceOstream &Str, uint32_t Option) const {
-  emitTwoAddress("add", this, Str, Option);
+void IceEmitTwoAddress(const char *Opcode, const IceInst *Inst,
+                       IceOstream &Str, uint32_t Option,
+                       bool ShiftHack) {
+  emitTwoAddress(Opcode, Inst, Str, Option, ShiftHack);
 }
 
-void IceInstX8632Add::dump(IceOstream &Str) const {
-  dumpDest(Str);
-  Str << " = add." << getDest()->getType() << " ";
-  dumpSources(Str);
-}
+template<> const char *IceInstX8632Add::Opcode = "add";
+template<> const char *IceInstX8632Adc::Opcode = "adc";
+template<> const char *IceInstX8632Addss::Opcode = "addss";
+template<> const char *IceInstX8632Sub::Opcode = "sub";
+template<> const char *IceInstX8632Subss::Opcode = "subss";
+template<> const char *IceInstX8632Sbb::Opcode = "sbb";
+template<> const char *IceInstX8632And::Opcode = "and";
+template<> const char *IceInstX8632Or::Opcode = "or";
+template<> const char *IceInstX8632Xor::Opcode = "xor";
+template<> const char *IceInstX8632Imul::Opcode = "imul";
+template<> const char *IceInstX8632Mulss::Opcode = "mulss";
+template<> const char *IceInstX8632Divss::Opcode = "divss";
 
-void IceInstX8632Adc::emit(IceOstream &Str, uint32_t Option) const {
-  emitTwoAddress("adc", this, Str, Option);
-}
-
-void IceInstX8632Adc::dump(IceOstream &Str) const {
-  dumpDest(Str);
-  Str << " = adc." << getDest()->getType() << " ";
-  dumpSources(Str);
-}
-
+template<>
 void IceInstX8632Addss::emit(IceOstream &Str, uint32_t Option) const {
   emitTwoAddress(getDest()->getType() == IceType_f32 ? "addss" : "addsd", this,
                  Str, Option);
 }
 
-void IceInstX8632Addss::dump(IceOstream &Str) const {
-  dumpDest(Str);
-  Str << " = addss." << getDest()->getType() << " ";
-  dumpSources(Str);
-}
-
-void IceInstX8632Sub::emit(IceOstream &Str, unsigned Option) const {
-  emitTwoAddress("sub", this, Str, Option);
-}
-
-void IceInstX8632Sub::dump(IceOstream &Str) const {
-  dumpDest(Str);
-  Str << " = sub." << getDest()->getType() << " ";
-  dumpSources(Str);
-}
-
+template<>
 void IceInstX8632Subss::emit(IceOstream &Str, unsigned Option) const {
   emitTwoAddress(getDest()->getType() == IceType_f32 ? "subss" : "subsd", this,
                  Str, Option);
 }
 
-void IceInstX8632Subss::dump(IceOstream &Str) const {
-  dumpDest(Str);
-  Str << " = subss." << getDest()->getType() << " ";
-  dumpSources(Str);
+template<>
+void IceInstX8632Mulss::emit(IceOstream &Str, uint32_t Option) const {
+  emitTwoAddress(getDest()->getType() == IceType_f32 ? "mulss" : "mulsd", this,
+                 Str, Option);
 }
 
-void IceInstX8632Sbb::emit(IceOstream &Str, unsigned Option) const {
-  emitTwoAddress("sbb", this, Str, Option);
-}
-
-void IceInstX8632Sbb::dump(IceOstream &Str) const {
-  dumpDest(Str);
-  Str << " = sbb." << getDest()->getType() << " ";
-  dumpSources(Str);
-}
-
-void IceInstX8632And::emit(IceOstream &Str, uint32_t Option) const {
-  emitTwoAddress("and", this, Str, Option);
-}
-
-void IceInstX8632And::dump(IceOstream &Str) const {
-  dumpDest(Str);
-  Str << " = and." << getDest()->getType() << " ";
-  dumpSources(Str);
-}
-
-void IceInstX8632Or::emit(IceOstream &Str, uint32_t Option) const {
-  emitTwoAddress("or", this, Str, Option);
-}
-
-void IceInstX8632Or::dump(IceOstream &Str) const {
-  dumpDest(Str);
-  Str << " = or." << getDest()->getType() << " ";
-  dumpSources(Str);
-}
-
-void IceInstX8632Xor::emit(IceOstream &Str, uint32_t Option) const {
-  emitTwoAddress("xor", this, Str, Option);
-}
-
-void IceInstX8632Xor::dump(IceOstream &Str) const {
-  dumpDest(Str);
-  Str << " = xor." << getDest()->getType() << " ";
-  dumpSources(Str);
-}
-
-void IceInstX8632Imul::emit(IceOstream &Str, uint32_t Option) const {
-  emitTwoAddress("imul", this, Str, Option);
-}
-
-void IceInstX8632Imul::dump(IceOstream &Str) const {
-  dumpDest(Str);
-  Str << " = imul." << getDest()->getType() << " ";
-  dumpSources(Str);
+template<>
+void IceInstX8632Divss::emit(IceOstream &Str, uint32_t Option) const {
+  emitTwoAddress(getDest()->getType() == IceType_f32 ? "divss" : "divsd", this,
+                 Str, Option);
 }
 
 void IceInstX8632Mul::emit(IceOstream &Str, uint32_t Option) const {
@@ -607,17 +464,6 @@ void IceInstX8632Mul::emit(IceOstream &Str, uint32_t Option) const {
 void IceInstX8632Mul::dump(IceOstream &Str) const {
   dumpDest(Str);
   Str << " = mul." << getDest()->getType() << " ";
-  dumpSources(Str);
-}
-
-void IceInstX8632Mulss::emit(IceOstream &Str, uint32_t Option) const {
-  emitTwoAddress(getDest()->getType() == IceType_f32 ? "mulss" : "mulsd", this,
-                 Str, Option);
-}
-
-void IceInstX8632Mulss::dump(IceOstream &Str) const {
-  dumpDest(Str);
-  Str << " = mulss." << getDest()->getType() << " ";
   dumpSources(Str);
 }
 
@@ -644,17 +490,6 @@ void IceInstX8632Div::emit(IceOstream &Str, uint32_t Option) const {
 void IceInstX8632Div::dump(IceOstream &Str) const {
   dumpDest(Str);
   Str << " = div." << getDest()->getType() << " ";
-  dumpSources(Str);
-}
-
-void IceInstX8632Divss::emit(IceOstream &Str, uint32_t Option) const {
-  emitTwoAddress(getDest()->getType() == IceType_f32 ? "divss" : "divsd", this,
-                 Str, Option);
-}
-
-void IceInstX8632Divss::dump(IceOstream &Str) const {
-  dumpDest(Str);
-  Str << " = divss." << getDest()->getType() << " ";
   dumpSources(Str);
 }
 
