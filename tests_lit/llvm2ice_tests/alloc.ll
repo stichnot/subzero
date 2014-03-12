@@ -1,4 +1,5 @@
 ; RUN: %llvm2ice --verbose none %s | FileCheck %s
+; RUN: %llvm2ice --verbose none %s | FileCheck --check-prefix=ERRORS %s
 
 define void @fixed_400(i32 %n) {
 entry:
@@ -28,3 +29,5 @@ entry:
 }
 
 declare void @f2(i32)
+
+; ERRORS-NOT: ICE translation error

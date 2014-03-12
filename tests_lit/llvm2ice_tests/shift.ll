@@ -1,4 +1,5 @@
 ; RUN: %llvm2ice -verbose inst %s | FileCheck %s
+; RUN: %llvm2ice --verbose none %s | FileCheck --check-prefix=ERRORS %s
 
 @i1 = common global i32 0, align 4
 @i2 = common global i32 0, align 4
@@ -26,3 +27,5 @@ entry:
   ; CHECK: shl eax, 16
   ; CHECK-NEXT: sar eax, 16
 }
+
+; ERRORS-NOT: ICE translation error

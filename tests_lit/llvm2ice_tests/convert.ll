@@ -1,4 +1,5 @@
 ; RUN: %llvm2ice %s | FileCheck %s
+; RUN: %llvm2ice --verbose none %s | FileCheck --check-prefix=ERRORS %s
 
 @i8v = common global i8 0, align 1
 @i16v = common global i16 0, align 2
@@ -173,3 +174,5 @@ entry:
   ; CHECK-NEXT: mov word ptr [
   ; CHECK-NEXT: mov dword ptr [
 }
+
+; ERRORS-NOT: ICE translation error
