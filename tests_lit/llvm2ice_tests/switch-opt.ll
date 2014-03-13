@@ -1,5 +1,6 @@
 ; RUN: %llvm2ice %s | FileCheck %s
 ; RUN: %llvm2ice --verbose none %s | FileCheck --check-prefix=ERRORS %s
+; RUN: %szdiff --llvm2ice=%llvm2ice %s | FileCheck --check-prefix=DUMP %s
 
 define i32 @testSwitch(i32 %a) {
 entry:
@@ -32,3 +33,4 @@ sw.epilog:                                        ; preds = %sw.bb2, %sw.default
 
 ; CHECK-NOT: ICE translation error
 ; ERRORS-NOT: ICE translation error
+; DUMP-NOT: SZ

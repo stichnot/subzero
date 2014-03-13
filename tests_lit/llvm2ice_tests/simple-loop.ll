@@ -1,5 +1,6 @@
 ; RUN: %llvm2ice -verbose inst %s | FileCheck %s
 ; RUN: %llvm2ice --verbose none %s | FileCheck --check-prefix=ERRORS %s
+; RUN: %szdiff --llvm2ice=%llvm2ice %s | FileCheck --check-prefix=DUMP %s
 
 define i32 @simple_loop(i32 %a, i32 %n) {
 entry:
@@ -48,3 +49,4 @@ for.end:
 ; CHECK-NEXT: jl {{.*}}for.body
 
 ; ERRORS-NOT: ICE translation error
+; DUMP-NOT: SZ

@@ -1,5 +1,6 @@
 ; RUN: %llvm2ice -verbose inst %s | FileCheck %s
 ; RUN: %llvm2ice --verbose none %s | FileCheck --check-prefix=ERRORS %s
+; RUN: %szdiff --llvm2ice=%llvm2ice %s | FileCheck --check-prefix=DUMP %s
 
 
 define i64 @add_args_i64(i64 %arg1, i64 %arg2) {
@@ -30,3 +31,4 @@ entry:
 ; CHECK-NEXT: ret
 
 ; ERRORS-NOT: ICE translation error
+; DUMP-NOT: SZ

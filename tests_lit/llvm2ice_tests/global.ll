@@ -1,5 +1,6 @@
 ; RUN: %llvm2ice -verbose inst %s | FileCheck %s
 ; RUN: %llvm2ice --verbose none %s | FileCheck --check-prefix=ERRORS %s
+; RUN: %szdiff --llvm2ice=%llvm2ice %s | FileCheck --check-prefix=DUMP %s
 
 @intern_global = global i32 12, align 4
 @extern_global = external global i32
@@ -19,3 +20,4 @@ entry:
 }
 
 ; ERRORS-NOT: ICE translation error
+; DUMP-NOT: SZ

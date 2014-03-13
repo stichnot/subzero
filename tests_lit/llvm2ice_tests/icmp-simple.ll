@@ -1,5 +1,6 @@
 ; RUN: %llvm2ice -verbose inst %s | FileCheck %s
 ; RUN: %llvm2ice --verbose none %s | FileCheck --check-prefix=ERRORS %s
+; RUN: %szdiff --llvm2ice=%llvm2ice %s | FileCheck --check-prefix=DUMP %s
 
 define void @dummy_icmp(i64 %foo, i64 %bar) {
 ; CHECK: define void @dummy_icmp
@@ -14,3 +15,4 @@ entry:
 }
 
 ; ERRORS-NOT: ICE translation error
+; DUMP-NOT: SZ

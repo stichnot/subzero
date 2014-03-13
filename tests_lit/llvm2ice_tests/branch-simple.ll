@@ -1,5 +1,6 @@
 ; RUN: %llvm2ice %s -verbose inst | FileCheck %s
 ; RUN: %llvm2ice --verbose none %s | FileCheck --check-prefix=ERRORS %s
+; RUN: %szdiff --llvm2ice=%llvm2ice %s | FileCheck --check-prefix=DUMP %s
 
 define i32 @simple_cond_branch(i32 %foo, i32 %bar) {
 entry:
@@ -17,3 +18,4 @@ Unequal:
 }
 
 ; ERRORS-NOT: ICE translation error
+; DUMP-NOT: SZ

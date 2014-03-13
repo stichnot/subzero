@@ -1,5 +1,6 @@
 ; RUN: %llvm2ice --verbose none %s | FileCheck %s
 ; RUN: %llvm2ice --verbose none %s | FileCheck --check-prefix=ERRORS %s
+; RUN: %szdiff --llvm2ice=%llvm2ice %s | FileCheck --check-prefix=DUMP %s
 
 @__init_array_start = internal constant [0 x i8] zeroinitializer, align 4
 @__fini_array_start = internal constant [0 x i8] zeroinitializer, align 4
@@ -23,3 +24,4 @@ entry:
 ; CHECK: call [[REGISTER]]
 
 ; ERRORS-NOT: ICE translation error
+; DUMP-NOT: SZ

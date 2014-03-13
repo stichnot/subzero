@@ -1,5 +1,6 @@
 ; RUN: %llvm2ice %s | FileCheck %s
 ; RUN: %llvm2ice --verbose none %s | FileCheck --check-prefix=ERRORS %s
+; RUN: %szdiff --llvm2ice=%llvm2ice %s | FileCheck --check-prefix=DUMP %s
 
 @i8v = common global i8 0, align 1
 @i16v = common global i16 0, align 2
@@ -176,3 +177,4 @@ entry:
 }
 
 ; ERRORS-NOT: ICE translation error
+; DUMP-NOT: SZ
