@@ -63,6 +63,10 @@ public:
       Cfg->addArg(mapValueToIceVar(ArgI));
     }
 
+    // Make an initial pass through the block list just to resolve the
+    // blocks in the original linearized order.  Otherwise the ICE
+    // linearized order will be affected by branch targets in
+    // terminator instructions.
     for (Function::const_iterator BBI = F->begin(), BBE = F->end(); BBI != BBE;
          ++BBI) {
       mapBasicBlockToNode(BBI);
@@ -135,7 +139,6 @@ private:
     case Type::PointerTyID: {
       const PointerType *PTy = cast<PointerType>(Ty);
       return convertType(PTy->getElementType());
-      return IceType_i32;
     }
     case Type::FunctionTyID:
       return IceType_i32;
@@ -160,8 +163,6 @@ private:
 
   IceOperand *convertValue(const Value *Op) {
     if (const Constant *Const = dyn_cast<Constant>(Op)) {
-      // For now only constant integers are supported.
-      // TODO: support all kinds of constants
       if (const GlobalValue *GV = dyn_cast<GlobalValue>(Const)) {
         return Cfg->getConstantSym(convertType(GV->getType()), GV, 0,
                                    GV->getName());
@@ -285,15 +286,12 @@ private:
 
   IceInst *convertLoadInstruction(const LoadInst *Inst) {
     IceOperand *Src = convertOperand(Inst, 0);
-    // assert(Src->getType() == IceType_i32 && "Expecting loads only from i32");
     IceVariable *Dest = mapValueToIceVar(Inst);
     return IceInstLoad::create(Cfg, Dest, Src);
   }
 
   IceInst *convertStoreInstruction(const StoreInst *Inst) {
     IceOperand *Addr = convertOperand(Inst, 1);
-    // assert(Addr->getType() == IceType_i32 && "Expecting stores only from
-    // i32");
     IceOperand *Val = convertOperand(Inst, 0);
     return IceInstStore::create(Cfg, Val, Addr);
   }
@@ -548,13 +546,6 @@ static cl::list<IceVerbose> VerboseList(
         clEnumValN(IceV_Timing, "time", "Pass timing details"),
         clEnumValN(IceV_All, "all", "Use all verbose options"),
         clEnumValN(IceV_None, "none", "No verbosity"), clEnumValEnd));
-static cl::opt<IceTargetArch> TargetArch(
-    "target", cl::desc("Target architecture:"), cl::init(IceTarget_X8632),
-    cl::values(clEnumValN(IceTarget_X8632, "x8632", "x86-32"),
-               clEnumValN(IceTarget_X8632Fast, "x8632fast", "x86-32 fast"),
-               clEnumValN(IceTarget_X8664, "x8664", "x86-64"),
-               clEnumValN(IceTarget_ARM32, "arm32", "ARM32"),
-               clEnumValN(IceTarget_ARM64, "arm64", "ARM64"), clEnumValEnd));
 static cl::opt<std::string> IRFilename(cl::Positional, cl::desc("<IR file>"),
                                        cl::Required);
 static cl::opt<std::string> OutputFilename("o",
@@ -627,24 +618,6 @@ int main(int argc, char **argv) {
     Cfg->Str.setVerbose(VerboseMask);
     if (DisableTranslation) {
       Cfg->dump();
-    } else {
-      IceTimer TTranslate;
-      Cfg->translate(TargetArch);
-      if (SubzeroTimingEnabled) {
-        std::cerr << "[Subzero timing] Translate function " << Cfg->getName()
-                  << ": " << TTranslate.getElapsedSec() << " sec\n";
-      }
-      if (Cfg->hasError()) {
-        errs() << "ICE translation error: " << Cfg->getError() << "\n";
-      }
-      uint32_t AsmFormat = 0;
-
-      IceTimer TEmit;
-      Cfg->emit(AsmFormat);
-      if (SubzeroTimingEnabled) {
-        std::cerr << "[Subzero timing] Emit function " << Cfg->getName() << ": "
-                  << TEmit.getElapsedSec() << " sec\n";
-      }
     }
   }
 

@@ -49,10 +49,9 @@ public:
   void setEntryNode(IceCfgNode *EntryNode) { Entry = EntryNode; }
   IceCfgNode *getEntryNode(void) const { return Entry; }
   // Create a node and append it to the end of the linearized list.
-  IceCfgNode *makeNode(IceString Name = "");
+  IceCfgNode *makeNode(const IceString &Name = "");
   uint32_t getNumNodes(void) const { return Nodes.size(); }
   const IceNodeList &getNodes(void) const { return Nodes; }
-  IceCfgNode *splitEdge(IceCfgNode *From, IceCfgNode *To);
 
   // Manage instruction numbering.
   int newInstNumber(void) { return NextInstNumber++; }
@@ -79,25 +78,7 @@ public:
                               const IceString &Name = "",
                               bool SuppressMangling = false);
 
-  // Miscellaneous accessors.
-  IceTargetLowering *getTarget(void) const { return Target; }
-  IceLiveness *getLiveness(void) const { return Liveness; }
-  bool hasComputedFrame(void) const;
-
-  // Passes over the CFG.
-  void translate(IceTargetArch TargetArch);
   void registerEdges(void);
-  void renumberInstructions(void);
-  void placePhiLoads(void);
-  void placePhiStores(void);
-  void deletePhis(void);
-  void doAddressOpt(void);
-  void genCode(void);
-  void genFrame(void);
-  void liveness(IceLivenessMode Mode);
-  bool validateLiveness(void) const;
-  void regAlloc(void);
-  void emit(uint32_t Option) const;
   void dump(void) const;
 
   // Allocate an instruction of type T using the per-Cfg instruction allocator.
@@ -130,16 +111,6 @@ private:
   IceVarList Variables;
   IceVarList Args; // subset of Variables, in argument order
   class IceConstantPool *ConstantPool;
-  IceTargetLowering *Target;
-  IceLiveness *Liveness;
-
-  void makeTarget(IceTargetArch Arch);
-
-  // TODO: This is a hack, and should be moved into a global context
-  // guarded with a mutex.  The purpose is to add a header comment at
-  // the beginning of emission, doing it once per file rather than
-  // once per function.
-  static bool HasEmittedFirstMethod;
 };
 
 #endif // _IceCfg_h

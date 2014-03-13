@@ -37,7 +37,6 @@ public:
     return Vars[I];
   }
   virtual void setUse(const IceInst *Inst, const IceCfgNode *Node) {}
-  virtual void emit(IceOstream &Str, uint32_t Option) const;
   virtual void dump(IceOstream &Str) const;
 
   virtual ~IceOperand() {}
@@ -59,7 +58,6 @@ IceOstream &operator<<(IceOstream &Str, const IceOperand *O);
 // including synchronized access for parallel translation.
 class IceConstant : public IceOperand {
 public:
-  virtual void emit(IceOstream &Str, uint32_t Option) const = 0;
   virtual void dump(IceOstream &Str) const = 0;
 
   static bool classof(const IceOperand *Operand) {
@@ -83,7 +81,6 @@ public:
     return new IceConstantPrimitive(Cfg, Type, Value);
   }
   T getValue(void) const { return Value; }
-  virtual void emit(IceOstream &Str, uint32_t Option) const { dump(Str); }
   virtual void dump(IceOstream &Str) const { Str << getValue(); }
 
   static bool classof(const IceOperand *Operand) {
@@ -118,7 +115,6 @@ public:
   IceString getName(void) const { return Name; }
   void setSuppressMangling(bool Value) { SuppressMangling = Value; }
   bool getSuppressMangling(void) const { return SuppressMangling; }
-  virtual void emit(IceOstream &Str, uint32_t Option) const;
   virtual void dump(IceOstream &Str) const;
 
   static bool classof(const IceOperand *Operand) {
@@ -138,80 +134,6 @@ private:
   const IceString Name;     // optional for debug/dump
   bool SuppressMangling;
 };
-
-// IceRegWeight is a wrapper for a uint32_t weight value, with a
-// special value that represents infinite weight, and an addWeight()
-// method that ensures that W+infinity=infinity.
-class IceRegWeight {
-public:
-  IceRegWeight(void) : Weight(0) {}
-  IceRegWeight(uint32_t Weight) : Weight(Weight) {}
-  const static uint32_t Inf = ~0;
-  void addWeight(uint32_t Delta) {
-    if (Delta == Inf)
-      Weight = Inf;
-    else if (Weight != Inf)
-      Weight += Delta;
-  }
-  void addWeight(const IceRegWeight &Other) { addWeight(Other.Weight); }
-  void setWeight(uint32_t Val) { Weight = Val; }
-  uint32_t getWeight(void) const { return Weight; }
-  bool isInf(void) const { return Weight == Inf; }
-
-private:
-  uint32_t Weight;
-};
-IceOstream &operator<<(IceOstream &Str, const IceRegWeight &W);
-bool operator<(const IceRegWeight &A, const IceRegWeight &B);
-bool operator<=(const IceRegWeight &A, const IceRegWeight &B);
-
-// IceLiveRange is a set of instruction number intervals representing
-// a variable's live range.  Generally there is one interval per basic
-// block where the variable is live, but adjacent intervals get
-// coalesced into a single interval.  IceLiveRange also includes a
-// weight, in case e.g. we want a live range to have higher weight
-// inside a loop.
-class IceLiveRange {
-public:
-  IceLiveRange(void) : Weight(0) {}
-
-  void reset(void) {
-    Range.clear();
-    Weight.setWeight(0);
-  }
-  void addSegment(int32_t Start, int32_t End);
-
-  bool endsBefore(const IceLiveRange &Other) const;
-  bool overlaps(const IceLiveRange &Other) const;
-  bool containsValue(int32_t Value) const;
-  bool isEmpty(void) const { return Range.empty(); }
-  int32_t getStart(void) const {
-    return Range.empty() ? -1 : Range.begin()->first;
-  }
-
-  IceRegWeight getWeight(void) const { return Weight; }
-  void setWeight(const IceRegWeight &NewWeight) { Weight = NewWeight; }
-  void addWeight(uint32_t Delta) { Weight.addWeight(Delta); }
-  void dump(IceOstream &Str) const;
-
-  // Defining USE_SET uses std::set to hold the segments instead of
-  // std::list.  Using std::list will be slightly faster, but is more
-  // restrictive because new segments cannot be added in the middle.
-
-  //#define USE_SET
-
-private:
-  typedef std::pair<int, int> RangeElementType;
-#ifdef USE_SET
-  typedef std::set<RangeElementType> RangeType;
-#else
-  typedef std::list<RangeElementType> RangeType;
-#endif
-  RangeType Range;
-  IceRegWeight Weight;
-};
-
-IceOstream &operator<<(IceOstream &Str, const IceLiveRange &L);
 
 // IceVariable represents an operand that is register-allocated or
 // stack-allocated.  If it is register-allocated, it will ultimately
@@ -237,54 +159,6 @@ public:
   bool getIsArg(void) const { return IsArgument; }
   void setIsArg(IceCfg *Cfg);
 
-  int32_t getStackOffset(void) const { return StackOffset; }
-  void setStackOffset(int32_t Offset) { StackOffset = Offset; }
-
-  int32_t getRegNum(void) const { return RegNum; }
-  void setRegNum(int32_t NewRegNum) {
-    // Regnum shouldn't be set more than once.
-    assert(RegNum < 0 || RegNum == NewRegNum);
-    RegNum = NewRegNum;
-  }
-  int32_t getRegNumTmp(void) const { return RegNumTmp; }
-  void setRegNumTmp(int32_t NewRegNum) { RegNumTmp = NewRegNum; }
-
-  IceRegWeight getWeight(void) const { return Weight; }
-  void setWeight(uint32_t NewWeight) { Weight = NewWeight; }
-  void setWeightInfinite(void) { Weight = IceRegWeight::Inf; }
-
-  IceVariable *getPreferredRegister(void) const { return RegisterPreference; }
-  bool getRegisterOverlap(void) const { return AllowRegisterOverlap; }
-  void setPreferredRegister(IceVariable *Prefer, bool Overlap) {
-    RegisterPreference = Prefer;
-    AllowRegisterOverlap = Overlap;
-  }
-
-  const IceLiveRange &getLiveRange(void) const { return LiveRange; }
-  void setLiveRange(const IceLiveRange &Range) { LiveRange = Range; }
-  void resetLiveRange(void) { LiveRange.reset(); }
-  void addLiveRange(int32_t Start, int32_t End, uint32_t WeightDelta) {
-    assert(WeightDelta != IceRegWeight::Inf);
-    LiveRange.addSegment(Start, End);
-    if (Weight.isInf())
-      LiveRange.setWeight(IceRegWeight::Inf);
-    else
-      LiveRange.addWeight(WeightDelta * Weight.getWeight());
-  }
-  void setLiveRangeInfiniteWeight(void) {
-    LiveRange.setWeight(IceRegWeight::Inf);
-  }
-
-  IceVariable *getLow(void) const { return LowVar; }
-  IceVariable *getHigh(void) const { return HighVar; }
-  void setLowHigh(IceVariable *Low, IceVariable *High) {
-    assert(LowVar == NULL);
-    assert(HighVar == NULL);
-    LowVar = Low;
-    HighVar = High;
-  }
-
-  virtual void emit(IceOstream &Str, uint32_t Option) const;
   virtual void dump(IceOstream &Str) const;
 
   static bool classof(const IceOperand *Operand) {
@@ -295,9 +169,7 @@ private:
   IceVariable(IceCfg *Cfg, IceType Type, const IceCfgNode *Node, uint32_t Index,
               const IceString &Name)
       : IceOperand(Cfg, Variable, Type), Number(Index), Name(Name),
-        DefInst(NULL), DefNode(Node), IsArgument(false), StackOffset(0),
-        RegNum(-1), RegNumTmp(-1), Weight(1), RegisterPreference(NULL),
-        AllowRegisterOverlap(false), LowVar(NULL), HighVar(NULL) {
+        DefInst(NULL), DefNode(Node), IsArgument(false) {
     Vars = new IceVariable *[1];
     Vars[0] = this;
     NumVars = 1;
@@ -315,32 +187,6 @@ private:
   // detecting isMultiblockLife().
   const IceCfgNode *DefNode;
   bool IsArgument;
-  // StackOffset is the canonical location on stack (only if
-  // RegNum<0 || IsArgument).
-  int StackOffset;
-  // RegNum is the allocated register, or -1 if it isn't
-  // register-allocated.
-  int32_t RegNum;
-  // RegNumTmp is the tentative assignment during register allocation.
-  int32_t RegNumTmp;
-  IceRegWeight Weight; // Register allocation priority
-  // RegisterPreference says that if possible, the register allocator
-  // should prefer the register that was assigned to this linked
-  // variable.
-  IceVariable *RegisterPreference;
-  // AllowRegisterOverlap says that it is OK to honor
-  // RegisterPreference and "share" a register even if the two live
-  // ranges overlap.
-  bool AllowRegisterOverlap;
-  IceLiveRange LiveRange;
-  // LowVar and HighVar are needed for lowering from 64 to 32 bits.
-  // When lowering from I64 to I32 on a 32-bit architecture, we split
-  // the variable into two machine-size pieces.  LowVar is the
-  // low-order machine-size portion, and HighVar is the remaining
-  // high-order portion.  TODO: It's wasteful to penalize all
-  // variables on all targets this way; use a sparser representation.
-  IceVariable *LowVar;
-  IceVariable *HighVar;
 };
 
 #endif // _IceOperand_h

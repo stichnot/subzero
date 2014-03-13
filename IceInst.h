@@ -27,20 +27,13 @@ public:
     Select,
     Store,
     Switch,
-    FakeDef,  // not part of LLVM/PNaCl bitcode
-    FakeUse,  // not part of LLVM/PNaCl bitcode
-    FakeKill, // not part of LLVM/PNaCl bitcode
-    Target    // target-specific low-level ICE
-              // Anything >= Target is an IceInstTarget subclass.
   };
   InstKind getKind(void) const { return Kind; }
 
   int32_t getNumber(void) const { return Number; }
-  void renumber(IceCfg *Cfg);
 
   bool isDeleted(void) const { return Deleted; }
   void setDeleted(void) { Deleted = true; }
-  void deleteIfDead(void);
 
   bool hasSideEffects(void) const { return HasSideEffects; }
 
@@ -51,8 +44,6 @@ public:
     assert(I < getSrcSize());
     return Srcs[I];
   }
-
-  bool isLastUse(const IceOperand *Src) const;
 
   // Returns a list of out-edges corresponding to a terminator
   // instruction, which is the last instruction of the block.
@@ -67,14 +58,9 @@ public:
   // basic blocks, i.e. used in a different block from their definition.
   void updateVars(IceCfgNode *Node);
 
-  void liveness(IceLivenessMode Mode, int32_t InstNumber, llvm::BitVector &Live,
-                IceLiveness *Liveness, const IceCfgNode *Node);
-  virtual void emit(IceOstream &Str, uint32_t Option) const;
   virtual void dump(IceOstream &Str) const;
-  virtual void dumpExtras(IceOstream &Str) const;
   void dumpSources(IceOstream &Str) const;
   void dumpDest(IceOstream &Str) const;
-  virtual bool isRedundantAssign(void) const { return false; }
 
   virtual ~IceInst() {}
 
@@ -85,19 +71,12 @@ protected:
     assert(NumSrcs < MaxSrcs);
     Srcs[NumSrcs++] = Src;
   }
-  void setLastUse(uint32_t VarIndex) {
-    if (VarIndex < 8 * sizeof(LiveRangesEnded))
-      LiveRangesEnded |= (1u << VarIndex);
-  }
-  void resetLastUses(void) { LiveRangesEnded = 0; }
 
   const InstKind Kind;
   // Number is the instruction number for describing live ranges.
   int32_t Number;
   // Deleted means irrevocably deleted.
   bool Deleted;
-  // Dead means pending deletion after liveness analysis converges.
-  bool Dead;
   // HasSideEffects means the instruction is something like a function
   // call or a volatile load that can't be removed even if its Dest
   // variable is not live.
@@ -106,9 +85,7 @@ protected:
   IceVariable *Dest;
   const uint32_t MaxSrcs; // only used for assert
   uint32_t NumSrcs;
-  IceOperand **Srcs; // TODO: possibly delete[] in destructor
-
-  uint32_t LiveRangesEnded; // only first 32 src operands tracked, sorry
+  IceOperand **Srcs;
 };
 
 IceOstream &operator<<(IceOstream &Str, const IceInst *I);
@@ -157,8 +134,7 @@ public:
     Ashr,
     And,
     Or,
-    Xor,
-    OpKind_NUM
+    Xor
   };
   static IceInstArithmetic *create(IceCfg *Cfg, OpKind Op, IceVariable *Dest,
                                    IceOperand *Source1, IceOperand *Source2) {
@@ -255,8 +231,8 @@ private:
               IceOperand *CallTarget, bool Tail)
       : IceInst(Cfg, IceInst::Call, NumArgs + 1, Dest), Tail(Tail) {
     // Set HasSideEffects so that the call instruction can't be
-    // dead-code eliminated.  TODO: Don't set this for a deletable
-    // intrinsic call.
+    // dead-code eliminated.  Don't set this for a deletable intrinsic
+    // call.
     HasSideEffects = true;
     addSource(CallTarget);
   }
@@ -277,9 +253,6 @@ public:
     Fptosi,
     Uitofp,
     Sitofp,
-    Ptrtoint,
-    Inttoptr,
-    Bitcast
   };
   static IceInstCast *create(IceCfg *Cfg, OpKind CastKind, IceVariable *Dest,
                              IceOperand *Source) {
@@ -349,8 +322,7 @@ public:
     Sgt,
     Sge,
     Slt,
-    Sle,
-    None // not part of LLVM; used for unconditional branch
+    Sle
   };
   static IceInstIcmp *create(IceCfg *Cfg, ICond Condition, IceVariable *Dest,
                              IceOperand *Source1, IceOperand *Source2) {
@@ -390,10 +362,6 @@ public:
     return new (Cfg->allocateInst<IceInstPhi>()) IceInstPhi(Cfg, MaxSrcs, Dest);
   }
   void addArgument(IceOperand *Source, IceCfgNode *Label);
-  IceOperand *getOperandForTarget(IceCfgNode *Target) const;
-  void livenessPhiOperand(llvm::BitVector &Live, IceCfgNode *Target,
-                          IceLiveness *Liveness);
-  IceInst *lower(IceCfg *Cfg, IceCfgNode *Node);
   virtual void dump(IceOstream &Str) const;
   static bool classof(const IceInst *Inst) { return Inst->getKind() == Phi; }
 
@@ -489,101 +457,6 @@ private:
   uint32_t NumCases;   // not including the default case
   uint64_t *Values;    // size is NumCases
   IceCfgNode **Labels; // size is NumCases
-};
-
-// FakeDef instruction.  This creates a fake definition of a variable,
-// which is how we represent the case when an instruction produces
-// multiple results.  This doesn't happen with high-level ICE
-// instructions, but might with lowered instructions.  For example,
-// this would be a way to represent condition flags being modified by
-// an instruction.
-//
-// It's generally useful to set the optional source operand to be the
-// dest variable of the instruction that actually produces the FakeDef
-// dest.  Otherwise, the original instruction could be dead-code
-// eliminated if its dest operand is unused, and therefore the FakeDef
-// dest wouldn't be properly initialized.
-class IceInstFakeDef : public IceInst {
-public:
-  static IceInstFakeDef *create(IceCfg *Cfg, IceVariable *Dest,
-                                IceVariable *Src = NULL) {
-    return new (Cfg->allocateInst<IceInstFakeDef>())
-        IceInstFakeDef(Cfg, Dest, Src);
-  }
-  virtual void emit(IceOstream &Str, uint32_t Option) const;
-  virtual void dump(IceOstream &Str) const;
-  static bool classof(const IceInst *Inst) {
-    return Inst->getKind() == FakeDef;
-  }
-
-private:
-  IceInstFakeDef(IceCfg *Cfg, IceVariable *Dest, IceVariable *Src);
-};
-
-// FakeUse instruction.  This creates a fake use of a variable, to
-// keep the instruction that produces that variable from being
-// dead-code eliminated.  This is useful in a variety of lowering
-// situations.  The FakeUse instruction has no dest, so it can itself
-// never be dead-code eliminated.
-class IceInstFakeUse : public IceInst {
-public:
-  static IceInstFakeUse *create(IceCfg *Cfg, IceVariable *Src) {
-    return new (Cfg->allocateInst<IceInstFakeUse>()) IceInstFakeUse(Cfg, Src);
-  }
-  virtual void emit(IceOstream &Str, uint32_t Option) const;
-  virtual void dump(IceOstream &Str) const;
-  static bool classof(const IceInst *Inst) {
-    return Inst->getKind() == FakeUse;
-  }
-
-private:
-  IceInstFakeUse(IceCfg *Cfg, IceVariable *Src);
-};
-
-// FakeKill instruction.  This "kills" a set of variables by adding a
-// trivial live range at this instruction to each variable.  The
-// primary use is to indicate that scratch registers are killed after
-// a call, so that the register allocator won't assign a scratch
-// register to a variable whose live range spans a call.
-//
-// The FakeKill instruction also holds a pointer to the instruction
-// that kills the set of variables, so that if that linked instruction
-// gets dead-code eliminated, the FakeKill instruction will as well.
-class IceInstFakeKill : public IceInst {
-public:
-  static IceInstFakeKill *create(IceCfg *Cfg, const IceVarList &KilledRegs,
-                                 const IceInst *Linked) {
-    return new (Cfg->allocateInst<IceInstFakeKill>())
-        IceInstFakeKill(Cfg, KilledRegs, Linked);
-  }
-  const IceInst *getLinked(void) const { return Linked; }
-  virtual void emit(IceOstream &Str, uint32_t Option) const;
-  virtual void dump(IceOstream &Str) const;
-  static bool classof(const IceInst *Inst) {
-    return Inst->getKind() == FakeKill;
-  }
-
-private:
-  IceInstFakeKill(IceCfg *Cfg, const IceVarList &KilledRegs,
-                  const IceInst *Linked);
-  // This instruction is ignored if Linked->isDeleted() is true.
-  const IceInst *Linked;
-};
-
-// The Target instruction is the base class for all target-specific
-// instructions.
-class IceInstTarget : public IceInst {
-public:
-  virtual void emit(IceOstream &Str, uint32_t Option) const = 0;
-  virtual void dump(IceOstream &Str) const;
-  virtual void dumpExtras(IceOstream &Str) const;
-  static bool classof(const IceInst *Inst) { return Inst->getKind() >= Target; }
-
-protected:
-  IceInstTarget(IceCfg *Cfg, InstKind Kind, uint32_t MaxSrcs, IceVariable *Dest)
-      : IceInst(Cfg, Kind, MaxSrcs, Dest) {
-    assert(Kind >= Target);
-  }
 };
 
 #endif // _IceInst_h

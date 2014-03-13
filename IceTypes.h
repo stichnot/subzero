@@ -19,14 +19,6 @@ enum IceType {
   IceType_NUM
 };
 
-enum IceTargetArch {
-  IceTarget_X8632,
-  IceTarget_X8632Fast,
-  IceTarget_X8664,
-  IceTarget_ARM32,
-  IceTarget_ARM64
-};
-
 uint32_t iceTypeWidth(IceType T);
 IceOstream &operator<<(class IceOstream &Str, IceType T);
 

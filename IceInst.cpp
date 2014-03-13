@@ -6,54 +6,14 @@
 #include "IceCfg.h"
 #include "IceCfgNode.h"
 #include "IceInst.h"
-#include "IceInstX8632.h"
-#include "IceLiveness.h"
 #include "IceOperand.h"
 
 IceInst::IceInst(IceCfg *Cfg, InstKind Kind, uint32_t MaxSrcs,
                  IceVariable *Dest)
-    : Kind(Kind), Deleted(false), Dead(false), HasSideEffects(false),
-      Dest(Dest), MaxSrcs(MaxSrcs), NumSrcs(0), LiveRangesEnded(0) {
+    : Kind(Kind), Deleted(false), HasSideEffects(false), Dest(Dest),
+      MaxSrcs(MaxSrcs), NumSrcs(0) {
   Number = Cfg->newInstNumber();
   Srcs = Cfg->allocateArrayOf<IceOperand *>(MaxSrcs);
-}
-
-// Assign the instruction a new number.
-void IceInst::renumber(IceCfg *Cfg) {
-  Number = isDeleted() ? -1 : Cfg->newInstNumber();
-}
-
-// Delete the instruction if its tentative Dead flag is still set
-// after liveness analysis.
-void IceInst::deleteIfDead(void) {
-  if (Dead)
-    setDeleted();
-}
-
-// If Src is an IceVariable, it returns true if this instruction ends
-// Src's live range.  Otherwise, returns false.
-bool IceInst::isLastUse(const IceOperand *TestSrc) const {
-  if (LiveRangesEnded == 0)
-    return false; // early-exit optimization
-  if (const IceVariable *TestVar = llvm::dyn_cast<const IceVariable>(TestSrc)) {
-    uint32_t VarIndex = 0;
-    uint32_t Mask = LiveRangesEnded;
-    for (uint32_t I = 0; I < getSrcSize(); ++I) {
-      IceOperand *Src = getSrc(I);
-      uint32_t NumVars = Src->getNumVars();
-      for (uint32_t J = 0; J < NumVars; ++J, ++VarIndex) {
-        const IceVariable *Var = Src->getVar(J);
-        if (Var == TestVar) {
-          // We've found where the variable is used in the instruction.
-          return Mask & 1;
-        }
-        Mask >>= 1;
-        if (Mask == 0)
-          return false; // another early-exit optimization
-      }
-    }
-  }
-  return false;
 }
 
 void IceInst::updateVars(IceCfgNode *Node) {
@@ -61,90 +21,6 @@ void IceInst::updateVars(IceCfgNode *Node) {
     Dest->setDefinition(this, Node);
   for (uint32_t I = 0; I < getSrcSize(); ++I) {
     getSrc(I)->setUse(this, Node);
-  }
-}
-
-void IceInst::liveness(IceLivenessMode Mode, int32_t InstNumber,
-                       llvm::BitVector &Live, IceLiveness *Liveness,
-                       const IceCfgNode *Node) {
-  if (isDeleted())
-    return;
-  if (llvm::isa<IceInstFakeKill>(this))
-    return;
-
-  // For lightweight liveness, do the simple calculation and return.
-  if (Mode == IceLiveness_LREndLightweight) {
-    resetLastUses();
-    uint32_t VarIndex = 0;
-    for (uint32_t I = 0; I < getSrcSize(); ++I) {
-      IceOperand *Src = getSrc(I);
-      uint32_t NumVars = Src->getNumVars();
-      for (uint32_t J = 0; J < NumVars; ++J, ++VarIndex) {
-        const IceVariable *Var = Src->getVar(J);
-        if (Var->isMultiblockLife())
-          continue;
-        uint32_t Index = Var->getIndex();
-        if (Live[Index])
-          continue;
-        Live[Index] = true;
-        setLastUse(VarIndex);
-      }
-    }
-    return;
-  }
-
-  std::vector<int32_t> &LiveBegin = Liveness->getLiveBegin(Node);
-  std::vector<int32_t> &LiveEnd = Liveness->getLiveEnd(Node);
-  Dead = false;
-  if (Dest) {
-    uint32_t VarNum = Liveness->getLiveIndex(Dest);
-    if (Live[VarNum]) {
-      Live[VarNum] = false;
-      LiveBegin[VarNum] = InstNumber;
-    } else {
-      if (!hasSideEffects())
-        Dead = true;
-    }
-  }
-  if (Dead)
-    return;
-  // Phi arguments only get added to Live in the predecessor node, but
-  // we still need to update LiveRangesEnded.
-  bool IsPhi = llvm::isa<IceInstPhi>(this);
-  resetLastUses();
-  uint32_t VarIndex = 0;
-  for (uint32_t I = 0; I < getSrcSize(); ++I) {
-    IceOperand *Src = getSrc(I);
-    uint32_t NumVars = Src->getNumVars();
-    for (uint32_t J = 0; J < NumVars; ++J, ++VarIndex) {
-      const IceVariable *Var = Src->getVar(J);
-      uint32_t VarNum = Liveness->getLiveIndex(Var);
-      if (!Live[VarNum]) {
-        setLastUse(VarIndex);
-        if (!IsPhi) {
-          Live[VarNum] = true;
-          // For a variable in SSA form, its live range can end at
-          // most once in a basic block.  However, after lowering to
-          // two-address instructions, we end up with sequences like
-          // "t=b;t+=c;a=t" where t's live range begins and ends
-          // twice.  ICE only allows a variable to have a single
-          // liveness interval in a basic block (except for blocks
-          // where a variable is live-in and live-out but there is a
-          // gap in the middle, and except for the special
-          // IceInstFakeKill instruction that can appear multiple
-          // times in the same block).  Therefore, this lowered
-          // sequence needs to represent a single conservative live
-          // range for t.  Since the instructions are being traversed
-          // backwards, we make sure LiveEnd is only set once by
-          // setting it only when LiveEnd[VarNum]==0 (sentinel value).
-          // Note that it's OK to set LiveBegin multiple times because
-          // of the backwards traversal.
-          if (LiveEnd[VarNum] == 0) {
-            LiveEnd[VarNum] = InstNumber;
-          }
-        }
-      }
-    }
   }
 }
 
@@ -246,57 +122,6 @@ void IceInstPhi::addArgument(IceOperand *Source, IceCfgNode *Label) {
   addSource(Source);
 }
 
-// Find the source operand corresponding to the incoming edge for the
-// given node.  TODO: This uses a linear-time search, which could be
-// improved if it becomes a problem.
-IceOperand *IceInstPhi::getOperandForTarget(IceCfgNode *Target) const {
-  for (uint32_t I = 0; I < getSrcSize(); ++I) {
-    if (Labels[I] == Target)
-      return getSrc(I);
-  }
-  assert(0);
-  return NULL;
-}
-
-// Updates liveness for a particular operand based on the given
-// predecessor edge.  Doesn't mark the operand as live if the Phi
-// instruction is dead or deleted.
-void IceInstPhi::livenessPhiOperand(llvm::BitVector &Live, IceCfgNode *Target,
-                                    IceLiveness *Liveness) {
-  if (isDeleted() || Dead)
-    return;
-  for (uint32_t I = 0; I < getSrcSize(); ++I) {
-    if (Labels[I] == Target) {
-      if (IceVariable *Var = llvm::dyn_cast<IceVariable>(getSrc(I))) {
-        uint32_t SrcIndex = Liveness->getLiveIndex(Var);
-        if (!Live[SrcIndex]) {
-          setLastUse(I);
-          Live[SrcIndex] = true;
-        }
-      }
-      return;
-    }
-  }
-  assert(0);
-}
-
-// Change "a=phi(...)" to "a_phi=phi(...)" and return a new
-// instruction "a=a_phi".
-IceInst *IceInstPhi::lower(IceCfg *Cfg, IceCfgNode *Node) {
-  IceVariable *Dest = getDest();
-  assert(Dest);
-  IceString PhiName = Dest->getName() + "_phi";
-  IceVariable *NewSrc = Cfg->makeVariable(Dest->getType(), Node, PhiName);
-  this->Dest = NewSrc;
-  IceInstAssign *NewInst = IceInstAssign::create(Cfg, Dest, NewSrc);
-  // Set Dest and NewSrc to have affinity with each other, as a hint
-  // for register allocation.
-  Dest->setPreferredRegister(NewSrc, false);
-  NewSrc->setPreferredRegister(Dest, false);
-  Dest->replaceDefinition(NewInst, Node);
-  return NewInst;
-}
-
 IceInstRet::IceInstRet(IceCfg *Cfg, IceOperand *Source)
     : IceInst(Cfg, Ret, Source ? 1 : 0, NULL) {
   if (Source)
@@ -349,34 +174,10 @@ IceNodeList IceInstSwitch::getTerminatorEdges(void) const {
   return OutEdges;
 }
 
-IceInstFakeDef::IceInstFakeDef(IceCfg *Cfg, IceVariable *Dest, IceVariable *Src)
-    : IceInst(Cfg, IceInst::FakeDef, Src ? 1 : 0, Dest) {
-  assert(Dest);
-  if (Src)
-    addSource(Src);
-}
-
-IceInstFakeUse::IceInstFakeUse(IceCfg *Cfg, IceVariable *Src)
-    : IceInst(Cfg, IceInst::FakeUse, 1, NULL) {
-  assert(Src);
-  addSource(Src);
-}
-
-IceInstFakeKill::IceInstFakeKill(IceCfg *Cfg, const IceVarList &KilledRegs,
-                                 const IceInst *Linked)
-    : IceInst(Cfg, IceInst::FakeKill, KilledRegs.size(), NULL), Linked(Linked) {
-  for (IceVarList::const_iterator I = KilledRegs.begin(), E = KilledRegs.end();
-       I != E; ++I) {
-    IceVariable *Var = *I;
-    addSource(Var);
-  }
-}
-
 // ======================== Dump routines ======================== //
 
 IceOstream &operator<<(IceOstream &Str, const IceInst *I) {
-  if (!Str.isVerbose(IceV_Deleted) &&
-      (I->isDeleted() || I->isRedundantAssign()))
+  if (!Str.isVerbose(IceV_Deleted) && (I->isDeleted()))
     return Str;
   if (Str.isVerbose(IceV_InstNumbers)) {
     char buf[30];
@@ -391,48 +192,14 @@ IceOstream &operator<<(IceOstream &Str, const IceInst *I) {
   if (I->isDeleted())
     Str << "  //";
   I->dump(Str);
-  I->dumpExtras(Str);
   Str << "\n";
   return Str;
-}
-
-void IceInst::emit(IceOstream &Str, uint32_t Option) const {
-  Str << "??? ";
-  dump(Str);
-  Str << "\n";
-  Str.Cfg->setError("emit() called on a non-lowered instruction");
 }
 
 void IceInst::dump(IceOstream &Str) const {
   dumpDest(Str);
   Str << " =~ ";
   dumpSources(Str);
-}
-
-void IceInst::dumpExtras(IceOstream &Str) const {
-  bool First = true;
-  // Print "LIVEEND={a,b,c}" for all source operands whose live ranges
-  // are known to end at this instruction.
-  if (Str.isVerbose(IceV_Liveness)) {
-    uint32_t VarIndex = 0;
-    for (uint32_t I = 0; I < getSrcSize(); ++I) {
-      IceOperand *Src = getSrc(I);
-      uint32_t NumVars = Src->getNumVars();
-      for (uint32_t J = 0; J < NumVars; ++J, ++VarIndex) {
-        const IceVariable *Var = Src->getVar(J);
-        if (isLastUse(Var)) {
-          if (First)
-            Str << " // LIVEEND={";
-          else
-            Str << ",";
-          Str << Var;
-          First = false;
-        }
-      }
-    }
-    if (!First)
-      Str << "}";
-  }
 }
 
 void IceInst::dumpSources(IceOstream &Str) const {
@@ -512,9 +279,6 @@ void IceInstArithmetic::dump(IceOstream &Str) const {
   case Xor:
     Str << "xor";
     break;
-  case OpKind_NUM:
-    Str << "invalid";
-    break;
   }
   Str << " " << getDest()->getType() << " ";
   dumpSources(Str);
@@ -592,15 +356,10 @@ void IceInstCast::dump(IceOstream &Str) const {
   case Sitofp:
     Str << "sitofp";
     break;
-  case Inttoptr:
-    Str << "inttoptr";
-    break;
   }
   Str << " " << getSrc(0)->getType() << " ";
   dumpSources(Str);
   Str << " to " << getDest()->getType();
-  if (getCastKind() == Inttoptr)
-    Str << "*";
 }
 
 void IceInstIcmp::dump(IceOstream &Str) const {
@@ -636,9 +395,6 @@ void IceInstIcmp::dump(IceOstream &Str) const {
     break;
   case Sle:
     Str << "sle";
-    break;
-  case None: // shouldn't happen
-    Str << "<none>";
     break;
   }
   Str << " " << getSrc(0)->getType() << " ";
@@ -776,49 +532,4 @@ void IceInstSelect::dump(IceOstream &Str) const {
   Str << " = select " << Condition->getType() << " " << Condition << ", "
       << TrueOp->getType() << " " << TrueOp << ", " << FalseOp->getType() << " "
       << FalseOp;
-}
-
-void IceInstFakeDef::emit(IceOstream &Str, uint32_t Option) const {
-  Str << "\t# ";
-  dump(Str);
-  Str << "\n";
-}
-
-void IceInstFakeDef::dump(IceOstream &Str) const {
-  dumpDest(Str);
-  Str << " = def.pseudo ";
-  dumpSources(Str);
-}
-
-void IceInstFakeUse::emit(IceOstream &Str, uint32_t Option) const {
-  Str << "\t# ";
-  dump(Str);
-  Str << "\n";
-}
-
-void IceInstFakeUse::dump(IceOstream &Str) const {
-  Str << "use.pseudo ";
-  dumpSources(Str);
-}
-
-void IceInstFakeKill::emit(IceOstream &Str, uint32_t Option) const {
-  Str << "\t# ";
-  dump(Str);
-  Str << "\n";
-}
-
-void IceInstFakeKill::dump(IceOstream &Str) const {
-  if (Linked->isDeleted())
-    Str << "// ";
-  Str << "kill.pseudo ";
-  dumpSources(Str);
-}
-
-void IceInstTarget::dump(IceOstream &Str) const {
-  Str << "[TARGET] ";
-  IceInst::dump(Str);
-}
-
-void IceInstTarget::dumpExtras(IceOstream &Str) const {
-  IceInst::dumpExtras(Str);
 }

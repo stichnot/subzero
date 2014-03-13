@@ -40,13 +40,7 @@ OBJS= \
 	IceCfg.o \
 	IceCfgNode.o \
 	IceInst.o \
-	IceInstX8632.o \
-	IceLiveness.o \
 	IceOperand.o \
-	IceRegAlloc.o \
-	IceRegManager.o \
-	IceTargetLowering.o \
-	IceTargetLoweringX8632.o \
 	IceTypes.o
 
 # Keep all the first target so it's the default.
@@ -54,11 +48,8 @@ all: llvm2ice
 
 .PHONY: all
 
-llvm2ice: $(OBJS) PNaClABITypeChecker.o llvm2ice.o
+llvm2ice: $(OBJS) llvm2ice.o
 	$(CXX) $(LDFLAGS) -o $@ $^ $(LLVM_LDFLAGS)
-
-PNaClABITypeChecker.o: PNaClABITypeChecker.cpp PNaClABITypeChecker.h
-	$(CXX) -c $(CXXFLAGS) $< -o $@
 
 # Compiling driver files (with a 'main' function) separately, so they don't
 # get included in OBJS.

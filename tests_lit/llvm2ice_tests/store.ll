@@ -1,5 +1,5 @@
-; RUN: %llvm2ice %s -verbose inst | FileCheck %s
-; RUN: %llvm2ice --verbose none %s | FileCheck --check-prefix=ERRORS %s
+; RUIN: %llvm2ice %s -verbose inst | FileCheck %s
+; RUIN: %llvm2ice --verbose none %s | FileCheck --check-prefix=ERRORS %s
 ; RUN: %szdiff --llvm2ice=%llvm2ice %s | FileCheck --check-prefix=DUMP %s
 
 define void @store_i64(i32 %addr_arg) {

@@ -1,5 +1,5 @@
-; RUN: %llvm2ice %s | FileCheck %s
-; RUN: %llvm2ice --verbose none %s | FileCheck --check-prefix=ERRORS %s
+; RUIN: %llvm2ice %s | FileCheck %s
+; RUIN: %llvm2ice --verbose none %s | FileCheck --check-prefix=ERRORS %s
 ; RUN: %szdiff --llvm2ice=%llvm2ice %s | FileCheck --check-prefix=DUMP %s
 
 define void @testBool(i32 %a, i32 %b) {

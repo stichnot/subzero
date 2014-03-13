@@ -29,10 +29,7 @@ class IceConstant;
 class IceInst;
 class IceInstPhi;
 class IceInstTarget;
-class IceLiveRange;
-class IceLiveness;
 class IceOperand;
-class IceTargetLowering;
 class IceVariable;
 
 // TODO: Switch over to LLVM's ADT container classes.
@@ -43,24 +40,6 @@ typedef std::list<IceInstPhi *> IcePhiList;
 typedef std::vector<IceOperand *> IceOpList;
 typedef std::vector<IceVariable *> IceVarList;
 typedef std::vector<IceCfgNode *> IceNodeList;
-
-enum IceLivenessMode {
-  // Lightweight version of live-range-end calculation.  Marks the
-  // last use of variables whose definition and uses are completely
-  // within a single block.
-  IceLiveness_LREndLightweight,
-
-  // Full version of live-range-end calculation.  Marks the last uses
-  // of variables based on dataflow analysis.  Records the set of
-  // live-in and live-out variables for each block.  Identifies and
-  // deletes dead instructions (primarily stores).
-  IceLiveness_LREndFull,
-
-  // In addition to IceLiveness_LREndFull, also calculate the complete
-  // live range for each variable in a form suitable for interference
-  // calculation and register allocation.
-  IceLiveness_RangesFull
-};
 
 // This is a convenience templated class that provides a mapping
 // between a parameterized type and small unsigned integers.
@@ -178,11 +157,6 @@ inline IceOstream &operator<<(IceOstream &Str, double D) {
     *(Str.Stream) << D;
   return Str;
 }
-
-// GlobalStr is just for debugging, in situations where the
-// IceCfg/IceOstream objects aren't otherwise available.  Not
-// thread-safe.
-extern IceOstream *GlobalStr;
 
 class IceTimer {
 public:
