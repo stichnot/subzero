@@ -40,26 +40,6 @@ void IceCfgNode::appendInst(IceInst *Inst) {
   Inst->updateVars(this);
 }
 
-// Inserts a list of new instructions into the node's instruction list
-// at the designated insertion point.  The new instructions are
-// generally the product of some lowering phase applied to a single
-// high-level instruction, such as target lowering or phi lowering.
-// New Phi instructions may not be inserted this way.
-void IceCfgNode::insertInsts(IceInstList::iterator Location,
-                             const IceInstList &NewInsts) {
-  Insts.insert(Location, NewInsts.begin(), NewInsts.end());
-  IceInstList::const_iterator I = NewInsts.begin(), E = NewInsts.end();
-  while (I != E) {
-    IceInst *Inst = *I++;
-    if (Inst->isDeleted())
-      continue;
-    if (llvm::isa<IceInstPhi>(Inst)) {
-      Cfg->setError("Phi instructions may not be added this way");
-    }
-    Inst->updateVars(this);
-  }
-}
-
 // Renumbers the non-deleted instructions in the node.  This needs to
 // be done in preparation for live range analysis.  The instruction
 // numbers in a block must be monotonically increasing.  The range of

@@ -42,7 +42,7 @@ public:
   void split64(IceVariable *Var, IceLoweringContext &Context);
   void setArgOffsetAndCopy(IceVariable *Arg, IceVariable *FramePtr,
                            int BasicFrameOffset, int &InArgsSizeBytes,
-                           IceInstList &Expansion);
+                           IceLoweringContext &Context);
   IceOperand *makeLowOperand(IceOperand *Operand, IceLoweringContext &Context);
   IceOperand *makeHighOperand(IceOperand *Operand, IceLoweringContext &Context);
   enum Registers {

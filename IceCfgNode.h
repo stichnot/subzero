@@ -32,7 +32,6 @@ public:
 
   IceInstList &getInsts(void) { return Insts; }
   void appendInst(IceInst *Inst);
-  void insertInsts(IceInstList::iterator Location, const IceInstList &NewInsts);
   void renumberInstructions(void);
 
   void splitEdge(IceCfgNode *From, IceCfgNode *To);

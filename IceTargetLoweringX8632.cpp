@@ -177,7 +177,7 @@ void IceTargetX8632::setArgOffsetAndCopy(IceVariable *Arg,
                                          IceVariable *FramePtr,
                                          int BasicFrameOffset,
                                          int &InArgsSizeBytes,
-                                         IceInstList &Expansion) {
+                                         IceLoweringContext &Context) {
   IceVariable *Low = Arg->getLow();
   IceVariable *High = Arg->getHigh();
   IceType Type = Arg->getType();
@@ -185,9 +185,9 @@ void IceTargetX8632::setArgOffsetAndCopy(IceVariable *Arg,
     assert(Low->getType() != IceType_i64);  // don't want infinite recursion
     assert(High->getType() != IceType_i64); // don't want infinite recursion
     setArgOffsetAndCopy(Low, FramePtr, BasicFrameOffset, InArgsSizeBytes,
-                        Expansion);
+                        Context);
     setArgOffsetAndCopy(High, FramePtr, BasicFrameOffset, InArgsSizeBytes,
-                        Expansion);
+                        Context);
     return;
   }
   Arg->setStackOffset(BasicFrameOffset + InArgsSizeBytes);
@@ -197,18 +197,19 @@ void IceTargetX8632::setArgOffsetAndCopy(IceVariable *Arg,
     IceOperandX8632Mem *Mem = IceOperandX8632Mem::create(
         Cfg, Type, FramePtr,
         Cfg->getConstantInt(IceType_i32, Arg->getStackOffset()));
-    Expansion.push_back(IceInstX8632Mov::create(Cfg, Arg, Mem));
+    Context.insert(IceInstX8632Mov::create(Cfg, Arg, Mem));
   }
   InArgsSizeBytes += typeWidthOnStack(Type);
 }
 
 void IceTargetX8632::addProlog(IceCfgNode *Node) {
   const bool SimpleCoalescing = true;
-  IceInstList Expansion;
   int InArgsSizeBytes = 0;
   int RetIpSizeBytes = 4;
   int PreservedRegsSizeBytes = 0;
   LocalsSizeBytes = 0;
+  IceLoweringContext Context(Node);
+  Context.Next = Context.Cur;
 
   // Determine stack frame offsets for each IceVariable without a
   // register assignment.  This can be done as one variable per stack
@@ -265,8 +266,7 @@ void IceTargetX8632::addProlog(IceCfgNode *Node) {
   for (unsigned i = 0; i < CalleeSaves.size(); ++i) {
     if (CalleeSaves[i] && RegsUsed[i]) {
       PreservedRegsSizeBytes += 4;
-      Expansion.push_back(
-          IceInstX8632Push::create(Cfg, getPhysicalRegister(i)));
+      Context.insert(IceInstX8632Push::create(Cfg, getPhysicalRegister(i)));
     }
   }
 
@@ -275,15 +275,14 @@ void IceTargetX8632::addProlog(IceCfgNode *Node) {
     assert((RegsUsed & getRegisterSet(IceTargetLowering::RegMask_FramePointer))
                .count() == 0);
     PreservedRegsSizeBytes += 4;
-    Expansion.push_back(
-        IceInstX8632Push::create(Cfg, getPhysicalRegister(Reg_ebp)));
-    Expansion.push_back(IceInstX8632Mov::create(
-        Cfg, getPhysicalRegister(Reg_ebp), getPhysicalRegister(Reg_esp)));
+    Context.insert(IceInstX8632Push::create(Cfg, getPhysicalRegister(Reg_ebp)));
+    Context.insert(IceInstX8632Mov::create(Cfg, getPhysicalRegister(Reg_ebp),
+                                           getPhysicalRegister(Reg_esp)));
   }
 
   // Generate "sub esp, LocalsSizeBytes"
   if (LocalsSizeBytes)
-    Expansion.push_back(IceInstX8632Sub::create(
+    Context.insert(IceInstX8632Sub::create(
         Cfg, getPhysicalRegister(Reg_esp),
         Cfg->getConstantInt(IceType_i32, LocalsSizeBytes)));
 
@@ -345,7 +344,7 @@ void IceTargetX8632::addProlog(IceCfgNode *Node) {
   for (unsigned i = 0; i < Args.size(); ++i) {
     IceVariable *Arg = Args[i];
     setArgOffsetAndCopy(Arg, FramePtr, BasicFrameOffset, InArgsSizeBytes,
-                        Expansion);
+                        Context);
   }
 
   // TODO: If esp is adjusted during out-arg writing for a Call, any
@@ -358,12 +357,9 @@ void IceTargetX8632::addProlog(IceCfgNode *Node) {
              << "InArgsSizeBytes=" << InArgsSizeBytes << "\n"
              << "PreservedRegsSizeBytes=" << PreservedRegsSizeBytes << "\n";
   }
-
-  Node->insertInsts(Node->getInsts().begin(), Expansion);
 }
 
 void IceTargetX8632::addEpilog(IceCfgNode *Node) {
-  IceInstList Expansion;
   IceInstList &Insts = Node->getInsts();
   IceInstList::reverse_iterator RI, E;
   for (RI = Insts.rbegin(), E = Insts.rend(); RI != E; ++RI) {
@@ -373,17 +369,23 @@ void IceTargetX8632::addEpilog(IceCfgNode *Node) {
   if (RI == E)
     return;
 
+  // Convert the reverse_iterator position into its corresponding
+  // (forward) iterator position.
+  IceInstList::iterator InsertPoint = RI.base();
+  --InsertPoint;
+  IceLoweringContext Context(Node);
+  Context.Next = InsertPoint;
+
   if (IsEbpBasedFrame) {
     // mov esp, ebp
-    Expansion.push_back(IceInstX8632Mov::create(
-        Cfg, getPhysicalRegister(Reg_esp), getPhysicalRegister(Reg_ebp)));
+    Context.insert(IceInstX8632Mov::create(Cfg, getPhysicalRegister(Reg_esp),
+                                           getPhysicalRegister(Reg_ebp)));
     // pop ebp
-    Expansion.push_back(
-        IceInstX8632Pop::create(Cfg, getPhysicalRegister(Reg_ebp)));
+    Context.insert(IceInstX8632Pop::create(Cfg, getPhysicalRegister(Reg_ebp)));
   } else {
     // add esp, LocalsSizeBytes
     if (LocalsSizeBytes)
-      Expansion.push_back(IceInstX8632Add::create(
+      Context.insert(IceInstX8632Add::create(
           Cfg, getPhysicalRegister(Reg_esp),
           Cfg->getConstantInt(IceType_i32, LocalsSizeBytes)));
   }
@@ -396,15 +398,9 @@ void IceTargetX8632::addEpilog(IceCfgNode *Node) {
     if (j == Reg_ebp && IsEbpBasedFrame)
       continue;
     if (CalleeSaves[j] && RegsUsed[j]) {
-      Expansion.push_back(IceInstX8632Pop::create(Cfg, getPhysicalRegister(j)));
+      Context.insert(IceInstX8632Pop::create(Cfg, getPhysicalRegister(j)));
     }
   }
-
-  // Convert the reverse_iterator position into its corresponding
-  // (forward) iterator position.
-  IceInstList::iterator InsertPoint = RI.base();
-  --InsertPoint;
-  Node->insertInsts(InsertPoint, Expansion);
 }
 
 void IceTargetX8632::split64(IceVariable *Var, IceLoweringContext &Context) {
