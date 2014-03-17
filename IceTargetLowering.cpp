@@ -48,12 +48,13 @@ IceTargetLowering *IceTargetLowering::createLowering(IceTargetArch Target,
   return NULL;
 }
 
-IceInstList IceTargetLowering::doAddressOpt(const IceInst *Inst) {
-  if (const IceInstLoad *I = llvm::dyn_cast<const IceInstLoad>(Inst))
-    return doAddressOptLoad(I);
-  if (const IceInstStore *I = llvm::dyn_cast<const IceInstStore>(Inst))
-    return doAddressOptStore(I);
-  return IceInstList();
+void IceTargetLowering::doAddressOpt(IceLoweringContext &Context) {
+  if (llvm::isa<IceInstLoad>(*Context.Cur))
+    doAddressOptLoad(Context);
+  else if (llvm::isa<IceInstStore>(*Context.Cur))
+    doAddressOptStore(Context);
+  Context.Cur = Context.Next;
+  Context.advanceNext();
 }
 
 // Lowers a single instruction according to the information in

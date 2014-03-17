@@ -88,8 +88,8 @@ protected:
                           IceLoweringContext &Context);
   virtual void lowerSwitch(const IceInstSwitch *Inst,
                            IceLoweringContext &Context);
-  virtual IceInstList doAddressOptLoad(const IceInstLoad *Inst);
-  virtual IceInstList doAddressOptStore(const IceInstStore *Inst);
+  virtual void doAddressOptLoad(IceLoweringContext &Context);
+  virtual void doAddressOptStore(IceLoweringContext &Context);
 
   enum OperandLegalization {
     Legal_None = 0,

@@ -222,16 +222,9 @@ void IceCfgNode::deletePhis(void) {
 // instruction and delete the old.
 void IceCfgNode::doAddressOpt(void) {
   IceTargetLowering *Target = Cfg->getTarget();
-  IceInstList::iterator I = Insts.begin(), E = Insts.end();
-  while (I != E) {
-    IceInst *Inst = *I++;
-    if (Inst->isDeleted())
-      continue;
-    IceInstList NewInsts = Target->doAddressOpt(Inst);
-    if (!NewInsts.empty()) {
-      insertInsts(I, NewInsts);
-      Inst->setDeleted();
-    }
+  IceLoweringContext Context(this);
+  while (Context.Cur != Context.End) {
+    Target->doAddressOpt(Context);
   }
 }
 

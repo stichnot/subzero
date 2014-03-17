@@ -1767,8 +1767,8 @@ void IceTargetX8632::lowerLoad(const IceInstLoad *Inst,
   lowerAssign(Assign, Context);
 }
 
-IceInstList IceTargetX8632::doAddressOptLoad(const IceInstLoad *Inst) {
-  IceInstList Expansion;
+void IceTargetX8632::doAddressOptLoad(IceLoweringContext &Context) {
+  IceInst *Inst = *Context.Cur;
   IceVariable *Dest = Inst->getDest();
   IceOperand *Addr = Inst->getSrc(0);
   IceVariable *Index = NULL;
@@ -1780,9 +1780,9 @@ IceInstList IceTargetX8632::doAddressOptLoad(const IceInstLoad *Inst) {
     IceConstant *OffsetOp = Cfg->getConstantInt(IceType_i32, Offset);
     Addr = IceOperandX8632Mem::create(Cfg, Dest->getType(), Base, OffsetOp,
                                       Index, Shift);
-    Expansion.push_back(IceInstLoad::create(Cfg, Dest, Addr));
+    Inst->setDeleted();
+    Context.insert(IceInstLoad::create(Cfg, Dest, Addr));
   }
-  return Expansion;
 }
 
 void IceTargetX8632::lowerPhi(const IceInstPhi *Inst,
@@ -1914,8 +1914,8 @@ void IceTargetX8632::lowerStore(const IceInstStore *Inst,
   }
 }
 
-IceInstList IceTargetX8632::doAddressOptStore(const IceInstStore *Inst) {
-  IceInstList Expansion;
+void IceTargetX8632::doAddressOptStore(IceLoweringContext &Context) {
+  IceInstStore *Inst = llvm::cast<IceInstStore>(*Context.Cur);
   IceOperand *Data = Inst->getData();
   IceOperand *Addr = Inst->getAddr();
   IceVariable *Index = NULL;
@@ -1927,9 +1927,9 @@ IceInstList IceTargetX8632::doAddressOptStore(const IceInstStore *Inst) {
     IceConstant *OffsetOp = Cfg->getConstantInt(IceType_i32, Offset);
     Addr = IceOperandX8632Mem::create(Cfg, Data->getType(), Base, OffsetOp,
                                       Index, Shift);
-    Expansion.push_back(IceInstStore::create(Cfg, Data, Addr));
+    Inst->setDeleted();
+    Context.insert(IceInstStore::create(Cfg, Data, Addr));
   }
-  return Expansion;
 }
 
 void IceTargetX8632::lowerSwitch(const IceInstSwitch *Inst,

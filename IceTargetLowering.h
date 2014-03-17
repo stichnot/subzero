@@ -58,7 +58,7 @@ public:
     Cfg->setError("Target doesn't specify lowering steps.");
   }
 
-  IceInstList doAddressOpt(const IceInst *Inst);
+  void doAddressOpt(IceLoweringContext &Context);
   void lower(IceLoweringContext &Context);
   virtual IceVariable *getPhysicalRegister(unsigned RegNum) = 0;
   virtual IceString getRegName(int RegNum, IceType Type) const = 0;
@@ -120,12 +120,8 @@ protected:
   virtual void lowerSwitch(const IceInstSwitch *Inst,
                            IceLoweringContext &Context) = 0;
 
-  virtual IceInstList doAddressOptLoad(const IceInstLoad *Inst) {
-    return IceInstList();
-  }
-  virtual IceInstList doAddressOptStore(const IceInstStore *Inst) {
-    return IceInstList();
-  }
+  virtual void doAddressOptLoad(IceLoweringContext &Context) {}
+  virtual void doAddressOptStore(IceLoweringContext &Context) {}
   // This gives the target an opportunity to post-process the lowered
   // expansion before returning.  The primary intention is to do some
   // Register Manager activity as necessary, specifically to eagerly
