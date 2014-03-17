@@ -68,9 +68,12 @@ public:
 protected:
   IceTargetX8632(IceCfg *Cfg);
 
-  virtual void lowerAlloca(const IceInstAlloca *Inst, IceLoweringContext &Context);
-  virtual void lowerArithmetic(const IceInstArithmetic *Inst, IceLoweringContext &Context);
-  virtual void lowerAssign(const IceInstAssign *Inst, IceLoweringContext &Context);
+  virtual void lowerAlloca(const IceInstAlloca *Inst,
+                           IceLoweringContext &Context);
+  virtual void lowerArithmetic(const IceInstArithmetic *Inst,
+                               IceLoweringContext &Context);
+  virtual void lowerAssign(const IceInstAssign *Inst,
+                           IceLoweringContext &Context);
   virtual void lowerBr(const IceInstBr *Inst, IceLoweringContext &Context);
   virtual void lowerCall(const IceInstCall *Inst, IceLoweringContext &Context);
   virtual void lowerCast(const IceInstCast *Inst, IceLoweringContext &Context);
@@ -79,9 +82,12 @@ protected:
   virtual void lowerLoad(const IceInstLoad *Inst, IceLoweringContext &Context);
   virtual void lowerPhi(const IceInstPhi *Inst, IceLoweringContext &Context);
   virtual void lowerRet(const IceInstRet *Inst, IceLoweringContext &Context);
-  virtual void lowerSelect(const IceInstSelect *Inst, IceLoweringContext &Context);
-  virtual void lowerStore(const IceInstStore *Inst, IceLoweringContext &Context);
-  virtual void lowerSwitch(const IceInstSwitch *Inst, IceLoweringContext &Context);
+  virtual void lowerSelect(const IceInstSelect *Inst,
+                           IceLoweringContext &Context);
+  virtual void lowerStore(const IceInstStore *Inst,
+                          IceLoweringContext &Context);
+  virtual void lowerSwitch(const IceInstSwitch *Inst,
+                           IceLoweringContext &Context);
   virtual IceInstList doAddressOptLoad(const IceInstLoad *Inst);
   virtual IceInstList doAddressOptStore(const IceInstStore *Inst);
 
@@ -94,9 +100,10 @@ protected:
   };
   typedef uint32_t LegalMask;
   IceOperand *legalizeOperand(IceOperand *From, LegalMask Allowed,
-                              IceLoweringContext &Context, bool AllowOverlap = false,
-                              int RegNum = -1);
-  IceVariable *legalizeOperandToVar(IceOperand *From, IceLoweringContext &Context,
+                              IceLoweringContext &Context,
+                              bool AllowOverlap = false, int RegNum = -1);
+  IceVariable *legalizeOperandToVar(IceOperand *From,
+                                    IceLoweringContext &Context,
                                     bool AllowOverlap = false, int RegNum = -1);
 
   bool IsEbpBasedFrame;
@@ -120,7 +127,7 @@ public:
 
 protected:
   IceTargetX8632Fast(IceCfg *Cfg) : IceTargetX8632(Cfg) {}
-    virtual void postLower(const IceLoweringContext &Context);
+  virtual void postLower(const IceLoweringContext &Context);
 };
 
 #endif // _IceTargetLoweringX8632_h

@@ -8,7 +8,9 @@
 #include "IceTargetLowering.h"
 #include "IceTargetLoweringX8632.h"
 
-IceLoweringContext::IceLoweringContext(IceCfgNode *Node) : Node(Node), Insts(Node->getInsts()), Cur(Insts.begin()), End(Insts.end()) {
+IceLoweringContext::IceLoweringContext(IceCfgNode *Node)
+    : Node(Node), Insts(Node->getInsts()), Cur(Insts.begin()),
+      End(Insts.end()) {
   skipDeleted(Cur);
   Next = Cur;
   advance(Next);

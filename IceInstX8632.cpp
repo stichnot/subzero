@@ -411,7 +411,7 @@ void IceInstX8632Divss::emit(IceOstream &Str, uint32_t Option) const {
                     this, Str, Option);
 }
 
-template<>
+template <>
 void IceInstX8632Imul::emit(IceOstream &Str, uint32_t Option) const {
   assert(getSrcSize() == 2);
   if (llvm::isa<IceConstant>(getSrc(1))) {

@@ -45,6 +45,7 @@ public:
   IceInstList::iterator Next;
   // End is a copy of Insts.end(), used if Next needs to be advanced.
   const IceInstList::iterator End;
+
 private:
   void skipDeleted(IceInstList::iterator &I);
   void advance(IceInstList::iterator &I);
@@ -91,20 +92,33 @@ public:
 protected:
   IceTargetLowering(IceCfg *Cfg)
       : Cfg(Cfg), HasComputedFrame(false), StackAdjustment(0) {}
-  virtual void lowerAlloca(const IceInstAlloca *Inst, IceLoweringContext &Context) = 0;
-  virtual void lowerArithmetic(const IceInstArithmetic *Inst, IceLoweringContext &Context) = 0;
-  virtual void lowerAssign(const IceInstAssign *Inst, IceLoweringContext &Context) = 0;
+  virtual void lowerAlloca(const IceInstAlloca *Inst,
+                           IceLoweringContext &Context) = 0;
+  virtual void lowerArithmetic(const IceInstArithmetic *Inst,
+                               IceLoweringContext &Context) = 0;
+  virtual void lowerAssign(const IceInstAssign *Inst,
+                           IceLoweringContext &Context) = 0;
   virtual void lowerBr(const IceInstBr *Inst, IceLoweringContext &Context) = 0;
-  virtual void lowerCall(const IceInstCall *Inst, IceLoweringContext &Context) = 0;
-  virtual void lowerCast(const IceInstCast *Inst, IceLoweringContext &Context) = 0;
-  virtual void lowerFcmp(const IceInstFcmp *Inst, IceLoweringContext &Context) = 0;
-  virtual void lowerIcmp(const IceInstIcmp *Inst, IceLoweringContext &Context) = 0;
-  virtual void lowerLoad(const IceInstLoad *Inst, IceLoweringContext &Context) = 0;
-  virtual void lowerPhi(const IceInstPhi *Inst, IceLoweringContext &Context) = 0;
-  virtual void lowerRet(const IceInstRet *Inst, IceLoweringContext &Context) = 0;
-  virtual void lowerSelect(const IceInstSelect *Inst, IceLoweringContext &Context) = 0;
-  virtual void lowerStore(const IceInstStore *Inst, IceLoweringContext &Context) = 0;
-  virtual void lowerSwitch(const IceInstSwitch *Inst, IceLoweringContext &Context) = 0;
+  virtual void lowerCall(const IceInstCall *Inst,
+                         IceLoweringContext &Context) = 0;
+  virtual void lowerCast(const IceInstCast *Inst,
+                         IceLoweringContext &Context) = 0;
+  virtual void lowerFcmp(const IceInstFcmp *Inst,
+                         IceLoweringContext &Context) = 0;
+  virtual void lowerIcmp(const IceInstIcmp *Inst,
+                         IceLoweringContext &Context) = 0;
+  virtual void lowerLoad(const IceInstLoad *Inst,
+                         IceLoweringContext &Context) = 0;
+  virtual void lowerPhi(const IceInstPhi *Inst,
+                        IceLoweringContext &Context) = 0;
+  virtual void lowerRet(const IceInstRet *Inst,
+                        IceLoweringContext &Context) = 0;
+  virtual void lowerSelect(const IceInstSelect *Inst,
+                           IceLoweringContext &Context) = 0;
+  virtual void lowerStore(const IceInstStore *Inst,
+                          IceLoweringContext &Context) = 0;
+  virtual void lowerSwitch(const IceInstSwitch *Inst,
+                           IceLoweringContext &Context) = 0;
 
   virtual IceInstList doAddressOptLoad(const IceInstLoad *Inst) {
     return IceInstList();
