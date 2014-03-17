@@ -325,7 +325,6 @@ void IceTargetX8632::addProlog(IceCfgNode *Node) {
     else
       Var->setStackOffset(LocalsSizeBytes - NextStackOffset);
   }
-  LocalsSizeBytes = NextStackOffset;
   this->FrameSizeLocals = NextStackOffset;
   this->HasComputedFrame = true;
 
