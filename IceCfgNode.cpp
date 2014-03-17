@@ -222,7 +222,6 @@ void IceCfgNode::deletePhis(void) {
 // instruction and delete the old.
 void IceCfgNode::doAddressOpt(void) {
   IceTargetLowering *Target = Cfg->getTarget();
-  Target->setCurrentNode(this);
   IceInstList::iterator I = Insts.begin(), E = Insts.end();
   while (I != E) {
     IceInst *Inst = *I++;
@@ -236,44 +235,19 @@ void IceCfgNode::doAddressOpt(void) {
   }
 }
 
-// Returns the next non-deleted instruction.
-// TODO: Make IceInstList into its own class that wraps the
-// std::list<IceInst*> and provides its own STL iterators.  Provide
-// normal iterators, plus an iterator that automatically skips deleted
-// instructions.  This way, target lowering can get full lookahead
-// instead of just one instruction lookahead.
-// IceTargetLowering::lower() would take Cur and End iterators instead
-// of Inst and Next IceInsts, for the purpose of pre-lowering peephole
-// optimizations such as compare/branch fusing or load/binop fusing.
-static IceInst *getNextInst(IceInstList::iterator I,
-                            const IceInstList::iterator &E) {
-  while (I != E && (*I)->isDeleted())
-    ++I;
-  if (I == E)
-    return NULL;
-  return *I;
-}
-
 // Drives the target lowering.  Passes the current instruction and the
 // next non-deleted instruction for target lowering.
 void IceCfgNode::genCode(void) {
   IceTargetLowering *Target = Cfg->getTarget();
-  Target->setCurrentNode(this);
   // Lower only the regular instructions.  Defer the Phi instructions.
-  IceInstList::iterator I = Insts.begin(), E = Insts.end();
-  while (I != E) {
-    IceInst *Inst = *I++;
-    IceInst *Next = getNextInst(I, E);
-    if (Inst->isDeleted())
-      continue;
-    if (llvm::isa<IceInstRet>(Inst))
+  IceLoweringContext Context(this);
+  while (Context.Cur != Context.End) {
+    IceInstList::iterator Orig = Context.Cur;
+    (void)Orig; // used only in assert()
+    if (llvm::isa<IceInstRet>(*Context.Cur))
       setHasReturn();
-    bool DeleteNextInst = false;
-    IceInstList NewInsts = Target->lower(Inst, Next, DeleteNextInst);
-    insertInsts(I, NewInsts);
-    Inst->setDeleted();
-    if (DeleteNextInst)
-      Next->setDeleted();
+    Target->lower(Context);
+    assert(Context.Cur != Orig);
   }
 }
 

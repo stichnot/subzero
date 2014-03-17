@@ -4,8 +4,27 @@
  */
 
 #include "IceCfg.h" // setError()
+#include "IceCfgNode.h"
 #include "IceTargetLowering.h"
 #include "IceTargetLoweringX8632.h"
+
+IceLoweringContext::IceLoweringContext(IceCfgNode *Node) : Node(Node), Insts(Node->getInsts()), Cur(Insts.begin()), End(Insts.end()) {
+  skipDeleted(Cur);
+  Next = Cur;
+  advance(Next);
+}
+
+void IceLoweringContext::skipDeleted(IceInstList::iterator &I) {
+  while (I != End && (*I)->isDeleted())
+    ++I;
+}
+
+void IceLoweringContext::advance(IceInstList::iterator &I) {
+  if (I != End) {
+    ++I;
+    skipDeleted(I);
+  }
+}
 
 IceTargetLowering *IceTargetLowering::createLowering(IceTargetArch Target,
                                                      IceCfg *Cfg) {
@@ -35,64 +54,64 @@ IceInstList IceTargetLowering::doAddressOpt(const IceInst *Inst) {
   return IceInstList();
 }
 
-IceInstList IceTargetLowering::lower(const IceInst *Inst, const IceInst *Next,
-                                     bool &DeleteNextInst) {
-  IceInstList Expansion;
+// Lowers a single instruction according to the information in
+// Context, by checking the Context.Cur instruction kind and calling
+// the appropriate lowering method.  The lowering method should insert
+// target instructions at the Cur.Next insertion point, and should not
+// delete the Context.Cur instruction or advance Context.Cur.
+//
+// The lowering method may look ahead in the instruction stream as
+// desired, and lower additional instructions in conjunction with the
+// current one, for example fusing a compare and branch.  If it does,
+// it should advance Context.Cur to point to the next non-deleted
+// instruction to process, and it should delete any additional
+// instructions it consumes.
+void IceTargetLowering::lower(IceLoweringContext &Context) {
+  assert(Context.Cur != Context.End);
+  IceInstList::iterator Cur = Context.Cur;
+  IceInst *Inst = *Cur;
   switch (Inst->getKind()) {
   case IceInst::Alloca:
-    Expansion =
-        lowerAlloca(llvm::dyn_cast<IceInstAlloca>(Inst), Next, DeleteNextInst);
+    lowerAlloca(llvm::dyn_cast<IceInstAlloca>(Inst), Context);
     break;
   case IceInst::Arithmetic:
-    Expansion = lowerArithmetic(llvm::dyn_cast<IceInstArithmetic>(Inst), Next,
-                                DeleteNextInst);
+    lowerArithmetic(llvm::dyn_cast<IceInstArithmetic>(Inst), Context);
     break;
   case IceInst::Assign:
-    Expansion =
-        lowerAssign(llvm::dyn_cast<IceInstAssign>(Inst), Next, DeleteNextInst);
+    lowerAssign(llvm::dyn_cast<IceInstAssign>(Inst), Context);
     break;
   case IceInst::Br:
-    Expansion = lowerBr(llvm::dyn_cast<IceInstBr>(Inst), Next, DeleteNextInst);
+    lowerBr(llvm::dyn_cast<IceInstBr>(Inst), Context);
     break;
   case IceInst::Call:
-    Expansion =
-        lowerCall(llvm::dyn_cast<IceInstCall>(Inst), Next, DeleteNextInst);
+    lowerCall(llvm::dyn_cast<IceInstCall>(Inst), Context);
     break;
   case IceInst::Cast:
-    Expansion =
-        lowerCast(llvm::dyn_cast<IceInstCast>(Inst), Next, DeleteNextInst);
+    lowerCast(llvm::dyn_cast<IceInstCast>(Inst), Context);
     break;
   case IceInst::Fcmp:
-    Expansion =
-        lowerFcmp(llvm::dyn_cast<IceInstFcmp>(Inst), Next, DeleteNextInst);
+    lowerFcmp(llvm::dyn_cast<IceInstFcmp>(Inst), Context);
     break;
   case IceInst::Icmp:
-    Expansion =
-        lowerIcmp(llvm::dyn_cast<IceInstIcmp>(Inst), Next, DeleteNextInst);
+    lowerIcmp(llvm::dyn_cast<IceInstIcmp>(Inst), Context);
     break;
   case IceInst::Load:
-    Expansion =
-        lowerLoad(llvm::dyn_cast<IceInstLoad>(Inst), Next, DeleteNextInst);
+    lowerLoad(llvm::dyn_cast<IceInstLoad>(Inst), Context);
     break;
   case IceInst::Phi:
-    Expansion =
-        lowerPhi(llvm::dyn_cast<IceInstPhi>(Inst), Next, DeleteNextInst);
+    lowerPhi(llvm::dyn_cast<IceInstPhi>(Inst), Context);
     break;
   case IceInst::Ret:
-    Expansion =
-        lowerRet(llvm::dyn_cast<IceInstRet>(Inst), Next, DeleteNextInst);
+    lowerRet(llvm::dyn_cast<IceInstRet>(Inst), Context);
     break;
   case IceInst::Select:
-    Expansion =
-        lowerSelect(llvm::dyn_cast<IceInstSelect>(Inst), Next, DeleteNextInst);
+    lowerSelect(llvm::dyn_cast<IceInstSelect>(Inst), Context);
     break;
   case IceInst::Store:
-    Expansion =
-        lowerStore(llvm::dyn_cast<IceInstStore>(Inst), Next, DeleteNextInst);
+    lowerStore(llvm::dyn_cast<IceInstStore>(Inst), Context);
     break;
   case IceInst::Switch:
-    Expansion =
-        lowerSwitch(llvm::dyn_cast<IceInstSwitch>(Inst), Next, DeleteNextInst);
+    lowerSwitch(llvm::dyn_cast<IceInstSwitch>(Inst), Context);
     break;
   case IceInst::FakeDef:
   case IceInst::FakeUse:
@@ -103,7 +122,10 @@ IceInstList IceTargetLowering::lower(const IceInst *Inst, const IceInst *Next,
     Cfg->setError("Can't lower unsupported instruction type");
     break;
   }
+  Inst->setDeleted();
 
-  postLower(Expansion);
-  return Expansion;
+  postLower(Context);
+
+  Context.Cur = Context.Next;
+  Context.advanceNext();
 }

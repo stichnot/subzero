@@ -12,6 +12,44 @@
 
 #include "IceInst.h" // for the names of the IceInst subtypes
 
+class IceLoweringContext {
+public:
+  IceLoweringContext(IceCfgNode *Node);
+  IceInst *getNextInst(void) const {
+    if (Next == End)
+      return NULL;
+    return *Next;
+  }
+  void insert(IceInst *Inst) {
+    Insts.insert(Next, Inst);
+    Inst->updateVars(Node);
+  }
+  void advanceCur(void) { advance(Cur); }
+  void advanceNext(void) { advance(Next); }
+  // Node is the argument to IceInst::updateVars().
+  IceCfgNode *const Node;
+  // Insts is a reference to the container, for inserting new
+  // instructions.
+  IceInstList &Insts;
+  // Cur points to the current instruction being considered.  It is
+  // guaranteed to point to a non-deleted instruction, or to be End.
+  IceInstList::iterator Cur;
+  // Next doubles as a pointer to the next valid instruction (if any),
+  // and the new-instruction insertion point.  It is also updated for
+  // the caller in case the lowering consumes more than one high-level
+  // instruction.  It is guaranteed to point to a non-deleted
+  // instruction after Cur, or to be End.  TODO: Consider separating
+  // the notion of "next valid instruction" and "new instruction
+  // insertion point", to avoid confusion when previously-deleted
+  // instructions come between the two points.
+  IceInstList::iterator Next;
+  // End is a copy of Insts.end(), used if Next needs to be advanced.
+  const IceInstList::iterator End;
+private:
+  void skipDeleted(IceInstList::iterator &I);
+  void advance(IceInstList::iterator &I);
+};
+
 class IceTargetLowering {
 public:
   static IceTargetLowering *createLowering(IceTargetArch Target, IceCfg *Cfg);
@@ -20,8 +58,7 @@ public:
   }
 
   IceInstList doAddressOpt(const IceInst *Inst);
-  IceInstList lower(const IceInst *Inst, const IceInst *Next,
-                    bool &DeleteNextInst);
+  void lower(IceLoweringContext &Context);
   virtual IceVariable *getPhysicalRegister(unsigned RegNum) = 0;
   virtual IceString getRegName(int RegNum, IceType Type) const = 0;
   virtual bool hasFramePointer(void) const { return false; }
@@ -31,7 +68,6 @@ public:
   int getStackAdjustment(void) const { return StackAdjustment; }
   void updateStackAdjustment(int Offset) { StackAdjustment += Offset; }
   void resetStackAdjustment(void) { StackAdjustment = 0; }
-  void setCurrentNode(IceCfgNode *Node) { CurrentNode = Node; }
 
   enum RegSet {
     RegMask_None = 0,
@@ -54,41 +90,21 @@ public:
 
 protected:
   IceTargetLowering(IceCfg *Cfg)
-      : Cfg(Cfg), HasComputedFrame(false), StackAdjustment(0),
-        CurrentNode(NULL) {}
-  virtual IceInstList lowerAlloca(const IceInstAlloca *Inst,
-                                  const IceInst *Next,
-                                  bool &DeleteNextInst) = 0;
-  virtual IceInstList lowerArithmetic(const IceInstArithmetic *Inst,
-                                      const IceInst *Next,
-                                      bool &DeleteNextInst) = 0;
-  virtual IceInstList lowerAssign(const IceInstAssign *Inst,
-                                  const IceInst *Next,
-                                  bool &DeleteNextInst) = 0;
-  virtual IceInstList lowerBr(const IceInstBr *Inst, const IceInst *Next,
-                              bool &DeleteNextInst) = 0;
-  virtual IceInstList lowerCall(const IceInstCall *Inst, const IceInst *Next,
-                                bool &DeleteNextInst) = 0;
-  virtual IceInstList lowerCast(const IceInstCast *Inst, const IceInst *Next,
-                                bool &DeleteNextInst) = 0;
-  virtual IceInstList lowerFcmp(const IceInstFcmp *Inst, const IceInst *Next,
-                                bool &DeleteNextInst) = 0;
-  virtual IceInstList lowerIcmp(const IceInstIcmp *Inst, const IceInst *Next,
-                                bool &DeleteNextInst) = 0;
-  virtual IceInstList lowerLoad(const IceInstLoad *Inst, const IceInst *Next,
-                                bool &DeleteNextInst) = 0;
-  virtual IceInstList lowerPhi(const IceInstPhi *Inst, const IceInst *Next,
-                               bool &DeleteNextInst) = 0;
-  virtual IceInstList lowerRet(const IceInstRet *Inst, const IceInst *Next,
-                               bool &DeleteNextInst) = 0;
-  virtual IceInstList lowerSelect(const IceInstSelect *Inst,
-                                  const IceInst *Next,
-                                  bool &DeleteNextInst) = 0;
-  virtual IceInstList lowerStore(const IceInstStore *Inst, const IceInst *Next,
-                                 bool &DeleteNextInst) = 0;
-  virtual IceInstList lowerSwitch(const IceInstSwitch *Inst,
-                                  const IceInst *Next,
-                                  bool &DeleteNextInst) = 0;
+      : Cfg(Cfg), HasComputedFrame(false), StackAdjustment(0) {}
+  virtual void lowerAlloca(const IceInstAlloca *Inst, IceLoweringContext &Context) = 0;
+  virtual void lowerArithmetic(const IceInstArithmetic *Inst, IceLoweringContext &Context) = 0;
+  virtual void lowerAssign(const IceInstAssign *Inst, IceLoweringContext &Context) = 0;
+  virtual void lowerBr(const IceInstBr *Inst, IceLoweringContext &Context) = 0;
+  virtual void lowerCall(const IceInstCall *Inst, IceLoweringContext &Context) = 0;
+  virtual void lowerCast(const IceInstCast *Inst, IceLoweringContext &Context) = 0;
+  virtual void lowerFcmp(const IceInstFcmp *Inst, IceLoweringContext &Context) = 0;
+  virtual void lowerIcmp(const IceInstIcmp *Inst, IceLoweringContext &Context) = 0;
+  virtual void lowerLoad(const IceInstLoad *Inst, IceLoweringContext &Context) = 0;
+  virtual void lowerPhi(const IceInstPhi *Inst, IceLoweringContext &Context) = 0;
+  virtual void lowerRet(const IceInstRet *Inst, IceLoweringContext &Context) = 0;
+  virtual void lowerSelect(const IceInstSelect *Inst, IceLoweringContext &Context) = 0;
+  virtual void lowerStore(const IceInstStore *Inst, IceLoweringContext &Context) = 0;
+  virtual void lowerSwitch(const IceInstSwitch *Inst, IceLoweringContext &Context) = 0;
 
   virtual IceInstList doAddressOptLoad(const IceInstLoad *Inst) {
     return IceInstList();
@@ -102,14 +118,13 @@ protected:
   // allocate registers based on affinity and other factors.  The
   // simplest lowering does nothing here and leaves it all to a
   // subsequent global register allocation pass.
-  virtual void postLower(const IceInstList &Expansion) {}
+  virtual void postLower(const IceLoweringContext &Context) {}
 
   IceCfg *const Cfg;
   bool HasComputedFrame;
   // StackAdjustment keeps track of the current stack offset from its
   // natural location, as arguments are pushed for a function call.
   int StackAdjustment;
-  IceCfgNode *CurrentNode;
 };
 
 #endif // _IceTargetLowering_h

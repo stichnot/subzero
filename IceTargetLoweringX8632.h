@@ -39,12 +39,12 @@ public:
   // I64 operations, and it is needed for pushing F64 arguments for
   // function calls using the 32-bit push instruction (though the
   // latter could be done by directly writing to the stack).
-  void split64(IceVariable *Var);
+  void split64(IceVariable *Var, IceLoweringContext &Context);
   void setArgOffsetAndCopy(IceVariable *Arg, IceVariable *FramePtr,
                            int BasicFrameOffset, int &InArgsSizeBytes,
                            IceInstList &Expansion);
-  IceOperand *makeLowOperand(IceOperand *Operand);
-  IceOperand *makeHighOperand(IceOperand *Operand);
+  IceOperand *makeLowOperand(IceOperand *Operand, IceLoweringContext &Context);
+  IceOperand *makeHighOperand(IceOperand *Operand, IceLoweringContext &Context);
   enum Registers {
     Reg_eax = 0,
     Reg_ecx = Reg_eax + 1,
@@ -68,35 +68,20 @@ public:
 protected:
   IceTargetX8632(IceCfg *Cfg);
 
-  virtual IceInstList lowerAlloca(const IceInstAlloca *Inst,
-                                  const IceInst *Next, bool &DeleteNextInst);
-  virtual IceInstList lowerArithmetic(const IceInstArithmetic *Inst,
-                                      const IceInst *Next,
-                                      bool &DeleteNextInst);
-  virtual IceInstList lowerAssign(const IceInstAssign *Inst,
-                                  const IceInst *Next, bool &DeleteNextInst);
-  virtual IceInstList lowerBr(const IceInstBr *Inst, const IceInst *Next,
-                              bool &DeleteNextInst);
-  virtual IceInstList lowerCall(const IceInstCall *Inst, const IceInst *Next,
-                                bool &DeleteNextInst);
-  virtual IceInstList lowerCast(const IceInstCast *Inst, const IceInst *Next,
-                                bool &DeleteNextInst);
-  virtual IceInstList lowerFcmp(const IceInstFcmp *Inst, const IceInst *Next,
-                                bool &DeleteNextInst);
-  virtual IceInstList lowerIcmp(const IceInstIcmp *Inst, const IceInst *Next,
-                                bool &DeleteNextInst);
-  virtual IceInstList lowerLoad(const IceInstLoad *Inst, const IceInst *Next,
-                                bool &DeleteNextInst);
-  virtual IceInstList lowerPhi(const IceInstPhi *Inst, const IceInst *Next,
-                               bool &DeleteNextInst);
-  virtual IceInstList lowerRet(const IceInstRet *Inst, const IceInst *Next,
-                               bool &DeleteNextInst);
-  virtual IceInstList lowerSelect(const IceInstSelect *Inst,
-                                  const IceInst *Next, bool &DeleteNextInst);
-  virtual IceInstList lowerStore(const IceInstStore *Inst, const IceInst *Next,
-                                 bool &DeleteNextInst);
-  virtual IceInstList lowerSwitch(const IceInstSwitch *Inst,
-                                  const IceInst *Next, bool &DeleteNextInst);
+  virtual void lowerAlloca(const IceInstAlloca *Inst, IceLoweringContext &Context);
+  virtual void lowerArithmetic(const IceInstArithmetic *Inst, IceLoweringContext &Context);
+  virtual void lowerAssign(const IceInstAssign *Inst, IceLoweringContext &Context);
+  virtual void lowerBr(const IceInstBr *Inst, IceLoweringContext &Context);
+  virtual void lowerCall(const IceInstCall *Inst, IceLoweringContext &Context);
+  virtual void lowerCast(const IceInstCast *Inst, IceLoweringContext &Context);
+  virtual void lowerFcmp(const IceInstFcmp *Inst, IceLoweringContext &Context);
+  virtual void lowerIcmp(const IceInstIcmp *Inst, IceLoweringContext &Context);
+  virtual void lowerLoad(const IceInstLoad *Inst, IceLoweringContext &Context);
+  virtual void lowerPhi(const IceInstPhi *Inst, IceLoweringContext &Context);
+  virtual void lowerRet(const IceInstRet *Inst, IceLoweringContext &Context);
+  virtual void lowerSelect(const IceInstSelect *Inst, IceLoweringContext &Context);
+  virtual void lowerStore(const IceInstStore *Inst, IceLoweringContext &Context);
+  virtual void lowerSwitch(const IceInstSwitch *Inst, IceLoweringContext &Context);
   virtual IceInstList doAddressOptLoad(const IceInstLoad *Inst);
   virtual IceInstList doAddressOptStore(const IceInstStore *Inst);
 
@@ -109,9 +94,9 @@ protected:
   };
   typedef uint32_t LegalMask;
   IceOperand *legalizeOperand(IceOperand *From, LegalMask Allowed,
-                              IceInstList &Insts, bool AllowOverlap = false,
+                              IceLoweringContext &Context, bool AllowOverlap = false,
                               int RegNum = -1);
-  IceVariable *legalizeOperandToVar(IceOperand *From, IceInstList &Insts,
+  IceVariable *legalizeOperandToVar(IceOperand *From, IceLoweringContext &Context,
                                     bool AllowOverlap = false, int RegNum = -1);
 
   bool IsEbpBasedFrame;
@@ -135,7 +120,7 @@ public:
 
 protected:
   IceTargetX8632Fast(IceCfg *Cfg) : IceTargetX8632(Cfg) {}
-  virtual void postLower(const IceInstList &Expansion);
+    virtual void postLower(const IceLoweringContext &Context);
 };
 
 #endif // _IceTargetLoweringX8632_h
