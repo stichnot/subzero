@@ -132,13 +132,11 @@ void IceCfgNode::registerEdges(void) {
 // instructions and appends assignment instructions to predecessor
 // blocks.  Note that this transformation preserves SSA form.
 void IceCfgNode::placePhiLoads(void) {
-  IceInstList NewPhiLoads;
   for (IcePhiList::iterator I = Phis.begin(), E = Phis.end(); I != E; ++I) {
-    NewPhiLoads.push_back((*I)->lower(Cfg, this));
+    IceInst *Inst = (*I)->lower(Cfg, this);
+    Insts.insert(Insts.begin(), Inst);
+    Inst->updateVars(this);
   }
-  if (NewPhiLoads.empty())
-    return;
-  insertInsts(Insts.begin(), NewPhiLoads);
 }
 
 // This does part 2 of Phi lowering.  For each Phi instruction at each
@@ -157,7 +155,28 @@ void IceCfgNode::placePhiLoads(void) {
 // critical edges, add the assignments, and lower them.  This should
 // reduce the amount of shuffling at the end of each block.
 void IceCfgNode::placePhiStores(void) {
-  IceInstList NewPhiStores;
+  // Find the insertion point.  TODO: This insertion-point logic is
+  // fragile.  It's too closely linked to the branch/compare fusing
+  // code in the target lowering.  And it's wrong if the source
+  // operand of one of the new assignments is equal to the dest
+  // operand of the compare instruction, in which case the compare
+  // result is read (by the assignment) before it is written (by the
+  // compare).  However, this problem should go away with the edge
+  // splitting approach described above.
+  IceInstList::iterator InsertionPoint = Insts.end();
+  if (InsertionPoint != Insts.begin()) {
+    --InsertionPoint;
+    if (llvm::isa<IceInstBr>(*InsertionPoint)) {
+      if (InsertionPoint != Insts.begin()) {
+        --InsertionPoint;
+        if (!llvm::isa<IceInstIcmp>(*InsertionPoint) &&
+            !llvm::isa<IceInstFcmp>(*InsertionPoint)) {
+          ++InsertionPoint;
+        }
+      }
+    }
+  }
+
   // Consider every out-edge.
   for (IceNodeList::const_iterator I1 = OutEdges.begin(), E1 = OutEdges.end();
        I1 != E1; ++I1) {
@@ -180,33 +199,10 @@ void IceCfgNode::placePhiStores(void) {
         Dest->setPreferredRegister(Src, AllowOverlap);
         Src->setPreferredRegister(Dest, AllowOverlap);
       }
-      NewPhiStores.push_back(NewInst);
+      Insts.insert(InsertionPoint, NewInst);
+      NewInst->updateVars(this);
     }
   }
-  if (NewPhiStores.empty())
-    return;
-  // TODO: This insertion-point logic is fragile.  It's too closely
-  // linked to the branch/compare fusing code in the target lowering.
-  // And it's wrong if the source operand of one of the new
-  // assignments is equal to the dest operand of the compare
-  // instruction, in which case the compare result is read (by the
-  // assignment) before it is written (by the compare).  However, this
-  // problem should go away with the edge splitting approach described
-  // above.
-  IceInstList::iterator InsertionPoint = Insts.end();
-  if (InsertionPoint != Insts.begin()) {
-    --InsertionPoint;
-    if (llvm::isa<IceInstBr>(*InsertionPoint)) {
-      if (InsertionPoint != Insts.begin()) {
-        --InsertionPoint;
-        if (!llvm::isa<IceInstIcmp>(*InsertionPoint) &&
-            !llvm::isa<IceInstFcmp>(*InsertionPoint)) {
-          ++InsertionPoint;
-        }
-      }
-    }
-  }
-  insertInsts(InsertionPoint, NewPhiStores);
 }
 
 // Deletes the phi instructions after the loads and stores are placed.
