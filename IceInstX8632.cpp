@@ -624,7 +624,16 @@ void IceInstX8632Mov::emit(IceOstream &Str, uint32_t Option) const {
     break; // mov
   }
   Str << "\t";
-  getDest()->emit(Str, Option);
+  // For an integer truncation operation, src is wider than dest.
+  // Ideally, we use a mov instruction whose data width matches the
+  // narrower dest.  This is a problem if e.g. src is a register like
+  // esi or si where there is no 8-bit version of the register.  To be
+  // safe, we instead widen the dest to match src.  This works even
+  // for stack-allocated dest variables because typeWidthOnStack()
+  // pads to a 4-byte boundary even if only a lower portion is used.
+  assert(Str.Cfg->getTarget()->typeWidthOnStack(getDest()->getType()) ==
+         Str.Cfg->getTarget()->typeWidthOnStack(getSrc(0)->getType()));
+  getDest()->asType(Str.Cfg, getSrc(0)->getType()).emit(Str, Option);
   Str << ", ";
   getSrc(0)->emit(Str, Option);
   Str << "\n";

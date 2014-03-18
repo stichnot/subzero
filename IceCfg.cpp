@@ -11,7 +11,6 @@
 #include "IceInst.h"
 #include "IceLiveness.h"
 #include "IceOperand.h"
-#include "IceRegAlloc.h"
 #include "IceTargetLowering.h"
 
 class IceConstantPool {
@@ -371,23 +370,6 @@ bool IceCfg::validateLiveness(void) const {
     }
   }
   return Valid;
-}
-
-// TODO: Move regAlloc() into IceTargetLowering and let it deal with
-// issues of caller-save registers, callee-save registers, frame
-// pointers, etc.
-void IceCfg::regAlloc(void) {
-  IceLinearScan LinearScan(this);
-  IceTargetLowering::RegSetMask RegInclude = 0, RegExclude = 0;
-  RegInclude |= IceTargetLowering::RegMask_CallerSave;
-  RegInclude |= IceTargetLowering::RegMask_CalleeSave;
-  RegExclude |= IceTargetLowering::RegMask_StackPointer;
-  if (getTarget() && getTarget()->hasFramePointer())
-    RegExclude |= IceTargetLowering::RegMask_FramePointer;
-  llvm::SmallBitVector RegMask =
-      getTarget()->getRegisterSet(RegInclude, RegExclude);
-  Str.setCurrentNode(NULL);
-  LinearScan.scan(RegMask);
 }
 
 void IceCfg::makeTarget(IceTargetArch Arch) {

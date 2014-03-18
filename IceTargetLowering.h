@@ -12,6 +12,12 @@
 
 #include "IceInst.h" // for the names of the IceInst subtypes
 
+// IceLoweringContext makes it easy to iterate through non-deleted
+// instructions in a node, and insert new (lowered) instructions at
+// the current point.  Along with the instruction list container and
+// associated iterators, it holds the current node, which is needed
+// when inserting new instructions in order to track whether variables
+// are used as single-block or multi-block.
 class IceLoweringContext {
 public:
   IceLoweringContext(IceCfgNode *Node);
@@ -58,10 +64,19 @@ public:
     Cfg->setError("Target doesn't specify lowering steps.");
   }
 
+  // Tries to do address mode optimization on a single instruction.
   void doAddressOpt(IceLoweringContext &Context);
+  // Lowers a single instruction.
   void lower(IceLoweringContext &Context);
+
+  // Returns a variable pre-colored to the specified physical
+  // register.  This is generally used to get very direct access to
+  // the register such as in the prolog or epilog or for marking
+  // scratch registers as killed by a call.
   virtual IceVariable *getPhysicalRegister(unsigned RegNum) = 0;
+  // Returns a printable name for the register.
   virtual IceString getRegName(int RegNum, IceType Type) const = 0;
+
   virtual bool hasFramePointer(void) const { return false; }
   virtual unsigned getFrameOrStackReg(void) const = 0;
   virtual uint32_t typeWidthOnStack(IceType Type) = 0;
@@ -71,19 +86,21 @@ public:
   void resetStackAdjustment(void) { StackAdjustment = 0; }
 
   enum RegSet {
-    RegMask_None = 0,
-    RegMask_CallerSave = 1 << 0,
-    RegMask_CalleeSave = 1 << 1,
-    RegMask_StackPointer = 1 << 2,
-    RegMask_FramePointer = 1 << 3,
-    RegMask_All = ~RegMask_None
+    RegSet_None = 0,
+    RegSet_CallerSave = 1 << 0,
+    RegSet_CalleeSave = 1 << 1,
+    RegSet_StackPointer = 1 << 2,
+    RegSet_FramePointer = 1 << 3,
+    RegSet_All = ~RegSet_None
   };
   typedef uint32_t RegSetMask;
-  virtual llvm::SmallBitVector
-  getRegisterSet(RegSetMask Include = RegMask_All,
-                 RegSetMask Exclude = RegMask_None) const = 0;
+
+  virtual llvm::SmallBitVector getRegisterSet(RegSetMask Include,
+                                              RegSetMask Exclude) const = 0;
   virtual const llvm::SmallBitVector &
   getRegisterSetForType(IceType Type) const = 0;
+  void regAlloc(void);
+
   virtual void addProlog(IceCfgNode *Node) = 0;
   virtual void addEpilog(IceCfgNode *Node) = 0;
 

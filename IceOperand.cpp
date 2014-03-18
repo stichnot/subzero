@@ -151,6 +151,13 @@ IceString IceVariable::getName(void) const {
   return buf;
 }
 
+IceVariable IceVariable::asType(IceCfg *Cfg, IceType Type) {
+  IceVariable V = IceVariable(Cfg, Type, DefNode, Number, Name);
+  V.RegNum = RegNum;
+  V.StackOffset = StackOffset;
+  return V;
+}
+
 // ======================== dump routines ======================== //
 
 IceOstream &operator<<(IceOstream &Str, const IceOperand *O) {

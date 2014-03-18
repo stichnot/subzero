@@ -27,6 +27,7 @@ void IceLinearScan::scan(const llvm::SmallBitVector &RegMaskFull) {
   Handled.clear();
   Inactive.clear();
   Active.clear();
+  Cfg->Str.setCurrentNode(NULL);
 
   // Gather the live ranges of all variables and add them to the
   // Unhandled set.  TODO: Unhandled is a set<> which is based on a

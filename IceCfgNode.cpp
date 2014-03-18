@@ -230,12 +230,12 @@ bool IceCfgNode::liveness(IceLivenessMode Mode, IceLiveness *Liveness) {
     NumVars = Cfg->getNumVariables();
   else
     NumVars = Liveness->getLocalSize(this);
-  std::vector<int> &LiveBegin = Liveness->getLiveBegin(this);
-  std::vector<int> &LiveEnd = Liveness->getLiveEnd(this);
   llvm::BitVector Live(NumVars);
   if (Mode != IceLiveness_LREndLightweight) {
     // Mark the beginning and ending of each variable's live range
     // with the sentinel instruction number 0.
+    std::vector<int> &LiveBegin = Liveness->getLiveBegin(this);
+    std::vector<int> &LiveEnd = Liveness->getLiveEnd(this);
     LiveBegin.assign(NumVars, 0);
     LiveEnd.assign(NumVars, 0);
     // Initialize Live to be the union of all successors' LiveIn.

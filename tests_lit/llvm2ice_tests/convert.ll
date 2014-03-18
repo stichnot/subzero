@@ -30,7 +30,8 @@ entry:
   ; CHECK-NEXT: mov word ptr [
   ; CHECK-NEXT: movsx ecx, al
   ; CHECK-NEXT: mov dword ptr [
-  ; CHECK-NEXT: movsx ecx, al
+  ; CHECK-NEXT: movsx eax, al
+  ; CHECK-NEXT: mov ecx, eax
   ; CHECK-NEXT: sar eax, 31
   ; CHECK-NEXT: mov dword ptr [i64v+4],
   ; CHECK-NEXT: mov dword ptr [i64v],
@@ -51,7 +52,8 @@ entry:
   ; CHECK-NEXT: mov byte ptr [
   ; CHECK-NEXT: movsx ecx, ax
   ; CHECK-NEXT: mov dword ptr [
-  ; CHECK-NEXT: movsx ecx, ax
+  ; CHECK-NEXT: movsx eax, ax
+  ; CHECK-NEXT: mov ecx, eax
   ; CHECK-NEXT: sar eax, 31
   ; CHECK-NEXT: mov dword ptr [i64v+4],
   ; CHECK-NEXT: mov dword ptr [i64v],

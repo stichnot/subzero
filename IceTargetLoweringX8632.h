@@ -17,9 +17,8 @@ public:
 
   virtual IceVariable *getPhysicalRegister(unsigned RegNum);
   virtual IceString getRegName(int RegNum, IceType Type) const;
-  virtual llvm::SmallBitVector
-  getRegisterSet(RegSetMask Include = RegMask_All,
-                 RegSetMask Exclude = RegMask_None) const;
+  virtual llvm::SmallBitVector getRegisterSet(RegSetMask Include,
+                                              RegSetMask Exclude) const;
   virtual const llvm::SmallBitVector &
   getRegisterSetForType(IceType Type) const {
     return TypeToRegisterSet[Type];

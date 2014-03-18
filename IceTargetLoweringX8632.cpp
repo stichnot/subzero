@@ -74,11 +74,10 @@ void IceTargetX8632::translate(void) {
   if (Cfg->hasError())
     return;
   T_renumber2.printElapsedUs(Cfg->Str, "renumberInstructions()");
-  // TODO: It should be sufficient to use the fastest livness
-  // calculation, i.e. IceLiveness_LREndLightweight.  However,
-  // currently this breaks one test (icmp-simple.ll) because with
-  // IceLiveness_LREndFull, the problematic instructions get dead-code
-  // eliminated.
+  // TODO: It should be sufficient to use the fastest liveness
+  // calculation, i.e. IceLiveness_LREndLightweight.  However, for
+  // some reason that slows down the rest of the translation.
+  // Investigate.
   IceTimer T_liveness1;
   Cfg->liveness(IceLiveness_LREndFull);
   if (Cfg->hasError())
@@ -110,7 +109,7 @@ void IceTargetX8632::translate(void) {
   Cfg->dump();
 
   IceTimer T_regAlloc;
-  Cfg->regAlloc();
+  regAlloc();
   if (Cfg->hasError())
     return;
   T_regAlloc.printElapsedUs(Cfg->Str, "regAlloc()");
@@ -192,8 +191,7 @@ void IceTargetX8632::setArgOffsetAndCopy(IceVariable *Arg,
   }
   Arg->setStackOffset(BasicFrameOffset + InArgsSizeBytes);
   if (Arg->getRegNum() >= 0) {
-    // TODO: Uncomment this assert when I64 lowering is complete.
-    // assert(Type != IceType_i64);
+    assert(Type != IceType_i64);
     IceOperandX8632Mem *Mem = IceOperandX8632Mem::create(
         Cfg, Type, FramePtr,
         Cfg->getConstantInt(IceType_i32, Arg->getStackOffset()));
@@ -223,7 +221,7 @@ void IceTargetX8632::addProlog(IceCfgNode *Node) {
   // (single-block lifetime).
 
   llvm::SmallBitVector CalleeSaves =
-      getRegisterSet(IceTargetLowering::RegMask_CalleeSave);
+      getRegisterSet(RegSet_CalleeSave, RegSet_None);
 
   int GlobalsSize = 0;
   std::vector<int> LocalsSize(Cfg->getNumNodes());
@@ -272,7 +270,7 @@ void IceTargetX8632::addProlog(IceCfgNode *Node) {
 
   // Generate "push ebp; mov ebp, esp"
   if (IsEbpBasedFrame) {
-    assert((RegsUsed & getRegisterSet(IceTargetLowering::RegMask_FramePointer))
+    assert((RegsUsed & getRegisterSet(RegSet_FramePointer, RegSet_None))
                .count() == 0);
     PreservedRegsSizeBytes += 4;
     Context.insert(IceInstX8632Push::create(Cfg, getPhysicalRegister(Reg_ebp)));
@@ -347,11 +345,6 @@ void IceTargetX8632::addProlog(IceCfgNode *Node) {
                         Context);
   }
 
-  // TODO: If esp is adjusted during out-arg writing for a Call, any
-  // accesses to stack variables need to have their esp or ebp offsets
-  // adjusted accordingly.  This should be tracked by the assembler or
-  // emitter.
-
   if (Cfg->Str.isVerbose(IceV_Frame)) {
     Cfg->Str << "LocalsSizeBytes=" << LocalsSizeBytes << "\n"
              << "InArgsSizeBytes=" << InArgsSizeBytes << "\n"
@@ -392,7 +385,7 @@ void IceTargetX8632::addEpilog(IceCfgNode *Node) {
 
   // Add pop instructions for preserved registers.
   llvm::SmallBitVector CalleeSaves =
-      getRegisterSet(IceTargetLowering::RegMask_CalleeSave);
+      getRegisterSet(RegSet_CalleeSave, RegSet_None);
   for (unsigned i = 0; i < CalleeSaves.size(); ++i) {
     unsigned j = CalleeSaves.size() - i - 1;
     if (j == Reg_ebp && IsEbpBasedFrame)
@@ -489,16 +482,16 @@ IceOperand *IceTargetX8632::makeHighOperand(IceOperand *Operand,
 llvm::SmallBitVector IceTargetX8632::getRegisterSet(RegSetMask Include,
                                                     RegSetMask Exclude) const {
   llvm::SmallBitVector Registers(Reg_NUM);
-  bool Scratch = Include & ~Exclude & RegMask_CallerSave;
-  bool Preserved = Include & ~Exclude & RegMask_CalleeSave;
+  bool Scratch = Include & ~Exclude & RegSet_CallerSave;
+  bool Preserved = Include & ~Exclude & RegSet_CalleeSave;
   Registers[Reg_eax] = Scratch;
   Registers[Reg_ecx] = Scratch;
   Registers[Reg_edx] = Scratch;
   Registers[Reg_ebx] = Preserved;
-  Registers[Reg_esp] = Include & ~Exclude & RegMask_StackPointer;
+  Registers[Reg_esp] = Include & ~Exclude & RegSet_StackPointer;
   // ebp counts as both preserved and frame pointer
-  Registers[Reg_ebp] = Include & (RegMask_CalleeSave | RegMask_FramePointer);
-  if (Exclude & (RegMask_CalleeSave | RegMask_FramePointer))
+  Registers[Reg_ebp] = Include & (RegSet_CalleeSave | RegSet_FramePointer);
+  if (Exclude & (RegSet_CalleeSave | RegSet_FramePointer))
     Registers[Reg_ebp] = false;
   Registers[Reg_esi] = Preserved;
   Registers[Reg_edi] = Preserved;
@@ -1049,6 +1042,13 @@ void IceTargetX8632::lowerCall(const IceInstCall *Inst,
   if (RegHi)
     Context.insert(IceInstFakeDef::create(Cfg, RegHi));
 
+  // Add the appropriate offset to esp.
+  if (StackOffset) {
+    IceVariable *Esp = Cfg->getTarget()->getPhysicalRegister(Reg_esp);
+    Context.insert(IceInstX8632Add::create(
+        Cfg, Esp, Cfg->getConstantInt(IceType_i32, StackOffset)));
+  }
+
   // Insert a register-kill pseudo instruction.
   IceVarList KilledRegs;
   for (unsigned i = 0; i < ScratchRegs.size(); ++i) {
@@ -1089,13 +1089,6 @@ void IceTargetX8632::lowerCall(const IceInstCall *Inst,
     // If Dest ends up being a physical xmm register, the fstp emit
     // code will route st(0) through a temporary stack slot.
   }
-
-  // Add the appropriate offset to esp.
-  if (StackOffset) {
-    IceVariable *Esp = Cfg->getTarget()->getPhysicalRegister(Reg_esp);
-    Context.insert(IceInstX8632Add::create(
-        Cfg, Esp, Cfg->getConstantInt(IceType_i32, StackOffset)));
-  }
 }
 
 void IceTargetX8632::lowerCast(const IceInstCast *Inst,
@@ -1118,19 +1111,27 @@ void IceTargetX8632::lowerCast(const IceInstCast *Inst,
           llvm::cast<IceVariable>(makeLowOperand(Dest, Context));
       IceVariable *DestHi =
           llvm::cast<IceVariable>(makeHighOperand(Dest, Context));
+      IceVariable *Tmp = Cfg->makeVariable(DestLo->getType(), Context.Node);
+      Tmp->setWeightInfinite();
       if (Reg->getType() == IceType_i32)
-        Context.insert(IceInstX8632Mov::create(Cfg, DestLo, Reg));
+        Context.insert(IceInstX8632Mov::create(Cfg, Tmp, Reg));
       else
-        Context.insert(IceInstX8632Movsx::create(Cfg, DestLo, Reg));
+        Context.insert(IceInstX8632Movsx::create(Cfg, Tmp, Reg));
+      Context.insert(IceInstX8632Mov::create(Cfg, DestLo, Tmp));
       IceVariable *RegHi = Cfg->makeVariable(IceType_i32, Context.Node);
+      RegHi->setWeightInfinite();
       IceConstant *Shift = Cfg->getConstantInt(IceType_i32, 31);
-      Context.insert(IceInstX8632Mov::create(Cfg, RegHi, Reg));
+      Context.insert(IceInstX8632Mov::create(Cfg, RegHi, Tmp));
       Context.insert(IceInstX8632Sar::create(Cfg, RegHi, Shift));
       Context.insert(IceInstX8632Mov::create(Cfg, DestHi, RegHi));
     } else {
       // TODO: Sign-extend an i1 via "shl reg, 31; sar reg, 31", and
       // also copy to the high operand of a 64-bit variable.
-      Context.insert(IceInstX8632Movsx::create(Cfg, Dest, Reg));
+      // t1 = movsx src; dst = t1
+      IceVariable *Tmp = Cfg->makeVariable(Dest->getType(), Context.Node);
+      Tmp->setWeightInfinite();
+      Context.insert(IceInstX8632Movsx::create(Cfg, Tmp, Reg));
+      Context.insert(IceInstX8632Mov::create(Cfg, Dest, Tmp));
     }
     break;
   case IceInstCast::Zext:
@@ -1141,10 +1142,13 @@ void IceTargetX8632::lowerCast(const IceInstCast *Inst,
           llvm::cast<IceVariable>(makeLowOperand(Dest, Context));
       IceVariable *DestHi =
           llvm::cast<IceVariable>(makeHighOperand(Dest, Context));
+      IceVariable *Tmp = Cfg->makeVariable(DestLo->getType(), Context.Node);
+      Tmp->setWeightInfinite();
       if (Reg->getType() == IceType_i32)
-        Context.insert(IceInstX8632Mov::create(Cfg, DestLo, Reg));
+        Context.insert(IceInstX8632Mov::create(Cfg, Tmp, Reg));
       else
-        Context.insert(IceInstX8632Movzx::create(Cfg, DestLo, Reg));
+        Context.insert(IceInstX8632Movzx::create(Cfg, Tmp, Reg));
+      Context.insert(IceInstX8632Mov::create(Cfg, DestLo, Tmp));
       Context.insert(IceInstX8632Mov::create(Cfg, DestHi, Zero));
     } else if (Reg->getType() == IceType_i1) {
       // t = Reg; t &= 1; Dest = t
@@ -1155,25 +1159,33 @@ void IceTargetX8632::lowerCast(const IceInstCast *Inst,
       Context.insert(IceInstX8632And::create(Cfg, Tmp, ConstOne));
       Context.insert(IceInstX8632Mov::create(Cfg, Dest, Tmp));
     } else {
-      Context.insert(IceInstX8632Movzx::create(Cfg, Dest, Reg));
+      // t1 = movzx src; dst = t1
+      IceVariable *Tmp = Cfg->makeVariable(Dest->getType(), Context.Node);
+      Tmp->setWeightInfinite();
+      Context.insert(IceInstX8632Movzx::create(Cfg, Tmp, Reg));
+      Context.insert(IceInstX8632Mov::create(Cfg, Dest, Tmp));
     }
     break;
   case IceInstCast::Trunc: {
     if (Reg->getType() == IceType_i64)
       Reg = makeLowOperand(Reg, Context);
-    // t1 = Reg; t2 = trunc t1; Dest = t2
-    IceVariable *Tmp1 = legalizeOperandToVar(Reg, Context);
+    // t1 = trunc Reg; Dest = t1
+    IceOperand *Tmp1 = legalizeOperand(Reg, Legal_All, Context);
     IceVariable *Tmp2 = Cfg->makeVariable(Dest->getType(), Context.Node);
     Tmp2->setWeightInfinite();
-    Tmp2->setPreferredRegister(Tmp1, true);
     Context.insert(IceInstX8632Mov::create(Cfg, Tmp2, Tmp1));
     Context.insert(IceInstX8632Mov::create(Cfg, Dest, Tmp2));
     break;
   }
   case IceInstCast::Fptrunc:
-  case IceInstCast::Fpext:
-    Context.insert(IceInstX8632Cvt::create(Cfg, Dest, Reg));
+  case IceInstCast::Fpext: {
+    // t1 = cvt Reg; Dest = t1
+    IceVariable *Tmp = Cfg->makeVariable(Dest->getType(), Context.Node);
+    Tmp->setWeightInfinite();
+    Context.insert(IceInstX8632Cvt::create(Cfg, Tmp, Reg));
+    Context.insert(IceInstX8632Mov::create(Cfg, Dest, Tmp));
     break;
+  }
   case IceInstCast::Fptosi:
     if (Dest->getType() == IceType_i64) {
       // Use a helper for converting floating-point values to 64-bit
@@ -2071,13 +2083,17 @@ void IceTargetX8632Fast::translate(void) {
 }
 
 void IceTargetX8632Fast::postLower(const IceLoweringContext &Context) {
-  llvm::SmallBitVector AvailableRegisters = getRegisterSet(RegMask_All);
+  llvm::SmallBitVector WhiteList = getRegisterSet(RegSet_All, RegSet_None);
   // Make one pass to black-list pre-colored registers.  TODO: If
   // there was some prior register allocation pass that made register
   // assignments, those registers need to be black-listed here as
   // well.
   for (IceInstList::iterator I = Context.Cur, E = Context.End; I != E; ++I) {
     const IceInst *Inst = *I;
+    if (Inst->isDeleted())
+      continue;
+    if (llvm::isa<IceInstFakeKill>(Inst))
+      continue;
     unsigned VarIndex = 0;
     for (unsigned SrcNum = 0; SrcNum < Inst->getSrcSize(); ++SrcNum) {
       IceOperand *Src = Inst->getSrc(SrcNum);
@@ -2087,13 +2103,16 @@ void IceTargetX8632Fast::postLower(const IceLoweringContext &Context) {
         int RegNum = Var->getRegNum();
         if (RegNum < 0)
           continue;
-        AvailableRegisters[RegNum] = false;
+        WhiteList[RegNum] = false;
       }
     }
   }
   // The second pass colors infinite-weight variables.
+  llvm::SmallBitVector AvailableRegisters = WhiteList;
   for (IceInstList::iterator I = Context.Cur, E = Context.End; I != E; ++I) {
     const IceInst *Inst = *I;
+    if (Inst->isDeleted())
+      continue;
     unsigned VarIndex = 0;
     for (unsigned SrcNum = 0; SrcNum < Inst->getSrcSize(); ++SrcNum) {
       IceOperand *Src = Inst->getSrc(SrcNum);
@@ -2107,7 +2126,12 @@ void IceTargetX8632Fast::postLower(const IceLoweringContext &Context) {
           continue;
         llvm::SmallBitVector AvailableTypedRegisters =
             AvailableRegisters & getRegisterSetForType(Var->getType());
-        assert(!AvailableTypedRegisters.empty());
+        if (!AvailableTypedRegisters.any()) {
+          AvailableRegisters = WhiteList;
+          AvailableTypedRegisters =
+              AvailableRegisters & getRegisterSetForType(Var->getType());
+        }
+        assert(AvailableTypedRegisters.any());
         RegNum = AvailableTypedRegisters.find_first();
         Var->setRegNum(RegNum);
         AvailableRegisters[RegNum] = false;

@@ -283,6 +283,10 @@ public:
     LowVar = Low;
     HighVar = High;
   }
+  // Creates a temporary copy of the variable with a different type.
+  // Used primarily for syntactic correctness of textual assembly
+  // emission.
+  IceVariable asType(IceCfg *Cfg, IceType Type);
 
   virtual void emit(IceOstream &Str, uint32_t Option) const;
   virtual void dump(IceOstream &Str) const;
