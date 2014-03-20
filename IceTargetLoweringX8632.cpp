@@ -2127,6 +2127,9 @@ void IceTargetX8632Fast::postLower(const IceLoweringContext &Context) {
         llvm::SmallBitVector AvailableTypedRegisters =
             AvailableRegisters & getRegisterSetForType(Var->getType());
         if (!AvailableTypedRegisters.any()) {
+          // This is a hack in case we run out of physical registers
+          // due to an excessive number of "push" instructions from
+          // lowering a call.
           AvailableRegisters = WhiteList;
           AvailableTypedRegisters =
               AvailableRegisters & getRegisterSetForType(Var->getType());
