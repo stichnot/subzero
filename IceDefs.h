@@ -67,8 +67,8 @@ enum IceLivenessMode {
 template <typename T> class IceValueTranslation {
 public:
   typedef typename std::map<const T, uint32_t> ContainerType;
-  IceValueTranslation(void) {}
-  void clear(void) { Entries.clear(); }
+  IceValueTranslation() {}
+  void clear() { Entries.clear(); }
   uint32_t translate(const T &Value) {
     typename ContainerType::const_iterator Iter = Entries.find(Value);
     if (Iter != Entries.end())
@@ -122,7 +122,7 @@ public:
   void subVerbose(IceVerboseMask Mask) { Verbose &= ~Mask; }
 
   void setCurrentNode(const IceCfgNode *Node) { CurrentNode = Node; }
-  const IceCfgNode *getCurrentNode(void) const { return CurrentNode; }
+  const IceCfgNode *getCurrentNode() const { return CurrentNode; }
 
   llvm::raw_ostream *Stream;
   IceCfg *const Cfg;
@@ -186,13 +186,11 @@ extern IceOstream *GlobalStr;
 
 class IceTimer {
 public:
-  IceTimer(void) : Start(llvm::TimeRecord::getCurrentTime(false)) {}
-  uint64_t getElapsedNs(void) const {
-    return getElapsedSec() * 1000 * 1000 * 1000;
-  }
-  uint64_t getElapsedUs(void) const { return getElapsedSec() * 1000 * 1000; }
-  uint64_t getElapsedMs(void) const { return getElapsedSec() * 1000; }
-  double getElapsedSec(void) const {
+  IceTimer() : Start(llvm::TimeRecord::getCurrentTime(false)) {}
+  uint64_t getElapsedNs() const { return getElapsedSec() * 1000 * 1000 * 1000; }
+  uint64_t getElapsedUs() const { return getElapsedSec() * 1000 * 1000; }
+  uint64_t getElapsedMs() const { return getElapsedSec() * 1000; }
+  double getElapsedSec() const {
     llvm::TimeRecord End = llvm::TimeRecord::getCurrentTime(false);
     return End.getWallTime() - Start.getWallTime();
   }

@@ -18,7 +18,7 @@
 class IceLiveRangeWrapper {
 public:
   IceLiveRangeWrapper(IceVariable *Var) : Var(Var) {}
-  const IceLiveRange &range(void) const { return Var->getLiveRange(); }
+  const IceLiveRange &range() const { return Var->getLiveRange(); }
   bool endsBefore(const IceLiveRangeWrapper &Other) const {
     return range().endsBefore(Other.range());
   }

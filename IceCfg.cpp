@@ -30,7 +30,7 @@ public:
     assert(Constant);
     return Constant;
   }
-  uint32_t getSize(void) const { return RelocatablePool.size(); }
+  uint32_t getSize() const { return RelocatablePool.size(); }
   IceConstantRelocatable *getEntry(uint32_t Index) const {
     assert(Index < RelocatablePool.size());
     return RelocatablePool[Index];
@@ -51,7 +51,7 @@ private:
 IceOstream *GlobalStr = NULL;
 bool IceCfg::HasEmittedFirstMethod = false;
 
-IceCfg::IceCfg(void)
+IceCfg::IceCfg()
     : Str(this), Name(""), TestPrefix(""), Type(IceType_void),
       IsInternal(false), HasError(false), ErrorMessage(""), Entry(NULL),
       NextInstNumber(1), Target(NULL), Liveness(NULL) {
@@ -142,7 +142,7 @@ IceConstant *IceCfg::getConstantSym(IceType Type, const void *Handle,
 
 // Returns whether the stack frame layout has been computed yet.  This
 // is used for dumping the stack frame location of IceVariables.
-bool IceCfg::hasComputedFrame(void) const {
+bool IceCfg::hasComputedFrame() const {
   return getTarget() && getTarget()->hasComputedFrame();
 }
 
@@ -166,13 +166,13 @@ void IceCfg::translate(IceTargetArch TargetArch) {
   dump();
 }
 
-void IceCfg::registerEdges(void) {
+void IceCfg::registerEdges() {
   for (IceNodeList::iterator I = Nodes.begin(), E = Nodes.end(); I != E; ++I) {
     (*I)->registerEdges();
   }
 }
 
-void IceCfg::renumberInstructions(void) {
+void IceCfg::renumberInstructions() {
   NextInstNumber = 1;
   for (IceNodeList::iterator I = Nodes.begin(), E = Nodes.end(); I != E; ++I) {
     (*I)->renumberInstructions();
@@ -180,32 +180,32 @@ void IceCfg::renumberInstructions(void) {
 }
 
 // placePhiLoads() must be called before placePhiStores().
-void IceCfg::placePhiLoads(void) {
+void IceCfg::placePhiLoads() {
   for (IceNodeList::iterator I = Nodes.begin(), E = Nodes.end(); I != E; ++I) {
     (*I)->placePhiLoads();
   }
 }
 
 // placePhiStores() must be called after placePhiLoads().
-void IceCfg::placePhiStores(void) {
+void IceCfg::placePhiStores() {
   for (IceNodeList::iterator I = Nodes.begin(), E = Nodes.end(); I != E; ++I) {
     (*I)->placePhiStores();
   }
 }
 
-void IceCfg::deletePhis(void) {
+void IceCfg::deletePhis() {
   for (IceNodeList::iterator I = Nodes.begin(), E = Nodes.end(); I != E; ++I) {
     (*I)->deletePhis();
   }
 }
 
-void IceCfg::doAddressOpt(void) {
+void IceCfg::doAddressOpt() {
   for (IceNodeList::iterator I = Nodes.begin(), E = Nodes.end(); I != E; ++I) {
     (*I)->doAddressOpt();
   }
 }
 
-void IceCfg::genCode(void) {
+void IceCfg::genCode() {
   if (Target == NULL) {
     setError("IceCfg::makeTarget() wasn't called.");
     return;
@@ -216,7 +216,7 @@ void IceCfg::genCode(void) {
 }
 
 // Compute the stack frame layout.
-void IceCfg::genFrame(void) {
+void IceCfg::genFrame() {
   getTarget()->addProlog(Entry);
   // TODO: Consider folding epilog generation into the final
   // emission/assembly pass to avoid an extra iteration over the node
@@ -329,7 +329,7 @@ void IceCfg::liveness(IceLivenessMode Mode) {
 
 // Traverse every IceVariable of every IceInst and verify that it
 // appears within the IceVariable's computed live range.
-bool IceCfg::validateLiveness(void) const {
+bool IceCfg::validateLiveness() const {
   bool Valid = true;
   for (IceNodeList::const_iterator I1 = Nodes.begin(), E1 = Nodes.end();
        I1 != E1; ++I1) {
@@ -407,7 +407,7 @@ void IceCfg::emit(uint32_t Option) const {
   T_emit.printElapsedUs(Str, "emit()");
 }
 
-void IceCfg::dump(void) const {
+void IceCfg::dump() const {
   Str.setCurrentNode(getEntryNode());
   // Print function name+args
   if (Str.isVerbose(IceV_Instructions)) {

@@ -14,12 +14,12 @@
 
 class IceCfg {
 public:
-  IceCfg(void);
+  IceCfg();
   ~IceCfg();
 
   // Manage the name and return type of the function being translated.
   void setName(const IceString &FunctionName) { Name = FunctionName; }
-  IceString getName(void) const { return Name; }
+  IceString getName() const { return Name; }
   void setReturnType(IceType ReturnType) { Type = ReturnType; }
 
   // When emitting assembly, we allow a string to be prepended to
@@ -27,14 +27,14 @@ public:
   // execution test against a reference translator like llc, with both
   // translators using the same bitcode as input.
   void setTestPrefix(const IceString &Prefix) { TestPrefix = Prefix; }
-  IceString getTestPrefix(void) const { return TestPrefix; }
+  IceString getTestPrefix() const { return TestPrefix; }
   IceString mangleName(const IceString &Name) const {
     return getTestPrefix() + Name;
   }
 
   // Manage the "internal" attribute of the function.
   void setInternal(bool Internal) { IsInternal = Internal; }
-  bool getInternal(void) const { return IsInternal; }
+  bool getInternal() const { return IsInternal; }
 
   // Translation error flagging.  If support for some construct is
   // known to be missing, instead of an assertion failure, setError()
@@ -42,30 +42,30 @@ public:
   // This way, we can gracefully fail to translate and let a fallback
   // translator handle the function.
   void setError(const IceString &Message);
-  bool hasError(void) const { return HasError; }
-  IceString getError(void) const { return ErrorMessage; }
+  bool hasError() const { return HasError; }
+  IceString getError() const { return ErrorMessage; }
 
   // Manage nodes (a.k.a. basic blocks, IceCfgNodes).
   void setEntryNode(IceCfgNode *EntryNode) { Entry = EntryNode; }
-  IceCfgNode *getEntryNode(void) const { return Entry; }
+  IceCfgNode *getEntryNode() const { return Entry; }
   // Create a node and append it to the end of the linearized list.
   IceCfgNode *makeNode(IceString Name = "");
-  uint32_t getNumNodes(void) const { return Nodes.size(); }
-  const IceNodeList &getNodes(void) const { return Nodes; }
+  uint32_t getNumNodes() const { return Nodes.size(); }
+  const IceNodeList &getNodes() const { return Nodes; }
   IceCfgNode *splitEdge(IceCfgNode *From, IceCfgNode *To);
 
   // Manage instruction numbering.
-  int newInstNumber(void) { return NextInstNumber++; }
+  int newInstNumber() { return NextInstNumber++; }
 
   // Manage IceVariables.
   IceVariable *makeVariable(IceType Type, const IceCfgNode *Node,
                             const IceString &Name = "");
-  uint32_t getNumVariables(void) const { return Variables.size(); }
-  const IceVarList &getVariables(void) const { return Variables; }
+  uint32_t getNumVariables() const { return Variables.size(); }
+  const IceVarList &getVariables() const { return Variables; }
 
   // Manage arguments to the function.
   void addArg(IceVariable *Arg);
-  const IceVarList &getArgs(void) const { return Args; }
+  const IceVarList &getArgs() const { return Args; }
 
   // Manage IceConstants.
   // getConstant*() functions are not const because they might add
@@ -80,24 +80,24 @@ public:
                               bool SuppressMangling = false);
 
   // Miscellaneous accessors.
-  IceTargetLowering *getTarget(void) const { return Target; }
-  IceLiveness *getLiveness(void) const { return Liveness; }
-  bool hasComputedFrame(void) const;
+  IceTargetLowering *getTarget() const { return Target; }
+  IceLiveness *getLiveness() const { return Liveness; }
+  bool hasComputedFrame() const;
 
   // Passes over the CFG.
   void translate(IceTargetArch TargetArch);
-  void registerEdges(void);
-  void renumberInstructions(void);
-  void placePhiLoads(void);
-  void placePhiStores(void);
-  void deletePhis(void);
-  void doAddressOpt(void);
-  void genCode(void);
-  void genFrame(void);
+  void registerEdges();
+  void renumberInstructions();
+  void placePhiLoads();
+  void placePhiStores();
+  void deletePhis();
+  void doAddressOpt();
+  void genCode();
+  void genFrame();
   void liveness(IceLivenessMode Mode);
-  bool validateLiveness(void) const;
+  bool validateLiveness() const;
   void emit(uint32_t Option) const;
-  void dump(void) const;
+  void dump() const;
 
   // Allocate an instruction of type T using the per-Cfg instruction allocator.
   template <typename T> T *allocateInst() { return Allocator.Allocate<T>(); }

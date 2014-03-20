@@ -143,7 +143,7 @@ void IceVariable::setIsArg(IceCfg *Cfg) {
   DefNode = NULL;
 }
 
-IceString IceVariable::getName(void) const {
+IceString IceVariable::getName() const {
   if (Name != "")
     return Name;
   char buf[30];
@@ -207,7 +207,7 @@ void IceVariable::emit(IceOstream &Str, uint32_t Option) const {
 
 void IceVariable::dump(IceOstream &Str) const {
   const IceCfgNode *CurrentNode = Str.getCurrentNode();
-  (void)CurrentNode;
+  (void)CurrentNode; // used only in assert()
   assert(CurrentNode == NULL || DefNode == NULL || DefNode == CurrentNode);
   if (Str.isVerbose(IceV_RegOrigins) ||
       (RegNum < 0 && !Str.Cfg->hasComputedFrame()))

@@ -16,32 +16,32 @@ public:
     return new IceCfgNode(Cfg, LabelIndex, Name);
   }
 
-  uint32_t getIndex(void) const { return Number; }
-  IceString getName(void) const;
-  IceString getAsmName(void) const {
+  uint32_t getIndex() const { return Number; }
+  IceString getName() const;
+  IceString getAsmName() const {
     return ".L" + Cfg->getName() + "$" + getName();
   }
 
   // The HasReturn flag indicates that this node contains a return
   // instruction and therefore needs an epilog.
-  void setHasReturn(void) { HasReturn = true; }
-  bool getHasReturn(void) const { return HasReturn; }
+  void setHasReturn() { HasReturn = true; }
+  bool getHasReturn() const { return HasReturn; }
 
-  const IceNodeList &getInEdges(void) const { return InEdges; }
-  const IceNodeList &getOutEdges(void) const { return OutEdges; }
+  const IceNodeList &getInEdges() const { return InEdges; }
+  const IceNodeList &getOutEdges() const { return OutEdges; }
 
-  IceInstList &getInsts(void) { return Insts; }
+  IceInstList &getInsts() { return Insts; }
   void appendInst(IceInst *Inst);
-  void renumberInstructions(void);
+  void renumberInstructions();
 
   void splitEdge(IceCfgNode *From, IceCfgNode *To);
-  void registerEdges(void);
+  void registerEdges();
 
-  void placePhiLoads(void);
-  void placePhiStores(void);
-  void deletePhis(void);
-  void doAddressOpt(void);
-  void genCode(void);
+  void placePhiLoads();
+  void placePhiStores();
+  void deletePhis();
+  void doAddressOpt();
+  void genCode();
   bool liveness(IceLivenessMode Mode, IceLiveness *Liveness);
   void livenessPostprocess(IceLivenessMode Mode, IceLiveness *Liveness);
   void emit(IceOstream &Str, uint32_t Option) const;

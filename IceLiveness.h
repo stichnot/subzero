@@ -12,7 +12,7 @@
 
 class IceLivenessNode {
 public:
-  IceLivenessNode(void) : NumLocals(0) {}
+  IceLivenessNode() : NumLocals(0) {}
   // NumLocals is the number of IceVariables local to this block.
   uint32_t NumLocals;
   // LiveToVarMap maps a liveness bitvector index to an IceVariable.
@@ -33,10 +33,10 @@ class IceLiveness {
 public:
   IceLiveness(IceCfg *Cfg, IceLivenessMode Mode)
       : Cfg(Cfg), Mode(Mode), NumGlobals(0) {}
-  void init(void);
+  void init();
   IceVariable *getVariable(uint32_t LiveIndex, const IceCfgNode *Node) const;
   uint32_t getLiveIndex(const IceVariable *Var) const;
-  uint32_t getGlobalSize(void) const { return NumGlobals; }
+  uint32_t getGlobalSize() const { return NumGlobals; }
   uint32_t getLocalSize(const IceCfgNode *Node) const {
     return NumGlobals + Nodes[Node->getIndex()].NumLocals;
   }

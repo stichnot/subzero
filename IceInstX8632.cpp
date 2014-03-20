@@ -182,7 +182,7 @@ IceInstX8632Push::IceInstX8632Push(IceCfg *Cfg, IceOperand *Source)
   addSource(Source);
 }
 
-bool IceInstX8632Mov::isRedundantAssign(void) const {
+bool IceInstX8632Mov::isRedundantAssign() const {
   int DestRegNum = getDest()->getRegNum();
   if (DestRegNum < 0)
     return false;

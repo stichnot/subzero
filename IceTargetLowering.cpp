@@ -138,7 +138,7 @@ void IceTargetLowering::lower(IceLoweringContext &Context) {
 // perhaps for the frame pointer) to be allocated.  This set of
 // registers could potentially be parameterized if we want to restrict
 // registers e.g. for performance testing.
-void IceTargetLowering::regAlloc(void) {
+void IceTargetLowering::regAlloc() {
   IceLinearScan LinearScan(Cfg);
   RegSetMask RegInclude = RegSet_None;
   RegSetMask RegExclude = RegSet_None;

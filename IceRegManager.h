@@ -64,7 +64,7 @@ public:
   void load(IceInst *Inst);
   void store(IceInst *Inst);
   bool contains(const IceOperand *Operand) const;
-  IceVariable *getVar(void) const { return Var; }
+  IceVariable *getVar() const { return Var; }
   void dump(IceOstream &Str) const;
 
 private:

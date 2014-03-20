@@ -40,7 +40,7 @@ IceTargetX8632::IceTargetX8632(IceCfg *Cfg)
   ScratchRegs[Reg_edx] = true;
 }
 
-void IceTargetX8632::translate(void) {
+void IceTargetX8632::translate() {
   IceTimer T_placePhiLoads;
   Cfg->placePhiLoads();
   if (Cfg->hasError())
@@ -2042,7 +2042,7 @@ IceVariable *IceTargetX8632::legalizeOperandToVar(IceOperand *From,
 
 ////////////////////////////////////////////////////////////////
 
-void IceTargetX8632Fast::translate(void) {
+void IceTargetX8632Fast::translate() {
   IceTimer T_placePhiLoads;
   Cfg->placePhiLoads();
   if (Cfg->hasError())

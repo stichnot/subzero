@@ -10,7 +10,7 @@
 #include "IceLiveness.h"
 #include "IceOperand.h"
 
-void IceLiveness::init(void) {
+void IceLiveness::init() {
   // Initialize most of the container sizes.
   uint32_t NumVars = Cfg->getVariables().size();
   uint32_t NumNodes = Cfg->getNumNodes();

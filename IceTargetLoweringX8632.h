@@ -13,7 +13,7 @@
 class IceTargetX8632 : public IceTargetLowering {
 public:
   static IceTargetX8632 *create(IceCfg *Cfg) { return new IceTargetX8632(Cfg); }
-  virtual void translate(void);
+  virtual void translate();
 
   virtual IceVariable *getPhysicalRegister(unsigned RegNum);
   virtual IceString getRegName(int RegNum, IceType Type) const;
@@ -23,8 +23,8 @@ public:
   getRegisterSetForType(IceType Type) const {
     return TypeToRegisterSet[Type];
   }
-  virtual bool hasFramePointer(void) const { return IsEbpBasedFrame; }
-  virtual unsigned getFrameOrStackReg(void) const {
+  virtual bool hasFramePointer() const { return IsEbpBasedFrame; }
+  virtual unsigned getFrameOrStackReg() const {
     return IsEbpBasedFrame ? Reg_ebp : Reg_esp;
   }
   virtual uint32_t typeWidthOnStack(IceType Type) {
@@ -32,7 +32,7 @@ public:
   }
   virtual void addProlog(IceCfgNode *Node);
   virtual void addEpilog(IceCfgNode *Node);
-  uint32_t makeNextLabelNumber(void) { return NextLabelNumber++; }
+  uint32_t makeNextLabelNumber() { return NextLabelNumber++; }
   // Ensure that a 64-bit IceVariable has been split into 2 32-bit
   // IceVariables, creating them if necessary.  This is needed for all
   // I64 operations, and it is needed for pushing F64 arguments for
@@ -122,7 +122,7 @@ public:
   static IceTargetX8632Fast *create(IceCfg *Cfg) {
     return new IceTargetX8632Fast(Cfg);
   }
-  virtual void translate(void);
+  virtual void translate();
 
 protected:
   IceTargetX8632Fast(IceCfg *Cfg) : IceTargetX8632(Cfg) {}

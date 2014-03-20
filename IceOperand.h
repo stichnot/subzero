@@ -24,14 +24,14 @@ public:
     // point for their Kind enum space.
     Target
   };
-  OperandKind getKind(void) const { return Kind; }
-  IceType getType(void) const { return Type; }
+  OperandKind getKind() const { return Kind; }
+  IceType getType() const { return Type; }
 
   // Every IceOperand keeps an array of the IceVariables referenced in
   // the operand.  This is so that the liveness operations can get
   // quick access to the variables of interest, without having to dig
   // so far into the operand.
-  uint32_t getNumVars(void) const { return NumVars; }
+  uint32_t getNumVars() const { return NumVars; }
   IceVariable *getVar(uint32_t I) const {
     assert(I < getNumVars());
     return Vars[I];
@@ -82,7 +82,7 @@ public:
   static IceConstantPrimitive *create(IceCfg *Cfg, IceType Type, T Value) {
     return new IceConstantPrimitive(Cfg, Type, Value);
   }
-  T getValue(void) const { return Value; }
+  T getValue() const { return Value; }
   virtual void emit(IceOstream &Str, uint32_t Option) const { dump(Str); }
   virtual void dump(IceOstream &Str) const { Str << getValue(); }
 
@@ -112,12 +112,12 @@ public:
                                         const IceString &Name = "") {
     return new IceConstantRelocatable(Cfg, Type, Handle, Offset, Name, CPIndex);
   }
-  uint32_t getCPIndex(void) const { return CPIndex; }
-  const void *getHandle(void) const { return Handle; }
-  int64_t getOffset(void) const { return Offset; }
-  IceString getName(void) const { return Name; }
+  uint32_t getCPIndex() const { return CPIndex; }
+  const void *getHandle() const { return Handle; }
+  int64_t getOffset() const { return Offset; }
+  IceString getName() const { return Name; }
   void setSuppressMangling(bool Value) { SuppressMangling = Value; }
-  bool getSuppressMangling(void) const { return SuppressMangling; }
+  bool getSuppressMangling() const { return SuppressMangling; }
   virtual void emit(IceOstream &Str, uint32_t Option) const;
   virtual void dump(IceOstream &Str) const;
 
@@ -144,7 +144,7 @@ private:
 // method that ensures that W+infinity=infinity.
 class IceRegWeight {
 public:
-  IceRegWeight(void) : Weight(0) {}
+  IceRegWeight() : Weight(0) {}
   IceRegWeight(uint32_t Weight) : Weight(Weight) {}
   const static uint32_t Inf = ~0;
   void addWeight(uint32_t Delta) {
@@ -155,8 +155,8 @@ public:
   }
   void addWeight(const IceRegWeight &Other) { addWeight(Other.Weight); }
   void setWeight(uint32_t Val) { Weight = Val; }
-  uint32_t getWeight(void) const { return Weight; }
-  bool isInf(void) const { return Weight == Inf; }
+  uint32_t getWeight() const { return Weight; }
+  bool isInf() const { return Weight == Inf; }
 
 private:
   uint32_t Weight;
@@ -173,9 +173,9 @@ bool operator<=(const IceRegWeight &A, const IceRegWeight &B);
 // inside a loop.
 class IceLiveRange {
 public:
-  IceLiveRange(void) : Weight(0) {}
+  IceLiveRange() : Weight(0) {}
 
-  void reset(void) {
+  void reset() {
     Range.clear();
     Weight.setWeight(0);
   }
@@ -184,12 +184,10 @@ public:
   bool endsBefore(const IceLiveRange &Other) const;
   bool overlaps(const IceLiveRange &Other) const;
   bool containsValue(int32_t Value) const;
-  bool isEmpty(void) const { return Range.empty(); }
-  int32_t getStart(void) const {
-    return Range.empty() ? -1 : Range.begin()->first;
-  }
+  bool isEmpty() const { return Range.empty(); }
+  int32_t getStart() const { return Range.empty() ? -1 : Range.begin()->first; }
 
-  IceRegWeight getWeight(void) const { return Weight; }
+  IceRegWeight getWeight() const { return Weight; }
   void setWeight(const IceRegWeight &NewWeight) { Weight = NewWeight; }
   void addWeight(uint32_t Delta) { Weight.addWeight(Delta); }
   void dump(IceOstream &Str) const;
@@ -223,46 +221,46 @@ public:
     return new IceVariable(Cfg, Type, Node, Index, Name);
   }
 
-  uint32_t getIndex(void) const { return Number; }
-  IceString getName(void) const;
+  uint32_t getIndex() const { return Number; }
+  IceString getName() const;
 
-  IceInst *getDefinition(void) const { return DefInst; }
+  IceInst *getDefinition() const { return DefInst; }
   void setDefinition(IceInst *Inst, const IceCfgNode *Node);
   void replaceDefinition(IceInst *Inst, const IceCfgNode *Node);
 
   const IceCfgNode *getLocalUseNode() const { return DefNode; }
-  bool isMultiblockLife(void) const { return (DefNode == NULL); }
+  bool isMultiblockLife() const { return (DefNode == NULL); }
   void setUse(const IceInst *Inst, const IceCfgNode *Node);
 
-  bool getIsArg(void) const { return IsArgument; }
+  bool getIsArg() const { return IsArgument; }
   void setIsArg(IceCfg *Cfg);
 
-  int32_t getStackOffset(void) const { return StackOffset; }
+  int32_t getStackOffset() const { return StackOffset; }
   void setStackOffset(int32_t Offset) { StackOffset = Offset; }
 
-  int32_t getRegNum(void) const { return RegNum; }
+  int32_t getRegNum() const { return RegNum; }
   void setRegNum(int32_t NewRegNum) {
     // Regnum shouldn't be set more than once.
     assert(RegNum < 0 || RegNum == NewRegNum);
     RegNum = NewRegNum;
   }
-  int32_t getRegNumTmp(void) const { return RegNumTmp; }
+  int32_t getRegNumTmp() const { return RegNumTmp; }
   void setRegNumTmp(int32_t NewRegNum) { RegNumTmp = NewRegNum; }
 
-  IceRegWeight getWeight(void) const { return Weight; }
+  IceRegWeight getWeight() const { return Weight; }
   void setWeight(uint32_t NewWeight) { Weight = NewWeight; }
-  void setWeightInfinite(void) { Weight = IceRegWeight::Inf; }
+  void setWeightInfinite() { Weight = IceRegWeight::Inf; }
 
-  IceVariable *getPreferredRegister(void) const { return RegisterPreference; }
-  bool getRegisterOverlap(void) const { return AllowRegisterOverlap; }
+  IceVariable *getPreferredRegister() const { return RegisterPreference; }
+  bool getRegisterOverlap() const { return AllowRegisterOverlap; }
   void setPreferredRegister(IceVariable *Prefer, bool Overlap) {
     RegisterPreference = Prefer;
     AllowRegisterOverlap = Overlap;
   }
 
-  const IceLiveRange &getLiveRange(void) const { return LiveRange; }
+  const IceLiveRange &getLiveRange() const { return LiveRange; }
   void setLiveRange(const IceLiveRange &Range) { LiveRange = Range; }
-  void resetLiveRange(void) { LiveRange.reset(); }
+  void resetLiveRange() { LiveRange.reset(); }
   void addLiveRange(int32_t Start, int32_t End, uint32_t WeightDelta) {
     assert(WeightDelta != IceRegWeight::Inf);
     LiveRange.addSegment(Start, End);
@@ -271,12 +269,10 @@ public:
     else
       LiveRange.addWeight(WeightDelta * Weight.getWeight());
   }
-  void setLiveRangeInfiniteWeight(void) {
-    LiveRange.setWeight(IceRegWeight::Inf);
-  }
+  void setLiveRangeInfiniteWeight() { LiveRange.setWeight(IceRegWeight::Inf); }
 
-  IceVariable *getLow(void) const { return LowVar; }
-  IceVariable *getHigh(void) const { return HighVar; }
+  IceVariable *getLow() const { return LowVar; }
+  IceVariable *getHigh() const { return HighVar; }
   void setLowHigh(IceVariable *Low, IceVariable *High) {
     assert(LowVar == NULL);
     assert(HighVar == NULL);

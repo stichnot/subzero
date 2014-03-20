@@ -21,7 +21,7 @@
 class IceLoweringContext {
 public:
   IceLoweringContext(IceCfgNode *Node);
-  IceInst *getNextInst(void) const {
+  IceInst *getNextInst() const {
     if (Next == End)
       return NULL;
     return *Next;
@@ -30,8 +30,8 @@ public:
     Insts.insert(Next, Inst);
     Inst->updateVars(Node);
   }
-  void advanceCur(void) { advance(Cur); }
-  void advanceNext(void) { advance(Next); }
+  void advanceCur() { advance(Cur); }
+  void advanceNext() { advance(Next); }
   // Node is the argument to IceInst::updateVars().
   IceCfgNode *const Node;
   // Insts is a reference to the container, for inserting new
@@ -60,7 +60,7 @@ private:
 class IceTargetLowering {
 public:
   static IceTargetLowering *createLowering(IceTargetArch Target, IceCfg *Cfg);
-  virtual void translate(void) {
+  virtual void translate() {
     Cfg->setError("Target doesn't specify lowering steps.");
   }
 
@@ -77,13 +77,13 @@ public:
   // Returns a printable name for the register.
   virtual IceString getRegName(int RegNum, IceType Type) const = 0;
 
-  virtual bool hasFramePointer(void) const { return false; }
-  virtual unsigned getFrameOrStackReg(void) const = 0;
+  virtual bool hasFramePointer() const { return false; }
+  virtual unsigned getFrameOrStackReg() const = 0;
   virtual uint32_t typeWidthOnStack(IceType Type) = 0;
-  bool hasComputedFrame(void) const { return HasComputedFrame; }
-  int getStackAdjustment(void) const { return StackAdjustment; }
+  bool hasComputedFrame() const { return HasComputedFrame; }
+  int getStackAdjustment() const { return StackAdjustment; }
   void updateStackAdjustment(int Offset) { StackAdjustment += Offset; }
-  void resetStackAdjustment(void) { StackAdjustment = 0; }
+  void resetStackAdjustment() { StackAdjustment = 0; }
 
   enum RegSet {
     RegSet_None = 0,
@@ -99,7 +99,7 @@ public:
                                               RegSetMask Exclude) const = 0;
   virtual const llvm::SmallBitVector &
   getRegisterSetForType(IceType Type) const = 0;
-  void regAlloc(void);
+  void regAlloc();
 
   virtual void addProlog(IceCfgNode *Node) = 0;
   virtual void addEpilog(IceCfgNode *Node) = 0;

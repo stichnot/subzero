@@ -25,7 +25,7 @@ void IceInst::renumber(IceCfg *Cfg) {
 
 // Delete the instruction if its tentative Dead flag is still set
 // after liveness analysis.
-void IceInst::deleteIfDead(void) {
+void IceInst::deleteIfDead() {
   if (Dead)
     setDeleted();
 }
@@ -161,7 +161,7 @@ IceInstArithmetic::IceInstArithmetic(IceCfg *Cfg, OpKind Op, IceVariable *Dest,
   addSource(Source2);
 }
 
-bool IceInstArithmetic::isCommutative(void) const {
+bool IceInstArithmetic::isCommutative() const {
   switch (getOp()) {
   case Add:
   case Fadd:
@@ -199,7 +199,7 @@ IceInstBr::IceInstBr(IceCfg *Cfg, IceCfgNode *Target)
     : IceInst(Cfg, IceInst::Br, 0, NULL), TargetFalse(Target),
       TargetTrue(NULL) {}
 
-IceNodeList IceInstBr::getTerminatorEdges(void) const {
+IceNodeList IceInstBr::getTerminatorEdges() const {
   IceNodeList OutEdges;
   OutEdges.push_back(TargetFalse);
   if (TargetTrue)
@@ -340,7 +340,7 @@ void IceInstSwitch::addBranch(uint32_t CaseIndex, uint64_t Value,
   Labels[CaseIndex] = Label;
 }
 
-IceNodeList IceInstSwitch::getTerminatorEdges(void) const {
+IceNodeList IceInstSwitch::getTerminatorEdges() const {
   IceNodeList OutEdges;
   OutEdges.push_back(LabelDefault);
   for (uint32_t I = 0; I < NumCases; ++I) {

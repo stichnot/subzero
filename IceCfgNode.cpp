@@ -16,7 +16,7 @@ IceCfgNode::IceCfgNode(IceCfg *Cfg, uint32_t LabelNumber, IceString Name)
 
 // Returns the name the node was created with.  If no name was given,
 // it synthesizes a (hopefully) unique name.
-IceString IceCfgNode::getName(void) const {
+IceString IceCfgNode::getName() const {
   if (Name != "")
     return Name;
   char buf[30];
@@ -45,7 +45,7 @@ void IceCfgNode::appendInst(IceInst *Inst) {
 // numbers in a block must be monotonically increasing.  The range of
 // instruction numbers in a block, from lowest to highest, must not
 // overlap with the range of any other block.
-void IceCfgNode::renumberInstructions(void) {
+void IceCfgNode::renumberInstructions() {
   for (IcePhiList::const_iterator I = Phis.begin(), E = Phis.end(); I != E;
        ++I) {
     (*I)->renumber(Cfg);
@@ -91,7 +91,7 @@ void IceCfgNode::splitEdge(IceCfgNode *From, IceCfgNode *To) {
 // InEdges have to be built up incrementally.  After the CFG has been
 // constructed, the registerEdges() pass finalizes it by creating the
 // InEdges list.
-void IceCfgNode::registerEdges(void) {
+void IceCfgNode::registerEdges() {
   OutEdges = (*Insts.rbegin())->getTerminatorEdges();
   for (IceNodeList::const_iterator I = OutEdges.begin(), E = OutEdges.end();
        I != E; ++I) {
@@ -111,7 +111,7 @@ void IceCfgNode::registerEdges(void) {
 // This is in preparation for part 2 which deletes the Phi
 // instructions and appends assignment instructions to predecessor
 // blocks.  Note that this transformation preserves SSA form.
-void IceCfgNode::placePhiLoads(void) {
+void IceCfgNode::placePhiLoads() {
   for (IcePhiList::iterator I = Phis.begin(), E = Phis.end(); I != E; ++I) {
     IceInst *Inst = (*I)->lower(Cfg, this);
     Insts.insert(Insts.begin(), Inst);
@@ -134,7 +134,7 @@ void IceCfgNode::placePhiLoads(void) {
 // TODO: Defer this pass until after register allocation, then split
 // critical edges, add the assignments, and lower them.  This should
 // reduce the amount of shuffling at the end of each block.
-void IceCfgNode::placePhiStores(void) {
+void IceCfgNode::placePhiStores() {
   // Find the insertion point.  TODO: This insertion-point logic is
   // fragile.  It's too closely linked to the branch/compare fusing
   // code in the target lowering.  And it's wrong if the source
@@ -186,7 +186,7 @@ void IceCfgNode::placePhiStores(void) {
 }
 
 // Deletes the phi instructions after the loads and stores are placed.
-void IceCfgNode::deletePhis(void) {
+void IceCfgNode::deletePhis() {
   for (IcePhiList::iterator I = Phis.begin(), E = Phis.end(); I != E; ++I) {
     (*I)->setDeleted();
   }
@@ -196,7 +196,7 @@ void IceCfgNode::deletePhis(void) {
 // IceTargetLowering object.  If it returns a new instruction
 // (representing the optimized address mode), then insert the new
 // instruction and delete the old.
-void IceCfgNode::doAddressOpt(void) {
+void IceCfgNode::doAddressOpt() {
   IceTargetLowering *Target = Cfg->getTarget();
   IceLoweringContext Context(this);
   while (Context.Cur != Context.End) {
@@ -206,7 +206,7 @@ void IceCfgNode::doAddressOpt(void) {
 
 // Drives the target lowering.  Passes the current instruction and the
 // next non-deleted instruction for target lowering.
-void IceCfgNode::genCode(void) {
+void IceCfgNode::genCode() {
   IceTargetLowering *Target = Cfg->getTarget();
   // Lower only the regular instructions.  Defer the Phi instructions.
   IceLoweringContext Context(this);

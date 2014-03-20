@@ -33,20 +33,20 @@ public:
     Target    // target-specific low-level ICE
               // Anything >= Target is an IceInstTarget subclass.
   };
-  InstKind getKind(void) const { return Kind; }
+  InstKind getKind() const { return Kind; }
 
-  int32_t getNumber(void) const { return Number; }
+  int32_t getNumber() const { return Number; }
   void renumber(IceCfg *Cfg);
 
-  bool isDeleted(void) const { return Deleted; }
-  void setDeleted(void) { Deleted = true; }
-  void deleteIfDead(void);
+  bool isDeleted() const { return Deleted; }
+  void setDeleted() { Deleted = true; }
+  void deleteIfDead();
 
-  bool hasSideEffects(void) const { return HasSideEffects; }
+  bool hasSideEffects() const { return HasSideEffects; }
 
-  IceVariable *getDest(void) const { return Dest; }
+  IceVariable *getDest() const { return Dest; }
 
-  uint32_t getSrcSize(void) const { return NumSrcs; }
+  uint32_t getSrcSize() const { return NumSrcs; }
   IceOperand *getSrc(uint32_t I) const {
     assert(I < getSrcSize());
     return Srcs[I];
@@ -56,7 +56,7 @@ public:
 
   // Returns a list of out-edges corresponding to a terminator
   // instruction, which is the last instruction of the block.
-  virtual IceNodeList getTerminatorEdges(void) const {
+  virtual IceNodeList getTerminatorEdges() const {
     assert(0);
     return IceNodeList();
   }
@@ -74,7 +74,7 @@ public:
   virtual void dumpExtras(IceOstream &Str) const;
   void dumpSources(IceOstream &Str) const;
   void dumpDest(IceOstream &Str) const;
-  virtual bool isRedundantAssign(void) const { return false; }
+  virtual bool isRedundantAssign() const { return false; }
 
   virtual ~IceInst() {}
 
@@ -89,7 +89,7 @@ protected:
     if (VarIndex < 8 * sizeof(LiveRangesEnded))
       LiveRangesEnded |= (1u << VarIndex);
   }
-  void resetLastUses(void) { LiveRangesEnded = 0; }
+  void resetLastUses() { LiveRangesEnded = 0; }
 
   const InstKind Kind;
   // Number is the instruction number for describing live ranges.
@@ -165,8 +165,8 @@ public:
     return new (Cfg->allocateInst<IceInstArithmetic>())
         IceInstArithmetic(Cfg, Op, Dest, Source1, Source2);
   }
-  OpKind getOp(void) const { return Op; }
-  bool isCommutative(void) const;
+  OpKind getOp() const { return Op; }
+  bool isCommutative() const;
   virtual void dump(IceOstream &Str) const;
   static bool classof(const IceInst *Inst) {
     return Inst->getKind() == Arithmetic;
@@ -211,14 +211,14 @@ public:
   static IceInstBr *create(IceCfg *Cfg, IceCfgNode *Target) {
     return new (Cfg->allocateInst<IceInstBr>()) IceInstBr(Cfg, Target);
   }
-  bool isUnconditional(void) const { return getTargetTrue() == NULL; }
-  IceCfgNode *getTargetTrue(void) const { return TargetTrue; }
-  IceCfgNode *getTargetFalse(void) const { return TargetFalse; }
-  IceCfgNode *getTargetUnconditional(void) const {
+  bool isUnconditional() const { return getTargetTrue() == NULL; }
+  IceCfgNode *getTargetTrue() const { return TargetTrue; }
+  IceCfgNode *getTargetFalse() const { return TargetFalse; }
+  IceCfgNode *getTargetUnconditional() const {
     assert(isUnconditional());
     return getTargetFalse();
   }
-  virtual IceNodeList getTerminatorEdges(void) const;
+  virtual IceNodeList getTerminatorEdges() const;
   virtual void dump(IceOstream &Str) const;
   static bool classof(const IceInst *Inst) { return Inst->getKind() == Br; }
 
@@ -243,10 +243,10 @@ public:
         IceInstCall(Cfg, NumArgs, Dest, CallTarget, Tail);
   }
   void addArg(IceOperand *Arg) { addSource(Arg); }
-  IceOperand *getCallTarget(void) const { return getSrc(0); }
+  IceOperand *getCallTarget() const { return getSrc(0); }
   IceOperand *getArg(uint32_t I) const { return getSrc(I + 1); }
-  uint32_t getNumArgs(void) const { return getSrcSize() - 1; }
-  bool isTail(void) const { return Tail; }
+  uint32_t getNumArgs() const { return getSrcSize() - 1; }
+  bool isTail() const { return Tail; }
   virtual void dump(IceOstream &Str) const;
   static bool classof(const IceInst *Inst) { return Inst->getKind() == Call; }
 
@@ -324,7 +324,7 @@ public:
     return new (Cfg->allocateInst<IceInstFcmp>())
         IceInstFcmp(Cfg, Condition, Dest, Source1, Source2);
   }
-  FCond getCondition(void) const { return Condition; }
+  FCond getCondition() const { return Condition; }
   virtual void dump(IceOstream &Str) const;
   static bool classof(const IceInst *Inst) { return Inst->getKind() == Fcmp; }
 
@@ -357,7 +357,7 @@ public:
     return new (Cfg->allocateInst<IceInstIcmp>())
         IceInstIcmp(Cfg, Condition, Dest, Source1, Source2);
   }
-  ICond getCondition(void) const { return Condition; }
+  ICond getCondition() const { return Condition; }
   virtual void dump(IceOstream &Str) const;
   static bool classof(const IceInst *Inst) { return Inst->getKind() == Icmp; }
 
@@ -413,7 +413,7 @@ public:
   static IceInstRet *create(IceCfg *Cfg, IceOperand *Source = NULL) {
     return new (Cfg->allocateInst<IceInstRet>()) IceInstRet(Cfg, Source);
   }
-  virtual IceNodeList getTerminatorEdges(void) const { return IceNodeList(); }
+  virtual IceNodeList getTerminatorEdges() const { return IceNodeList(); }
   virtual void dump(IceOstream &Str) const;
   static bool classof(const IceInst *Inst) { return Inst->getKind() == Ret; }
 
@@ -430,9 +430,9 @@ public:
     return new (Cfg->allocateInst<IceInstSelect>())
         IceInstSelect(Cfg, Dest, Condition, SourceTrue, SourceFalse);
   }
-  IceOperand *getCondition(void) const { return getSrc(0); }
-  IceOperand *getTrueOperand(void) const { return getSrc(1); }
-  IceOperand *getFalseOperand(void) const { return getSrc(2); }
+  IceOperand *getCondition() const { return getSrc(0); }
+  IceOperand *getTrueOperand() const { return getSrc(1); }
+  IceOperand *getFalseOperand() const { return getSrc(2); }
   virtual void dump(IceOstream &Str) const;
   static bool classof(const IceInst *Inst) { return Inst->getKind() == Select; }
 
@@ -449,8 +449,8 @@ public:
     return new (Cfg->allocateInst<IceInstStore>())
         IceInstStore(Cfg, Data, Addr);
   }
-  IceOperand *getAddr(void) const { return getSrc(1); }
-  IceOperand *getData(void) const { return getSrc(0); }
+  IceOperand *getAddr() const { return getSrc(1); }
+  IceOperand *getData() const { return getSrc(0); }
   virtual void dump(IceOstream &Str) const;
   static bool classof(const IceInst *Inst) { return Inst->getKind() == Store; }
 
@@ -467,8 +467,8 @@ public:
     return new (Cfg->allocateInst<IceInstSwitch>())
         IceInstSwitch(Cfg, NumCases, Source, LabelDefault);
   }
-  IceCfgNode *getLabelDefault(void) const { return LabelDefault; }
-  uint32_t getNumCases(void) const { return NumCases; }
+  IceCfgNode *getLabelDefault() const { return LabelDefault; }
+  uint32_t getNumCases() const { return NumCases; }
   uint64_t getValue(uint32_t I) const {
     assert(I < NumCases);
     return Values[I];
@@ -478,7 +478,7 @@ public:
     return Labels[I];
   }
   void addBranch(uint32_t CaseIndex, uint64_t Value, IceCfgNode *Label);
-  virtual IceNodeList getTerminatorEdges(void) const;
+  virtual IceNodeList getTerminatorEdges() const;
   virtual void dump(IceOstream &Str) const;
   static bool classof(const IceInst *Inst) { return Inst->getKind() == Switch; }
 
@@ -556,7 +556,7 @@ public:
     return new (Cfg->allocateInst<IceInstFakeKill>())
         IceInstFakeKill(Cfg, KilledRegs, Linked);
   }
-  const IceInst *getLinked(void) const { return Linked; }
+  const IceInst *getLinked() const { return Linked; }
   virtual void emit(IceOstream &Str, uint32_t Option) const;
   virtual void dump(IceOstream &Str) const;
   static bool classof(const IceInst *Inst) {
