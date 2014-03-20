@@ -4,8 +4,8 @@
  * be found in the LICENSE file.
  */
 
-#ifndef _IceCfg_h
-#define _IceCfg_h
+#ifndef SUBZERO_ICECFG_H
+#define SUBZERO_ICECFG_H
 
 #include "IceDefs.h"
 #include "IceTypes.h"
@@ -141,4 +141,4 @@ private:
   static bool HasEmittedFirstMethod;
 };
 
-#endif // _IceCfg_h
+#endif // SUBZERO_ICECFG_H

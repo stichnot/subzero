@@ -4,8 +4,8 @@
  * be found in the LICENSE file.
  */
 
-#ifndef _IceDefs_h
-#define _IceDefs_h
+#ifndef SUBZERO_ICEDEFS_H
+#define SUBZERO_ICEDEFS_H
 
 #include <assert.h>
 #include <stdint.h>
@@ -206,4 +206,4 @@ private:
   const llvm::TimeRecord Start;
 };
 
-#endif // _IceDefs_h
+#endif // SUBZERO_ICEDEFS_H

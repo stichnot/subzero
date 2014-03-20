@@ -4,8 +4,8 @@
  * be found in the LICENSE file.
  */
 
-#ifndef _IceTargetLoweringX8632_h
-#define _IceTargetLoweringX8632_h
+#ifndef SUBZERO_ICETARGETLOWERINGX8632_H
+#define SUBZERO_ICETARGETLOWERINGX8632_H
 
 #include "IceDefs.h"
 #include "IceTargetLowering.h"
@@ -129,4 +129,4 @@ protected:
   virtual void postLower(const IceLoweringContext &Context);
 };
 
-#endif // _IceTargetLoweringX8632_h
+#endif // SUBZERO_ICETARGETLOWERINGX8632_H

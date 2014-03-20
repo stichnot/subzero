@@ -4,8 +4,8 @@
  * be found in the LICENSE file.
  */
 
-#ifndef _IceCfgNode_h
-#define _IceCfgNode_h
+#ifndef SUBZERO_ICECFGNODE_H
+#define SUBZERO_ICECFGNODE_H
 
 #include "IceDefs.h"
 
@@ -59,4 +59,4 @@ private:
   IceInstList Insts;     // ordered list of non-phi instructions
 };
 
-#endif // _IceCfgNode_h
+#endif // SUBZERO_ICECFGNODE_H

@@ -4,8 +4,8 @@
  * be found in the LICENSE file.
  */
 
-#ifndef _IceRegAlloc_h
-#define _IceRegAlloc_h
+#ifndef SUBZERO_ICEREGALLOC_H
+#define SUBZERO_ICEREGALLOC_H
 
 #include "IceDefs.h"
 #include "IceTypes.h"
@@ -57,4 +57,4 @@ private:
   UnorderedRanges Active, Inactive, Handled;
 };
 
-#endif // _IceRegAlloc_h
+#endif // SUBZERO_ICEREGALLOC_H

@@ -4,8 +4,8 @@
  * be found in the LICENSE file.
  */
 
-#ifndef _IceInst_h
-#define _IceInst_h
+#ifndef SUBZERO_ICEINST_H
+#define SUBZERO_ICEINST_H
 
 #include "IceDefs.h"
 #include "IceTypes.h"
@@ -586,4 +586,4 @@ protected:
   }
 };
 
-#endif // _IceInst_h
+#endif // SUBZERO_ICEINST_H

@@ -4,8 +4,8 @@
  * be found in the LICENSE file.
  */
 
-#ifndef _IceLiveness_h
-#define _IceLiveness_h
+#ifndef SUBZERO_ICELIVENESS_H
+#define SUBZERO_ICELIVENESS_H
 
 #include "IceDefs.h"
 #include "IceTypes.h"
@@ -71,4 +71,4 @@ private:
   std::vector<IceLiveRange> LiveRanges;
 };
 
-#endif // _IceLiveness_h
+#endif // SUBZERO_ICELIVENESS_H

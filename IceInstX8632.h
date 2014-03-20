@@ -4,8 +4,8 @@
  * be found in the LICENSE file.
  */
 
-#ifndef _IceInstX8632_h
-#define _IceInstX8632_h
+#ifndef SUBZERO_ICEINSTX8632_H
+#define SUBZERO_ICEINSTX8632_H
 
 #include "IceDefs.h"
 #include "IceInst.h"
@@ -545,4 +545,4 @@ private:
   IceInstX8632Ret(IceCfg *Cfg, IceVariable *Source);
 };
 
-#endif // _IceInstX8632_h
+#endif // SUBZERO_ICEINSTX8632_H

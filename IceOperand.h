@@ -4,8 +4,8 @@
  * be found in the LICENSE file.
  */
 
-#ifndef _IceOperand_h
-#define _IceOperand_h
+#ifndef SUBZERO_ICEOPERAND_H
+#define SUBZERO_ICEOPERAND_H
 
 #include "IceDefs.h"
 #include "IceTypes.h"
@@ -343,4 +343,4 @@ private:
   IceVariable *HighVar;
 };
 
-#endif // _IceOperand_h
+#endif // SUBZERO_ICEOPERAND_H

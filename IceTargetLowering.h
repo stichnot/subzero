@@ -4,8 +4,8 @@
  * be found in the LICENSE file.
  */
 
-#ifndef _IceTargetLowering_h
-#define _IceTargetLowering_h
+#ifndef SUBZERO_ICETARGETLOWERING_H
+#define SUBZERO_ICETARGETLOWERING_H
 
 #include "IceDefs.h"
 #include "IceTypes.h"
@@ -154,4 +154,4 @@ protected:
   int StackAdjustment;
 };
 
-#endif // _IceTargetLowering_h
+#endif // SUBZERO_ICETARGETLOWERING_H

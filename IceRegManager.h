@@ -4,8 +4,8 @@
  * be found in the LICENSE file.
  */
 
-#ifndef _IceRegManager_h
-#define _IceRegManager_h
+#ifndef SUBZERO_ICEREGMANAGER_H
+#define SUBZERO_ICEREGMANAGER_H
 
 #include "IceDefs.h"
 #include "IceTypes.h"
@@ -112,4 +112,4 @@ private:
   IceCfg *Cfg;
 };
 
-#endif // _IceRegManager_h
+#endif // SUBZERO_ICEREGMANAGER_H
