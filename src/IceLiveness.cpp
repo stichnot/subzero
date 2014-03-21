@@ -1,7 +1,24 @@
-/* Copyright 2014 The Native Client Authors. All rights reserved.
- * Use of this source code is governed by a BSD-style license that can
- * be found in the LICENSE file.
- */
+//===- subzero/src/IceLiveness.cpp - Liveness analysis implementation -----===//
+//
+//                        The Subzero Code Generator
+//
+// This file is distributed under the University of Illinois Open Source
+// License. See LICENSE.TXT for details.
+//
+//===----------------------------------------------------------------------===//
+//
+// This file provides some of the support for the IceLiveness class.
+// In particular, it handles the sparsity representation of the
+// mapping between IceVariables and IceCfgNodes.  The idea is that
+// since most variables are used only within a single basic block, we
+// can partition the variables into "local" and "global" sets.
+// Instead of sizing and indexing vectors according to
+// IceVariable::Number, we create a mapping such that global variables
+// are mapped to low indexes that are common across nodes, and local
+// variables are mapped to a higher index space that is shared across
+// nodes.
+//
+//===----------------------------------------------------------------------===//
 
 #include "IceDefs.h"
 #include "IceCfg.h"

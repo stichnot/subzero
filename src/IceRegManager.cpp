@@ -1,7 +1,18 @@
-/* Copyright 2014 The Native Client Authors. All rights reserved.
- * Use of this source code is governed by a BSD-style license that can
- * be found in the LICENSE file.
- */
+//===- subzero/src/IceRegManager.cpp - Simple reg alloc implementation ----===//
+//
+//                        The Subzero Code Generator
+//
+// This file is distributed under the University of Illinois Open Source
+// License. See LICENSE.TXT for details.
+//
+//===----------------------------------------------------------------------===//
+//
+// This file implements the IceRegManager class, which is a very
+// simple register allocator that uses operand availability along with
+// a LRU replacement policy that allocates across a single or extended
+// basic block.
+//
+//===----------------------------------------------------------------------===//
 
 #include <string.h>
 

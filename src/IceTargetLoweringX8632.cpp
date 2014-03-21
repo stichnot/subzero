@@ -1,7 +1,19 @@
-/* Copyright 2014 The Native Client Authors. All rights reserved.
- * Use of this source code is governed by a BSD-style license that can
- * be found in the LICENSE file.
- */
+//===- subzero/src/IceTargetLoweringX8632.cpp - x86-32 lowering -----------===//
+//
+//                        The Subzero Code Generator
+//
+// This file is distributed under the University of Illinois Open Source
+// License. See LICENSE.TXT for details.
+//
+//===----------------------------------------------------------------------===//
+//
+// This file implements the IceTargetLoweringX8632 class, which
+// consists almost entirely of the lowering sequence for each
+// high-level instruction.  It also implements
+// IceTargetX8632Fast::postLower() which does the simplest possible
+// register allocation for the "fast" target.
+//
+//===----------------------------------------------------------------------===//
 
 #include "IceDefs.h"
 #include "IceCfg.h"

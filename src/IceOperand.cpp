@@ -1,7 +1,17 @@
-/* Copyright 2014 The Native Client Authors. All rights reserved.
- * Use of this source code is governed by a BSD-style license that can
- * be found in the LICENSE file.
- */
+//===- subzero/src/IceOperand.cpp - High-level operand implementation -----===//
+//
+//                        The Subzero Code Generator
+//
+// This file is distributed under the University of Illinois Open Source
+// License. See LICENSE.TXT for details.
+//
+//===----------------------------------------------------------------------===//
+//
+// This file implements the IceOperand class and its
+// target-independent subclasses, primarily for the methods of the
+// IceVariable class.
+//
+//===----------------------------------------------------------------------===//
 
 #include "IceCfg.h"
 #include "IceInst.h"

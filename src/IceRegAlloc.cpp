@@ -1,7 +1,17 @@
-/* Copyright 2014 The Native Client Authors. All rights reserved.
- * Use of this source code is governed by a BSD-style license that can
- * be found in the LICENSE file.
- */
+//===- subzero/src/IceRegAlloc.cpp - Linear-scan implementation -----------===//
+//
+//                        The Subzero Code Generator
+//
+// This file is distributed under the University of Illinois Open Source
+// License. See LICENSE.TXT for details.
+//
+//===----------------------------------------------------------------------===//
+//
+// This file implements the IceLinearScan class, which performs the
+// linear-scan register allocation after liveness analysis has been
+// performed.
+//
+//===----------------------------------------------------------------------===//
 
 #include "IceCfg.h"
 #include "IceInst.h"

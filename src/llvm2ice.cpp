@@ -1,7 +1,17 @@
-/* Copyright 2014 The Native Client Authors. All rights reserved.
- * Use of this source code is governed by a BSD-style license that can
- * be found in the LICENSE file.
- */
+//===- subzero/src/llvm2ice.cpp - Driver for testing ----------------------===//
+//
+//                        The Subzero Code Generator
+//
+// This file is distributed under the University of Illinois Open Source
+// License. See LICENSE.TXT for details.
+//
+//===----------------------------------------------------------------------===//
+//
+// This file defines a driver that uses LLVM capabilities to parse a
+// bitcode file and build the LLVM IR, and then convert the LLVM basic
+// blocks, instructions, and operands into their Subzero equivalents.
+//
+//===----------------------------------------------------------------------===//
 
 #include "IceCfg.h"
 #include "IceCfgNode.h"
@@ -63,6 +73,10 @@ public:
       Cfg->addArg(mapValueToIceVar(ArgI));
     }
 
+    // Make an initial pass through the block list just to resolve the
+    // blocks in the original linearized order.  Otherwise the ICE
+    // linearized order will be affected by branch targets in
+    // terminator instructions.
     for (Function::const_iterator BBI = F->begin(), BBE = F->end(); BBI != BBE;
          ++BBI) {
       mapBasicBlockToNode(BBI);
@@ -135,7 +149,6 @@ private:
     case Type::PointerTyID: {
       const PointerType *PTy = cast<PointerType>(Ty);
       return convertType(PTy->getElementType());
-      return IceType_i32;
     }
     case Type::FunctionTyID:
       return IceType_i32;
@@ -160,8 +173,6 @@ private:
 
   IceOperand *convertValue(const Value *Op) {
     if (const Constant *Const = dyn_cast<Constant>(Op)) {
-      // For now only constant integers are supported.
-      // TODO: support all kinds of constants
       if (const GlobalValue *GV = dyn_cast<GlobalValue>(Const)) {
         return Cfg->getConstantSym(convertType(GV->getType()), GV, 0,
                                    GV->getName());
@@ -285,15 +296,12 @@ private:
 
   IceInst *convertLoadInstruction(const LoadInst *Inst) {
     IceOperand *Src = convertOperand(Inst, 0);
-    // assert(Src->getType() == IceType_i32 && "Expecting loads only from i32");
     IceVariable *Dest = mapValueToIceVar(Inst);
     return IceInstLoad::create(Cfg, Dest, Src);
   }
 
   IceInst *convertStoreInstruction(const StoreInst *Inst) {
     IceOperand *Addr = convertOperand(Inst, 1);
-    // assert(Addr->getType() == IceType_i32 && "Expecting stores only from
-    // i32");
     IceOperand *Val = convertOperand(Inst, 0);
     return IceInstStore::create(Cfg, Val, Addr);
   }

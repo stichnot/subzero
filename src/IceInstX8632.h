@@ -1,8 +1,17 @@
-// -*- Mode: c++ -*-
-/* Copyright 2014 The Native Client Authors. All rights reserved.
- * Use of this source code is governed by a BSD-style license that can
- * be found in the LICENSE file.
- */
+//===- subzero/src/IceInstX8632.h - Low-level x86 instructions --*- C++ -*-===//
+//
+//                        The Subzero Code Generator
+//
+// This file is distributed under the University of Illinois Open Source
+// License. See LICENSE.TXT for details.
+//
+//===----------------------------------------------------------------------===//
+//
+// This file declares the IceInstX8632 and IceOperandX8632 classes and
+// their subclasses.  This represents the machine instructions and
+// operands used for x86-32 code selection.
+//
+//===----------------------------------------------------------------------===//
 
 #ifndef SUBZERO_ICEINSTX8632_H
 #define SUBZERO_ICEINSTX8632_H

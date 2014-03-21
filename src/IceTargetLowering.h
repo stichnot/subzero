@@ -1,8 +1,19 @@
-// -*- Mode: c++ -*-
-/* Copyright 2014 The Native Client Authors. All rights reserved.
- * Use of this source code is governed by a BSD-style license that can
- * be found in the LICENSE file.
- */
+//===- subzero/src/IceTargetLowering.h - Lowering interface -----*- C++ -*-===//
+//
+//                        The Subzero Code Generator
+//
+// This file is distributed under the University of Illinois Open Source
+// License. See LICENSE.TXT for details.
+//
+//===----------------------------------------------------------------------===//
+//
+// This file declares the IceTargetLowering and IceLoweringContext
+// classes.  IceTargetLowering is an abstract class used to drive the
+// translation/lowering process.  IceLoweringContext maintains a
+// context for lowering each instruction, offering conveniences such
+// as iterating over non-deleted instructions.
+//
+//===----------------------------------------------------------------------===//
 
 #ifndef SUBZERO_ICETARGETLOWERING_H
 #define SUBZERO_ICETARGETLOWERING_H

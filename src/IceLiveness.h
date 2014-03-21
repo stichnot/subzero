@@ -1,8 +1,21 @@
-// -*- Mode: c++ -*-
-/* Copyright 2014 The Native Client Authors. All rights reserved.
- * Use of this source code is governed by a BSD-style license that can
- * be found in the LICENSE file.
- */
+//===- subzero/src/IceLiveness.h - Liveness analysis ------------*- C++ -*-===//
+//
+//                        The Subzero Code Generator
+//
+// This file is distributed under the University of Illinois Open Source
+// License. See LICENSE.TXT for details.
+//
+//===----------------------------------------------------------------------===//
+//
+// This file declares the IceLiveness and IceLivenessNode classes,
+// which are used for liveness analysis.  The node-specific
+// information tracked for each IceVariable includes whether it is
+// live on entry, whether it is live on exit, the instruction number
+// that starts its live range, and the instruction number that ends
+// its live range.  At the Cfg level, the actual live intervals are
+// recorded.
+//
+//===----------------------------------------------------------------------===//
 
 #ifndef SUBZERO_ICELIVENESS_H
 #define SUBZERO_ICELIVENESS_H

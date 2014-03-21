@@ -1,7 +1,16 @@
-/* Copyright 2014 The Native Client Authors. All rights reserved.
- * Use of this source code is governed by a BSD-style license that can
- * be found in the LICENSE file.
- */
+//===- subzero/src/IceInst.cpp - High-level instruction implementation ----===//
+//
+//                        The Subzero Code Generator
+//
+// This file is distributed under the University of Illinois Open Source
+// License. See LICENSE.TXT for details.
+//
+//===----------------------------------------------------------------------===//
+//
+// This file implements the IceInst class, primarily the various
+// subclass constructors and dump routines.
+//
+//===----------------------------------------------------------------------===//
 
 #include "IceCfg.h"
 #include "IceCfgNode.h"

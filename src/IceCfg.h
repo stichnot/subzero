@@ -1,8 +1,16 @@
-// -*- Mode: c++ -*-
-/* Copyright 2014 The Native Client Authors. All rights reserved.
- * Use of this source code is governed by a BSD-style license that can
- * be found in the LICENSE file.
- */
+//===- subzero/src/IceCfg.h - Control flow graph ----------------*- C++ -*-===//
+//
+//                        The Subzero Code Generator
+//
+// This file is distributed under the University of Illinois Open Source
+// License. See LICENSE.TXT for details.
+//
+//===----------------------------------------------------------------------===//
+//
+// This file declares the IceCfg class, which represents the control
+// flow graph and the overall per-function compilation context.
+//
+//===----------------------------------------------------------------------===//
 
 #ifndef SUBZERO_ICECFG_H
 #define SUBZERO_ICECFG_H
@@ -49,7 +57,7 @@ public:
   void setEntryNode(IceCfgNode *EntryNode) { Entry = EntryNode; }
   IceCfgNode *getEntryNode() const { return Entry; }
   // Create a node and append it to the end of the linearized list.
-  IceCfgNode *makeNode(IceString Name = "");
+  IceCfgNode *makeNode(const IceString &Name = "");
   uint32_t getNumNodes() const { return Nodes.size(); }
   const IceNodeList &getNodes() const { return Nodes; }
   IceCfgNode *splitEdge(IceCfgNode *From, IceCfgNode *To);

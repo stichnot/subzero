@@ -1,8 +1,17 @@
-// -*- Mode: c++ -*-
-/* Copyright 2014 The Native Client Authors. All rights reserved.
- * Use of this source code is governed by a BSD-style license that can
- * be found in the LICENSE file.
- */
+//===- subzero/src/IceDefs.h - Common Subzero declaraions -------*- C++ -*-===//
+//
+//                        The Subzero Code Generator
+//
+// This file is distributed under the University of Illinois Open Source
+// License. See LICENSE.TXT for details.
+//
+//===----------------------------------------------------------------------===//
+//
+// This file declares various useful types and classes that have
+// widespread use across Subzero.  Every Subzero source file is
+// expected to include IceDefs.h.
+//
+//===----------------------------------------------------------------------===//
 
 #ifndef SUBZERO_ICEDEFS_H
 #define SUBZERO_ICEDEFS_H

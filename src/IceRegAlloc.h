@@ -1,8 +1,18 @@
-// -*- Mode: c++ -*-
-/* Copyright 2014 The Native Client Authors. All rights reserved.
- * Use of this source code is governed by a BSD-style license that can
- * be found in the LICENSE file.
- */
+//===- subzero/src/IceRegAlloc.h - Linear-scan reg. allocation --*- C++ -*-===//
+//
+//                        The Subzero Code Generator
+//
+// This file is distributed under the University of Illinois Open Source
+// License. See LICENSE.TXT for details.
+//
+//===----------------------------------------------------------------------===//
+//
+// This file declares the data structures used during linear-scan
+// register allocation.  This includes IceLiveRangeWrapper which
+// encapsulates a variable and its live range, and IceLinearScan which
+// holds the various work queues for the linear-scan algorithm.
+//
+//===----------------------------------------------------------------------===//
 
 #ifndef SUBZERO_ICEREGALLOC_H
 #define SUBZERO_ICEREGALLOC_H

@@ -1,8 +1,17 @@
-// -*- Mode: c++ -*-
-/* Copyright 2014 The Native Client Authors. All rights reserved.
- * Use of this source code is governed by a BSD-style license that can
- * be found in the LICENSE file.
- */
+//===- subzero/src/IceInst.h - High-level instructions ----------*- C++ -*-===//
+//
+//                        The Subzero Code Generator
+//
+// This file is distributed under the University of Illinois Open Source
+// License. See LICENSE.TXT for details.
+//
+//===----------------------------------------------------------------------===//
+//
+// This file declares the IceInst class and its target-independent
+// subclasses, which represent the high-level Vanilla ICE instructions
+// and map roughly 1:1 to LLVM instructions.
+//
+//===----------------------------------------------------------------------===//
 
 #ifndef SUBZERO_ICEINST_H
 #define SUBZERO_ICEINST_H
@@ -106,7 +115,7 @@ protected:
   IceVariable *Dest;
   const uint32_t MaxSrcs; // only used for assert
   uint32_t NumSrcs;
-  IceOperand **Srcs; // TODO: possibly delete[] in destructor
+  IceOperand **Srcs;
 
   uint32_t LiveRangesEnded; // only first 32 src operands tracked, sorry
 };
@@ -255,8 +264,8 @@ private:
               IceOperand *CallTarget, bool Tail)
       : IceInst(Cfg, IceInst::Call, NumArgs + 1, Dest), Tail(Tail) {
     // Set HasSideEffects so that the call instruction can't be
-    // dead-code eliminated.  TODO: Don't set this for a deletable
-    // intrinsic call.
+    // dead-code eliminated.  Don't set this for a deletable intrinsic
+    // call.
     HasSideEffects = true;
     addSource(CallTarget);
   }

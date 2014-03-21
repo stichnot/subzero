@@ -1,7 +1,19 @@
-/* Copyright 2014 The Native Client Authors. All rights reserved.
- * Use of this source code is governed by a BSD-style license that can
- * be found in the LICENSE file.
- */
+//===- subzero/src/IceTargetLowering.cpp - Basic lowering implementation --===//
+//
+//                        The Subzero Code Generator
+//
+// This file is distributed under the University of Illinois Open Source
+// License. See LICENSE.TXT for details.
+//
+//===----------------------------------------------------------------------===//
+//
+// This file implements the skeleton of the IceTargetLowering class,
+// specifically invoking the appropriate lowering method for a given
+// instruction kind and driving global register allocation.  It also
+// implements the non-deleted instruction iteration in
+// IceLoweringContext.
+//
+//===----------------------------------------------------------------------===//
 
 #include "IceCfg.h" // setError()
 #include "IceCfgNode.h"

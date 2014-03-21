@@ -1,8 +1,17 @@
-// -*- Mode: c++ -*-
-/* Copyright 2014 The Native Client Authors. All rights reserved.
- * Use of this source code is governed by a BSD-style license that can
- * be found in the LICENSE file.
- */
+//===- subzero/src/IceTargetLoweringX8632.h - x86-32 lowering ---*- C++ -*-===//
+//
+//                        The Subzero Code Generator
+//
+// This file is distributed under the University of Illinois Open Source
+// License. See LICENSE.TXT for details.
+//
+//===----------------------------------------------------------------------===//
+//
+// This file declares the IceTargetLoweringX8632 class, which
+// implements the IceTargetLowering interface for the x86-32
+// architecture.
+//
+//===----------------------------------------------------------------------===//
 
 #ifndef SUBZERO_ICETARGETLOWERINGX8632_H
 #define SUBZERO_ICETARGETLOWERINGX8632_H

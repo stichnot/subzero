@@ -1,7 +1,16 @@
-/* Copyright 2014 The Native Client Authors. All rights reserved.
- * Use of this source code is governed by a BSD-style license that can
- * be found in the LICENSE file.
- */
+//===- subzero/src/IceInstX8632.cpp - X86-32 instruction implementation ---===//
+//
+//                        The Subzero Code Generator
+//
+// This file is distributed under the University of Illinois Open Source
+// License. See LICENSE.TXT for details.
+//
+//===----------------------------------------------------------------------===//
+//
+// This file implements the IceInstX8632 and IceOperandX8632 classes,
+// primarily the constructors and the dump()/emit() methods.
+//
+//===----------------------------------------------------------------------===//
 
 #include "IceCfg.h"
 #include "IceCfgNode.h"
@@ -10,6 +19,7 @@
 #include "IceTargetLoweringX8632.h"
 #include "IceOperand.h"
 
+// XXX kill this
 static const char *OpcodeTypeFromIceType(IceType type) {
   switch (type) {
   default:

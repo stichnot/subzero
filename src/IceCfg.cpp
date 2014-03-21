@@ -1,9 +1,16 @@
-/* Copyright 2014 The Native Client Authors. All rights reserved.
- * Use of this source code is governed by a BSD-style license that can
- * be found in the LICENSE file.
- */
-
-#include <iostream> // std::cout
+//===- subzero/src/IceCfg.cpp - Control flow graph implementation ---------===//
+//
+//                        The Subzero Code Generator
+//
+// This file is distributed under the University of Illinois Open Source
+// License. See LICENSE.TXT for details.
+//
+//===----------------------------------------------------------------------===//
+//
+// This file implements the IceCfg class, including constant pool
+// management.
+//
+//===----------------------------------------------------------------------===//
 
 #include "IceCfg.h"
 #include "IceCfgNode.h"
@@ -73,7 +80,7 @@ void IceCfg::setError(const IceString &Message) {
   Str << "ICE translation error: " << ErrorMessage << "\n";
 }
 
-IceCfgNode *IceCfg::makeNode(IceString Name) {
+IceCfgNode *IceCfg::makeNode(const IceString &Name) {
   uint32_t LabelIndex = Nodes.size();
   IceCfgNode *Node = IceCfgNode::create(this, LabelIndex, Name);
   Nodes.push_back(Node);

@@ -2,7 +2,7 @@
 # and how you built LLVM & Clang. They can be overridden in a command-line
 # invocation of make, like:
 #
-#   make LLVM_SRC_PATH=<path> LLVM_BUILD_PATH=<path> ...
+#   make LLVM_SRC_PATH=<path> LLVM_BIN_PATH=<path> ...
 #
 
 # LLVM_SRC_PATH is the path to the root of the checked out source code. This
@@ -12,9 +12,6 @@
 # LLVM_SRC_PATH can point to the main untarred directory.
 LLVM_SRC_PATH ?= $$HOME/llvm/llvm_svn_rw
 
-# LLVM_BUILD_PATH is the directory in which you built LLVM - where you ran
-# configure or cmake.
-# For linking vs. a binary build of LLVM, point to the main untarred directory.
 # LLVM_BIN_PATH is the directory where binaries are placed by the LLVM build
 # process. It should contain the tools like opt, llc and clang. The default
 # reflects a debug build with autotools (configure & make).
@@ -23,7 +20,6 @@ LLVM_BIN_PATH ?= $(LLVM_BUILD_PATH)/Debug+Asserts/bin
 
 $(info -----------------------------------------------)
 $(info Using LLVM_SRC_PATH = $(LLVM_SRC_PATH))
-$(info Using LLVM_BUILD_PATH = $(LLVM_BUILD_PATH))
 $(info Using LLVM_BIN_PATH = $(LLVM_BIN_PATH))
 $(info -----------------------------------------------)
 
@@ -36,45 +32,45 @@ CXX := g++
 CXXFLAGS := -Wall -Werror -fno-rtti $(OPTLEVEL) -g $(LLVM_CXXFLAGS)
 LDFLAGS :=
 
-OBJS= \
-	IceCfg.o \
-	IceCfgNode.o \
-	IceInst.o \
-	IceInstX8632.o \
-	IceLiveness.o \
-	IceOperand.o \
-	IceRegAlloc.o \
-	IceRegManager.o \
-	IceTargetLowering.o \
-	IceTargetLoweringX8632.o \
-	IceTypes.o
+SRCS= \
+	IceCfg.cpp \
+	IceCfgNode.cpp \
+	IceInst.cpp \
+	IceInstX8632.cpp \
+	IceLiveness.cpp \
+	IceOperand.cpp \
+	IceRegAlloc.cpp \
+	IceRegManager.cpp \
+	IceTargetLowering.cpp \
+	IceTargetLoweringX8632.cpp \
+	IceTypes.cpp \
+	llvm2ice.cpp
+
+OBJS=$(patsubst %.cpp, build/%.o, $(SRCS))
 
 # Keep all the first target so it's the default.
 all: llvm2ice
 
 .PHONY: all
 
-llvm2ice: $(OBJS) PNaClABITypeChecker.o llvm2ice.o
+llvm2ice: $(OBJS)
 	$(CXX) $(LDFLAGS) -o $@ $^ $(LLVM_LDFLAGS)
 
-PNaClABITypeChecker.o: PNaClABITypeChecker.cpp PNaClABITypeChecker.h
-	$(CXX) -c $(CXXFLAGS) $< -o $@
-
-# Compiling driver files (with a 'main' function) separately, so they don't
-# get included in OBJS.
-llvm2ice.o: llvm2ice.cpp *.h
-	$(CXX) -c $(CXXFLAGS) $< -o $@
-
 # TODO: Be more precise than "*.h" here and elsewhere.
-$(OBJS): %.o: %.cpp *.h
+$(OBJS): build/%.o: src/%.cpp src/*.h
 	$(CXX) -c $(CXXFLAGS) $< -o $@
+
+$(OBJS): | build
+
+build:
+	@mkdir -p $@
 
 check: llvm2ice
-	$(LLVM_SRC_PATH)/utils/lit/lit.py -sv tests_lit
+	LLVM_BIN_PATH=$(LLVM_BIN_PATH) $(LLVM_SRC_PATH)/utils/lit/lit.py -sv tests_lit
 
 # TODO: Fix the use of wildcards.
 format:
-	$(LLVM_BIN_PATH)/clang-format -style=LLVM -i Ice*.h Ice*.cpp llvm2ice.cpp
+	$(LLVM_BIN_PATH)/clang-format -style=LLVM -i src/Ice*.h src/Ice*.cpp src/llvm2ice.cpp
 
 clean:
-	rm -f llvm2ice *.o
+	rm -rf llvm2ice *.o build/

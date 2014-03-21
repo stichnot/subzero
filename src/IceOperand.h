@@ -1,8 +1,19 @@
-// -*- Mode: c++ -*-
-/* Copyright 2014 The Native Client Authors. All rights reserved.
- * Use of this source code is governed by a BSD-style license that can
- * be found in the LICENSE file.
- */
+//===- subzero/src/IceOperand.h - High-level operands -----------*- C++ -*-===//
+//
+//                        The Subzero Code Generator
+//
+// This file is distributed under the University of Illinois Open Source
+// License. See LICENSE.TXT for details.
+//
+//===----------------------------------------------------------------------===//
+//
+// This file declares the IceOperand class and its target-independent
+// subclasses.  The main classes are IceVariable, which represents an
+// LLVM variable that is either register- or stack-allocated, and the
+// IceConstant hierarchy, which represents integer, floating-point,
+// and/or symbolic constants.
+//
+//===----------------------------------------------------------------------===//
 
 #ifndef SUBZERO_ICEOPERAND_H
 #define SUBZERO_ICEOPERAND_H
