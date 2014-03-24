@@ -12,8 +12,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef SUBZERO_ICECFG_H
-#define SUBZERO_ICECFG_H
+#ifndef SUBZERO_SRC_ICECFG_H
+#define SUBZERO_SRC_ICECFG_H
 
 #include "IceDefs.h"
 #include "IceTypes.h"
@@ -149,4 +149,4 @@ private:
   static bool HasEmittedFirstMethod;
 };
 
-#endif // SUBZERO_ICECFG_H
+#endif // SUBZERO_SRC_ICECFG_H

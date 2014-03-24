@@ -15,8 +15,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef SUBZERO_ICETARGETLOWERING_H
-#define SUBZERO_ICETARGETLOWERING_H
+#ifndef SUBZERO_SRC_ICETARGETLOWERING_H
+#define SUBZERO_SRC_ICETARGETLOWERING_H
 
 #include "IceDefs.h"
 #include "IceTypes.h"
@@ -165,4 +165,4 @@ protected:
   int StackAdjustment;
 };
 
-#endif // SUBZERO_ICETARGETLOWERING_H
+#endif // SUBZERO_SRC_ICETARGETLOWERING_H

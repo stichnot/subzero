@@ -48,7 +48,7 @@ IceOperandX8632Mem::IceOperandX8632Mem(IceCfg *Cfg, IceType Type,
   if (Index)
     ++NumVars;
   if (NumVars) {
-    Vars = new IceVariable *[NumVars]; // TODO: use Cfg placement alloc
+    Vars = Cfg->allocateArrayOf<IceVariable *>(NumVars);
     unsigned I = 0;
     if (Base)
       Vars[I++] = Base;

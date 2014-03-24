@@ -13,8 +13,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef SUBZERO_ICETARGETLOWERINGX8632_H
-#define SUBZERO_ICETARGETLOWERINGX8632_H
+#ifndef SUBZERO_SRC_ICETARGETLOWERINGX8632_H
+#define SUBZERO_SRC_ICETARGETLOWERINGX8632_H
 
 #include "IceDefs.h"
 #include "IceTargetLowering.h"
@@ -138,4 +138,4 @@ protected:
   virtual void postLower(const IceLoweringContext &Context);
 };
 
-#endif // SUBZERO_ICETARGETLOWERINGX8632_H
+#endif // SUBZERO_SRC_ICETARGETLOWERINGX8632_H

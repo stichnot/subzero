@@ -15,8 +15,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef SUBZERO_ICEOPERAND_H
-#define SUBZERO_ICEOPERAND_H
+#ifndef SUBZERO_SRC_ICEOPERAND_H
+#define SUBZERO_SRC_ICEOPERAND_H
 
 #include "IceDefs.h"
 #include "IceTypes.h"
@@ -309,7 +309,7 @@ private:
         DefInst(NULL), DefNode(Node), IsArgument(false), StackOffset(0),
         RegNum(-1), RegNumTmp(-1), Weight(1), RegisterPreference(NULL),
         AllowRegisterOverlap(false), LowVar(NULL), HighVar(NULL) {
-    Vars = new IceVariable *[1];
+    Vars = Cfg->allocateArrayOf<IceVariable *>(1);
     Vars[0] = this;
     NumVars = 1;
   }
@@ -321,7 +321,7 @@ private:
   // DefInst is the instruction that produces this variable as its
   // dest.
   IceInst *DefInst;
-  // DefOrUseNode is the node where this variable was produced, and is
+  // DefNode is the node where this variable was produced, and is
   // reset to NULL if it is used outside that node.  This is used for
   // detecting isMultiblockLife().
   const IceCfgNode *DefNode;
@@ -354,4 +354,4 @@ private:
   IceVariable *HighVar;
 };
 
-#endif // SUBZERO_ICEOPERAND_H
+#endif // SUBZERO_SRC_ICEOPERAND_H

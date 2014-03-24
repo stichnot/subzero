@@ -13,8 +13,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef SUBZERO_ICEDEFS_H
-#define SUBZERO_ICEDEFS_H
+#ifndef SUBZERO_SRC_ICEDEFS_H
+#define SUBZERO_SRC_ICEDEFS_H
 
 #include <assert.h>
 #include <stdint.h>
@@ -139,7 +139,7 @@ public:
 private:
   IceVerboseMask Verbose;
   // CurrentNode is maintained during dumping/emitting just for
-  // validating IceVariable::DefOrUseNode.  Normally, a traversal over
+  // validating IceVariable::DefNode.  Normally, a traversal over
   // IceCfgNodes maintains this, but before global operations like
   // register allocation, setCurrentNode(NULL) should be called to
   // avoid spurious validation failures.
@@ -215,4 +215,4 @@ private:
   const llvm::TimeRecord Start;
 };
 
-#endif // SUBZERO_ICEDEFS_H
+#endif // SUBZERO_SRC_ICEDEFS_H

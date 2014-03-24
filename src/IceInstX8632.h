@@ -13,8 +13,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef SUBZERO_ICEINSTX8632_H
-#define SUBZERO_ICEINSTX8632_H
+#ifndef SUBZERO_SRC_ICEINSTX8632_H
+#define SUBZERO_SRC_ICEINSTX8632_H
 
 #include "IceDefs.h"
 #include "IceInst.h"
@@ -554,4 +554,4 @@ private:
   IceInstX8632Ret(IceCfg *Cfg, IceVariable *Source);
 };
 
-#endif // SUBZERO_ICEINSTX8632_H
+#endif // SUBZERO_SRC_ICEINSTX8632_H

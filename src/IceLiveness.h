@@ -17,8 +17,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef SUBZERO_ICELIVENESS_H
-#define SUBZERO_ICELIVENESS_H
+#ifndef SUBZERO_SRC_ICELIVENESS_H
+#define SUBZERO_SRC_ICELIVENESS_H
 
 #include "IceDefs.h"
 #include "IceTypes.h"
@@ -84,4 +84,4 @@ private:
   std::vector<IceLiveRange> LiveRanges;
 };
 
-#endif // SUBZERO_ICELIVENESS_H
+#endif // SUBZERO_SRC_ICELIVENESS_H

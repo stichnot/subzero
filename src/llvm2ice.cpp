@@ -117,7 +117,7 @@ private:
     return NodeMap[BB];
   }
 
-  IceType convertIntegerType(const IntegerType *IntTy) {
+  IceType convertIntegerType(const IntegerType *IntTy) const {
     switch (IntTy->getBitWidth()) {
     case 1:
       return IceType_i1;
@@ -136,7 +136,7 @@ private:
     }
   }
 
-  IceType convertType(const Type *Ty) {
+  IceType convertType(const Type *Ty) const {
     switch (Ty->getTypeID()) {
     case Type::VoidTyID:
       return IceType_void;

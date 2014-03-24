@@ -13,8 +13,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef SUBZERO_ICECFGNODE_H
-#define SUBZERO_ICECFGNODE_H
+#ifndef SUBZERO_SRC_ICECFGNODE_H
+#define SUBZERO_SRC_ICECFGNODE_H
 
 #include "IceDefs.h"
 
@@ -68,4 +68,4 @@ private:
   IceInstList Insts;     // ordered list of non-phi instructions
 };
 
-#endif // SUBZERO_ICECFGNODE_H
+#endif // SUBZERO_SRC_ICECFGNODE_H

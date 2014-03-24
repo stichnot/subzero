@@ -13,8 +13,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef SUBZERO_ICETYPES_H
-#define SUBZERO_ICETYPES_H
+#ifndef SUBZERO_SRC_ICETYPES_H
+#define SUBZERO_SRC_ICETYPES_H
 
 enum IceType {
   IceType_void,
@@ -39,4 +39,4 @@ enum IceTargetArch {
 uint32_t iceTypeWidth(IceType T);
 IceOstream &operator<<(class IceOstream &Str, IceType T);
 
-#endif // SUBZERO_ICETYPES_H
+#endif // SUBZERO_SRC_ICETYPES_H

@@ -12,8 +12,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef SUBZERO_ICEREGMANAGER_H
-#define SUBZERO_ICEREGMANAGER_H
+#ifndef SUBZERO_SRC_ICEREGMANAGER_H
+#define SUBZERO_SRC_ICEREGMANAGER_H
 
 #include "IceDefs.h"
 #include "IceTypes.h"
@@ -120,4 +120,4 @@ private:
   IceCfg *Cfg;
 };
 
-#endif // SUBZERO_ICEREGMANAGER_H
+#endif // SUBZERO_SRC_ICEREGMANAGER_H

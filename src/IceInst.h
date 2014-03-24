@@ -13,8 +13,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef SUBZERO_ICEINST_H
-#define SUBZERO_ICEINST_H
+#ifndef SUBZERO_SRC_ICEINST_H
+#define SUBZERO_SRC_ICEINST_H
 
 #include "IceDefs.h"
 #include "IceTypes.h"
@@ -595,4 +595,4 @@ protected:
   }
 };
 
-#endif // SUBZERO_ICEINST_H
+#endif // SUBZERO_SRC_ICEINST_H

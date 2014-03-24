@@ -14,8 +14,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef SUBZERO_ICEREGALLOC_H
-#define SUBZERO_ICEREGALLOC_H
+#ifndef SUBZERO_SRC_ICEREGALLOC_H
+#define SUBZERO_SRC_ICEREGALLOC_H
 
 #include "IceDefs.h"
 #include "IceTypes.h"
@@ -67,4 +67,4 @@ private:
   UnorderedRanges Active, Inactive, Handled;
 };
 
-#endif // SUBZERO_ICEREGALLOC_H
+#endif // SUBZERO_SRC_ICEREGALLOC_H
