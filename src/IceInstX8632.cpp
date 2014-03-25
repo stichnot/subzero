@@ -512,7 +512,7 @@ void IceInstX8632Shrd::dump(IceOstream &Str) const {
 
 void IceInstX8632Cdq::emit(IceOstream &Str, uint32_t Option) const {
   assert(getSrcSize() == 1);
-  Str << "cdq";
+  Str << "\tcdq\n";
 }
 
 void IceInstX8632Cdq::dump(IceOstream &Str) const {
