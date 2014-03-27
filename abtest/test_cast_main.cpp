@@ -136,6 +136,11 @@ extern "C" {
   double castF64ToF64(double a);
   double castF32ToF64(float a);
 
+  uint32_t castbits_F32ToUi32(float a);
+  float castbits_Ui32ToF32(uint32_t a);
+  uint64_t castbits_F64ToUi64(double a);
+  double castbits_Ui64ToF64(uint64_t a);
+
 
   bool Subzero_castUi64ToUi1(uint64_t a);
   bool Subzero_castSi64ToUi1(int64_t a);
@@ -268,6 +273,11 @@ extern "C" {
   double Subzero_castUi1ToF64(bool a);
   double Subzero_castF64ToF64(double a);
   double Subzero_castF32ToF64(float a);
+
+  uint32_t Subzero_castbits_F32ToUi32(float a);
+  float Subzero_castbits_Ui32ToF32(uint32_t a);
+  uint64_t Subzero_castbits_F64ToUi64(double a);
+  double Subzero_castbits_Ui64ToF64(uint64_t a);
 }
 
 #define XSTR(s) STR(s)
@@ -278,7 +288,12 @@ extern "C" {
   ResultLlc = cast ## FromIceName ## To ## ToIceName(Input); \
   ResultSz = Subzero_cast ## FromIceName ## To ## ToIceName(Input); \
   ++TotalTests; \
-  if (ResultLlc == ResultSz) { \
+  /* Use type punning since "nan==nan" always returns false. */ \
+  bool Different = false; \
+  for (unsigned i = 0; i < sizeof(ToCName); ++i) { \
+    Different |= (((char*)&ResultLlc)[i] != ((char*)&ResultSz)[i]); \
+  } \
+  if (!Different) { \
     ++Passes; \
   } else { \
     ++Failures; \
@@ -474,6 +489,7 @@ int main(int argc, char **argv) {
       COMPARE(unsigned, Ui32, "%u", int64_t, Si64, "%lld", Val);
       COMPARE(unsigned, Ui32, "%u", float, F32, "%f", Val);
       COMPARE(unsigned, Ui32, "%u", double, F64, "%f", Val);
+      COMPARE(unsigned, bits_Ui32, "%u", float, F32, "%f", Val);
     }
   }
   for (unsigned i = 0; i < NumValsSi32; ++i) {
@@ -506,6 +522,7 @@ int main(int argc, char **argv) {
       COMPARE(uint64_t, Ui64, "%llu", int64_t, Si64, "%lld", Val);
       COMPARE(uint64_t, Ui64, "%llu", float, F32, "%f", Val);
       COMPARE(uint64_t, Ui64, "%llu", double, F64, "%f", Val);
+      COMPARE(uint64_t, bits_Ui64, "%llu", float, F64, "%f", Val);
     }
   }
   for (unsigned i = 0; i < NumValsSi64; ++i) {
@@ -527,7 +544,7 @@ int main(int argc, char **argv) {
   for (unsigned i = 0; i < NumValsF32; ++i) {
     {
       float Val = ValsF32[i];
-      //COMPARE(float, F32, "%f", bool, Ui1, "%u", Val);
+      COMPARE(float, F32, "%f", bool, Ui1, "%u", Val);
       COMPARE(float, F32, "%f", unsigned char, Ui8, "%u", Val);
       COMPARE(float, F32, "%f", signed char, Si8, "%d", Val);
       COMPARE(float, F32, "%f", unsigned short, Ui16, "%u", Val);
@@ -538,12 +555,13 @@ int main(int argc, char **argv) {
       COMPARE(float, F32, "%f", int64_t, Si64, "%lld", Val);
       COMPARE(float, F32, "%f", float, F32, "%f", Val);
       COMPARE(float, F32, "%f", double, F64, "%f", Val);
+      COMPARE(float, bits_F32, "%f", uint32_t, Ui32, "%u", Val);
     }
   }
   for (unsigned i = 0; i < NumValsF64; ++i) {
     {
       double Val = ValsF64[i];
-      //COMPARE(double, F64, "%f", bool, Ui1, "%u", Val);
+      COMPARE(double, F64, "%f", bool, Ui1, "%u", Val);
       COMPARE(double, F64, "%f", unsigned char, Ui8, "%u", Val);
       COMPARE(double, F64, "%f", signed char, Si8, "%d", Val);
       COMPARE(double, F64, "%f", unsigned short, Ui16, "%u", Val);
@@ -554,6 +572,7 @@ int main(int argc, char **argv) {
       COMPARE(double, F64, "%f", int64_t, Si64, "%lld", Val);
       COMPARE(double, F64, "%f", float, F32, "%f", Val);
       COMPARE(double, F64, "%f", double, F64, "%f", Val);
+      COMPARE(double, bits_F64, "%f", uint64_t, Ui64, "%llu", Val);
     }
   }
 

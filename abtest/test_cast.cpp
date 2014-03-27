@@ -136,4 +136,9 @@ extern "C" {
   double castUi1ToF64(bool a) { return (double) a; }
   double castF64ToF64(double a) { return (double) a; }
   double castF32ToF64(float a) { return (double) a; }
+
+  uint32_t castbits_F32ToUi32(float a) { return *(uint32_t *)&a; }
+  float castbits_Ui32ToF32(uint32_t a) { return *(float *)&a; }
+  uint64_t castbits_F64ToUi64(double a) { return *(uint64_t *)&a; }
+  double castbits_Ui64ToF64(uint64_t a) { return *(double *)&a; }
 }
