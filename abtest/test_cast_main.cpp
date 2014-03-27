@@ -3,7 +3,6 @@
 #include <stdio.h>
 #include <stdint.h>
 
-extern "C" {
   bool castUi64ToUi1(uint64_t a);
   bool castSi64ToUi1(int64_t a);
   bool castUi32ToUi1(uint32_t a);
@@ -278,7 +277,6 @@ extern "C" {
   float Subzero_castbits_Ui32ToF32(uint32_t a);
   uint64_t Subzero_castbits_F64ToUi64(double a);
   double Subzero_castbits_Ui64ToF64(uint64_t a);
-}
 
 #define XSTR(s) STR(s)
 #define STR(s) #s

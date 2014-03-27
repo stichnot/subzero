@@ -36,9 +36,7 @@ public:
   // translators using the same bitcode as input.
   void setTestPrefix(const IceString &Prefix) { TestPrefix = Prefix; }
   IceString getTestPrefix() const { return TestPrefix; }
-  IceString mangleName(const IceString &Name) const {
-    return getTestPrefix() + Name;
-  }
+  IceString mangleName(const IceString &Name) const;
 
   // Manage the "internal" attribute of the function.
   void setInternal(bool Internal) { IsInternal = Internal; }

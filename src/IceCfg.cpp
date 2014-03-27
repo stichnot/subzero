@@ -74,6 +74,28 @@ IceCfg::~IceCfg() {
   delete Liveness;
 }
 
+// In this context, name mangling means to rewrite a symbol using a
+// given prefix.  For a C++ symbol, we'd like to demangle it, prepend
+// the prefix to the original symbol, and remangle it for C++.  For
+// other symbols, just prepend the prefix.
+IceString IceCfg::mangleName(const IceString &Name) const {
+  if (getTestPrefix() == "")
+    return Name;
+  IceString Default = getTestPrefix() + Name;
+  unsigned BaseLength = 0;
+  char Buffer[1 + Name.length()];
+  int ItemsParsed = sscanf(Name.c_str(), "_Z%u%s", &BaseLength, Buffer);
+  if (ItemsParsed != 2)
+    return Default;
+  if (strlen(Buffer) < BaseLength)
+    return Default;
+
+  BaseLength += getTestPrefix().length();
+  char NewNumber[30 + Name.length() + getTestPrefix().length()];
+  sprintf(NewNumber, "_Z%u%s%s", BaseLength, getTestPrefix().c_str(), Buffer);
+  return NewNumber;
+}
+
 void IceCfg::setError(const IceString &Message) {
   HasError = true;
   ErrorMessage = Message;

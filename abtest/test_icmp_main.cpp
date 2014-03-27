@@ -3,52 +3,49 @@
 #include <stdio.h>
 #include <stdint.h>
 
-extern "C" {
+bool icmpEq32Bool(int32_t a, int32_t b);
+bool icmpNe32Bool(int32_t a, int32_t b);
+bool icmpSgt32Bool(int32_t a, int32_t b);
+bool icmpUgt32Bool(uint32_t a, uint32_t b);
+bool icmpSge32Bool(int32_t a, int32_t b);
+bool icmpUge32Bool(uint32_t a, uint32_t b);
+bool icmpSlt32Bool(int32_t a, int32_t b);
+bool icmpUlt32Bool(uint32_t a, uint32_t b);
+bool icmpSle32Bool(int32_t a, int32_t b);
+bool icmpUle32Bool(uint32_t a, uint32_t b);
 
-  bool icmpEq32Bool(int32_t a, int32_t b);
-  bool icmpNe32Bool(int32_t a, int32_t b);
-  bool icmpSgt32Bool(int32_t a, int32_t b);
-  bool icmpUgt32Bool(uint32_t a, uint32_t b);
-  bool icmpSge32Bool(int32_t a, int32_t b);
-  bool icmpUge32Bool(uint32_t a, uint32_t b);
-  bool icmpSlt32Bool(int32_t a, int32_t b);
-  bool icmpUlt32Bool(uint32_t a, uint32_t b);
-  bool icmpSle32Bool(int32_t a, int32_t b);
-  bool icmpUle32Bool(uint32_t a, uint32_t b);
+bool icmpEq64Bool(int64_t a, int64_t b);
+bool icmpNe64Bool(int64_t a, int64_t b);
+bool icmpSgt64Bool(int64_t a, int64_t b);
+bool icmpUgt64Bool(uint64_t a, uint64_t b);
+bool icmpSge64Bool(int64_t a, int64_t b);
+bool icmpUge64Bool(uint64_t a, uint64_t b);
+bool icmpSlt64Bool(int64_t a, int64_t b);
+bool icmpUlt64Bool(uint64_t a, uint64_t b);
+bool icmpSle64Bool(int64_t a, int64_t b);
+bool icmpUle64Bool(uint64_t a, uint64_t b);
 
-  bool icmpEq64Bool(int64_t a, int64_t b);
-  bool icmpNe64Bool(int64_t a, int64_t b);
-  bool icmpSgt64Bool(int64_t a, int64_t b);
-  bool icmpUgt64Bool(uint64_t a, uint64_t b);
-  bool icmpSge64Bool(int64_t a, int64_t b);
-  bool icmpUge64Bool(uint64_t a, uint64_t b);
-  bool icmpSlt64Bool(int64_t a, int64_t b);
-  bool icmpUlt64Bool(uint64_t a, uint64_t b);
-  bool icmpSle64Bool(int64_t a, int64_t b);
-  bool icmpUle64Bool(uint64_t a, uint64_t b);
+bool Subzero_icmpEq32Bool(int32_t a, int32_t b);
+bool Subzero_icmpNe32Bool(int32_t a, int32_t b);
+bool Subzero_icmpSgt32Bool(int32_t a, int32_t b);
+bool Subzero_icmpUgt32Bool(uint32_t a, uint32_t b);
+bool Subzero_icmpSge32Bool(int32_t a, int32_t b);
+bool Subzero_icmpUge32Bool(uint32_t a, uint32_t b);
+bool Subzero_icmpSlt32Bool(int32_t a, int32_t b);
+bool Subzero_icmpUlt32Bool(uint32_t a, uint32_t b);
+bool Subzero_icmpSle32Bool(int32_t a, int32_t b);
+bool Subzero_icmpUle32Bool(uint32_t a, uint32_t b);
 
-  bool Subzero_icmpEq32Bool(int32_t a, int32_t b);
-  bool Subzero_icmpNe32Bool(int32_t a, int32_t b);
-  bool Subzero_icmpSgt32Bool(int32_t a, int32_t b);
-  bool Subzero_icmpUgt32Bool(uint32_t a, uint32_t b);
-  bool Subzero_icmpSge32Bool(int32_t a, int32_t b);
-  bool Subzero_icmpUge32Bool(uint32_t a, uint32_t b);
-  bool Subzero_icmpSlt32Bool(int32_t a, int32_t b);
-  bool Subzero_icmpUlt32Bool(uint32_t a, uint32_t b);
-  bool Subzero_icmpSle32Bool(int32_t a, int32_t b);
-  bool Subzero_icmpUle32Bool(uint32_t a, uint32_t b);
-
-  bool Subzero_icmpEq64Bool(int64_t a, int64_t b);
-  bool Subzero_icmpNe64Bool(int64_t a, int64_t b);
-  bool Subzero_icmpSgt64Bool(int64_t a, int64_t b);
-  bool Subzero_icmpUgt64Bool(uint64_t a, uint64_t b);
-  bool Subzero_icmpSge64Bool(int64_t a, int64_t b);
-  bool Subzero_icmpUge64Bool(uint64_t a, uint64_t b);
-  bool Subzero_icmpSlt64Bool(int64_t a, int64_t b);
-  bool Subzero_icmpUlt64Bool(uint64_t a, uint64_t b);
-  bool Subzero_icmpSle64Bool(int64_t a, int64_t b);
-  bool Subzero_icmpUle64Bool(uint64_t a, uint64_t b);
-}
+bool Subzero_icmpEq64Bool(int64_t a, int64_t b);
+bool Subzero_icmpNe64Bool(int64_t a, int64_t b);
+bool Subzero_icmpSgt64Bool(int64_t a, int64_t b);
+bool Subzero_icmpUgt64Bool(uint64_t a, uint64_t b);
+bool Subzero_icmpSge64Bool(int64_t a, int64_t b);
+bool Subzero_icmpUge64Bool(uint64_t a, uint64_t b);
+bool Subzero_icmpSlt64Bool(int64_t a, int64_t b);
+bool Subzero_icmpUlt64Bool(uint64_t a, uint64_t b);
+bool Subzero_icmpSle64Bool(int64_t a, int64_t b);
+bool Subzero_icmpUle64Bool(uint64_t a, uint64_t b);
 
 int main(int argc, char **argv) {
   static unsigned Values[] = {

@@ -1,6 +1,5 @@
 #include <stdint.h>
 
-extern "C" {
 #if 0
   // The bitcode for *ToUi1() needs to be hand-modified to change the
   // icmp back to trunc or fptoui.
@@ -141,4 +140,3 @@ extern "C" {
   float castbits_Ui32ToF32(uint32_t a) { return *(float *)&a; }
   uint64_t castbits_F64ToUi64(double a) { return *(uint64_t *)&a; }
   double castbits_Ui64ToF64(uint64_t a) { return *(double *)&a; }
-}
