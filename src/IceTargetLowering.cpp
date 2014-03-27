@@ -129,6 +129,9 @@ void IceTargetLowering::lower(IceLoweringContext &Context) {
   case IceInst::Switch:
     lowerSwitch(llvm::dyn_cast<IceInstSwitch>(Inst), Context);
     break;
+  case IceInst::Unreachable:
+    lowerUnreachable(llvm::dyn_cast<IceInstUnreachable>(Inst), Context);
+    break;
   case IceInst::FakeDef:
   case IceInst::FakeUse:
   case IceInst::FakeKill:

@@ -147,6 +147,8 @@ protected:
                           IceLoweringContext &Context) = 0;
   virtual void lowerSwitch(const IceInstSwitch *Inst,
                            IceLoweringContext &Context) = 0;
+  virtual void lowerUnreachable(const IceInstUnreachable *Inst,
+                                IceLoweringContext &Context) = 0;
 
   virtual void doAddressOptLoad(IceLoweringContext &Context) {}
   virtual void doAddressOptStore(IceLoweringContext &Context) {}

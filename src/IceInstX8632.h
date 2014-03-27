@@ -24,7 +24,7 @@ class IceTargetX8632;
 
 class IceOperandX8632 : public IceOperand {
 public:
-  enum IceOperandTypeX8632 { __Start = IceOperand::Target, Mem };
+  enum IceOperandTypeX8632 { __Start = IceOperand::Target, Mem, Split };
   virtual void emit(IceOstream &Str, uint32_t Option) const = 0;
   void dump(IceOstream &Str) const;
 
@@ -60,6 +60,30 @@ private:
   IceConstant *Offset;
   IceVariable *Index;
   unsigned Shift;
+};
+
+class IceVariableSplit : public IceOperandX8632 {
+public:
+  enum Portion { Low, High };
+  static IceVariableSplit *create(IceCfg *Cfg, IceVariable *Var, Portion Part) {
+    return new IceVariableSplit(Cfg, Var, Part);
+  }
+  virtual void emit(IceOstream &Str, uint32_t Option) const;
+  virtual void dump(IceOstream &Str) const;
+
+  static bool classof(const IceOperand *Operand) {
+    return Operand->getKind() == static_cast<OperandKind>(Split);
+  }
+
+private:
+  IceVariableSplit(IceCfg *Cfg, IceVariable *Var, Portion Part)
+      : IceOperandX8632(Cfg, Split, IceType_i32), Var(Var), Part(Part) {
+    Vars = Cfg->allocateArrayOf<IceVariable *>(1);
+    Vars[0] = Var;
+    NumVars = 1;
+  }
+  IceVariable *Var;
+  Portion Part;
 };
 
 class IceInstX8632 : public IceInstTarget {
@@ -435,7 +459,7 @@ private:
 class IceInstX8632Store : public IceInstX8632 {
 public:
   static IceInstX8632Store *create(IceCfg *Cfg, IceOperand *Value,
-                                   IceOperandX8632Mem *Mem) {
+                                   IceOperandX8632 *Mem) {
     return new IceInstX8632Store(Cfg, Value, Mem);
   }
   virtual void emit(IceOstream &Str, uint32_t Option) const;
@@ -443,7 +467,7 @@ public:
   static bool classof(const IceInst *Inst) { return isClassof(Inst, Store); }
 
 private:
-  IceInstX8632Store(IceCfg *Cfg, IceOperand *Value, IceOperandX8632Mem *Mem);
+  IceInstX8632Store(IceCfg *Cfg, IceOperand *Value, IceOperandX8632 *Mem);
 };
 
 class IceInstX8632Mov : public IceInstX8632 {

@@ -24,6 +24,9 @@ bool operator<(const IceRegWeight &A, const IceRegWeight &B) {
 bool operator<=(const IceRegWeight &A, const IceRegWeight &B) {
   return !(B < A);
 }
+bool operator==(const IceRegWeight &A, const IceRegWeight &B) {
+  return !(B < A) && !(A < B);
+}
 
 void IceLiveRange::addSegment(int32_t Start, int32_t End) {
 #ifdef USE_SET

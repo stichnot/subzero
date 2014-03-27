@@ -245,6 +245,9 @@ private:
     case Instruction::UIToFP:
       return convertCastInstruction(cast<UIToFPInst>(Inst),
                                     IceInstCast::Uitofp);
+    case Instruction::BitCast:
+      return convertCastInstruction(cast<BitCastInst>(Inst),
+                                    IceInstCast::Bitcast);
     case Instruction::Add:
       return convertArithInstruction(Inst, IceInstArithmetic::Add);
     case Instruction::Sub:
@@ -285,6 +288,8 @@ private:
       return convertCallInstruction(cast<CallInst>(Inst));
     case Instruction::Alloca:
       return convertAllocaInstruction(cast<AllocaInst>(Inst));
+    case Instruction::Unreachable:
+      return convertUnreachableInstruction(cast<UnreachableInst>(Inst));
     default:
       report_fatal_error(std::string("Invalid PNaCl instruction: ") +
                          LLVMObjectAsString(Inst));
@@ -519,6 +524,10 @@ private:
     IceVariable *Dest = mapValueToIceVar(Inst, IceType_i32);
 
     return IceInstAlloca::create(Cfg, ByteCount, Align, Dest);
+  }
+
+  IceInst *convertUnreachableInstruction(const UnreachableInst *Inst) {
+    return IceInstUnreachable::create(Cfg);
   }
 
   IceCfgNode *convertBasicBlock(const BasicBlock *BB) {

@@ -358,6 +358,9 @@ IceNodeList IceInstSwitch::getTerminatorEdges() const {
   return OutEdges;
 }
 
+IceInstUnreachable::IceInstUnreachable(IceCfg *Cfg)
+    : IceInst(Cfg, IceInst::Unreachable, 0, NULL) {}
+
 IceInstFakeDef::IceInstFakeDef(IceCfg *Cfg, IceVariable *Dest, IceVariable *Src)
     : IceInst(Cfg, IceInst::FakeDef, Src ? 1 : 0, Dest) {
   assert(Dest);
@@ -604,6 +607,9 @@ void IceInstCast::dump(IceOstream &Str) const {
   case Inttoptr:
     Str << "inttoptr";
     break;
+  case Bitcast:
+    Str << "bitcast";
+    break;
   }
   Str << " " << getSrc(0)->getType() << " ";
   dumpSources(Str);
@@ -786,6 +792,8 @@ void IceInstSelect::dump(IceOstream &Str) const {
       << TrueOp->getType() << " " << TrueOp << ", " << FalseOp->getType() << " "
       << FalseOp;
 }
+
+void IceInstUnreachable::dump(IceOstream &Str) const { Str << "unreachable"; }
 
 void IceInstFakeDef::emit(IceOstream &Str, uint32_t Option) const {
   Str << "\t# ";

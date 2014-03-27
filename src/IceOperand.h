@@ -157,7 +157,8 @@ class IceRegWeight {
 public:
   IceRegWeight() : Weight(0) {}
   IceRegWeight(uint32_t Weight) : Weight(Weight) {}
-  const static uint32_t Inf = ~0;
+  const static uint32_t Inf = ~0; // Force regalloc to give a register
+  const static uint32_t Zero = 0; // Force regalloc NOT to give a register
   void addWeight(uint32_t Delta) {
     if (Delta == Inf)
       Weight = Inf;
@@ -175,6 +176,7 @@ private:
 IceOstream &operator<<(IceOstream &Str, const IceRegWeight &W);
 bool operator<(const IceRegWeight &A, const IceRegWeight &B);
 bool operator<=(const IceRegWeight &A, const IceRegWeight &B);
+bool operator==(const IceRegWeight &A, const IceRegWeight &B);
 
 // IceLiveRange is a set of instruction number intervals representing
 // a variable's live range.  Generally there is one interval per basic
@@ -337,7 +339,9 @@ private:
   IceRegWeight Weight; // Register allocation priority
   // RegisterPreference says that if possible, the register allocator
   // should prefer the register that was assigned to this linked
-  // variable.
+  // variable.  It also allows a spill slot to share its stack
+  // location with another variable, if that variable does not get
+  // register-allocated and therefore has a stack location.
   IceVariable *RegisterPreference;
   // AllowRegisterOverlap says that it is OK to honor
   // RegisterPreference and "share" a register even if the two live

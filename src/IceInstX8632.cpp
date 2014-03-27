@@ -152,7 +152,7 @@ IceInstX8632Test::IceInstX8632Test(IceCfg *Cfg, IceOperand *Src1,
 }
 
 IceInstX8632Store::IceInstX8632Store(IceCfg *Cfg, IceOperand *Value,
-                                     IceOperandX8632Mem *Mem)
+                                     IceOperandX8632 *Mem)
     : IceInstX8632(Cfg, IceInstX8632::Store, 2, NULL) {
   addSource(Value);
   addSource(Mem);
@@ -193,16 +193,21 @@ IceInstX8632Push::IceInstX8632Push(IceCfg *Cfg, IceOperand *Source)
 }
 
 bool IceInstX8632Mov::isRedundantAssign() const {
-  int DestRegNum = getDest()->getRegNum();
-  if (DestRegNum < 0)
-    return false;
   IceVariable *Src = llvm::dyn_cast<IceVariable>(getSrc(0));
   if (Src == NULL)
     return false;
-  // TODO: On x86-64, instructions like "mov eax, eax" are used to
-  // clear the upper 32 bits of rax.  We need to recognize and
-  // preserve these.
-  return DestRegNum == Src->getRegNum();
+  int DestRegNum = getDest()->getRegNum();
+  int SrcRegNum = Src->getRegNum();
+  if (DestRegNum >= 0 && DestRegNum == SrcRegNum) {
+    // TODO: On x86-64, instructions like "mov eax, eax" are used to
+    // clear the upper 32 bits of rax.  We need to recognize and
+    // preserve these.
+    return true;
+  }
+  if (DestRegNum < 0 && SrcRegNum < 0 &&
+      Dest->getStackOffset() == Src->getStackOffset())
+    return true;
+  return false;
 }
 
 IceInstX8632Ret::IceInstX8632Ret(IceCfg *Cfg, IceVariable *Source)
@@ -896,4 +901,39 @@ void IceOperandX8632Mem::dump(IceOstream &Str) const {
     Str << Offset;
   }
   Str << "]";
+}
+
+void IceVariableSplit::emit(IceOstream &Str, unsigned Option) const {
+  assert(Var->getLocalUseNode() == NULL ||
+         Var->getLocalUseNode() == Str.getCurrentNode());
+  assert(Var->getRegNum() < 0);
+  // The following is copied/adapted from IceVariable::emit().
+  Str << "dword ptr ["
+      << Str.Cfg->getTarget()->getRegName(
+             Str.Cfg->getTarget()->getFrameOrStackReg(), IceType_i32);
+  int32_t Offset =
+      Var->getStackOffset() + Str.Cfg->getTarget()->getStackAdjustment();
+  if (Part == High)
+    Offset += 4;
+  if (Offset) {
+    if (Offset > 0)
+      Str << "+";
+    Str << Offset;
+  }
+  Str << "]";
+}
+
+void IceVariableSplit::dump(IceOstream &Str) const {
+  switch (Part) {
+  case Low:
+    Str << "low";
+    break;
+  case High:
+    Str << "high";
+    break;
+  default:
+    Str << "???";
+    break;
+  }
+  Str << "(" << Var << ")";
 }

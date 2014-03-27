@@ -252,10 +252,20 @@ void IceTargetX8632::addProlog(IceCfgNode *Node) {
       RegsUsed[Var->getRegNum()] = true;
       continue;
     }
+    // An argument passed on the stack already has a stack slot.
     if (Var->getIsArg())
       continue;
+    // An unreferenced variable doesn't need a stack slot.
     if (ComputedLiveRanges && Var->getLiveRange().isEmpty())
       continue;
+    // A spill slot linked to a variable with a stack slot should reuse
+    // that stack slot.
+    if (Var->getWeight() == IceRegWeight::Zero && Var->getRegisterOverlap()) {
+      if (IceVariable *Linked = Var->getPreferredRegister()) {
+        if (Linked->getRegNum() < 0)
+          continue;
+      }
+    }
     int Increment = typeWidthOnStack(Var->getType());
     if (SimpleCoalescing) {
       if (Var->isMultiblockLife()) {
@@ -298,6 +308,26 @@ void IceTargetX8632::addProlog(IceCfgNode *Node) {
 
   resetStackAdjustment();
 
+  // Fill in stack offsets for args, and copy args into registers for
+  // those that were register-allocated.  Args are pushed right to
+  // left, so Arg[0] is closest to the stack/frame pointer.
+  //
+  // TODO: Make this right for different width args, calling
+  // conventions, etc.  For one thing, args passed in registers will
+  // need to be copied/shuffled to their home registers (the
+  // IceRegManager code may have some permutation logic to leverage),
+  // and if they have no home register, home space will need to be
+  // allocated on the stack to copy into.
+  IceVariable *FramePtr = getPhysicalRegister(getFrameOrStackReg());
+  int BasicFrameOffset = PreservedRegsSizeBytes + RetIpSizeBytes;
+  if (!IsEbpBasedFrame)
+    BasicFrameOffset += LocalsSizeBytes;
+  for (unsigned i = 0; i < Args.size(); ++i) {
+    IceVariable *Arg = Args[i];
+    setArgOffsetAndCopy(Arg, FramePtr, BasicFrameOffset, InArgsSizeBytes,
+                        Context);
+  }
+
   // Fill in stack offsets for locals.
   int TotalGlobalsSize = GlobalsSize;
   GlobalsSize = 0;
@@ -316,6 +346,16 @@ void IceTargetX8632::addProlog(IceCfgNode *Node) {
       continue;
     if (ComputedLiveRanges && Var->getLiveRange().isEmpty())
       continue;
+    if (Var->getWeight() == IceRegWeight::Zero && Var->getRegisterOverlap()) {
+      if (IceVariable *Linked = Var->getPreferredRegister()) {
+        if (Linked->getRegNum() < 0) {
+          // TODO: Make sure Linked has already been assigned a stack
+          // slot.
+          Var->setStackOffset(Linked->getStackOffset());
+          continue;
+        }
+      }
+    }
     int Increment = typeWidthOnStack(Var->getType());
     if (SimpleCoalescing) {
       if (Var->isMultiblockLife()) {
@@ -336,26 +376,6 @@ void IceTargetX8632::addProlog(IceCfgNode *Node) {
   }
   this->FrameSizeLocals = NextStackOffset;
   this->HasComputedFrame = true;
-
-  // Fill in stack offsets for args, and copy args into registers for
-  // those that were register-allocated.  Args are pushed right to
-  // left, so Arg[0] is closest to the stack/frame pointer.
-  //
-  // TODO: Make this right for different width args, calling
-  // conventions, etc.  For one thing, args passed in registers will
-  // need to be copied/shuffled to their home registers (the
-  // IceRegManager code may have some permutation logic to leverage),
-  // and if they have no home register, home space will need to be
-  // allocated on the stack to copy into.
-  IceVariable *FramePtr = getPhysicalRegister(getFrameOrStackReg());
-  int BasicFrameOffset = PreservedRegsSizeBytes + RetIpSizeBytes;
-  if (!IsEbpBasedFrame)
-    BasicFrameOffset += LocalsSizeBytes;
-  for (unsigned i = 0; i < Args.size(); ++i) {
-    IceVariable *Arg = Args[i];
-    setArgOffsetAndCopy(Arg, FramePtr, BasicFrameOffset, InArgsSizeBytes,
-                        Context);
-  }
 
   if (Cfg->Str.isVerbose(IceV_Frame)) {
     Cfg->Str << "LocalsSizeBytes=" << LocalsSizeBytes << "\n"
@@ -1110,6 +1130,7 @@ void IceTargetX8632::lowerCast(const IceInstCast *Inst,
   IceVariable *Dest = Inst->getDest();
   IceOperand *Src0 = Inst->getSrc(0);
   IceOperand *Reg = legalizeOperand(Src0, Legal_Reg | Legal_Mem, Context, true);
+  // TODO: Consider allowing Immediates for Bitcast.
   switch (CastKind) {
   default:
     // TODO: implement other sorts of casts.
@@ -1337,6 +1358,95 @@ void IceTargetX8632::lowerCast(const IceInstCast *Inst,
       Tmp2->setWeightInfinite();
       Context.insert(IceInstX8632Cvt::create(Cfg, Tmp2, Tmp1));
       Context.insert(IceInstX8632Mov::create(Cfg, Dest, Tmp2));
+    }
+    break;
+  case IceInstCast::Bitcast:
+    switch (Dest->getType()) {
+    default:
+      assert(0 && "Unexpected Bitcast dest type");
+    case IceType_i32:
+    case IceType_f32: {
+      IceType DestType = Dest->getType();
+      IceType SrcType = Reg->getType();
+      assert((DestType == IceType_i32 && SrcType == IceType_f32) ||
+             (DestType == IceType_f32 && SrcType == IceType_i32));
+      // a.i32 = bitcast b.f32 ==>
+      //   t.f32 = b.f32
+      //   s.f32 = spill t.f32
+      //   a.i32 = s.f32
+      IceVariable *Tmp = Cfg->makeVariable(SrcType, Context.Node);
+      Tmp->setWeightInfinite();
+      Context.insert(IceInstX8632Mov::create(Cfg, Tmp, Reg));
+      IceVariable *Spill = Cfg->makeVariable(SrcType, Context.Node);
+      Spill->setWeight(IceRegWeight::Zero);
+      Spill->setPreferredRegister(Dest, true);
+      Context.insert(IceInstX8632Mov::create(Cfg, Spill, Tmp));
+      Context.insert(IceInstX8632Mov::create(Cfg, Dest, Spill));
+    } break;
+    case IceType_i64: {
+      assert(Reg->getType() == IceType_f64);
+      // a.i64 = bitcast b.f64 ==>
+      //   s.f64 = spill b.f64
+      //   t_lo.i32 = lo(s.f64)
+      //   a_lo.i32 = t_lo.i32
+      //   t_hi.i32 = hi(s.f64)
+      //   a_hi.i32 = t_hi.i32
+      IceVariable *Spill = Cfg->makeVariable(IceType_f64, Context.Node);
+      Spill->setWeight(IceRegWeight::Zero);
+      Spill->setPreferredRegister(llvm::dyn_cast<IceVariable>(Reg), true);
+      Context.insert(IceInstX8632Mov::create(Cfg, Spill, Reg));
+
+      IceVariable *TmpLo = Cfg->makeVariable(IceType_i32, Context.Node);
+      TmpLo->setWeightInfinite();
+      IceVariableSplit *SpillLo =
+          IceVariableSplit::create(Cfg, Spill, IceVariableSplit::Low);
+      Context.insert(IceInstX8632Mov::create(Cfg, TmpLo, SpillLo));
+      IceVariable *DestLo =
+          llvm::cast<IceVariable>(makeLowOperand(Dest, Context));
+      Context.insert(IceInstX8632Mov::create(Cfg, DestLo, TmpLo));
+
+      IceVariable *TmpHi = Cfg->makeVariable(IceType_i32, Context.Node);
+      TmpHi->setWeightInfinite();
+      IceVariableSplit *SpillHi =
+          IceVariableSplit::create(Cfg, Spill, IceVariableSplit::High);
+      Context.insert(IceInstX8632Mov::create(Cfg, TmpHi, SpillHi));
+      IceVariable *DestHi =
+          llvm::cast<IceVariable>(makeHighOperand(Dest, Context));
+      Context.insert(IceInstX8632Mov::create(Cfg, DestHi, TmpHi));
+    } break;
+    case IceType_f64: {
+      assert(Reg->getType() == IceType_i64);
+      // a.f64 = bitcast b.i64 ==>
+      //   t_lo.i32 = b_lo.i32
+      //   lo(s.f64) = t_lo.i32
+      //   FakeUse(s.f64)
+      //   t_hi.i32 = b_hi.i32
+      //   hi(s.f64) = t_hi.i32
+      //   a.f64 = s.f64
+      IceVariable *Spill = Cfg->makeVariable(IceType_f64, Context.Node);
+      Spill->setWeight(IceRegWeight::Zero);
+      Spill->setPreferredRegister(Dest, true);
+
+      Context.insert(IceInstFakeDef::create(Cfg, Spill));
+
+      IceVariable *TmpLo = Cfg->makeVariable(IceType_i32, Context.Node);
+      TmpLo->setWeightInfinite();
+      Context.insert(
+          IceInstX8632Mov::create(Cfg, TmpLo, makeLowOperand(Reg, Context)));
+      IceVariableSplit *SpillLo =
+          IceVariableSplit::create(Cfg, Spill, IceVariableSplit::Low);
+      Context.insert(IceInstX8632Store::create(Cfg, TmpLo, SpillLo));
+
+      IceVariable *TmpHi = Cfg->makeVariable(IceType_i32, Context.Node);
+      TmpHi->setWeightInfinite();
+      Context.insert(
+          IceInstX8632Mov::create(Cfg, TmpHi, makeHighOperand(Reg, Context)));
+      IceVariableSplit *SpillHi =
+          IceVariableSplit::create(Cfg, Spill, IceVariableSplit::High);
+      Context.insert(IceInstX8632Store::create(Cfg, TmpHi, SpillHi));
+
+      Context.insert(IceInstX8632Mov::create(Cfg, Dest, Spill));
+    } break;
     }
     break;
   }
@@ -1972,6 +2082,21 @@ void IceTargetX8632::lowerSwitch(const IceInstSwitch *Inst,
   }
 
   Context.insert(IceInstX8632Br::create(Cfg, Inst->getLabelDefault()));
+}
+
+void IceTargetX8632::lowerUnreachable(const IceInstUnreachable *Inst,
+                                      IceLoweringContext &Context) {
+  // TODO: Figure out how to properly construct CallTarget.
+  bool SuppressMangling = true;
+  IceConstant *CallTarget = Cfg->getConstantSym(
+      IceType_void, NULL, 0, "ice_unreachable", SuppressMangling);
+  bool Tailcall = false;
+  uint32_t MaxSrcs = 0;
+  // TODO: This instruction leaks.
+  IceInstCall *Call =
+      IceInstCall::create(Cfg, MaxSrcs, Inst->getDest(), CallTarget, Tailcall);
+  lowerCall(Call, Context);
+  return;
 }
 
 IceOperand *IceTargetX8632::legalizeOperand(IceOperand *From, LegalMask Allowed,

@@ -36,6 +36,7 @@ public:
     Select,
     Store,
     Switch,
+    Unreachable,
     FakeDef,  // not part of LLVM/PNaCl bitcode
     FakeUse,  // not part of LLVM/PNaCl bitcode
     FakeKill, // not part of LLVM/PNaCl bitcode
@@ -498,6 +499,24 @@ private:
   uint32_t NumCases;   // not including the default case
   uint64_t *Values;    // size is NumCases
   IceCfgNode **Labels; // size is NumCases
+};
+
+// Unreachable instruction.  This is a terminator instruction with no
+// operands.
+class IceInstUnreachable : public IceInst {
+public:
+  static IceInstUnreachable *create(IceCfg *Cfg) {
+    return new (Cfg->allocateInst<IceInstUnreachable>())
+        IceInstUnreachable(Cfg);
+  }
+  virtual IceNodeList getTerminatorEdges() const { return IceNodeList(); }
+  virtual void dump(IceOstream &Str) const;
+  static bool classof(const IceInst *Inst) {
+    return Inst->getKind() == Unreachable;
+  }
+
+private:
+  IceInstUnreachable(IceCfg *Cfg);
 };
 
 // FakeDef instruction.  This creates a fake definition of a variable,

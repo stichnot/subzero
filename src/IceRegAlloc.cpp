@@ -50,8 +50,12 @@ void IceLinearScan::scan(const llvm::SmallBitVector &RegMaskFull) {
   for (IceVarList::const_iterator I = Vars.begin(), E = Vars.end(); I != E;
        ++I) {
     IceVariable *Var = *I;
-    if (Var == NULL)
+    // Explicitly don't consider zero-weight variables, which are
+    // meant to be spill slots.
+    if (Var->getWeight() == IceRegWeight::Zero)
       continue;
+    // Don't bother if the variable has a null live range, which means
+    // it was never referenced.
     if (Var->getLiveRange().isEmpty())
       continue;
     Unhandled.insert(IceLiveRangeWrapper(Var));
