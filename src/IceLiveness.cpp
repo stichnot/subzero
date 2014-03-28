@@ -40,8 +40,6 @@ void IceLiveness::init() {
   // block.
   for (uint32_t i = 0; i < NumVars; ++i) {
     IceVariable *Var = Cfg->getVariables()[i];
-    if (Var == NULL)
-      continue;
     if (Var->isMultiblockLife()) {
       ++NumGlobals;
     } else {
@@ -63,8 +61,6 @@ void IceLiveness::init() {
   uint32_t TmpNumGlobals = 0;
   for (uint32_t i = 0; i < NumVars; ++i) {
     IceVariable *Var = Cfg->getVariables()[i];
-    if (Var == NULL)
-      continue;
     uint32_t VarIndex = Var->getIndex();
     uint32_t LiveIndex;
     if (Var->isMultiblockLife()) {

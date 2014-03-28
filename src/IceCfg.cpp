@@ -343,8 +343,6 @@ void IceCfg::liveness(IceLivenessMode Mode) {
     uint32_t NumVars = Variables.size();
     for (uint32_t i = 0; i < NumVars; ++i) {
       IceVariable *Var = Variables[i];
-      if (Var == NULL)
-        continue;
       Var->setLiveRange(Liveness->getLiveRange(Var));
       if (Var->getWeight().isInf())
         Var->setLiveRangeInfiniteWeight();
