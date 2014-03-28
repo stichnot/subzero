@@ -55,7 +55,11 @@ template <typename T> static std::string LLVMObjectAsString(const T *O) {
 //
 class LLVM2ICEConverter {
 public:
-  LLVM2ICEConverter() : Cfg(NULL), CurrentNode(NULL) {}
+  LLVM2ICEConverter(IceTargetArch TargetArch) : Cfg(NULL), CurrentNode(NULL) {
+    // All PNaCl pointer widths are 32 bits because of the sandbox
+    // model.
+    SubzeroPointerType = IceType_i32;
+  }
 
   IceCfg *convertFunction(const Function *F) {
     VarMap.clear();
@@ -151,7 +155,7 @@ private:
       return convertType(PTy->getElementType());
     }
     case Type::FunctionTyID:
-      return IceType_i32;
+      return SubzeroPointerType;
     default:
       report_fatal_error(std::string("Invalid PNaCl type: ") +
                          LLVMObjectAsString(Ty));
@@ -347,7 +351,7 @@ private:
 
   IceInst *convertIntToPtrInstruction(const IntToPtrInst *Inst) {
     IceOperand *Src = convertOperand(Inst, 0);
-    IceVariable *Dest = mapValueToIceVar(Inst, IceType_i32);
+    IceVariable *Dest = mapValueToIceVar(Inst, SubzeroPointerType);
     return IceInstAssign::create(Cfg, Dest, Src);
   }
 
@@ -521,7 +525,7 @@ private:
     // PNaCl bitcode only contains allocas of byte-granular objects.
     IceOperand *ByteCount = convertValue(Inst->getArraySize());
     uint32_t Align = Inst->getAlignment();
-    IceVariable *Dest = mapValueToIceVar(Inst, IceType_i32);
+    IceVariable *Dest = mapValueToIceVar(Inst, SubzeroPointerType);
 
     return IceInstAlloca::create(Cfg, ByteCount, Align, Dest);
   }
@@ -544,6 +548,7 @@ private:
   // Data
   IceCfg *Cfg;
   IceCfgNode *CurrentNode;
+  IceType SubzeroPointerType;
   std::map<const Value *, IceVariable *> VarMap;
   std::map<const BasicBlock *, IceCfgNode *> NodeMap;
 };
@@ -627,7 +632,7 @@ int main(int argc, char **argv) {
   for (Module::const_iterator I = Mod->begin(), E = Mod->end(); I != E; ++I) {
     if (I->empty())
       continue;
-    LLVM2ICEConverter FunctionConverter;
+    LLVM2ICEConverter FunctionConverter(TargetArch);
 
     IceTimer TConvert;
     IceCfg *Cfg = FunctionConverter.convertFunction(I);
