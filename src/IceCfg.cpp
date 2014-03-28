@@ -79,6 +79,9 @@ IceCfg::~IceCfg() {
 // the prefix to the original symbol, and remangle it for C++.  For
 // other symbols, just prepend the prefix.
 IceString IceCfg::mangleName(const IceString &Name) const {
+  // TODO: This handles only non-nested C++ symbols, and not ones that
+  // begin with "_ZN".  For the latter, we need to rewrite only the
+  // last name component.
   if (getTestPrefix() == "")
     return Name;
   IceString Default = getTestPrefix() + Name;
