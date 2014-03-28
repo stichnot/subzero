@@ -59,7 +59,7 @@ void IceLinearScan::scan(const llvm::SmallBitVector &RegMaskFull) {
     if (Var->getLiveRange().isEmpty())
       continue;
     Unhandled.insert(IceLiveRangeWrapper(Var));
-    if (Var->getRegNum() >= 0) {
+    if (Var->hasReg()) {
       Var->setRegNumTmp(Var->getRegNum());
       Var->setLiveRangeInfiniteWeight();
     }
@@ -90,7 +90,7 @@ void IceLinearScan::scan(const llvm::SmallBitVector &RegMaskFull) {
     // ranges would have avoided that register due to it being
     // precolored.  Future processed live ranges won't evict that
     // register because the live range has infinite weight.
-    if (Cur.Var->getRegNum() >= 0) {
+    if (Cur.Var->hasReg()) {
       int RegNum = Cur.Var->getRegNum();
       Cur.Var->setRegNumTmp(RegNum);
       if (Cfg->Str.isVerbose(IceV_LinearScan))

@@ -196,15 +196,13 @@ bool IceInstX8632Mov::isRedundantAssign() const {
   IceVariable *Src = llvm::dyn_cast<IceVariable>(getSrc(0));
   if (Src == NULL)
     return false;
-  int DestRegNum = getDest()->getRegNum();
-  int SrcRegNum = Src->getRegNum();
-  if (DestRegNum >= 0 && DestRegNum == SrcRegNum) {
+  if (getDest()->hasReg() && getDest()->getRegNum() == Src->getRegNum()) {
     // TODO: On x86-64, instructions like "mov eax, eax" are used to
     // clear the upper 32 bits of rax.  We need to recognize and
     // preserve these.
     return true;
   }
-  if (DestRegNum < 0 && SrcRegNum < 0 &&
+  if (!getDest()->hasReg() && !Src->hasReg() &&
       Dest->getStackOffset() == Src->getStackOffset())
     return true;
   return false;
@@ -701,7 +699,7 @@ void IceInstX8632Fld::emit(IceOstream &Str, uint32_t Option) const {
   assert(getSrcSize() == 1);
   bool isDouble = (getSrc(0)->getType() == IceType_f64);
   IceVariable *Var = llvm::dyn_cast<IceVariable>(getSrc(0));
-  if (Var && Var->getRegNum() >= 0) {
+  if (Var && Var->hasReg()) {
     // This is a physical xmm register, so we need to spill it to a
     // temporary stack slot.
     Str << "\tsub\tesp, " << (isDouble ? 8 : 4) << "\n";
@@ -729,7 +727,7 @@ void IceInstX8632Fstp::emit(IceOstream &Str, uint32_t Option) const {
     Str << "\tfstp\tst(0)\n";
     return;
   }
-  if (getDest()->getRegNum() < 0) {
+  if (!getDest()->hasReg()) {
     Str << "\tfstp\t";
     getDest()->emit(Str, Option);
     Str << "\n";
@@ -770,8 +768,7 @@ void IceInstX8632Push::emit(IceOstream &Str, uint32_t Option) const {
   assert(getSrcSize() == 1);
   IceType Type = getSrc(0)->getType();
   IceVariable *Var = llvm::dyn_cast<IceVariable>(getSrc(0));
-  if ((Type == IceType_f32 || Type == IceType_f64) && Var &&
-      Var->getRegNum() >= 0) {
+  if ((Type == IceType_f32 || Type == IceType_f64) && Var && Var->hasReg()) {
     // The xmm registers can't be directly pushed, so we fake it by
     // decrementing esp and then storing to [esp].
     Str << "\tsub\tesp, " << iceTypeWidth(Type) << "\n";
@@ -780,7 +777,7 @@ void IceInstX8632Push::emit(IceOstream &Str, uint32_t Option) const {
         << "word ptr [esp], ";
     getSrc(0)->emit(Str, Option);
     Str << "\n";
-  } else if (Type == IceType_f64 && (!Var || Var->getRegNum() < 0)) {
+  } else if (Type == IceType_f64 && (!Var || !Var->hasReg())) {
     // A double on the stack has to be pushed as two halves.  Push the
     // upper half followed by the lower half for little-endian.  TODO:
     // implement.
@@ -906,7 +903,7 @@ void IceOperandX8632Mem::dump(IceOstream &Str) const {
 void IceVariableSplit::emit(IceOstream &Str, unsigned Option) const {
   assert(Var->getLocalUseNode() == NULL ||
          Var->getLocalUseNode() == Str.getCurrentNode());
-  assert(Var->getRegNum() < 0);
+  assert(!Var->hasReg());
   // The following is copied/adapted from IceVariable::emit().
   Str << "dword ptr ["
       << Str.Cfg->getTarget()->getRegName(

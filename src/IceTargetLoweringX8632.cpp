@@ -202,7 +202,7 @@ void IceTargetX8632::setArgOffsetAndCopy(IceVariable *Arg,
     return;
   }
   Arg->setStackOffset(BasicFrameOffset + InArgsSizeBytes);
-  if (Arg->getRegNum() >= 0) {
+  if (Arg->hasReg()) {
     assert(Type != IceType_i64);
     IceOperandX8632Mem *Mem = IceOperandX8632Mem::create(
         Cfg, Type, FramePtr,
@@ -248,7 +248,7 @@ void IceTargetX8632::addProlog(IceCfgNode *Node) {
     IceVariable *Var = *I;
     if (!Var)
       continue;
-    if (Var->getRegNum() >= 0) {
+    if (Var->hasReg()) {
       RegsUsed[Var->getRegNum()] = true;
       continue;
     }
@@ -262,7 +262,7 @@ void IceTargetX8632::addProlog(IceCfgNode *Node) {
     // that stack slot.
     if (Var->getWeight() == IceRegWeight::Zero && Var->getRegisterOverlap()) {
       if (IceVariable *Linked = Var->getPreferredRegister()) {
-        if (Linked->getRegNum() < 0)
+        if (!Linked->hasReg())
           continue;
       }
     }
@@ -338,7 +338,7 @@ void IceTargetX8632::addProlog(IceCfgNode *Node) {
     IceVariable *Var = *I;
     if (!Var)
       continue;
-    if (Var->getRegNum() >= 0) {
+    if (Var->hasReg()) {
       RegsUsed[Var->getRegNum()] = true;
       continue;
     }
@@ -348,7 +348,7 @@ void IceTargetX8632::addProlog(IceCfgNode *Node) {
       continue;
     if (Var->getWeight() == IceRegWeight::Zero && Var->getRegisterOverlap()) {
       if (IceVariable *Linked = Var->getPreferredRegister()) {
-        if (Linked->getRegNum() < 0) {
+        if (!Linked->hasReg()) {
           // TODO: Make sure Linked has already been assigned a stack
           // slot.
           Var->setStackOffset(Linked->getStackOffset());
@@ -1600,7 +1600,7 @@ void IceTargetX8632::lowerIcmp(const IceInstIcmp *Inst,
       if (llvm::isa<IceConstant>(Src1))
         IsImmOrReg = true;
       else if (IceVariable *Var = llvm::dyn_cast<IceVariable>(Src1)) {
-        if (Var->getRegNum() >= 0)
+        if (Var->hasReg())
           IsImmOrReg = true;
       }
       IceOperand *Reg = legalizeOperand(
@@ -1677,7 +1677,7 @@ void IceTargetX8632::lowerIcmp(const IceInstIcmp *Inst,
   if (llvm::isa<IceConstant>(Src1))
     IsImmOrReg = true;
   else if (IceVariable *Var = llvm::dyn_cast<IceVariable>(Src1)) {
-    if (Var->getRegNum() >= 0)
+    if (Var->hasReg())
       IsImmOrReg = true;
   }
   IceOperand *Reg =
@@ -2147,12 +2147,11 @@ IceOperand *IceTargetX8632::legalizeOperand(IceOperand *From, LegalMask Allowed,
     return From;
   }
   if (IceVariable *Var = llvm::dyn_cast<IceVariable>(From)) {
-    int CurRegNum = Var->getRegNum();
     // We need a new physical register for the operand if:
-    //   Mem is not allowed and CurRegNum is unknown, or
-    //   RegNum is required and CurRegNum doesn't match.
-    if ((!(Allowed & Legal_Mem) && CurRegNum < 0) ||
-        (RegNum >= 0 && RegNum != CurRegNum)) {
+    //   Mem is not allowed and Var->getRegNum() is unknown, or
+    //   RegNum is required and Var->getRegNum() doesn't match.
+    if ((!(Allowed & Legal_Mem) && !Var->hasReg()) ||
+        (RegNum >= 0 && RegNum != Var->getRegNum())) {
       IceVariable *Reg = Cfg->makeVariable(From->getType(), Context.Node);
       if (RegNum < 0) {
         Reg->setWeightInfinite();
@@ -2237,10 +2236,9 @@ void IceTargetX8632Fast::postLower(const IceLoweringContext &Context) {
       unsigned NumVars = Src->getNumVars();
       for (unsigned J = 0; J < NumVars; ++J, ++VarIndex) {
         const IceVariable *Var = Src->getVar(J);
-        int RegNum = Var->getRegNum();
-        if (RegNum < 0)
+        if (!Var->hasReg())
           continue;
-        WhiteList[RegNum] = false;
+        WhiteList[Var->getRegNum()] = false;
       }
     }
   }
@@ -2256,8 +2254,7 @@ void IceTargetX8632Fast::postLower(const IceLoweringContext &Context) {
       unsigned NumVars = Src->getNumVars();
       for (unsigned J = 0; J < NumVars; ++J, ++VarIndex) {
         IceVariable *Var = Src->getVar(J);
-        int RegNum = Var->getRegNum();
-        if (RegNum >= 0)
+        if (Var->hasReg())
           continue;
         if (!Var->getWeight().isInf())
           continue;
@@ -2272,7 +2269,7 @@ void IceTargetX8632Fast::postLower(const IceLoweringContext &Context) {
               AvailableRegisters & getRegisterSetForType(Var->getType());
         }
         assert(AvailableTypedRegisters.any());
-        RegNum = AvailableTypedRegisters.find_first();
+        int RegNum = AvailableTypedRegisters.find_first();
         Var->setRegNum(RegNum);
         AvailableRegisters[RegNum] = false;
       }

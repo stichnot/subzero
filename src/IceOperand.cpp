@@ -184,7 +184,7 @@ IceOstream &operator<<(IceOstream &Str, const IceOperand *O) {
 // TODO: This should be handed by the IceTargetLowering subclass.
 void IceVariable::emit(IceOstream &Str, uint32_t Option) const {
   assert(DefNode == NULL || DefNode == Str.getCurrentNode());
-  if (getRegNum() >= 0) {
+  if (hasReg()) {
     Str << Str.Cfg->getTarget()->getRegName(RegNum, getType());
     return;
   }

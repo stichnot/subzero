@@ -257,6 +257,7 @@ public:
     assert(RegNum < 0 || RegNum == NewRegNum);
     RegNum = NewRegNum;
   }
+  bool hasReg() const { return getRegNum() >= 0; }
   int32_t getRegNumTmp() const { return RegNumTmp; }
   void setRegNumTmp(int32_t NewRegNum) { RegNumTmp = NewRegNum; }
 
