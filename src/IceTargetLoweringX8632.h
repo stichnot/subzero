@@ -111,10 +111,12 @@ protected:
   typedef uint32_t LegalMask;
   IceOperand *legalizeOperand(IceOperand *From, LegalMask Allowed,
                               IceLoweringContext &Context,
-                              bool AllowOverlap = false, int RegNum = -1);
+                              bool AllowOverlap = false,
+                              int32_t RegNum = IceVariable::NoRegister);
   IceVariable *legalizeOperandToVar(IceOperand *From,
                                     IceLoweringContext &Context,
-                                    bool AllowOverlap = false, int RegNum = -1);
+                                    bool AllowOverlap = false,
+                                    int32_t RegNum = IceVariable::NoRegister);
 
   bool IsEbpBasedFrame;
   int FrameSizeLocals;

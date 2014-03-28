@@ -2101,9 +2101,9 @@ void IceTargetX8632::lowerUnreachable(const IceInstUnreachable *Inst,
 
 IceOperand *IceTargetX8632::legalizeOperand(IceOperand *From, LegalMask Allowed,
                                             IceLoweringContext &Context,
-                                            bool AllowOverlap, int RegNum) {
+                                            bool AllowOverlap, int32_t RegNum) {
   assert(Allowed & Legal_Reg);
-  assert(RegNum < 0 || Allowed == Legal_Reg);
+  assert(RegNum == IceVariable::NoRegister || Allowed == Legal_Reg);
   if (IceOperandX8632Mem *Mem = llvm::dyn_cast<IceOperandX8632Mem>(From)) {
     IceVariable *Base = Mem->getBase();
     IceVariable *Index = Mem->getIndex();
@@ -2123,7 +2123,7 @@ IceOperand *IceTargetX8632::legalizeOperand(IceOperand *From, LegalMask Allowed,
 
     if (!(Allowed & Legal_Mem)) {
       IceVariable *Reg = Cfg->makeVariable(From->getType(), Context.Node);
-      if (RegNum < 0) {
+      if (RegNum == IceVariable::NoRegister) {
         Reg->setWeightInfinite();
       } else {
         Reg->setRegNum(RegNum);
@@ -2136,7 +2136,7 @@ IceOperand *IceTargetX8632::legalizeOperand(IceOperand *From, LegalMask Allowed,
   if (llvm::isa<IceConstant>(From)) {
     if (!(Allowed & Legal_Imm)) {
       IceVariable *Reg = Cfg->makeVariable(From->getType(), Context.Node);
-      if (RegNum < 0) {
+      if (RegNum == IceVariable::NoRegister) {
         Reg->setWeightInfinite();
       } else {
         Reg->setRegNum(RegNum);
@@ -2151,9 +2151,9 @@ IceOperand *IceTargetX8632::legalizeOperand(IceOperand *From, LegalMask Allowed,
     //   Mem is not allowed and Var->getRegNum() is unknown, or
     //   RegNum is required and Var->getRegNum() doesn't match.
     if ((!(Allowed & Legal_Mem) && !Var->hasReg()) ||
-        (RegNum >= 0 && RegNum != Var->getRegNum())) {
+        (RegNum != IceVariable::NoRegister && RegNum != Var->getRegNum())) {
       IceVariable *Reg = Cfg->makeVariable(From->getType(), Context.Node);
-      if (RegNum < 0) {
+      if (RegNum == IceVariable::NoRegister) {
         Reg->setWeightInfinite();
         Reg->setPreferredRegister(Var, AllowOverlap);
       } else {
@@ -2171,7 +2171,7 @@ IceOperand *IceTargetX8632::legalizeOperand(IceOperand *From, LegalMask Allowed,
 IceVariable *IceTargetX8632::legalizeOperandToVar(IceOperand *From,
                                                   IceLoweringContext &Context,
                                                   bool AllowOverlap,
-                                                  int RegNum) {
+                                                  int32_t RegNum) {
   return llvm::cast<IceVariable>(
       legalizeOperand(From, Legal_Reg, Context, AllowOverlap, RegNum));
 }

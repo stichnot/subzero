@@ -223,9 +223,9 @@ void IceVariable::dump(IceOstream &Str) const {
   (void)CurrentNode; // used only in assert()
   assert(CurrentNode == NULL || DefNode == NULL || DefNode == CurrentNode);
   if (Str.isVerbose(IceV_RegOrigins) ||
-      (RegNum < 0 && !Str.Cfg->hasComputedFrame()))
+      (!hasReg() && !Str.Cfg->hasComputedFrame()))
     Str << "%" << getName();
-  if (RegNum >= 0) {
+  if (hasReg()) {
     if (Str.isVerbose(IceV_RegOrigins))
       Str << ":";
     Str << Str.Cfg->getTarget()->getRegName(RegNum, getType());

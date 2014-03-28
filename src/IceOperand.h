@@ -251,13 +251,15 @@ public:
   int32_t getStackOffset() const { return StackOffset; }
   void setStackOffset(int32_t Offset) { StackOffset = Offset; }
 
+  static const int32_t NoRegister = -1;
+  bool hasReg() const { return getRegNum() != NoRegister; }
   int32_t getRegNum() const { return RegNum; }
   void setRegNum(int32_t NewRegNum) {
     // Regnum shouldn't be set more than once.
-    assert(RegNum < 0 || RegNum == NewRegNum);
+    assert(!hasReg() || RegNum == NewRegNum);
     RegNum = NewRegNum;
   }
-  bool hasReg() const { return getRegNum() >= 0; }
+  bool hasRegTmp() const { return getRegNumTmp() != NoRegister; }
   int32_t getRegNumTmp() const { return RegNumTmp; }
   void setRegNumTmp(int32_t NewRegNum) { RegNumTmp = NewRegNum; }
 
@@ -310,8 +312,9 @@ private:
               const IceString &Name)
       : IceOperand(Cfg, Variable, Type), Number(Index), Name(Name),
         DefInst(NULL), DefNode(Node), IsArgument(false), StackOffset(0),
-        RegNum(-1), RegNumTmp(-1), Weight(1), RegisterPreference(NULL),
-        AllowRegisterOverlap(false), LowVar(NULL), HighVar(NULL) {
+        RegNum(NoRegister), RegNumTmp(NoRegister), Weight(1),
+        RegisterPreference(NULL), AllowRegisterOverlap(false), LowVar(NULL),
+        HighVar(NULL) {
     Vars = Cfg->allocateArrayOf<IceVariable *>(1);
     Vars[0] = this;
     NumVars = 1;

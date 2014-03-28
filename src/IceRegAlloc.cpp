@@ -125,8 +125,8 @@ void IceLinearScan::scan(const llvm::SmallBitVector &RegMaskFull) {
       }
       if (Moved) {
         // Decrement Item from RegUses[].
+        assert(Item.Var->hasRegTmp());
         int RegNum = Item.Var->getRegNumTmp();
-        assert(RegNum >= 0);
         --RegUses[RegNum];
         assert(RegUses[RegNum] >= 0);
       }
@@ -151,8 +151,8 @@ void IceLinearScan::scan(const llvm::SmallBitVector &RegMaskFull) {
         Inactive.erase(I);
         Active.push_back(Item);
         // Increment Item in RegUses[].
+        assert(Item.Var->hasRegTmp());
         int RegNum = Item.Var->getRegNumTmp();
-        assert(RegNum >= 0);
         assert(RegUses[RegNum] >= 0);
         ++RegUses[RegNum];
       }
@@ -189,9 +189,8 @@ void IceLinearScan::scan(const llvm::SmallBitVector &RegMaskFull) {
                                        E = Unhandled.end();
          I != E && !Cur.endsBefore(*I); ++I) {
       IceLiveRangeWrapper Item = *I;
-      int RegNum = Item.Var->getRegNum(); // Note: getRegNum not getRegNumTmp
-      if (RegNum >= 0 && Item.overlaps(Cur)) {
-        Free[RegNum] = false;
+      if (Item.Var->hasReg() && Item.overlaps(Cur)) {
+        Free[Item.Var->getRegNum()] = false; // Note: getRegNum not getRegNumTmp
       }
     }
 
@@ -207,8 +206,10 @@ void IceLinearScan::scan(const llvm::SmallBitVector &RegMaskFull) {
     }
 
     IceVariable *Prefer = Cur.Var->getPreferredRegister();
-    int PreferReg = Prefer ? Prefer->getRegNumTmp() : -1;
-    if (PreferReg >= 0 && (Cur.Var->getRegisterOverlap() || Free[PreferReg])) {
+    int32_t PreferReg = Prefer && Prefer->hasRegTmp() ? Prefer->getRegNumTmp()
+                                                      : IceVariable::NoRegister;
+    if (PreferReg != IceVariable::NoRegister &&
+        (Cur.Var->getRegisterOverlap() || Free[PreferReg])) {
       // First choice: a preferred register that is either free or is
       // allowed to overlap with its linked variable.
       Cur.Var->setRegNumTmp(PreferReg);
@@ -238,7 +239,7 @@ void IceLinearScan::scan(const llvm::SmallBitVector &RegMaskFull) {
         IceLiveRangeWrapper Item = *I;
         assert(Item.overlaps(Cur));
         int RegNum = Item.Var->getRegNumTmp();
-        assert(RegNum >= 0);
+        assert(Item.Var->hasRegTmp());
         Weights[RegNum].addWeight(Item.range().getWeight());
       }
       // Same as above, but check Inactive ranges instead of Active.
@@ -247,7 +248,7 @@ void IceLinearScan::scan(const llvm::SmallBitVector &RegMaskFull) {
            I != E; ++I) {
         IceLiveRangeWrapper Item = *I;
         int RegNum = Item.Var->getRegNumTmp();
-        assert(RegNum >= 0);
+        assert(Item.Var->hasRegTmp());
         Weights[RegNum].addWeight(Item.range().getWeight());
       }
       // Check Unhandled ranges that overlap Cur and are precolored.
@@ -350,7 +351,7 @@ void IceLinearScan::scan(const llvm::SmallBitVector &RegMaskFull) {
     IceLiveRangeWrapper Item = *I;
     int RegNum = Item.Var->getRegNumTmp();
     if (Cfg->Str.isVerbose(IceV_LinearScan)) {
-      if (RegNum < 0) {
+      if (!Item.Var->hasRegTmp()) {
         Cfg->Str << "Not assigning " << Item.Var << "\n";
       } else {
         Cfg->Str << (RegNum == Item.Var->getRegNum() ? "Reassigning "
