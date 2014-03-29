@@ -8,10 +8,10 @@ You must have LLVM trunk source code available and built.  See
 http://llvm.org/docs/GettingStarted.html#getting-started-quickly-a-summary for
 guidance.
 
-Set variables ``LLVM_SRC_PATH``, ``LLVM_BUILD_PATH``, and ``LLVM_BIN_PATH`` to
-point to the appropriate directories in the LLVM source and build directories.
-These can be set as environment variables, or you can modify the top-level
-Makefile.
+Set variables ``LLVM_SRC_PATH`` and ``LLVM_BIN_PATH`` to point to the
+appropriate directories in the LLVM source and build directories.
+These can be set as environment variables, or you can modify the
+top-level Makefile.
 
 Run ``make`` at the top level to build the main target ``llvm2ice``.
 
