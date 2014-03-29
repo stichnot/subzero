@@ -22,7 +22,7 @@ class IceCfgNode {
 public:
   static IceCfgNode *create(IceCfg *Cfg, uint32_t LabelIndex,
                             IceString Name = "") {
-    return new IceCfgNode(Cfg, LabelIndex, Name);
+    return new (Cfg->allocate<IceCfgNode>()) IceCfgNode(Cfg, LabelIndex, Name);
   }
 
   uint32_t getIndex() const { return Number; }

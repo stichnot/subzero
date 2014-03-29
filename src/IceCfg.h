@@ -105,6 +105,9 @@ public:
   void emit(uint32_t Option) const;
   void dump() const;
 
+  // Allocate data of type T using the per-Cfg instruction allocator.
+  template <typename T> T *allocate() { return Allocator.Allocate<T>(); }
+
   // Allocate an instruction of type T using the per-Cfg instruction allocator.
   template <typename T> T *allocateInst() { return Allocator.Allocate<T>(); }
 

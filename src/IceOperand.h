@@ -91,6 +91,8 @@ template <typename T, IceOperand::OperandKind K>
 class IceConstantPrimitive : public IceConstant {
 public:
   static IceConstantPrimitive *create(IceCfg *Cfg, IceType Type, T Value) {
+    // Use non-placement allocation for constants for now, until
+    // global constant pool issues are worked out.
     return new IceConstantPrimitive(Cfg, Type, Value);
   }
   T getValue() const { return Value; }
@@ -121,6 +123,8 @@ public:
                                         IceType Type, const void *Handle,
                                         int64_t Offset,
                                         const IceString &Name = "") {
+    // Use non-placement allocation for constants for now, until
+    // global constant pool issues are worked out.
     return new IceConstantRelocatable(Cfg, Type, Handle, Offset, Name, CPIndex);
   }
   uint32_t getCPIndex() const { return CPIndex; }
@@ -231,7 +235,7 @@ class IceVariable : public IceOperand {
 public:
   static IceVariable *create(IceCfg *Cfg, IceType Type, const IceCfgNode *Node,
                              uint32_t Index, const IceString &Name) {
-    return new IceVariable(Cfg, Type, Node, Index, Name);
+    return new (Cfg->allocate<IceVariable>()) IceVariable(Cfg, Type, Node, Index, Name);
   }
 
   uint32_t getIndex() const { return Number; }
