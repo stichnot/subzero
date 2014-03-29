@@ -117,6 +117,8 @@ protected:
                                     IceLoweringContext &Context,
                                     bool AllowOverlap = false,
                                     int32_t RegNum = IceVariable::NoRegister);
+  IceVariable *makeVariableWithReg(IceType Type, IceLoweringContext &Context,
+                                   int32_t RegNum = IceVariable::NoRegister);
 
   bool IsEbpBasedFrame;
   int FrameSizeLocals;

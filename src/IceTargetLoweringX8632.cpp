@@ -650,10 +650,8 @@ void IceTargetX8632::lowerArithmetic(const IceInstArithmetic *Inst,
   case IceInstArithmetic::Mul:
     if (LowerI64ToI32) {
       IceVariable *Tmp1, *Tmp2, *Tmp3;
-      IceVariable *Tmp4Lo = Cfg->makeVariable(IceType_i32, Context.Node);
-      IceVariable *Tmp4Hi = Cfg->makeVariable(IceType_i32, Context.Node);
-      Tmp4Lo->setRegNum(Reg_eax);
-      Tmp4Hi->setRegNum(Reg_edx);
+      IceVariable *Tmp4Lo = makeVariableWithReg(IceType_i32, Context, Reg_eax);
+      IceVariable *Tmp4Hi = makeVariableWithReg(IceType_i32, Context, Reg_edx);
       // gcc does the following:
       // a=b*c ==>
       //   t1 = b.hi; t1 *=(imul) c.lo
@@ -829,8 +827,7 @@ void IceTargetX8632::lowerArithmetic(const IceInstArithmetic *Inst,
       return;
     } else {
       Reg1 = legalizeOperandToVar(Src0, Context, false, Reg_eax);
-      Reg0 = Cfg->makeVariable(IceType_i32, Context.Node);
-      Reg0->setRegNum(Reg_edx);
+      Reg0 = makeVariableWithReg(IceType_i32, Context, Reg_edx);
       IceConstant *ConstZero = Cfg->getConstantInt(IceType_i32, 0);
       Context.insert(IceInstX8632Mov::create(Cfg, Reg0, ConstZero));
       Reg2 = legalizeOperand(Src1, Legal_All, Context);
@@ -855,8 +852,7 @@ void IceTargetX8632::lowerArithmetic(const IceInstArithmetic *Inst,
       return;
     } else {
       Reg1 = legalizeOperandToVar(Src0, Context, false, Reg_eax);
-      Reg0 = Cfg->makeVariable(IceType_i32, Context.Node);
-      Reg0->setRegNum(Reg_edx);
+      Reg0 = makeVariableWithReg(IceType_i32, Context, Reg_edx);
       Context.insert(IceInstX8632Cdq::create(Cfg, Reg0, Reg1));
       Reg2 = legalizeOperand(Src1, Legal_All, Context);
       Context.insert(IceInstX8632Idiv::create(Cfg, Reg1, Reg2, Reg0));
@@ -880,8 +876,7 @@ void IceTargetX8632::lowerArithmetic(const IceInstArithmetic *Inst,
       return;
     } else {
       Reg1 = legalizeOperandToVar(Src0, Context, false, Reg_eax);
-      Reg0 = Cfg->makeVariable(IceType_i32, Context.Node);
-      Reg0->setRegNum(Reg_edx);
+      Reg0 = makeVariableWithReg(IceType_i32, Context, Reg_edx);
       IceConstant *ConstZero = Cfg->getConstantInt(IceType_i32, 0);
       Context.insert(IceInstX8632Mov::create(Cfg, Reg0, ConstZero));
       Reg2 = legalizeOperand(Src1, Legal_All, Context);
@@ -907,8 +902,7 @@ void IceTargetX8632::lowerArithmetic(const IceInstArithmetic *Inst,
       return;
     } else {
       Reg1 = legalizeOperandToVar(Src0, Context, false, Reg_eax);
-      Reg0 = Cfg->makeVariable(IceType_i32, Context.Node);
-      Reg0->setRegNum(Reg_edx);
+      Reg0 = makeVariableWithReg(IceType_i32, Context, Reg_edx);
       Context.insert(IceInstX8632Cdq::create(Cfg, Reg0, Reg1));
       Reg2 = legalizeOperand(Src1, Legal_All, Context);
       Context.insert(IceInstX8632Idiv::create(Cfg, Reg0, Reg2, Reg1));
@@ -1049,14 +1043,11 @@ void IceTargetX8632::lowerCall(const IceInstCall *Inst,
     case IceType_i8:
     case IceType_i16:
     case IceType_i32:
-      Reg = Cfg->makeVariable(Dest->getType(), Context.Node);
-      Reg->setRegNum(Reg_eax);
+      Reg = makeVariableWithReg(Dest->getType(), Context, Reg_eax);
       break;
     case IceType_i64:
-      Reg = Cfg->makeVariable(IceType_i32, Context.Node);
-      Reg->setRegNum(Reg_eax);
-      RegHi = Cfg->makeVariable(IceType_i32, Context.Node);
-      RegHi->setRegNum(Reg_edx);
+      Reg = makeVariableWithReg(IceType_i32, Context, Reg_eax);
+      RegHi = makeVariableWithReg(IceType_i32, Context, Reg_edx);
       break;
     case IceType_f32:
     case IceType_f64:
@@ -1144,15 +1135,13 @@ void IceTargetX8632::lowerCast(const IceInstCast *Inst,
           llvm::cast<IceVariable>(makeLowOperand(Dest, Context));
       IceVariable *DestHi =
           llvm::cast<IceVariable>(makeHighOperand(Dest, Context));
-      IceVariable *Tmp = Cfg->makeVariable(DestLo->getType(), Context.Node);
-      Tmp->setWeightInfinite();
+      IceVariable *Tmp = makeVariableWithReg(DestLo->getType(), Context);
       if (Reg->getType() == IceType_i32)
         Context.insert(IceInstX8632Mov::create(Cfg, Tmp, Reg));
       else
         Context.insert(IceInstX8632Movsx::create(Cfg, Tmp, Reg));
       Context.insert(IceInstX8632Mov::create(Cfg, DestLo, Tmp));
-      IceVariable *RegHi = Cfg->makeVariable(IceType_i32, Context.Node);
-      RegHi->setWeightInfinite();
+      IceVariable *RegHi = makeVariableWithReg(IceType_i32, Context);
       IceConstant *Shift = Cfg->getConstantInt(IceType_i32, 31);
       Context.insert(IceInstX8632Mov::create(Cfg, RegHi, Tmp));
       Context.insert(IceInstX8632Sar::create(Cfg, RegHi, Shift));
@@ -1161,8 +1150,7 @@ void IceTargetX8632::lowerCast(const IceInstCast *Inst,
       // TODO: Sign-extend an i1 via "shl reg, 31; sar reg, 31", and
       // also copy to the high operand of a 64-bit variable.
       // t1 = movsx src; dst = t1
-      IceVariable *Tmp = Cfg->makeVariable(Dest->getType(), Context.Node);
-      Tmp->setWeightInfinite();
+      IceVariable *Tmp = makeVariableWithReg(Dest->getType(), Context);
       Context.insert(IceInstX8632Movsx::create(Cfg, Tmp, Reg));
       Context.insert(IceInstX8632Mov::create(Cfg, Dest, Tmp));
     }
@@ -1175,8 +1163,7 @@ void IceTargetX8632::lowerCast(const IceInstCast *Inst,
           llvm::cast<IceVariable>(makeLowOperand(Dest, Context));
       IceVariable *DestHi =
           llvm::cast<IceVariable>(makeHighOperand(Dest, Context));
-      IceVariable *Tmp = Cfg->makeVariable(DestLo->getType(), Context.Node);
-      Tmp->setWeightInfinite();
+      IceVariable *Tmp = makeVariableWithReg(DestLo->getType(), Context);
       if (Reg->getType() == IceType_i32)
         Context.insert(IceInstX8632Mov::create(Cfg, Tmp, Reg));
       else
@@ -1186,15 +1173,13 @@ void IceTargetX8632::lowerCast(const IceInstCast *Inst,
     } else if (Reg->getType() == IceType_i1) {
       // t = Reg; t &= 1; Dest = t
       IceOperand *ConstOne = Cfg->getConstantInt(IceType_i32, 1);
-      IceVariable *Tmp = Cfg->makeVariable(IceType_i32, Context.Node);
-      Tmp->setWeightInfinite();
+      IceVariable *Tmp = makeVariableWithReg(IceType_i32, Context);
       Context.insert(IceInstX8632Movzx::create(Cfg, Tmp, Reg));
       Context.insert(IceInstX8632And::create(Cfg, Tmp, ConstOne));
       Context.insert(IceInstX8632Mov::create(Cfg, Dest, Tmp));
     } else {
       // t1 = movzx src; dst = t1
-      IceVariable *Tmp = Cfg->makeVariable(Dest->getType(), Context.Node);
-      Tmp->setWeightInfinite();
+      IceVariable *Tmp = makeVariableWithReg(Dest->getType(), Context);
       Context.insert(IceInstX8632Movzx::create(Cfg, Tmp, Reg));
       Context.insert(IceInstX8632Mov::create(Cfg, Dest, Tmp));
     }
@@ -1204,8 +1189,7 @@ void IceTargetX8632::lowerCast(const IceInstCast *Inst,
       Reg = makeLowOperand(Reg, Context);
     // t1 = trunc Reg; Dest = t1
     IceOperand *Tmp1 = legalizeOperand(Reg, Legal_All, Context);
-    IceVariable *Tmp2 = Cfg->makeVariable(Dest->getType(), Context.Node);
-    Tmp2->setWeightInfinite();
+    IceVariable *Tmp2 = makeVariableWithReg(Dest->getType(), Context);
     Context.insert(IceInstX8632Mov::create(Cfg, Tmp2, Tmp1));
     Context.insert(IceInstX8632Mov::create(Cfg, Dest, Tmp2));
     break;
@@ -1213,8 +1197,7 @@ void IceTargetX8632::lowerCast(const IceInstCast *Inst,
   case IceInstCast::Fptrunc:
   case IceInstCast::Fpext: {
     // t1 = cvt Reg; Dest = t1
-    IceVariable *Tmp = Cfg->makeVariable(Dest->getType(), Context.Node);
-    Tmp->setWeightInfinite();
+    IceVariable *Tmp = makeVariableWithReg(Dest->getType(), Context);
     Context.insert(IceInstX8632Cvt::create(Cfg, Tmp, Reg));
     Context.insert(IceInstX8632Mov::create(Cfg, Dest, Tmp));
     break;
@@ -1245,11 +1228,9 @@ void IceTargetX8632::lowerCast(const IceInstCast *Inst,
       return;
     } else {
       // t1.i32 = cvt Reg; t2.dest_type = t1; Dest = t2.dest_type
-      IceVariable *Tmp1 = Cfg->makeVariable(IceType_i32, Context.Node);
-      Tmp1->setWeightInfinite();
+      IceVariable *Tmp1 = makeVariableWithReg(IceType_i32, Context);
       Context.insert(IceInstX8632Cvt::create(Cfg, Tmp1, Reg));
-      IceVariable *Tmp2 = Cfg->makeVariable(Dest->getType(), Context.Node);
-      Tmp2->setWeightInfinite();
+      IceVariable *Tmp2 = makeVariableWithReg(Dest->getType(), Context);
       Tmp2->setPreferredRegister(Tmp1, true);
       Context.insert(IceInstX8632Mov::create(Cfg, Tmp2, Tmp1));
       Context.insert(IceInstX8632Mov::create(Cfg, Dest, Tmp2));
@@ -1280,11 +1261,9 @@ void IceTargetX8632::lowerCast(const IceInstCast *Inst,
       return;
     } else {
       // t1.i32 = cvt Reg; t2.dest_type = t1; Dest = t2.dest_type
-      IceVariable *Tmp1 = Cfg->makeVariable(IceType_i32, Context.Node);
-      Tmp1->setWeightInfinite();
+      IceVariable *Tmp1 = makeVariableWithReg(IceType_i32, Context);
       Context.insert(IceInstX8632Cvt::create(Cfg, Tmp1, Reg));
-      IceVariable *Tmp2 = Cfg->makeVariable(Dest->getType(), Context.Node);
-      Tmp2->setWeightInfinite();
+      IceVariable *Tmp2 = makeVariableWithReg(Dest->getType(), Context);
       Tmp2->setPreferredRegister(Tmp1, true);
       Context.insert(IceInstX8632Mov::create(Cfg, Tmp2, Tmp1));
       Context.insert(IceInstX8632Mov::create(Cfg, Dest, Tmp2));
@@ -1312,14 +1291,12 @@ void IceTargetX8632::lowerCast(const IceInstCast *Inst,
     } else {
       // Sign-extend the operand.
       // t1.i32 = movsx Reg; t2 = Cvt t1.i32; Dest = t2
-      IceVariable *Tmp1 = Cfg->makeVariable(IceType_i32, Context.Node);
-      Tmp1->setWeightInfinite();
+      IceVariable *Tmp1 = makeVariableWithReg(IceType_i32, Context);
       if (Reg->getType() == IceType_i32)
         Context.insert(IceInstX8632Mov::create(Cfg, Tmp1, Reg));
       else
         Context.insert(IceInstX8632Movsx::create(Cfg, Tmp1, Reg));
-      IceVariable *Tmp2 = Cfg->makeVariable(Dest->getType(), Context.Node);
-      Tmp2->setWeightInfinite();
+      IceVariable *Tmp2 = makeVariableWithReg(Dest->getType(), Context);
       Context.insert(IceInstX8632Cvt::create(Cfg, Tmp2, Tmp1));
       Context.insert(IceInstX8632Mov::create(Cfg, Dest, Tmp2));
     }
@@ -1348,14 +1325,12 @@ void IceTargetX8632::lowerCast(const IceInstCast *Inst,
     } else {
       // Zero-extend the operand.
       // t1.i32 = movzx Reg; t2 = Cvt t1.i32; Dest = t2
-      IceVariable *Tmp1 = Cfg->makeVariable(IceType_i32, Context.Node);
-      Tmp1->setWeightInfinite();
+      IceVariable *Tmp1 = makeVariableWithReg(IceType_i32, Context);
       if (Reg->getType() == IceType_i32)
         Context.insert(IceInstX8632Mov::create(Cfg, Tmp1, Reg));
       else
         Context.insert(IceInstX8632Movzx::create(Cfg, Tmp1, Reg));
-      IceVariable *Tmp2 = Cfg->makeVariable(Dest->getType(), Context.Node);
-      Tmp2->setWeightInfinite();
+      IceVariable *Tmp2 = makeVariableWithReg(Dest->getType(), Context);
       Context.insert(IceInstX8632Cvt::create(Cfg, Tmp2, Tmp1));
       Context.insert(IceInstX8632Mov::create(Cfg, Dest, Tmp2));
     }
@@ -1374,8 +1349,7 @@ void IceTargetX8632::lowerCast(const IceInstCast *Inst,
       //   t.f32 = b.f32
       //   s.f32 = spill t.f32
       //   a.i32 = s.f32
-      IceVariable *Tmp = Cfg->makeVariable(SrcType, Context.Node);
-      Tmp->setWeightInfinite();
+      IceVariable *Tmp = makeVariableWithReg(SrcType, Context);
       Context.insert(IceInstX8632Mov::create(Cfg, Tmp, Reg));
       IceVariable *Spill = Cfg->makeVariable(SrcType, Context.Node);
       Spill->setWeight(IceRegWeight::Zero);
@@ -1396,8 +1370,7 @@ void IceTargetX8632::lowerCast(const IceInstCast *Inst,
       Spill->setPreferredRegister(llvm::dyn_cast<IceVariable>(Reg), true);
       Context.insert(IceInstX8632Mov::create(Cfg, Spill, Reg));
 
-      IceVariable *TmpLo = Cfg->makeVariable(IceType_i32, Context.Node);
-      TmpLo->setWeightInfinite();
+      IceVariable *TmpLo = makeVariableWithReg(IceType_i32, Context);
       IceVariableSplit *SpillLo =
           IceVariableSplit::create(Cfg, Spill, IceVariableSplit::Low);
       Context.insert(IceInstX8632Mov::create(Cfg, TmpLo, SpillLo));
@@ -1405,8 +1378,7 @@ void IceTargetX8632::lowerCast(const IceInstCast *Inst,
           llvm::cast<IceVariable>(makeLowOperand(Dest, Context));
       Context.insert(IceInstX8632Mov::create(Cfg, DestLo, TmpLo));
 
-      IceVariable *TmpHi = Cfg->makeVariable(IceType_i32, Context.Node);
-      TmpHi->setWeightInfinite();
+      IceVariable *TmpHi = makeVariableWithReg(IceType_i32, Context);
       IceVariableSplit *SpillHi =
           IceVariableSplit::create(Cfg, Spill, IceVariableSplit::High);
       Context.insert(IceInstX8632Mov::create(Cfg, TmpHi, SpillHi));
@@ -1429,16 +1401,14 @@ void IceTargetX8632::lowerCast(const IceInstCast *Inst,
 
       Context.insert(IceInstFakeDef::create(Cfg, Spill));
 
-      IceVariable *TmpLo = Cfg->makeVariable(IceType_i32, Context.Node);
-      TmpLo->setWeightInfinite();
+      IceVariable *TmpLo = makeVariableWithReg(IceType_i32, Context);
       Context.insert(
           IceInstX8632Mov::create(Cfg, TmpLo, makeLowOperand(Reg, Context)));
       IceVariableSplit *SpillLo =
           IceVariableSplit::create(Cfg, Spill, IceVariableSplit::Low);
       Context.insert(IceInstX8632Store::create(Cfg, TmpLo, SpillLo));
 
-      IceVariable *TmpHi = Cfg->makeVariable(IceType_i32, Context.Node);
-      TmpHi->setWeightInfinite();
+      IceVariable *TmpHi = makeVariableWithReg(IceType_i32, Context);
       Context.insert(
           IceInstX8632Mov::create(Cfg, TmpHi, makeHighOperand(Reg, Context)));
       IceVariableSplit *SpillHi =
@@ -2122,12 +2092,7 @@ IceOperand *IceTargetX8632::legalizeOperand(IceOperand *From, LegalMask Allowed,
     }
 
     if (!(Allowed & Legal_Mem)) {
-      IceVariable *Reg = Cfg->makeVariable(From->getType(), Context.Node);
-      if (RegNum == IceVariable::NoRegister) {
-        Reg->setWeightInfinite();
-      } else {
-        Reg->setRegNum(RegNum);
-      }
+      IceVariable *Reg = makeVariableWithReg(From->getType(), Context, RegNum);
       Context.insert(IceInstX8632Mov::create(Cfg, Reg, From));
       From = Reg;
     }
@@ -2135,12 +2100,7 @@ IceOperand *IceTargetX8632::legalizeOperand(IceOperand *From, LegalMask Allowed,
   }
   if (llvm::isa<IceConstant>(From)) {
     if (!(Allowed & Legal_Imm)) {
-      IceVariable *Reg = Cfg->makeVariable(From->getType(), Context.Node);
-      if (RegNum == IceVariable::NoRegister) {
-        Reg->setWeightInfinite();
-      } else {
-        Reg->setRegNum(RegNum);
-      }
+      IceVariable *Reg = makeVariableWithReg(From->getType(), Context, RegNum);
       Context.insert(IceInstX8632Mov::create(Cfg, Reg, From));
       From = Reg;
     }
@@ -2152,12 +2112,9 @@ IceOperand *IceTargetX8632::legalizeOperand(IceOperand *From, LegalMask Allowed,
     //   RegNum is required and Var->getRegNum() doesn't match.
     if ((!(Allowed & Legal_Mem) && !Var->hasReg()) ||
         (RegNum != IceVariable::NoRegister && RegNum != Var->getRegNum())) {
-      IceVariable *Reg = Cfg->makeVariable(From->getType(), Context.Node);
+      IceVariable *Reg = makeVariableWithReg(From->getType(), Context, RegNum);
       if (RegNum == IceVariable::NoRegister) {
-        Reg->setWeightInfinite();
         Reg->setPreferredRegister(Var, AllowOverlap);
-      } else {
-        Reg->setRegNum(RegNum);
       }
       Context.insert(IceInstX8632Mov::create(Cfg, Reg, From));
       From = Reg;
@@ -2174,6 +2131,17 @@ IceVariable *IceTargetX8632::legalizeOperandToVar(IceOperand *From,
                                                   int32_t RegNum) {
   return llvm::cast<IceVariable>(
       legalizeOperand(From, Legal_Reg, Context, AllowOverlap, RegNum));
+}
+
+IceVariable *IceTargetX8632::makeVariableWithReg(IceType Type,
+                                                 IceLoweringContext &Context,
+                                                 int32_t RegNum) {
+  IceVariable *Reg = Cfg->makeVariable(Type, Context.Node);
+  if (RegNum == IceVariable::NoRegister)
+    Reg->setWeightInfinite();
+  else
+    Reg->setRegNum(RegNum);
+  return Reg;
 }
 
 ////////////////////////////////////////////////////////////////
