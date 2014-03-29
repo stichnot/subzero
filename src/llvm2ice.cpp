@@ -150,10 +150,8 @@ private:
       return IceType_f32;
     case Type::DoubleTyID:
       return IceType_f64;
-    case Type::PointerTyID: {
-      const PointerType *PTy = cast<PointerType>(Ty);
-      return convertType(PTy->getElementType());
-    }
+    case Type::PointerTyID:
+      return SubzeroPointerType;
     case Type::FunctionTyID:
       return SubzeroPointerType;
     default:

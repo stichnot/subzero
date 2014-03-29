@@ -26,7 +26,8 @@ public:
   IceConstantRelocatable *getOrAddRelocatable(IceType Type, const void *Handle,
                                               int64_t Offset,
                                               const IceString &Name) {
-    uint32_t Index = NameToIndex.translate(KeyType(Name, Type));
+    uint32_t Index = NameToIndex.translate(
+        KeyType(Type, std::pair<IceString, int64_t>(Name, Offset)));
     if (Index >= RelocatablePool.size()) {
       RelocatablePool.resize(Index + 1);
       void *Handle = NULL;
@@ -44,7 +45,8 @@ public:
   }
 
 private:
-  typedef std::pair<IceString, IceType> KeyType;
+  // KeyType is a triple of {Type, Name, Offset}.
+  typedef std::pair<IceType, std::pair<IceString, int64_t> > KeyType;
   // TODO: Cfg is being captured primarily for arena allocation for
   // new IceConstants.  If IceConstants live beyond a function/Cfg,
   // they need to be allocated from a global arena and there needs to
