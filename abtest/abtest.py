@@ -14,6 +14,8 @@ if __name__ == '__main__':
                            help='List of C/C++/.ll files with test functions')
     argparser.add_argument('--driver', required=True,
                            help='Driver program')
+    argparser.add_argument('--target', required=False, default='x8632',
+                           help='Translation target string')
     argparser.add_argument('--prefix', required=True,
                            help='String prepended to Subzero symbol names')
     argparser.add_argument('--output', '-o', required=True,
@@ -37,6 +39,7 @@ if __name__ == '__main__':
         obj_sz = base + '.sz.o'
         obj_llc = base + '.llc.o'
         shellcmd(['../llvm2ice',
+                  '--target=' + args.target,
                   '--prefix=' + args.prefix,
                   '-o=' + asm_sz,
                   bitcode])
