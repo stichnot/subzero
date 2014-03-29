@@ -235,7 +235,8 @@ class IceVariable : public IceOperand {
 public:
   static IceVariable *create(IceCfg *Cfg, IceType Type, const IceCfgNode *Node,
                              uint32_t Index, const IceString &Name) {
-    return new (Cfg->allocate<IceVariable>()) IceVariable(Cfg, Type, Node, Index, Name);
+    return new (Cfg->allocate<IceVariable>())
+        IceVariable(Cfg, Type, Node, Index, Name);
   }
 
   uint32_t getIndex() const { return Number; }

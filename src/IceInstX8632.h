@@ -39,7 +39,8 @@ public:
                                     IceVariable *Base, IceConstant *Offset,
                                     IceVariable *Index = NULL,
                                     unsigned Shift = 0) {
-    return new IceOperandX8632Mem(Cfg, Type, Base, Offset, Index, Shift);
+    return new (Cfg->allocate<IceOperandX8632Mem>())
+        IceOperandX8632Mem(Cfg, Type, Base, Offset, Index, Shift);
   }
   IceVariable *getBase() const { return Base; }
   IceConstant *getOffset() const { return Offset; }
@@ -66,7 +67,8 @@ class IceVariableSplit : public IceOperandX8632 {
 public:
   enum Portion { Low, High };
   static IceVariableSplit *create(IceCfg *Cfg, IceVariable *Var, Portion Part) {
-    return new IceVariableSplit(Cfg, Var, Part);
+    return new (Cfg->allocate<IceVariableSplit>())
+        IceVariableSplit(Cfg, Var, Part);
   }
   virtual void emit(IceOstream &Str, uint32_t Option) const;
   virtual void dump(IceOstream &Str) const;
@@ -180,7 +182,8 @@ protected:
 class IceInstX8632Label : public IceInstX8632 {
 public:
   static IceInstX8632Label *create(IceCfg *Cfg, IceTargetX8632 *Target) {
-    return new IceInstX8632Label(Cfg, Target);
+    return new (Cfg->allocate<IceInstX8632Label>())
+        IceInstX8632Label(Cfg, Target);
   }
   IceString getName(IceCfg *Cfg) const;
   virtual void emit(IceOstream &Str, uint32_t Option) const;
@@ -210,18 +213,22 @@ public:
   };
   static IceInstX8632Br *create(IceCfg *Cfg, IceCfgNode *TargetTrue,
                                 IceCfgNode *TargetFalse, BrCond Condition) {
-    return new IceInstX8632Br(Cfg, TargetTrue, TargetFalse, NULL, Condition);
+    return new (Cfg->allocate<IceInstX8632Br>())
+        IceInstX8632Br(Cfg, TargetTrue, TargetFalse, NULL, Condition);
   }
   static IceInstX8632Br *create(IceCfg *Cfg, IceCfgNode *Target) {
-    return new IceInstX8632Br(Cfg, NULL, Target, NULL, Br_None);
+    return new (Cfg->allocate<IceInstX8632Br>())
+        IceInstX8632Br(Cfg, NULL, Target, NULL, Br_None);
   }
   static IceInstX8632Br *create(IceCfg *Cfg, IceCfgNode *Target,
                                 BrCond Condition) {
-    return new IceInstX8632Br(Cfg, Target, NULL, NULL, Condition);
+    return new (Cfg->allocate<IceInstX8632Br>())
+        IceInstX8632Br(Cfg, Target, NULL, NULL, Condition);
   }
   static IceInstX8632Br *create(IceCfg *Cfg, IceInstX8632Label *Label,
                                 BrCond Condition) {
-    return new IceInstX8632Br(Cfg, NULL, NULL, Label, Condition);
+    return new (Cfg->allocate<IceInstX8632Br>())
+        IceInstX8632Br(Cfg, NULL, NULL, Label, Condition);
   }
   IceCfgNode *getTargetTrue() const { return TargetTrue; }
   IceCfgNode *getTargetFalse() const { return TargetFalse; }
@@ -242,7 +249,8 @@ class IceInstX8632Call : public IceInstX8632 {
 public:
   static IceInstX8632Call *create(IceCfg *Cfg, IceVariable *Dest,
                                   IceOperand *CallTarget, bool Tail) {
-    return new IceInstX8632Call(Cfg, Dest, CallTarget, Tail);
+    return new (Cfg->allocate<IceInstX8632Call>())
+        IceInstX8632Call(Cfg, Dest, CallTarget, Tail);
   }
   IceOperand *getCallTarget() const { return getSrc(0); }
   virtual void emit(IceOstream &Str, uint32_t Option) const;
@@ -263,7 +271,8 @@ class IceInstX8632Binop : public IceInstX8632 {
 public:
   static IceInstX8632Binop *create(IceCfg *Cfg, IceVariable *Dest,
                                    IceOperand *Source) {
-    return new IceInstX8632Binop(Cfg, Dest, Source);
+    return new (Cfg->allocate<IceInstX8632Binop>())
+        IceInstX8632Binop(Cfg, Dest, Source);
   }
   virtual void emit(IceOstream &Str, uint32_t Option) const {
     IceEmitTwoAddress(Opcode, this, Str, Option, ShiftHack);
@@ -289,7 +298,8 @@ class IceInstX8632Ternop : public IceInstX8632 {
 public:
   static IceInstX8632Ternop *create(IceCfg *Cfg, IceVariable *Dest,
                                     IceOperand *Source1, IceOperand *Source2) {
-    return new IceInstX8632Ternop(Cfg, Dest, Source1, Source2);
+    return new (Cfg->allocate<IceInstX8632Ternop>())
+        IceInstX8632Ternop(Cfg, Dest, Source1, Source2);
   }
   virtual void emit(IceOstream &Str, uint32_t Option) const {
     assert(getSrcSize() == 3);
@@ -337,7 +347,8 @@ class IceInstX8632Mul : public IceInstX8632 {
 public:
   static IceInstX8632Mul *create(IceCfg *Cfg, IceVariable *Dest,
                                  IceVariable *Source1, IceOperand *Source2) {
-    return new IceInstX8632Mul(Cfg, Dest, Source1, Source2);
+    return new (Cfg->allocate<IceInstX8632Mul>())
+        IceInstX8632Mul(Cfg, Dest, Source1, Source2);
   }
   virtual void emit(IceOstream &Str, uint32_t Option) const;
   virtual void dump(IceOstream &Str) const;
@@ -352,7 +363,8 @@ class IceInstX8632Shld : public IceInstX8632 {
 public:
   static IceInstX8632Shld *create(IceCfg *Cfg, IceVariable *Dest,
                                   IceVariable *Source1, IceVariable *Source2) {
-    return new IceInstX8632Shld(Cfg, Dest, Source1, Source2);
+    return new (Cfg->allocate<IceInstX8632Shld>())
+        IceInstX8632Shld(Cfg, Dest, Source1, Source2);
   }
   virtual void emit(IceOstream &Str, uint32_t Option) const;
   virtual void dump(IceOstream &Str) const;
@@ -367,7 +379,8 @@ class IceInstX8632Shrd : public IceInstX8632 {
 public:
   static IceInstX8632Shrd *create(IceCfg *Cfg, IceVariable *Dest,
                                   IceVariable *Source1, IceVariable *Source2) {
-    return new IceInstX8632Shrd(Cfg, Dest, Source1, Source2);
+    return new (Cfg->allocate<IceInstX8632Shrd>())
+        IceInstX8632Shrd(Cfg, Dest, Source1, Source2);
   }
   virtual void emit(IceOstream &Str, uint32_t Option) const;
   virtual void dump(IceOstream &Str) const;
@@ -383,7 +396,8 @@ class IceInstX8632Cdq : public IceInstX8632 {
 public:
   static IceInstX8632Cdq *create(IceCfg *Cfg, IceVariable *Dest,
                                  IceOperand *Source) {
-    return new IceInstX8632Cdq(Cfg, Dest, Source);
+    return new (Cfg->allocate<IceInstX8632Cdq>())
+        IceInstX8632Cdq(Cfg, Dest, Source);
   }
   virtual void emit(IceOstream &Str, uint32_t Option) const;
   virtual void dump(IceOstream &Str) const;
@@ -401,7 +415,8 @@ class IceInstX8632Cvt : public IceInstX8632 {
 public:
   static IceInstX8632Cvt *create(IceCfg *Cfg, IceVariable *Dest,
                                  IceOperand *Source) {
-    return new IceInstX8632Cvt(Cfg, Dest, Source);
+    return new (Cfg->allocate<IceInstX8632Cvt>())
+        IceInstX8632Cvt(Cfg, Dest, Source);
   }
   virtual void emit(IceOstream &Str, uint32_t Option) const;
   virtual void dump(IceOstream &Str) const;
@@ -415,7 +430,8 @@ class IceInstX8632Icmp : public IceInstX8632 {
 public:
   static IceInstX8632Icmp *create(IceCfg *Cfg, IceOperand *Src1,
                                   IceOperand *Src2) {
-    return new IceInstX8632Icmp(Cfg, Src1, Src2);
+    return new (Cfg->allocate<IceInstX8632Icmp>())
+        IceInstX8632Icmp(Cfg, Src1, Src2);
   }
   virtual void emit(IceOstream &Str, uint32_t Option) const;
   virtual void dump(IceOstream &Str) const;
@@ -429,7 +445,8 @@ class IceInstX8632Ucomiss : public IceInstX8632 {
 public:
   static IceInstX8632Ucomiss *create(IceCfg *Cfg, IceOperand *Src1,
                                      IceOperand *Src2) {
-    return new IceInstX8632Ucomiss(Cfg, Src1, Src2);
+    return new (Cfg->allocate<IceInstX8632Ucomiss>())
+        IceInstX8632Ucomiss(Cfg, Src1, Src2);
   }
   virtual void emit(IceOstream &Str, uint32_t Option) const;
   virtual void dump(IceOstream &Str) const;
@@ -443,7 +460,8 @@ class IceInstX8632Test : public IceInstX8632 {
 public:
   static IceInstX8632Test *create(IceCfg *Cfg, IceOperand *Source1,
                                   IceOperand *Source2) {
-    return new IceInstX8632Test(Cfg, Source1, Source2);
+    return new (Cfg->allocate<IceInstX8632Test>())
+        IceInstX8632Test(Cfg, Source1, Source2);
   }
   virtual void emit(IceOstream &Str, uint32_t Option) const;
   virtual void dump(IceOstream &Str) const;
@@ -460,7 +478,8 @@ class IceInstX8632Store : public IceInstX8632 {
 public:
   static IceInstX8632Store *create(IceCfg *Cfg, IceOperand *Value,
                                    IceOperandX8632 *Mem) {
-    return new IceInstX8632Store(Cfg, Value, Mem);
+    return new (Cfg->allocate<IceInstX8632Store>())
+        IceInstX8632Store(Cfg, Value, Mem);
   }
   virtual void emit(IceOstream &Str, uint32_t Option) const;
   virtual void dump(IceOstream &Str) const;
@@ -474,7 +493,8 @@ class IceInstX8632Mov : public IceInstX8632 {
 public:
   static IceInstX8632Mov *create(IceCfg *Cfg, IceVariable *Dest,
                                  IceOperand *Source) {
-    return new IceInstX8632Mov(Cfg, Dest, Source);
+    return new (Cfg->allocate<IceInstX8632Mov>())
+        IceInstX8632Mov(Cfg, Dest, Source);
   }
   virtual bool isRedundantAssign() const;
   virtual void emit(IceOstream &Str, uint32_t Option) const;
@@ -489,7 +509,8 @@ class IceInstX8632Movsx : public IceInstX8632 {
 public:
   static IceInstX8632Movsx *create(IceCfg *Cfg, IceVariable *Dest,
                                    IceOperand *Source) {
-    return new IceInstX8632Movsx(Cfg, Dest, Source);
+    return new (Cfg->allocate<IceInstX8632Movsx>())
+        IceInstX8632Movsx(Cfg, Dest, Source);
   }
   virtual void emit(IceOstream &Str, uint32_t Option) const;
   virtual void dump(IceOstream &Str) const;
@@ -503,7 +524,8 @@ class IceInstX8632Movzx : public IceInstX8632 {
 public:
   static IceInstX8632Movzx *create(IceCfg *Cfg, IceVariable *Dest,
                                    IceOperand *Source) {
-    return new IceInstX8632Movzx(Cfg, Dest, Source);
+    return new (Cfg->allocate<IceInstX8632Movzx>())
+        IceInstX8632Movzx(Cfg, Dest, Source);
   }
   virtual void emit(IceOstream &Str, uint32_t Option) const;
   virtual void dump(IceOstream &Str) const;
@@ -516,7 +538,7 @@ private:
 class IceInstX8632Fld : public IceInstX8632 {
 public:
   static IceInstX8632Fld *create(IceCfg *Cfg, IceOperand *Src) {
-    return new IceInstX8632Fld(Cfg, Src);
+    return new (Cfg->allocate<IceInstX8632Fld>()) IceInstX8632Fld(Cfg, Src);
   }
   virtual void emit(IceOstream &Str, uint32_t Option) const;
   virtual void dump(IceOstream &Str) const;
@@ -529,7 +551,7 @@ private:
 class IceInstX8632Fstp : public IceInstX8632 {
 public:
   static IceInstX8632Fstp *create(IceCfg *Cfg, IceVariable *Dest) {
-    return new IceInstX8632Fstp(Cfg, Dest);
+    return new (Cfg->allocate<IceInstX8632Fstp>()) IceInstX8632Fstp(Cfg, Dest);
   }
   virtual void emit(IceOstream &Str, uint32_t Option) const;
   virtual void dump(IceOstream &Str) const;
@@ -542,7 +564,7 @@ private:
 class IceInstX8632Pop : public IceInstX8632 {
 public:
   static IceInstX8632Pop *create(IceCfg *Cfg, IceVariable *Dest) {
-    return new IceInstX8632Pop(Cfg, Dest);
+    return new (Cfg->allocate<IceInstX8632Pop>()) IceInstX8632Pop(Cfg, Dest);
   }
   virtual void emit(IceOstream &Str, uint32_t Option) const;
   virtual void dump(IceOstream &Str) const;
@@ -555,7 +577,8 @@ private:
 class IceInstX8632Push : public IceInstX8632 {
 public:
   static IceInstX8632Push *create(IceCfg *Cfg, IceOperand *Source) {
-    return new IceInstX8632Push(Cfg, Source);
+    return new (Cfg->allocate<IceInstX8632Push>())
+        IceInstX8632Push(Cfg, Source);
   }
   virtual void emit(IceOstream &Str, uint32_t Option) const;
   virtual void dump(IceOstream &Str) const;
@@ -568,7 +591,7 @@ private:
 class IceInstX8632Ret : public IceInstX8632 {
 public:
   static IceInstX8632Ret *create(IceCfg *Cfg, IceVariable *Source = NULL) {
-    return new IceInstX8632Ret(Cfg, Source);
+    return new (Cfg->allocate<IceInstX8632Ret>()) IceInstX8632Ret(Cfg, Source);
   }
   virtual void emit(IceOstream &Str, uint32_t Option) const;
   virtual void dump(IceOstream &Str) const;
