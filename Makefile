@@ -29,7 +29,8 @@ LLVM_LDFLAGS := `$(LLVM_BIN_PATH)/llvm-config --ldflags --libs --system-libs`
 # It's recommended that CXX matches the compiler you used to build LLVM itself.
 OPTLEVEL := -O0
 CXX := g++
-CXXFLAGS := -Wall -Werror -fno-rtti $(OPTLEVEL) -g $(LLVM_CXXFLAGS)
+CXXFLAGS := -Wall -Werror -fno-rtti -fno-exceptions \
+	$(OPTLEVEL) -g $(LLVM_CXXFLAGS)
 LDFLAGS :=
 
 SRCS= \
@@ -66,11 +67,13 @@ build:
 	@mkdir -p $@
 
 check: llvm2ice
-	LLVM_BIN_PATH=$(LLVM_BIN_PATH) $(LLVM_SRC_PATH)/utils/lit/lit.py -sv tests_lit
+	LLVM_BIN_PATH=$(LLVM_BIN_PATH) \
+	$(LLVM_SRC_PATH)/utils/lit/lit.py -sv tests_lit
 
 # TODO: Fix the use of wildcards.
 format:
-	$(LLVM_BIN_PATH)/clang-format -style=LLVM -i src/Ice*.h src/Ice*.cpp src/llvm2ice.cpp
+	$(LLVM_BIN_PATH)/clang-format -style=LLVM -i \
+	src/Ice*.h src/Ice*.cpp src/llvm2ice.cpp
 
 clean:
 	rm -rf llvm2ice *.o build/
