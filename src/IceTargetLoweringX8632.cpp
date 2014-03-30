@@ -157,8 +157,7 @@ IceVariable *IceTargetX8632::getPhysicalRegister(uint32_t RegNum) {
   return Reg;
 }
 
-IceString IceTargetX8632::getRegName(int RegNum, IceType Type) const {
-  assert(RegNum >= 0);
+IceString IceTargetX8632::getRegName(uint32_t RegNum, IceType Type) const {
   assert(RegNum < Reg_NUM);
   static IceString RegNames8[] = { "al", "cl", "dl", "bl" };
   static IceString RegNames16[] = { "ax", "cx", "dx", "bx",
@@ -166,12 +165,10 @@ IceString IceTargetX8632::getRegName(int RegNum, IceType Type) const {
   switch (Type) {
   case IceType_i1:
   case IceType_i8:
-    assert(static_cast<uint32_t>(RegNum) <
-           (sizeof(RegNames8) / sizeof(*RegNames8)));
+    assert(RegNum < (sizeof(RegNames8) / sizeof(*RegNames8)));
     return RegNames8[RegNum];
   case IceType_i16:
-    assert(static_cast<uint32_t>(RegNum) <
-           (sizeof(RegNames16) / sizeof(*RegNames16)));
+    assert(RegNum < (sizeof(RegNames16) / sizeof(*RegNames16)));
     return RegNames16[RegNum];
   default:
     return RegNames[RegNum];
@@ -186,8 +183,8 @@ IceString IceTargetX8632::getRegName(int RegNum, IceType Type) const {
 // Low first because of the little-endian architecture.
 void IceTargetX8632::setArgOffsetAndCopy(IceVariable *Arg,
                                          IceVariable *FramePtr,
-                                         int BasicFrameOffset,
-                                         int &InArgsSizeBytes,
+                                         int32_t BasicFrameOffset,
+                                         int32_t &InArgsSizeBytes,
                                          IceLoweringContext &Context) {
   IceVariable *Low = Arg->getLow();
   IceVariable *High = Arg->getHigh();
@@ -214,9 +211,9 @@ void IceTargetX8632::setArgOffsetAndCopy(IceVariable *Arg,
 
 void IceTargetX8632::addProlog(IceCfgNode *Node) {
   const bool SimpleCoalescing = true;
-  int InArgsSizeBytes = 0;
-  int RetIpSizeBytes = 4;
-  int PreservedRegsSizeBytes = 0;
+  int32_t InArgsSizeBytes = 0;
+  int32_t RetIpSizeBytes = 4;
+  int32_t PreservedRegsSizeBytes = 0;
   LocalsSizeBytes = 0;
   IceLoweringContext Context(Node);
   Context.Next = Context.Cur;
@@ -235,7 +232,7 @@ void IceTargetX8632::addProlog(IceCfgNode *Node) {
   llvm::SmallBitVector CalleeSaves =
       getRegisterSet(RegSet_CalleeSave, RegSet_None);
 
-  int GlobalsSize = 0;
+  int32_t GlobalsSize = 0;
   std::vector<int> LocalsSize(Cfg->getNumNodes());
 
   // Prepass.  Compute RegsUsed, PreservedRegsSizeBytes, and
@@ -266,7 +263,7 @@ void IceTargetX8632::addProlog(IceCfgNode *Node) {
           continue;
       }
     }
-    int Increment = typeWidthOnStack(Var->getType());
+    int32_t Increment = typeWidthOnStack(Var->getType());
     if (SimpleCoalescing) {
       if (Var->isMultiblockLife()) {
         GlobalsSize += Increment;
@@ -319,7 +316,7 @@ void IceTargetX8632::addProlog(IceCfgNode *Node) {
   // and if they have no home register, home space will need to be
   // allocated on the stack to copy into.
   IceVariable *FramePtr = getPhysicalRegister(getFrameOrStackReg());
-  int BasicFrameOffset = PreservedRegsSizeBytes + RetIpSizeBytes;
+  int32_t BasicFrameOffset = PreservedRegsSizeBytes + RetIpSizeBytes;
   if (!IsEbpBasedFrame)
     BasicFrameOffset += LocalsSizeBytes;
   for (uint32_t i = 0; i < Args.size(); ++i) {
@@ -329,10 +326,10 @@ void IceTargetX8632::addProlog(IceCfgNode *Node) {
   }
 
   // Fill in stack offsets for locals.
-  int TotalGlobalsSize = GlobalsSize;
+  int32_t TotalGlobalsSize = GlobalsSize;
   GlobalsSize = 0;
   LocalsSize.assign(LocalsSize.size(), 0);
-  int NextStackOffset = 0;
+  int32_t NextStackOffset = 0;
   for (IceVarList::const_iterator I = Variables.begin(), E = Variables.end();
        I != E; ++I) {
     IceVariable *Var = *I;
@@ -356,7 +353,7 @@ void IceTargetX8632::addProlog(IceCfgNode *Node) {
         }
       }
     }
-    int Increment = typeWidthOnStack(Var->getType());
+    int32_t Increment = typeWidthOnStack(Var->getType());
     if (SimpleCoalescing) {
       if (Var->isMultiblockLife()) {
         GlobalsSize += Increment;
@@ -1696,7 +1693,7 @@ static bool isAdd(const IceInst *Inst) {
 }
 
 static void computeAddressOpt(IceCfg *Cfg, IceVariable *&Base,
-                              IceVariable *&Index, int &Shift,
+                              IceVariable *&Index, int32_t &Shift,
                               int32_t &Offset) {
   if (Base == NULL)
     return;
@@ -1872,7 +1869,7 @@ void IceTargetX8632::doAddressOptLoad(IceLoweringContext &Context) {
   IceVariable *Dest = Inst->getDest();
   IceOperand *Addr = Inst->getSrc(0);
   IceVariable *Index = NULL;
-  int Shift = 0;
+  int32_t Shift = 0;
   int32_t Offset = 0; // TODO: make IceConstant
   IceVariable *Base = llvm::dyn_cast<IceVariable>(Addr);
   computeAddressOpt(Cfg, Base, Index, Shift, Offset);
@@ -2019,7 +2016,7 @@ void IceTargetX8632::doAddressOptStore(IceLoweringContext &Context) {
   IceOperand *Data = Inst->getData();
   IceOperand *Addr = Inst->getAddr();
   IceVariable *Index = NULL;
-  int Shift = 0;
+  int32_t Shift = 0;
   int32_t Offset = 0; // TODO: make IceConstant
   IceVariable *Base = llvm::dyn_cast<IceVariable>(Addr);
   computeAddressOpt(Cfg, Base, Index, Shift, Offset);
@@ -2237,7 +2234,7 @@ void IceTargetX8632Fast::postLower(const IceLoweringContext &Context) {
               AvailableRegisters & getRegisterSetForType(Var->getType());
         }
         assert(AvailableTypedRegisters.any());
-        int RegNum = AvailableTypedRegisters.find_first();
+        int32_t RegNum = AvailableTypedRegisters.find_first();
         Var->setRegNum(RegNum);
         AvailableRegisters[RegNum] = false;
       }

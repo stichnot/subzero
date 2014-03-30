@@ -66,7 +66,8 @@ public:
     return Nodes[Node->getIndex()].LiveEnd;
   }
   IceLiveRange &getLiveRange(IceVariable *Var);
-  void addLiveRange(IceVariable *Var, int Start, int End, uint32_t WeightDelta);
+  void addLiveRange(IceVariable *Var, int32_t Start, int32_t End,
+                    uint32_t WeightDelta);
 
 private:
   IceCfg *Cfg;

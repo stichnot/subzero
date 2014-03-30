@@ -216,7 +216,7 @@ public:
   //#define USE_SET
 
 private:
-  typedef std::pair<int, int> RangeElementType;
+  typedef std::pair<int32_t, int32_t> RangeElementType;
 #ifdef USE_SET
   typedef std::set<RangeElementType> RangeType;
 #else
@@ -339,7 +339,7 @@ private:
   bool IsArgument;
   // StackOffset is the canonical location on stack (only if
   // RegNum<0 || IsArgument).
-  int StackOffset;
+  int32_t StackOffset;
   // RegNum is the allocated register, or -1 if it isn't
   // register-allocated.
   int32_t RegNum;

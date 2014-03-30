@@ -54,8 +54,8 @@ private:
   struct RangeCompare {
     bool operator()(const IceLiveRangeWrapper &L,
                     const IceLiveRangeWrapper &R) const {
-      int Lstart = L.Var->getLiveRange().getStart();
-      int Rstart = R.Var->getLiveRange().getStart();
+      int32_t Lstart = L.Var->getLiveRange().getStart();
+      int32_t Rstart = R.Var->getLiveRange().getStart();
       if (Lstart == Rstart)
         return L.Var->getIndex() < R.Var->getIndex();
       return Lstart < Rstart;

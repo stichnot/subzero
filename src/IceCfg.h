@@ -61,7 +61,7 @@ public:
   IceCfgNode *splitEdge(IceCfgNode *From, IceCfgNode *To);
 
   // Manage instruction numbering.
-  int newInstNumber() { return NextInstNumber++; }
+  int32_t newInstNumber() { return NextInstNumber++; }
 
   // Manage IceVariables.
   IceVariable *makeVariable(IceType Type, const IceCfgNode *Node,
@@ -134,7 +134,7 @@ private:
   IceString ErrorMessage;
   IceCfgNode *Entry; // entry basic block
   IceNodeList Nodes; // linearized node list; Entry should be first
-  int NextInstNumber;
+  int32_t NextInstNumber;
   IceVarList Variables;
   IceVarList Args; // subset of Variables, in argument order
   class IceConstantPool *ConstantPool;

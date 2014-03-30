@@ -25,7 +25,7 @@ public:
   virtual void translate();
 
   virtual IceVariable *getPhysicalRegister(uint32_t RegNum);
-  virtual IceString getRegName(int RegNum, IceType Type) const;
+  virtual IceString getRegName(uint32_t RegNum, IceType Type) const;
   virtual llvm::SmallBitVector getRegisterSet(RegSetMask Include,
                                               RegSetMask Exclude) const;
   virtual const llvm::SmallBitVector &
@@ -49,7 +49,7 @@ public:
   // latter could be done by directly writing to the stack).
   void split64(IceVariable *Var, IceLoweringContext &Context);
   void setArgOffsetAndCopy(IceVariable *Arg, IceVariable *FramePtr,
-                           int BasicFrameOffset, int &InArgsSizeBytes,
+                           int32_t BasicFrameOffset, int32_t &InArgsSizeBytes,
                            IceLoweringContext &Context);
   IceOperand *makeLowOperand(IceOperand *Operand, IceLoweringContext &Context);
   IceOperand *makeHighOperand(IceOperand *Operand, IceLoweringContext &Context);
@@ -121,8 +121,8 @@ protected:
                                    int32_t RegNum = IceVariable::NoRegister);
 
   bool IsEbpBasedFrame;
-  int FrameSizeLocals;
-  int LocalsSizeBytes;
+  int32_t FrameSizeLocals;
+  int32_t LocalsSizeBytes;
   llvm::SmallBitVector TypeToRegisterSet[IceType_NUM];
   llvm::SmallBitVector ScratchRegs;
   llvm::SmallBitVector RegsUsed;

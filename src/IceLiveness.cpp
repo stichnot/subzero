@@ -101,7 +101,7 @@ uint32_t IceLiveness::getLiveIndex(const IceVariable *Var) const {
   return VarToLiveMap[Var->getIndex()];
 }
 
-void IceLiveness::addLiveRange(IceVariable *Var, int Start, int End,
+void IceLiveness::addLiveRange(IceVariable *Var, int32_t Start, int32_t End,
                                uint32_t WeightDelta) {
   IceLiveRange &LiveRange = LiveRanges[Var->getIndex()];
   assert(WeightDelta != IceRegWeight::Inf);

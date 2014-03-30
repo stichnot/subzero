@@ -86,14 +86,14 @@ public:
   // scratch registers as killed by a call.
   virtual IceVariable *getPhysicalRegister(uint32_t RegNum) = 0;
   // Returns a printable name for the register.
-  virtual IceString getRegName(int RegNum, IceType Type) const = 0;
+  virtual IceString getRegName(uint32_t RegNum, IceType Type) const = 0;
 
   virtual bool hasFramePointer() const { return false; }
   virtual uint32_t getFrameOrStackReg() const = 0;
   virtual uint32_t typeWidthOnStack(IceType Type) = 0;
   bool hasComputedFrame() const { return HasComputedFrame; }
-  int getStackAdjustment() const { return StackAdjustment; }
-  void updateStackAdjustment(int Offset) { StackAdjustment += Offset; }
+  int32_t getStackAdjustment() const { return StackAdjustment; }
+  void updateStackAdjustment(int32_t Offset) { StackAdjustment += Offset; }
   void resetStackAdjustment() { StackAdjustment = 0; }
 
   enum RegSet {
@@ -164,7 +164,7 @@ protected:
   bool HasComputedFrame;
   // StackAdjustment keeps track of the current stack offset from its
   // natural location, as arguments are pushed for a function call.
-  int StackAdjustment;
+  int32_t StackAdjustment;
 };
 
 #endif // SUBZERO_SRC_ICETARGETLOWERING_H

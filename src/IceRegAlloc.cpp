@@ -91,7 +91,7 @@ void IceLinearScan::scan(const llvm::SmallBitVector &RegMaskFull) {
     // precolored.  Future processed live ranges won't evict that
     // register because the live range has infinite weight.
     if (Cur.Var->hasReg()) {
-      int RegNum = Cur.Var->getRegNum();
+      int32_t RegNum = Cur.Var->getRegNum();
       Cur.Var->setRegNumTmp(RegNum);
       if (Cfg->Str.isVerbose(IceV_LinearScan))
         Cfg->Str << "Precoloring  " << Cur << "\n";
@@ -126,7 +126,7 @@ void IceLinearScan::scan(const llvm::SmallBitVector &RegMaskFull) {
       if (Moved) {
         // Decrement Item from RegUses[].
         assert(Item.Var->hasRegTmp());
-        int RegNum = Item.Var->getRegNumTmp();
+        int32_t RegNum = Item.Var->getRegNumTmp();
         --RegUses[RegNum];
         assert(RegUses[RegNum] >= 0);
       }
@@ -152,7 +152,7 @@ void IceLinearScan::scan(const llvm::SmallBitVector &RegMaskFull) {
         Active.push_back(Item);
         // Increment Item in RegUses[].
         assert(Item.Var->hasRegTmp());
-        int RegNum = Item.Var->getRegNumTmp();
+        int32_t RegNum = Item.Var->getRegNumTmp();
         assert(RegUses[RegNum] >= 0);
         ++RegUses[RegNum];
       }
@@ -172,7 +172,7 @@ void IceLinearScan::scan(const llvm::SmallBitVector &RegMaskFull) {
          I != E; ++I) {
       IceLiveRangeWrapper Item = *I;
       if (Item.overlaps(Cur)) {
-        int RegNum = Item.Var->getRegNumTmp();
+        int32_t RegNum = Item.Var->getRegNumTmp();
         // Don't assert(Free[RegNum]) because in theory (though
         // probably never in practice) there could be two inactive
         // variables that were allowed marked with
@@ -222,7 +222,7 @@ void IceLinearScan::scan(const llvm::SmallBitVector &RegMaskFull) {
       // Second choice: any free register.  TODO: After explicit
       // affinity is considered, is there a strategy better than just
       // picking the lowest-numbered available register?
-      int RegNum = Free.find_first();
+      int32_t RegNum = Free.find_first();
       Cur.Var->setRegNumTmp(RegNum);
       if (Cfg->Str.isVerbose(IceV_LinearScan))
         Cfg->Str << "Allocating   " << Cur << "\n";
@@ -238,7 +238,7 @@ void IceLinearScan::scan(const llvm::SmallBitVector &RegMaskFull) {
            I != E; ++I) {
         IceLiveRangeWrapper Item = *I;
         assert(Item.overlaps(Cur));
-        int RegNum = Item.Var->getRegNumTmp();
+        int32_t RegNum = Item.Var->getRegNumTmp();
         assert(Item.Var->hasRegTmp());
         Weights[RegNum].addWeight(Item.range().getWeight());
       }
@@ -247,7 +247,7 @@ void IceLinearScan::scan(const llvm::SmallBitVector &RegMaskFull) {
                                            E = Inactive.end();
            I != E; ++I) {
         IceLiveRangeWrapper Item = *I;
-        int RegNum = Item.Var->getRegNumTmp();
+        int32_t RegNum = Item.Var->getRegNumTmp();
         assert(Item.Var->hasRegTmp());
         Weights[RegNum].addWeight(Item.range().getWeight());
       }
@@ -258,7 +258,7 @@ void IceLinearScan::scan(const llvm::SmallBitVector &RegMaskFull) {
                                          E = Unhandled.end();
            I != E && !Cur.endsBefore(*I); ++I) {
         IceLiveRangeWrapper Item = *I;
-        int RegNum = Item.Var->getRegNumTmp();
+        int32_t RegNum = Item.Var->getRegNumTmp();
         if (RegNum < 0)
           continue;
         if (Item.overlaps(Cur))
@@ -267,7 +267,7 @@ void IceLinearScan::scan(const llvm::SmallBitVector &RegMaskFull) {
 
       // All the weights are now calculated.  Find the register with
       // smallest weight.
-      int MinWeightIndex = RegMask.find_first();
+      int32_t MinWeightIndex = RegMask.find_first();
       // MinWeightIndex must be valid because of the initial
       // RegMask.any() test.
       assert(MinWeightIndex >= 0);
@@ -349,7 +349,7 @@ void IceLinearScan::scan(const llvm::SmallBitVector &RegMaskFull) {
   for (UnorderedRanges::const_iterator I = Handled.begin(), E = Handled.end();
        I != E; ++I) {
     IceLiveRangeWrapper Item = *I;
-    int RegNum = Item.Var->getRegNumTmp();
+    int32_t RegNum = Item.Var->getRegNumTmp();
     if (Cfg->Str.isVerbose(IceV_LinearScan)) {
       if (!Item.Var->hasRegTmp()) {
         Cfg->Str << "Not assigning " << Item.Var << "\n";

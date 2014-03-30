@@ -270,7 +270,7 @@ bool IceCfgNode::liveness(IceLivenessMode Mode, IceLiveness *Liveness) {
   // Process phis in forward order so that we can override the
   // instruction number to be that of the earliest phi instruction in
   // the block.
-  int FirstPhiNumber = 0; // sentinel value
+  int32_t FirstPhiNumber = 0; // sentinel value
   for (IcePhiList::const_iterator I = Phis.begin(), E = Phis.end(); I != E;
        ++I) {
     if (FirstPhiNumber <= 0)
@@ -328,8 +328,8 @@ bool IceCfgNode::liveness(IceLivenessMode Mode, IceLiveness *Liveness) {
 // block that contained the actual phi instruction.
 void IceCfgNode::livenessPostprocess(IceLivenessMode Mode,
                                      IceLiveness *Liveness) {
-  int FirstInstNum = 0;
-  int LastInstNum = 0;
+  int32_t FirstInstNum = 0;
+  int32_t LastInstNum = 0;
   // Process phis in any order.  Process only Dest operands.
   for (IcePhiList::const_iterator I = Phis.begin(), E = Phis.end(); I != E;
        ++I) {
@@ -361,7 +361,7 @@ void IceCfgNode::livenessPostprocess(IceLivenessMode Mode,
           uint32_t NumSrcs = Inst->getSrcSize();
           for (uint32_t i = 0; i < NumSrcs; ++i) {
             IceVariable *Var = llvm::cast<IceVariable>(Inst->getSrc(i));
-            int InstNumber = Inst->getNumber();
+            int32_t InstNumber = Inst->getNumber();
             Liveness->addLiveRange(Var, InstNumber, InstNumber, 1);
           }
         }
@@ -390,8 +390,8 @@ void IceCfgNode::livenessPostprocess(IceLivenessMode Mode,
       Liveness->addLiveRange(Var, LiveBegin[i], LastInstNum + 1, 1);
       continue;
     }
-    int Begin = (IsGlobal && LiveIn[i]) ? FirstInstNum : LiveBegin[i];
-    int End = (IsGlobal && LiveOut[i]) ? LastInstNum + 1 : LiveEnd[i];
+    int32_t Begin = (IsGlobal && LiveIn[i]) ? FirstInstNum : LiveBegin[i];
+    int32_t End = (IsGlobal && LiveOut[i]) ? LastInstNum + 1 : LiveEnd[i];
     if (Begin <= 0 && End <= 0)
       continue;
     if (Begin <= FirstInstNum)

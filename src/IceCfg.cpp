@@ -374,7 +374,7 @@ bool IceCfg::validateLiveness() const {
         continue;
       if (llvm::isa<IceInstFakeKill>(Inst))
         continue;
-      int InstNumber = Inst->getNumber();
+      int32_t InstNumber = Inst->getNumber();
       IceVariable *Dest = Inst->getDest();
       if (Dest) {
         // TODO: This instruction should actually begin Dest's live
