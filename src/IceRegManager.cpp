@@ -25,12 +25,12 @@
 #include "IceTypes.h"
 
 IceRegManagerEntry::IceRegManagerEntry(IceCfg *Cfg, IceVariable *Var,
-                                       unsigned NumReg)
+                                       uint32_t NumReg)
     : Var(Var) {}
 
 IceRegManagerEntry::IceRegManagerEntry(IceCfg *Cfg,
                                        const IceRegManagerEntry &Other,
-                                       unsigned NumReg)
+                                       uint32_t NumReg)
     : Var(Other.Var), Available(Other.Available) {}
 
 // An Operand is loaded into this virtual register.  Its Available set
@@ -67,10 +67,10 @@ bool IceRegManagerEntry::contains(const IceOperand *Operand) const {
   return false;
 }
 
-IceRegManager::IceRegManager(IceCfg *Cfg, IceCfgNode *Node, unsigned NumReg)
+IceRegManager::IceRegManager(IceCfg *Cfg, IceCfgNode *Node, uint32_t NumReg)
     : NumReg(NumReg), Cfg(Cfg) {
   // TODO: Config flag to use physical registers directly.
-  for (unsigned i = 0; i < NumReg; ++i) {
+  for (uint32_t i = 0; i < NumReg; ++i) {
     char Buf[100];
     sprintf(Buf, "r%u_%u", i + 1, Node->getIndex());
     IceVariable *Reg = Cfg->makeVariable(IceType_i32, Node, Buf);

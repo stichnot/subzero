@@ -78,7 +78,7 @@ void IceLiveness::init() {
 
   // Process each node.
   const IceNodeList &LNodes = Cfg->getNodes();
-  unsigned NumLNodes = LNodes.size();
+  uint32_t NumLNodes = LNodes.size();
   for (uint32_t i = 0; i < NumLNodes; ++i) {
     IceLivenessNode &Node = Nodes[LNodes[i]->getIndex()];
     // NumLocals, LiveToVarMap already initialized

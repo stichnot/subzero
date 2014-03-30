@@ -38,7 +38,7 @@ static const char *OpcodeTypeFromIceType(IceType type) {
 
 IceOperandX8632Mem::IceOperandX8632Mem(IceCfg *Cfg, IceType Type,
                                        IceVariable *Base, IceConstant *Offset,
-                                       IceVariable *Index, unsigned Shift)
+                                       IceVariable *Index, uint32_t Shift)
     : IceOperandX8632(Cfg, Mem, Type), Base(Base), Offset(Offset), Index(Index),
       Shift(Shift) {
   Vars = NULL;
@@ -49,7 +49,7 @@ IceOperandX8632Mem::IceOperandX8632Mem(IceCfg *Cfg, IceType Type,
     ++NumVars;
   if (NumVars) {
     Vars = Cfg->allocateArrayOf<IceVariable *>(NumVars);
-    unsigned I = 0;
+    uint32_t I = 0;
     if (Base)
       Vars[I++] = Base;
     if (Index)
@@ -221,7 +221,7 @@ void IceInstX8632::dump(IceOstream &Str) const {
   IceInst::dump(Str);
 }
 
-void IceInstX8632Label::emit(IceOstream &Str, unsigned Option) const {
+void IceInstX8632Label::emit(IceOstream &Str, uint32_t Option) const {
   dump(Str);
   Str << "\n";
 }
@@ -230,7 +230,7 @@ void IceInstX8632Label::dump(IceOstream &Str) const {
   Str << getName(Str.Cfg) << ":";
 }
 
-void IceInstX8632Br::emit(IceOstream &Str, unsigned Option) const {
+void IceInstX8632Br::emit(IceOstream &Str, uint32_t Option) const {
   Str << "\t";
   switch (Condition) {
   case Br_a:
@@ -407,7 +407,7 @@ void IceInstX8632Addss::emit(IceOstream &Str, uint32_t Option) const {
 }
 
 template <>
-void IceInstX8632Subss::emit(IceOstream &Str, unsigned Option) const {
+void IceInstX8632Subss::emit(IceOstream &Str, uint32_t Option) const {
   IceEmitTwoAddress(getDest()->getType() == IceType_f32 ? "subss" : "subsd",
                     this, Str, Option);
 }
@@ -737,7 +737,7 @@ void IceInstX8632Fstp::emit(IceOstream &Str, uint32_t Option) const {
   // memory.  Hack this by creating a temporary stack slot, spilling
   // st(0) there, loading it into the xmm register, and deallocating
   // the stack slot.
-  unsigned Width = iceTypeWidth(getDest()->getType());
+  uint32_t Width = iceTypeWidth(getDest()->getType());
   Str << "\tsub\tesp, " << Width << "\n";
   Str << "\tfstp\t" << (Width == 8 ? "q" : "d") << "word ptr [esp]\n";
   Str << "\tmovs" << (Width == 8 ? "d" : "s") << "\t";
@@ -900,7 +900,7 @@ void IceOperandX8632Mem::dump(IceOstream &Str) const {
   Str << "]";
 }
 
-void IceVariableSplit::emit(IceOstream &Str, unsigned Option) const {
+void IceVariableSplit::emit(IceOstream &Str, uint32_t Option) const {
   assert(Var->getLocalUseNode() == NULL ||
          Var->getLocalUseNode() == Str.getCurrentNode());
   assert(!Var->hasReg());

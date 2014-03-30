@@ -62,11 +62,11 @@
 class IceRegManagerEntry {
 public:
   static IceRegManagerEntry *create(IceCfg *Cfg, IceVariable *Var,
-                                    unsigned NumReg) {
+                                    uint32_t NumReg) {
     return new IceRegManagerEntry(Cfg, Var, NumReg);
   }
   static IceRegManagerEntry *
-  create(IceCfg *Cfg, const IceRegManagerEntry &Other, unsigned NumReg) {
+  create(IceCfg *Cfg, const IceRegManagerEntry &Other, uint32_t NumReg) {
     return new IceRegManagerEntry(Cfg, Other, NumReg);
   }
   void load(IceInst *Inst);
@@ -76,9 +76,9 @@ public:
   void dump(IceOstream &Str) const;
 
 private:
-  IceRegManagerEntry(IceCfg *Cfg, IceVariable *Var, unsigned NumReg);
+  IceRegManagerEntry(IceCfg *Cfg, IceVariable *Var, uint32_t NumReg);
   IceRegManagerEntry(IceCfg *Cfg, const IceRegManagerEntry &Other,
-                     unsigned NumReg);
+                     uint32_t NumReg);
 
   // Virtual register.
   IceVariable *const Var;
@@ -92,7 +92,7 @@ class IceRegManager {
 public:
   typedef std::vector<IceRegManagerEntry *> QueueType;
   // Initialize a brand new register manager.
-  static IceRegManager *create(IceCfg *Cfg, IceCfgNode *Node, unsigned NumReg) {
+  static IceRegManager *create(IceCfg *Cfg, IceCfgNode *Node, uint32_t NumReg) {
     return new IceRegManager(Cfg, Node, NumReg);
   }
   // Capture the predecessor's end-of-block state for an extended
@@ -110,9 +110,9 @@ public:
   void dump(IceOstream &Str) const;
 
 private:
-  IceRegManager(IceCfg *Cfg, IceCfgNode *Node, unsigned NumReg);
+  IceRegManager(IceCfg *Cfg, IceCfgNode *Node, uint32_t NumReg);
   IceRegManager(const IceRegManager &Other);
-  const unsigned NumReg;
+  const uint32_t NumReg;
   // The LRU register queue.  The front element is the least recently
   // used and the next to be assigned.
   // TODO: Multiple queues by type.

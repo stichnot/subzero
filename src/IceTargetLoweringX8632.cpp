@@ -30,13 +30,13 @@ IceTargetX8632::IceTargetX8632(IceCfg *Cfg)
   llvm::SmallBitVector IntegerRegistersNonI8(Reg_NUM);
   llvm::SmallBitVector FloatRegisters(Reg_NUM);
   llvm::SmallBitVector InvalidRegisters(Reg_NUM);
-  for (unsigned i = Reg_eax; i <= Reg_edi; ++i)
+  for (uint32_t i = Reg_eax; i <= Reg_edi; ++i)
     IntegerRegisters[i] = true;
   IntegerRegistersNonI8[Reg_eax] = true;
   IntegerRegistersNonI8[Reg_ecx] = true;
   IntegerRegistersNonI8[Reg_edx] = true;
   IntegerRegistersNonI8[Reg_ebx] = true;
-  for (unsigned i = Reg_xmm0; i <= Reg_xmm7; ++i)
+  for (uint32_t i = Reg_xmm0; i <= Reg_xmm7; ++i)
     FloatRegisters[i] = true;
   TypeToRegisterSet[IceType_void] = InvalidRegisters;
   TypeToRegisterSet[IceType_i1] = IntegerRegistersNonI8;
@@ -145,7 +145,7 @@ IceString IceTargetX8632::RegNames[] = { "eax",  "ecx",  "edx",  "ebx",
                                          "xmm0", "xmm1", "xmm2", "xmm3",
                                          "xmm4", "xmm5", "xmm6", "xmm7" };
 
-IceVariable *IceTargetX8632::getPhysicalRegister(unsigned RegNum) {
+IceVariable *IceTargetX8632::getPhysicalRegister(uint32_t RegNum) {
   assert(RegNum < PhysicalRegisters.size());
   IceVariable *Reg = PhysicalRegisters[RegNum];
   if (Reg == NULL) {
@@ -166,11 +166,11 @@ IceString IceTargetX8632::getRegName(int RegNum, IceType Type) const {
   switch (Type) {
   case IceType_i1:
   case IceType_i8:
-    assert(static_cast<unsigned>(RegNum) <
+    assert(static_cast<uint32_t>(RegNum) <
            (sizeof(RegNames8) / sizeof(*RegNames8)));
     return RegNames8[RegNum];
   case IceType_i16:
-    assert(static_cast<unsigned>(RegNum) <
+    assert(static_cast<uint32_t>(RegNum) <
            (sizeof(RegNames16) / sizeof(*RegNames16)));
     return RegNames16[RegNum];
   default:
@@ -271,7 +271,7 @@ void IceTargetX8632::addProlog(IceCfgNode *Node) {
       if (Var->isMultiblockLife()) {
         GlobalsSize += Increment;
       } else {
-        unsigned NodeIndex = Var->getLocalUseNode()->getIndex();
+        uint32_t NodeIndex = Var->getLocalUseNode()->getIndex();
         LocalsSize[NodeIndex] += Increment;
         if (LocalsSize[NodeIndex] > LocalsSizeBytes)
           LocalsSizeBytes = LocalsSize[NodeIndex];
@@ -283,7 +283,7 @@ void IceTargetX8632::addProlog(IceCfgNode *Node) {
   LocalsSizeBytes += GlobalsSize;
 
   // Add push instructions for preserved registers.
-  for (unsigned i = 0; i < CalleeSaves.size(); ++i) {
+  for (uint32_t i = 0; i < CalleeSaves.size(); ++i) {
     if (CalleeSaves[i] && RegsUsed[i]) {
       PreservedRegsSizeBytes += 4;
       Context.insert(IceInstX8632Push::create(Cfg, getPhysicalRegister(i)));
@@ -322,7 +322,7 @@ void IceTargetX8632::addProlog(IceCfgNode *Node) {
   int BasicFrameOffset = PreservedRegsSizeBytes + RetIpSizeBytes;
   if (!IsEbpBasedFrame)
     BasicFrameOffset += LocalsSizeBytes;
-  for (unsigned i = 0; i < Args.size(); ++i) {
+  for (uint32_t i = 0; i < Args.size(); ++i) {
     IceVariable *Arg = Args[i];
     setArgOffsetAndCopy(Arg, FramePtr, BasicFrameOffset, InArgsSizeBytes,
                         Context);
@@ -362,7 +362,7 @@ void IceTargetX8632::addProlog(IceCfgNode *Node) {
         GlobalsSize += Increment;
         NextStackOffset = GlobalsSize;
       } else {
-        unsigned NodeIndex = Var->getLocalUseNode()->getIndex();
+        uint32_t NodeIndex = Var->getLocalUseNode()->getIndex();
         LocalsSize[NodeIndex] += Increment;
         NextStackOffset = TotalGlobalsSize + LocalsSize[NodeIndex];
       }
@@ -418,8 +418,8 @@ void IceTargetX8632::addEpilog(IceCfgNode *Node) {
   // Add pop instructions for preserved registers.
   llvm::SmallBitVector CalleeSaves =
       getRegisterSet(RegSet_CalleeSave, RegSet_None);
-  for (unsigned i = 0; i < CalleeSaves.size(); ++i) {
-    unsigned j = CalleeSaves.size() - i - 1;
+  for (uint32_t i = 0; i < CalleeSaves.size(); ++i) {
+    uint32_t j = CalleeSaves.size() - i - 1;
     if (j == Reg_ebp && IsEbpBasedFrame)
       continue;
     if (CalleeSaves[j] && RegsUsed[j]) {
@@ -812,7 +812,7 @@ void IceTargetX8632::lowerArithmetic(const IceInstArithmetic *Inst,
     break;
   case IceInstArithmetic::Udiv:
     if (LowerI64ToI32) {
-      unsigned MaxSrcs = 2;
+      uint32_t MaxSrcs = 2;
       // TODO: Figure out how to properly construct CallTarget.
       bool SuppressMangling = true;
       IceConstant *CallTarget = Cfg->getConstantSym(
@@ -837,7 +837,7 @@ void IceTargetX8632::lowerArithmetic(const IceInstArithmetic *Inst,
     break;
   case IceInstArithmetic::Sdiv:
     if (LowerI64ToI32) {
-      unsigned MaxSrcs = 2;
+      uint32_t MaxSrcs = 2;
       // TODO: Figure out how to properly construct CallTarget.
       bool SuppressMangling = true;
       IceConstant *CallTarget = Cfg->getConstantSym(
@@ -861,7 +861,7 @@ void IceTargetX8632::lowerArithmetic(const IceInstArithmetic *Inst,
     break;
   case IceInstArithmetic::Urem:
     if (LowerI64ToI32) {
-      unsigned MaxSrcs = 2;
+      uint32_t MaxSrcs = 2;
       // TODO: Figure out how to properly construct CallTarget.
       bool SuppressMangling = true;
       IceConstant *CallTarget = Cfg->getConstantSym(
@@ -887,7 +887,7 @@ void IceTargetX8632::lowerArithmetic(const IceInstArithmetic *Inst,
     break;
   case IceInstArithmetic::Srem:
     if (LowerI64ToI32) {
-      unsigned MaxSrcs = 2;
+      uint32_t MaxSrcs = 2;
       // TODO: Figure out how to properly construct CallTarget.
       bool SuppressMangling = true;
       IceConstant *CallTarget = Cfg->getConstantSym(
@@ -932,7 +932,7 @@ void IceTargetX8632::lowerArithmetic(const IceInstArithmetic *Inst,
     Context.insert(IceInstX8632Mov::create(Cfg, Dest, Reg1));
     break;
   case IceInstArithmetic::Frem: {
-    unsigned MaxSrcs = 2;
+    uint32_t MaxSrcs = 2;
     IceType Type = Dest->getType();
     // TODO: Figure out how to properly construct CallTarget.
     bool SuppressMangling = true;
@@ -1002,7 +1002,7 @@ void IceTargetX8632::lowerCall(const IceInstCall *Inst,
   // eliminated after lowering, we would need to ensure that the
   // pre-call push instructions and the post-call esp adjustment get
   // eliminated as well.
-  for (unsigned NumArgs = Inst->getNumArgs(), i = 0; i < NumArgs; ++i) {
+  for (uint32_t NumArgs = Inst->getNumArgs(), i = 0; i < NumArgs; ++i) {
     IceOperand *Arg = Inst->getArg(NumArgs - i - 1);
     Arg = legalizeOperand(Arg, Legal_All, Context);
     assert(Arg);
@@ -1074,7 +1074,7 @@ void IceTargetX8632::lowerCall(const IceInstCall *Inst,
 
   // Insert a register-kill pseudo instruction.
   IceVarList KilledRegs;
-  for (unsigned i = 0; i < ScratchRegs.size(); ++i) {
+  for (uint32_t i = 0; i < ScratchRegs.size(); ++i) {
     if (ScratchRegs[i])
       KilledRegs.push_back(Cfg->getTarget()->getPhysicalRegister(i));
   }
@@ -1211,7 +1211,7 @@ void IceTargetX8632::lowerCast(const IceInstCast *Inst,
       // temporary manipulation of the status word.  This helper is
       // not needed for x86-64.
       split64(Dest, Context);
-      unsigned MaxSrcs = 1;
+      uint32_t MaxSrcs = 1;
       IceType SrcType = Inst->getSrc(0)->getType();
       // TODO: Figure out how to properly construct CallTarget.
       bool SuppressMangling = true;
@@ -1241,7 +1241,7 @@ void IceTargetX8632::lowerCast(const IceInstCast *Inst,
     if (Dest->getType() == IceType_i64 || Dest->getType() == IceType_i32) {
       // Use a helper for both x86-32 and x86-64.
       split64(Dest, Context);
-      unsigned MaxSrcs = 1;
+      uint32_t MaxSrcs = 1;
       IceType DestType = Inst->getDest()->getType();
       IceType SrcType = Inst->getSrc(0)->getType();
       IceString DstSubstring = (DestType == IceType_i64 ? "64" : "32");
@@ -1273,7 +1273,7 @@ void IceTargetX8632::lowerCast(const IceInstCast *Inst,
   case IceInstCast::Sitofp:
     if (Reg->getType() == IceType_i64) {
       // Use a helper for x86-32.
-      unsigned MaxSrcs = 1;
+      uint32_t MaxSrcs = 1;
       IceType DestType = Inst->getDest()->getType();
       // TODO: Figure out how to properly construct CallTarget.
       bool SuppressMangling = true;
@@ -1305,7 +1305,7 @@ void IceTargetX8632::lowerCast(const IceInstCast *Inst,
     if (Reg->getType() == IceType_i64 || Reg->getType() == IceType_i32) {
       // Use a helper for x86-32 and x86-64.  Also use a helper for
       // i32 on x86-32.
-      unsigned MaxSrcs = 1;
+      uint32_t MaxSrcs = 1;
       IceType DestType = Inst->getDest()->getType();
       IceString SrcSubstring = (Reg->getType() == IceType_i64 ? "64" : "32");
       IceString DstSubstring = (DestType == IceType_f32 ? "f" : "d");
@@ -1424,7 +1424,7 @@ void IceTargetX8632::lowerCast(const IceInstCast *Inst,
 
 static struct {
   IceInstFcmp::FCond Cond;
-  unsigned Default;
+  uint32_t Default;
   bool SwapOperands;
   IceInstX8632Br::BrCond C1, C2;
 } TableFcmp[] = {
@@ -1459,7 +1459,7 @@ static struct {
     { IceInstFcmp::True, 1, false, IceInstX8632Br::Br_None,
       IceInstX8632Br::Br_None },
   };
-const static unsigned TableFcmpSize = sizeof(TableFcmp) / sizeof(*TableFcmp);
+const static uint32_t TableFcmpSize = sizeof(TableFcmp) / sizeof(*TableFcmp);
 
 void IceTargetX8632::lowerFcmp(const IceInstFcmp *Inst,
                                IceLoweringContext &Context) {
@@ -1476,7 +1476,7 @@ void IceTargetX8632::lowerFcmp(const IceInstFcmp *Inst,
   // mov a, !<default> (only if C1 != Br_None)
   // label: (only if C1 != Br_None)
   IceInstFcmp::FCond Condition = Inst->getCondition();
-  unsigned Index = static_cast<unsigned>(Condition);
+  uint32_t Index = static_cast<uint32_t>(Condition);
   assert(Index < TableFcmpSize);
   assert(TableFcmp[Index].Cond == Condition);
   if (TableFcmp[Index].SwapOperands) {
@@ -1528,7 +1528,7 @@ static struct {
                       IceInstX8632Br::Br_g, IceInstX8632Br::Br_b },
                     { IceInstIcmp::Sle, IceInstX8632Br::Br_l,
                       IceInstX8632Br::Br_g, IceInstX8632Br::Br_be }, };
-const static unsigned TableIcmp64Size =
+const static uint32_t TableIcmp64Size =
     sizeof(TableIcmp64) / sizeof(*TableIcmp64);
 
 static struct {
@@ -1544,11 +1544,11 @@ static struct {
                     { IceInstIcmp::Sge, IceInstX8632Br::Br_ge },
                     { IceInstIcmp::Slt, IceInstX8632Br::Br_l },
                     { IceInstIcmp::Sle, IceInstX8632Br::Br_le }, };
-const static unsigned TableIcmp32Size =
+const static uint32_t TableIcmp32Size =
     sizeof(TableIcmp32) / sizeof(*TableIcmp32);
 
 static IceInstX8632Br::BrCond getIcmp32Mapping(IceInstIcmp::ICond Cond) {
-  unsigned Index = static_cast<unsigned>(Cond);
+  uint32_t Index = static_cast<uint32_t>(Cond);
   assert(Index < TableIcmp32Size);
   assert(TableIcmp32[Index].Cond == Cond);
   return TableIcmp32[Index].Mapping;
@@ -1592,7 +1592,7 @@ void IceTargetX8632::lowerIcmp(const IceInstIcmp *Inst,
   IceOperand *ConstOne = Cfg->getConstantInt(IceType_i32, 1);
   if (Src0->getType() == IceType_i64) {
     IceInstIcmp::ICond Condition = Inst->getCondition();
-    unsigned Index = static_cast<unsigned>(Condition);
+    uint32_t Index = static_cast<uint32_t>(Condition);
     assert(Index < TableIcmp64Size);
     assert(TableIcmp64[Index].Cond == Condition);
     IceInstX8632Label *LabelFalse = IceInstX8632Label::create(Cfg, this);
@@ -2037,14 +2037,14 @@ void IceTargetX8632::lowerSwitch(const IceInstSwitch *Inst,
   // This implements the most naive possible lowering.
   // cmp a,val[0]; jeq label[0]; cmp a,val[1]; jeq label[1]; ... jmp default
   IceOperand *Src = Inst->getSrc(0);
-  unsigned NumCases = Inst->getNumCases();
+  uint32_t NumCases = Inst->getNumCases();
   // OK, we'll be slightly less naive by forcing Src into a physical
   // register if there are 2 or more uses.
   if (NumCases >= 2)
     Src = legalizeOperandToVar(Src, Context, true);
   else
     Src = legalizeOperand(Src, Legal_All, Context, true);
-  for (unsigned I = 0; I < NumCases; ++I) {
+  for (uint32_t I = 0; I < NumCases; ++I) {
     IceOperand *Value = Cfg->getConstantInt(IceType_i32, Inst->getValue(I));
     Context.insert(IceInstX8632Icmp::create(Cfg, Src, Value));
     Context.insert(
@@ -2198,11 +2198,11 @@ void IceTargetX8632Fast::postLower(const IceLoweringContext &Context) {
       continue;
     if (llvm::isa<IceInstFakeKill>(Inst))
       continue;
-    unsigned VarIndex = 0;
-    for (unsigned SrcNum = 0; SrcNum < Inst->getSrcSize(); ++SrcNum) {
+    uint32_t VarIndex = 0;
+    for (uint32_t SrcNum = 0; SrcNum < Inst->getSrcSize(); ++SrcNum) {
       IceOperand *Src = Inst->getSrc(SrcNum);
-      unsigned NumVars = Src->getNumVars();
-      for (unsigned J = 0; J < NumVars; ++J, ++VarIndex) {
+      uint32_t NumVars = Src->getNumVars();
+      for (uint32_t J = 0; J < NumVars; ++J, ++VarIndex) {
         const IceVariable *Var = Src->getVar(J);
         if (!Var->hasReg())
           continue;
@@ -2216,11 +2216,11 @@ void IceTargetX8632Fast::postLower(const IceLoweringContext &Context) {
     const IceInst *Inst = *I;
     if (Inst->isDeleted())
       continue;
-    unsigned VarIndex = 0;
-    for (unsigned SrcNum = 0; SrcNum < Inst->getSrcSize(); ++SrcNum) {
+    uint32_t VarIndex = 0;
+    for (uint32_t SrcNum = 0; SrcNum < Inst->getSrcSize(); ++SrcNum) {
       IceOperand *Src = Inst->getSrc(SrcNum);
-      unsigned NumVars = Src->getNumVars();
-      for (unsigned J = 0; J < NumVars; ++J, ++VarIndex) {
+      uint32_t NumVars = Src->getNumVars();
+      for (uint32_t J = 0; J < NumVars; ++J, ++VarIndex) {
         IceVariable *Var = Src->getVar(J);
         if (Var->hasReg())
           continue;

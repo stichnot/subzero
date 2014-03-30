@@ -38,14 +38,14 @@ public:
   static IceOperandX8632Mem *create(IceCfg *Cfg, IceType Type,
                                     IceVariable *Base, IceConstant *Offset,
                                     IceVariable *Index = NULL,
-                                    unsigned Shift = 0) {
+                                    uint32_t Shift = 0) {
     return new (Cfg->allocate<IceOperandX8632Mem>())
         IceOperandX8632Mem(Cfg, Type, Base, Offset, Index, Shift);
   }
   IceVariable *getBase() const { return Base; }
   IceConstant *getOffset() const { return Offset; }
   IceVariable *getIndex() const { return Index; }
-  unsigned getShift() const { return Shift; }
+  uint32_t getShift() const { return Shift; }
   virtual void setUse(const IceInst *Inst, const IceCfgNode *Node);
   virtual void emit(IceOstream &Str, uint32_t Option) const;
   virtual void dump(IceOstream &Str) const;
@@ -56,11 +56,11 @@ public:
 
 private:
   IceOperandX8632Mem(IceCfg *Cfg, IceType Type, IceVariable *Base,
-                     IceConstant *Offset, IceVariable *Index, unsigned Shift);
+                     IceConstant *Offset, IceVariable *Index, uint32_t Shift);
   IceVariable *Base;
   IceConstant *Offset;
   IceVariable *Index;
-  unsigned Shift;
+  uint32_t Shift;
 };
 
 class IceVariableSplit : public IceOperandX8632 {
@@ -135,7 +135,7 @@ public:
   virtual void dump(IceOstream &Str) const;
 
 protected:
-  IceInstX8632(IceCfg *Cfg, InstKindX8632 Kind, unsigned Maxsrcs,
+  IceInstX8632(IceCfg *Cfg, InstKindX8632 Kind, uint32_t Maxsrcs,
                IceVariable *Dest)
       : IceInstTarget(Cfg, static_cast<InstKind>(Kind), Maxsrcs, Dest) {}
   static bool isClassof(const IceInst *Inst, InstKindX8632 MyKind) {

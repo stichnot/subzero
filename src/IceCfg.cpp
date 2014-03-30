@@ -87,7 +87,7 @@ IceString IceCfg::mangleName(const IceString &Name) const {
   if (getTestPrefix() == "")
     return Name;
   IceString Default = getTestPrefix() + Name;
-  unsigned BaseLength = 0;
+  uint32_t BaseLength = 0;
   char Buffer[1 + Name.length()];
   int ItemsParsed = sscanf(Name.c_str(), "_Z%u%s", &BaseLength, Buffer);
   if (ItemsParsed != 2)

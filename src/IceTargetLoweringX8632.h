@@ -24,7 +24,7 @@ public:
   static IceTargetX8632 *create(IceCfg *Cfg) { return new IceTargetX8632(Cfg); }
   virtual void translate();
 
-  virtual IceVariable *getPhysicalRegister(unsigned RegNum);
+  virtual IceVariable *getPhysicalRegister(uint32_t RegNum);
   virtual IceString getRegName(int RegNum, IceType Type) const;
   virtual llvm::SmallBitVector getRegisterSet(RegSetMask Include,
                                               RegSetMask Exclude) const;
@@ -33,7 +33,7 @@ public:
     return TypeToRegisterSet[Type];
   }
   virtual bool hasFramePointer() const { return IsEbpBasedFrame; }
-  virtual unsigned getFrameOrStackReg() const {
+  virtual uint32_t getFrameOrStackReg() const {
     return IsEbpBasedFrame ? Reg_ebp : Reg_esp;
   }
   virtual uint32_t typeWidthOnStack(IceType Type) {
