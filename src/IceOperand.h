@@ -292,13 +292,13 @@ public:
   }
   void setLiveRangeInfiniteWeight() { LiveRange.setWeight(IceRegWeight::Inf); }
 
-  IceVariable *getLow() const { return LowVar; }
-  IceVariable *getHigh() const { return HighVar; }
-  void setLowHigh(IceVariable *Low, IceVariable *High) {
-    assert(LowVar == NULL);
-    assert(HighVar == NULL);
-    LowVar = Low;
-    HighVar = High;
+  IceVariable *getLo() const { return LoVar; }
+  IceVariable *getHi() const { return HiVar; }
+  void setLoHi(IceVariable *Lo, IceVariable *Hi) {
+    assert(LoVar == NULL);
+    assert(HiVar == NULL);
+    LoVar = Lo;
+    HiVar = Hi;
   }
   // Creates a temporary copy of the variable with a different type.
   // Used primarily for syntactic correctness of textual assembly
@@ -318,8 +318,8 @@ private:
       : IceOperand(Cfg, Variable, Type), Number(Index), Name(Name),
         DefInst(NULL), DefNode(Node), IsArgument(false), StackOffset(0),
         RegNum(NoRegister), RegNumTmp(NoRegister), Weight(1),
-        RegisterPreference(NULL), AllowRegisterOverlap(false), LowVar(NULL),
-        HighVar(NULL) {
+        RegisterPreference(NULL), AllowRegisterOverlap(false), LoVar(NULL),
+        HiVar(NULL) {
     Vars = Cfg->allocateArrayOf<IceVariable *>(1);
     Vars[0] = this;
     NumVars = 1;
@@ -357,14 +357,15 @@ private:
   // ranges overlap.
   bool AllowRegisterOverlap;
   IceLiveRange LiveRange;
-  // LowVar and HighVar are needed for lowering from 64 to 32 bits.
-  // When lowering from I64 to I32 on a 32-bit architecture, we split
-  // the variable into two machine-size pieces.  LowVar is the
-  // low-order machine-size portion, and HighVar is the remaining
-  // high-order portion.  TODO: It's wasteful to penalize all
-  // variables on all targets this way; use a sparser representation.
-  IceVariable *LowVar;
-  IceVariable *HighVar;
+  // LoVar and HiVar are needed for lowering from 64 to 32 bits.  When
+  // lowering from I64 to I32 on a 32-bit architecture, we split the
+  // variable into two machine-size pieces.  LoVar is the low-order
+  // machine-size portion, and HiVar is the remaining high-order
+  // portion.  TODO: It's wasteful to penalize all variables on all
+  // targets this way; use a sparser representation.  It's also
+  // wasteful for a 64-bit target.
+  IceVariable *LoVar;
+  IceVariable *HiVar;
 };
 
 #endif // SUBZERO_SRC_ICEOPERAND_H

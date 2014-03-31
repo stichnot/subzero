@@ -24,7 +24,11 @@ class IceTargetX8632;
 
 class IceOperandX8632 : public IceOperand {
 public:
-  enum IceOperandTypeX8632 { __Start = IceOperand::Target, Mem, Split };
+  enum IceOperandTypeX8632 {
+    __Start = IceOperand::Target,
+    Mem,
+    Split
+  };
   virtual void emit(IceOstream &Str, uint32_t Option) const = 0;
   void dump(IceOstream &Str) const;
 
@@ -65,7 +69,10 @@ private:
 
 class IceVariableSplit : public IceOperandX8632 {
 public:
-  enum Portion { Low, High };
+  enum Portion {
+    Low,
+    High
+  };
   static IceVariableSplit *create(IceCfg *Cfg, IceVariable *Var, Portion Part) {
     return new (Cfg->allocate<IceVariableSplit>())
         IceVariableSplit(Cfg, Var, Part);

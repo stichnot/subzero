@@ -331,12 +331,12 @@ void IceCfg::liveness(IceLivenessMode Mode) {
         // Add live range [-1,0) with weight 0.
         Liveness->addLiveRange(Arg, -1, 0, 0);
       }
-      IceVariable *Low = Arg->getLow();
-      if (Low && !Liveness->getLiveRange(Low).isEmpty())
-        Liveness->addLiveRange(Low, -1, 0, 0);
-      IceVariable *High = Arg->getHigh();
-      if (High && !Liveness->getLiveRange(High).isEmpty())
-        Liveness->addLiveRange(High, -1, 0, 0);
+      IceVariable *Lo = Arg->getLo();
+      if (Lo && !Liveness->getLiveRange(Lo).isEmpty())
+        Liveness->addLiveRange(Lo, -1, 0, 0);
+      IceVariable *Hi = Arg->getHi();
+      if (Hi && !Liveness->getLiveRange(Hi).isEmpty())
+        Liveness->addLiveRange(Hi, -1, 0, 0);
     }
     // Copy IceLiveness::LiveRanges into individual variables.  TODO:
     // Remove IceVariable::LiveRange and redirect to
