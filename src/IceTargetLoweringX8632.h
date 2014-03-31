@@ -188,8 +188,15 @@ protected:
   void _imul(IceLoweringContext &C, IceVariable *Dest, IceOperand *Src0) {
     C.insert(IceInstX8632Imul::create(Cfg, Dest, Src0));
   }
-  void _mov(IceLoweringContext &C, IceVariable *Dest, IceOperand *Src0) {
-    C.insert(IceInstX8632Mov::create(Cfg, Dest, Src0));
+  // If Dest=NULL is passed in, then a new variable is created, marked
+  // as infinite register allocation weight, and returned through the
+  // in/out Dest argument.
+  void _mov(IceLoweringContext &C, IceVariable *&Dest, IceOperand *Src0) {
+    if (Dest == NULL) {
+      Dest = legalizeOperandToVar(C, Src0);
+    } else {
+      C.insert(IceInstX8632Mov::create(Cfg, Dest, Src0));
+    }
   }
   void _movsx(IceLoweringContext &C, IceVariable *Dest, IceOperand *Src0) {
     C.insert(IceInstX8632Movsx::create(Cfg, Dest, Src0));
