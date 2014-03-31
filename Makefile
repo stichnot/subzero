@@ -24,7 +24,8 @@ $(info Using LLVM_BIN_PATH = $(LLVM_BIN_PATH))
 $(info -----------------------------------------------)
 
 LLVM_CXXFLAGS := `$(LLVM_BIN_PATH)/llvm-config --cxxflags`
-LLVM_LDFLAGS := `$(LLVM_BIN_PATH)/llvm-config --ldflags --libs --system-libs`
+#LLVM_LDFLAGS := `$(LLVM_BIN_PATH)/llvm-config --ldflags --libs --system-libs`
+LLVM_LDFLAGS := `$(LLVM_BIN_PATH)/llvm-config --ldflags --libs`
 
 # It's recommended that CXX matches the compiler you used to build LLVM itself.
 OPTLEVEL := -O0
@@ -55,7 +56,7 @@ all: llvm2ice
 .PHONY: all
 
 llvm2ice: $(OBJS)
-	$(CXX) $(LDFLAGS) -o $@ $^ $(LLVM_LDFLAGS)
+	$(CXX) $(LDFLAGS) -o $@ $^ $(LLVM_LDFLAGS) -ldl -lcurses
 
 # TODO: Be more precise than "*.h" here and elsewhere.
 $(OBJS): build/%.o: src/%.cpp src/*.h
