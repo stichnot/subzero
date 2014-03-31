@@ -31,9 +31,7 @@ if __name__ == '__main__':
             bitcode = base + '.pnacl.ll'
             shellcmd(['../ir_samples/build-pnacl-ir.py', arg])
             shellcmd('sed -i "s/^define internal /define /" ' + bitcode)
-            # Leaving the 'target' lines sometimes causes llc
-            # assertion failures.
-            shellcmd('sed -i "s/^target /;target /" ' + bitcode)
+            shellcmd('sed -i "s/le32-unknown-nacl/i686-pc-linux-gnu/" ' + bitcode)
 
         asm_sz = base + '.sz.s'
         obj_sz = base + '.sz.o'
@@ -50,7 +48,6 @@ if __name__ == '__main__':
                   '-o=' + obj_sz,
                   asm_sz])
         shellcmd(['$LLVM_BIN_PATH/llc',
-                  '-march=x86',
                   '-filetype=obj',
                   '-o=' + obj_llc,
                   bitcode])
