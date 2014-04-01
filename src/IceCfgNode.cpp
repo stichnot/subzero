@@ -207,9 +207,10 @@ void IceCfgNode::deletePhis() {
 // instruction and delete the old.
 void IceCfgNode::doAddressOpt() {
   IceTargetLowering *Target = Cfg->getTarget();
-  IceLoweringContext Context(this);
+  IceLoweringContext &Context = Target->getContext();
+  Context.init(this);
   while (Context.Cur != Context.End) {
-    Target->doAddressOpt(Context);
+    Target->doAddressOpt();
   }
 }
 
@@ -217,14 +218,15 @@ void IceCfgNode::doAddressOpt() {
 // next non-deleted instruction for target lowering.
 void IceCfgNode::genCode() {
   IceTargetLowering *Target = Cfg->getTarget();
+  IceLoweringContext &Context = Target->getContext();
   // Lower only the regular instructions.  Defer the Phi instructions.
-  IceLoweringContext Context(this);
+  Context.init(this);
   while (Context.Cur != Context.End) {
     IceInstList::iterator Orig = Context.Cur;
     (void)Orig; // used only in assert()
     if (llvm::isa<IceInstRet>(*Context.Cur))
       setHasReturn();
-    Target->lower(Context);
+    Target->lower();
     assert(Context.Cur != Orig);
   }
 }

@@ -22,12 +22,18 @@
 #include "IceTargetLowering.h"
 #include "IceTargetLoweringX8632.h"
 
-IceLoweringContext::IceLoweringContext(IceCfgNode *Node)
-    : Node(Node), Insts(Node->getInsts()), Cur(Insts.begin()),
-      End(Insts.end()) {
+void IceLoweringContext::init(IceCfgNode *N) {
+  Node = N;
+  Cur = Node->getInsts().begin();
+  End = Node->getInsts().end();
   skipDeleted(Cur);
   Next = Cur;
   advance(Next);
+}
+
+void IceLoweringContext::insert(IceInst *Inst) {
+  Node->getInsts().insert(Next, Inst);
+  Inst->updateVars(Node);
 }
 
 void IceLoweringContext::skipDeleted(IceInstList::iterator &I) {
@@ -62,11 +68,11 @@ IceTargetLowering *IceTargetLowering::createLowering(IceTargetArch Target,
   return NULL;
 }
 
-void IceTargetLowering::doAddressOpt(IceLoweringContext &Context) {
+void IceTargetLowering::doAddressOpt() {
   if (llvm::isa<IceInstLoad>(*Context.Cur))
-    doAddressOptLoad(Context);
+    doAddressOptLoad();
   else if (llvm::isa<IceInstStore>(*Context.Cur))
-    doAddressOptStore(Context);
+    doAddressOptStore();
   Context.Cur = Context.Next;
   Context.advanceNext();
 }
@@ -83,54 +89,54 @@ void IceTargetLowering::doAddressOpt(IceLoweringContext &Context) {
 // it should advance Context.Cur to point to the next non-deleted
 // instruction to process, and it should delete any additional
 // instructions it consumes.
-void IceTargetLowering::lower(IceLoweringContext &Context) {
+void IceTargetLowering::lower() {
   assert(Context.Cur != Context.End);
   IceInst *Inst = *Context.Cur;
   switch (Inst->getKind()) {
   case IceInst::Alloca:
-    lowerAlloca(llvm::dyn_cast<IceInstAlloca>(Inst), Context);
+    lowerAlloca(llvm::dyn_cast<IceInstAlloca>(Inst));
     break;
   case IceInst::Arithmetic:
-    lowerArithmetic(llvm::dyn_cast<IceInstArithmetic>(Inst), Context);
+    lowerArithmetic(llvm::dyn_cast<IceInstArithmetic>(Inst));
     break;
   case IceInst::Assign:
-    lowerAssign(llvm::dyn_cast<IceInstAssign>(Inst), Context);
+    lowerAssign(llvm::dyn_cast<IceInstAssign>(Inst));
     break;
   case IceInst::Br:
-    lowerBr(llvm::dyn_cast<IceInstBr>(Inst), Context);
+    lowerBr(llvm::dyn_cast<IceInstBr>(Inst));
     break;
   case IceInst::Call:
-    lowerCall(llvm::dyn_cast<IceInstCall>(Inst), Context);
+    lowerCall(llvm::dyn_cast<IceInstCall>(Inst));
     break;
   case IceInst::Cast:
-    lowerCast(llvm::dyn_cast<IceInstCast>(Inst), Context);
+    lowerCast(llvm::dyn_cast<IceInstCast>(Inst));
     break;
   case IceInst::Fcmp:
-    lowerFcmp(llvm::dyn_cast<IceInstFcmp>(Inst), Context);
+    lowerFcmp(llvm::dyn_cast<IceInstFcmp>(Inst));
     break;
   case IceInst::Icmp:
-    lowerIcmp(llvm::dyn_cast<IceInstIcmp>(Inst), Context);
+    lowerIcmp(llvm::dyn_cast<IceInstIcmp>(Inst));
     break;
   case IceInst::Load:
-    lowerLoad(llvm::dyn_cast<IceInstLoad>(Inst), Context);
+    lowerLoad(llvm::dyn_cast<IceInstLoad>(Inst));
     break;
   case IceInst::Phi:
-    lowerPhi(llvm::dyn_cast<IceInstPhi>(Inst), Context);
+    lowerPhi(llvm::dyn_cast<IceInstPhi>(Inst));
     break;
   case IceInst::Ret:
-    lowerRet(llvm::dyn_cast<IceInstRet>(Inst), Context);
+    lowerRet(llvm::dyn_cast<IceInstRet>(Inst));
     break;
   case IceInst::Select:
-    lowerSelect(llvm::dyn_cast<IceInstSelect>(Inst), Context);
+    lowerSelect(llvm::dyn_cast<IceInstSelect>(Inst));
     break;
   case IceInst::Store:
-    lowerStore(llvm::dyn_cast<IceInstStore>(Inst), Context);
+    lowerStore(llvm::dyn_cast<IceInstStore>(Inst));
     break;
   case IceInst::Switch:
-    lowerSwitch(llvm::dyn_cast<IceInstSwitch>(Inst), Context);
+    lowerSwitch(llvm::dyn_cast<IceInstSwitch>(Inst));
     break;
   case IceInst::Unreachable:
-    lowerUnreachable(llvm::dyn_cast<IceInstUnreachable>(Inst), Context);
+    lowerUnreachable(llvm::dyn_cast<IceInstUnreachable>(Inst));
     break;
   case IceInst::FakeDef:
   case IceInst::FakeUse:
@@ -143,7 +149,7 @@ void IceTargetLowering::lower(IceLoweringContext &Context) {
   }
   Inst->setDeleted();
 
-  postLower(Context);
+  postLower();
 
   Context.Cur = Context.Next;
   Context.advanceNext();
