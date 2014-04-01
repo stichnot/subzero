@@ -613,10 +613,12 @@ void IceTargetX8632::lowerArithmetic(const IceInstArithmetic *Inst,
       _imul(C, Tmp1, Src1Lo);
       _mov(C, Tmp2, Src1Hi);
       _imul(C, Tmp2, Src0Lo);
-      Tmp3 = legalizeOperandToVar(C, Src0Lo, false, Reg_eax);
+      _mov(C, Tmp3, Src0Lo, Reg_eax);
       _mul(C, Tmp4Lo, Tmp3, Src1Lo);
-      _mov(C, DestLo, Tmp4Lo);
+      // The mul instruction produces two dest variables, edx:eax.  We
+      // create a fake definition of edx to account for this.
       C.insert(IceInstFakeDef::create(Cfg, Tmp4Hi, Tmp4Lo));
+      _mov(C, DestLo, Tmp4Lo);
       _add(C, Tmp4Hi, Tmp1);
       _add(C, Tmp4Hi, Tmp2);
       _mov(C, DestHi, Tmp4Hi);
@@ -625,7 +627,7 @@ void IceTargetX8632::lowerArithmetic(const IceInstArithmetic *Inst,
       // TODO: Refactor the similarities between Shl, Lshr, and Ashr.
       // gcc does the following:
       // a=b<<c ==>
-      //   t1:ecx = c.lo & 0xff // via movzx, we can probably just t1=c.lo
+      //   t1:ecx = c.lo & 0xff
       //   t2 = b.lo
       //   t3 = b.hi
       //   t3 = shld t3, t2, t1
@@ -642,13 +644,17 @@ void IceTargetX8632::lowerArithmetic(const IceInstArithmetic *Inst,
       IceConstant *BitTest = Cfg->getConstantInt(IceType_i32, 0x20);
       IceConstant *Zero = Cfg->getConstantInt(IceType_i32, 0);
       IceInstX8632Label *Label = IceInstX8632Label::create(Cfg, this);
-      Tmp1 = legalizeOperandToVar(C, Src1Lo, false, Reg_ecx);
+      _mov(C, Tmp1, Src1Lo, Reg_ecx);
       _mov(C, Tmp2, Src0Lo);
       _mov(C, Tmp3, Src0Hi);
       _shld(C, Tmp3, Tmp2, Tmp1);
       _shl(C, Tmp2, Tmp1);
       _test(C, Tmp1, BitTest);
       _br(C, Label, IceInstX8632Br::Br_e);
+      // Because of the intra-block control flow, we need to fake a
+      // use of Tmp3 to prevent its earlier definition from being
+      // dead-code eliminated in the presence of its later
+      // definition..
       C.insert(IceInstFakeUse::create(Cfg, Tmp3));
       _mov(C, Tmp3, Tmp2);
       _mov(C, Tmp2, Zero);
@@ -658,7 +664,7 @@ void IceTargetX8632::lowerArithmetic(const IceInstArithmetic *Inst,
     } break;
     case IceInstArithmetic::Lshr: {
       // a=b>>c (unsigned) ==>
-      //   t1:ecx = c.lo & 0xff // via movzx, we can probably just t1=c.lo
+      //   t1:ecx = c.lo & 0xff
       //   t2 = b.lo
       //   t3 = b.hi
       //   t2 = shrd t2, t3, t1
@@ -675,13 +681,17 @@ void IceTargetX8632::lowerArithmetic(const IceInstArithmetic *Inst,
       IceConstant *BitTest = Cfg->getConstantInt(IceType_i32, 0x20);
       IceConstant *Zero = Cfg->getConstantInt(IceType_i32, 0);
       IceInstX8632Label *Label = IceInstX8632Label::create(Cfg, this);
-      Tmp1 = legalizeOperandToVar(C, Src1Lo, false, Reg_ecx);
+      _mov(C, Tmp1, Src1Lo, Reg_ecx);
       _mov(C, Tmp2, Src0Lo);
       _mov(C, Tmp3, Src0Hi);
       _shrd(C, Tmp2, Tmp3, Tmp1);
       _shr(C, Tmp3, Tmp1);
       _test(C, Tmp1, BitTest);
       _br(C, Label, IceInstX8632Br::Br_e);
+      // Because of the intra-block control flow, we need to fake a
+      // use of Tmp3 to prevent its earlier definition from being
+      // dead-code eliminated in the presence of its later
+      // definition..
       C.insert(IceInstFakeUse::create(Cfg, Tmp2));
       _mov(C, Tmp2, Tmp3);
       _mov(C, Tmp3, Zero);
@@ -691,7 +701,7 @@ void IceTargetX8632::lowerArithmetic(const IceInstArithmetic *Inst,
     } break;
     case IceInstArithmetic::Ashr: {
       // a=b>>c (signed) ==>
-      //   t1:ecx = c.lo & 0xff // via movzx, we can probably just t1=c.lo
+      //   t1:ecx = c.lo & 0xff
       //   t2 = b.lo
       //   t3 = b.hi
       //   t2 = shrd t2, t3, t1
@@ -708,13 +718,17 @@ void IceTargetX8632::lowerArithmetic(const IceInstArithmetic *Inst,
       IceConstant *BitTest = Cfg->getConstantInt(IceType_i32, 0x20);
       IceConstant *SignExtend = Cfg->getConstantInt(IceType_i32, 0x1f);
       IceInstX8632Label *Label = IceInstX8632Label::create(Cfg, this);
-      Tmp1 = legalizeOperandToVar(C, Src1Lo, false, Reg_ecx);
+      _mov(C, Tmp1, Src1Lo, Reg_ecx);
       _mov(C, Tmp2, Src0Lo);
       _mov(C, Tmp3, Src0Hi);
       _shrd(C, Tmp2, Tmp3, Tmp1);
       _sar(C, Tmp3, Tmp1);
       _test(C, Tmp1, BitTest);
       _br(C, Label, IceInstX8632Br::Br_e);
+      // Because of the intra-block control flow, we need to fake a
+      // use of Tmp3 to prevent its earlier definition from being
+      // dead-code eliminated in the presence of its later
+      // definition..
       C.insert(IceInstFakeUse::create(Cfg, Tmp2));
       _mov(C, Tmp2, Tmp3);
       _sar(C, Tmp3, SignExtend);
@@ -823,39 +837,37 @@ void IceTargetX8632::lowerArithmetic(const IceInstArithmetic *Inst,
       _mov(C, Dest, Reg1);
       break;
     case IceInstArithmetic::Udiv: {
-      Reg1 = legalizeOperandToVar(C, Src0, false, Reg_eax);
-      Reg0 = makeVariableWithReg(C, IceType_i32, Reg_edx);
-      IceConstant *ConstZero = Cfg->getConstantInt(IceType_i32, 0);
-      _mov(C, Reg0, ConstZero);
+      IceConstant *Zero = Cfg->getConstantInt(IceType_i32, 0);
+      _mov(C, Reg1, Src0, Reg_eax);
+      _mov(C, Reg0, Zero, Reg_edx);
       _div(C, Reg1, Src1, Reg0);
       _mov(C, Dest, Reg1);
     } break;
     case IceInstArithmetic::Sdiv:
-      Reg1 = legalizeOperandToVar(C, Src0, false, Reg_eax);
       Reg0 = makeVariableWithReg(C, IceType_i32, Reg_edx);
+      _mov(C, Reg1, Src0, Reg_eax);
       _cdq(C, Reg0, Reg1);
       _idiv(C, Reg1, Src1, Reg0);
       _mov(C, Dest, Reg1);
       break;
     case IceInstArithmetic::Urem: {
-      Reg1 = legalizeOperandToVar(C, Src0, false, Reg_eax);
-      Reg0 = makeVariableWithReg(C, IceType_i32, Reg_edx);
-      IceConstant *ConstZero = Cfg->getConstantInt(IceType_i32, 0);
-      _mov(C, Reg0, ConstZero);
+      IceConstant *Zero = Cfg->getConstantInt(IceType_i32, 0);
+      _mov(C, Reg0, Zero, Reg_edx);
+      _mov(C, Reg1, Src0, Reg_eax);
+      _mov(C, Reg0, Zero);
       _div(C, Reg0, Src1, Reg1);
       Reg1 = Reg0;
       _mov(C, Dest, Reg1);
     } break;
     case IceInstArithmetic::Srem:
-      Reg1 = legalizeOperandToVar(C, Src0, false, Reg_eax);
       Reg0 = makeVariableWithReg(C, IceType_i32, Reg_edx);
+      _mov(C, Reg1, Src0, Reg_eax);
       _cdq(C, Reg0, Reg1);
       _idiv(C, Reg0, Src1, Reg1);
       Reg1 = Reg0;
       _mov(C, Dest, Reg1);
       break;
     case IceInstArithmetic::Fadd:
-      // t=src0; t=addss/addsd t, src1; dst=movss/movsd t
       _mov(C, Reg1, Src0);
       _addss(C, Reg1, Src1);
       _mov(C, Dest, Reg1);
@@ -1064,7 +1076,7 @@ void IceTargetX8632::lowerCast(const IceInstCast *Inst, IceLoweringContext &C) {
       else
         _movsx(C, Tmp, Reg);
       _mov(C, DestLo, Tmp);
-      IceVariable *RegHi = makeVariableWithReg(C, IceType_i32);
+      IceVariable *RegHi = NULL;
       IceConstant *Shift = Cfg->getConstantInt(IceType_i32, 31);
       _mov(C, RegHi, Tmp);
       _sar(C, RegHi, Shift);
@@ -1110,7 +1122,7 @@ void IceTargetX8632::lowerCast(const IceInstCast *Inst, IceLoweringContext &C) {
       Reg = loOperand(C, Reg);
     // t1 = trunc Reg; Dest = t1
     IceOperand *Tmp1 = legalizeOperand(C, Reg, Legal_All);
-    IceVariable *Tmp2 = makeVariableWithReg(C, Dest->getType());
+    IceVariable *Tmp2 = NULL;
     _mov(C, Tmp2, Tmp1);
     _mov(C, Dest, Tmp2);
     break;
@@ -1145,9 +1157,9 @@ void IceTargetX8632::lowerCast(const IceInstCast *Inst, IceLoweringContext &C) {
       IceVariable *Tmp1 = makeVariableWithReg(C, IceType_i32);
       _cvt(C, Tmp1, Reg);
       IceVariable *Tmp2 = makeVariableWithReg(C, Dest->getType());
-      Tmp2->setPreferredRegister(Tmp1, true);
       _mov(C, Tmp2, Tmp1);
       _mov(C, Dest, Tmp2);
+      Tmp2->setPreferredRegister(Tmp1, true);
       // Sign-extend the result if necessary.
     }
     break;
@@ -1243,11 +1255,11 @@ void IceTargetX8632::lowerCast(const IceInstCast *Inst, IceLoweringContext &C) {
       //   t.f32 = b.f32
       //   s.f32 = spill t.f32
       //   a.i32 = s.f32
-      IceVariable *Tmp = makeVariableWithReg(C, SrcType);
-      _mov(C, Tmp, Reg);
+      IceVariable *Tmp = NULL;
       IceVariable *Spill = Cfg->makeVariable(SrcType, C.Node);
       Spill->setWeight(IceRegWeight::Zero);
       Spill->setPreferredRegister(Dest, true);
+      _mov(C, Tmp, Reg);
       _mov(C, Spill, Tmp);
       _mov(C, Dest, Spill);
     } break;
@@ -1293,18 +1305,15 @@ void IceTargetX8632::lowerCast(const IceInstCast *Inst, IceLoweringContext &C) {
 
       C.insert(IceInstFakeDef::create(Cfg, Spill));
 
-      IceVariable *TmpLo = makeVariableWithReg(C, IceType_i32);
-      _mov(C, TmpLo, loOperand(C, Reg));
+      IceVariable *TmpLo = NULL, *TmpHi = NULL;
       IceVariableSplit *SpillLo =
           IceVariableSplit::create(Cfg, Spill, IceVariableSplit::Low);
-      _store(C, TmpLo, SpillLo);
-
-      IceVariable *TmpHi = makeVariableWithReg(C, IceType_i32);
-      _mov(C, TmpHi, hiOperand(C, Reg));
       IceVariableSplit *SpillHi =
           IceVariableSplit::create(Cfg, Spill, IceVariableSplit::High);
+      _mov(C, TmpLo, loOperand(C, Reg));
+      _store(C, TmpLo, SpillLo);
+      _mov(C, TmpHi, hiOperand(C, Reg));
       _store(C, TmpHi, SpillHi);
-
       _mov(C, Dest, Spill);
     } break;
     }
@@ -1775,7 +1784,7 @@ void IceTargetX8632::lowerRet(const IceInstRet *Inst, IceLoweringContext &C) {
                Src0->getType() == IceType_f64) {
       _fld(C, Src0);
     } else {
-      Reg = legalizeOperandToVar(C, Src0, false, Reg_eax);
+      _mov(C, Reg, Src0, Reg_eax);
     }
   }
   _ret(C, Reg);
@@ -1951,7 +1960,7 @@ IceOperand *IceTargetX8632::legalizeOperand(IceLoweringContext &C,
 
     if (!(Allowed & Legal_Mem)) {
       IceVariable *Reg = makeVariableWithReg(C, From->getType(), RegNum);
-      _mov(C, Reg, From);
+      _mov(C, Reg, From, RegNum);
       From = Reg;
     }
     return From;

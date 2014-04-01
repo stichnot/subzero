@@ -191,9 +191,10 @@ protected:
   // If Dest=NULL is passed in, then a new variable is created, marked
   // as infinite register allocation weight, and returned through the
   // in/out Dest argument.
-  void _mov(IceLoweringContext &C, IceVariable *&Dest, IceOperand *Src0) {
+  void _mov(IceLoweringContext &C, IceVariable *&Dest, IceOperand *Src0,
+            int32_t RegNum = IceVariable::NoRegister) {
     if (Dest == NULL) {
-      Dest = legalizeOperandToVar(C, Src0);
+      Dest = legalizeOperandToVar(C, Src0, false, RegNum);
     } else {
       C.insert(IceInstX8632Mov::create(Cfg, Dest, Src0));
     }
