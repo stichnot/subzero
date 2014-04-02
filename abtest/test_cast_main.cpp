@@ -2,6 +2,7 @@
 
 #include <stdio.h>
 #include <stdint.h>
+#include <string.h>
 
 bool castUi64ToUi1(uint64_t a);
 bool castSi64ToUi1(int64_t a);
@@ -286,12 +287,7 @@ double Subzero_castbits_Ui64ToF64(uint64_t a);
     ResultLlc = cast##FromIceName##To##ToIceName(Input);                       \
     ResultSz = Subzero_cast##FromIceName##To##ToIceName(Input);                \
     ++TotalTests;                                                              \
-    /* Use type punning since "nan==nan" always returns false. */              \
-    bool Different = false;                                                    \
-    for (unsigned i = 0; i < sizeof(ToCName); ++i) {                           \
-      Different |= (((char *)&ResultLlc)[i] != ((char *)&ResultSz)[i]);        \
-    }                                                                          \
-    if (!Different) {                                                          \
+    if (!memcmp(&ResultLlc, &ResultSz, sizeof(ToCName))) {                     \
       ++Passes;                                                                \
     } else {                                                                   \
       ++Failures;                                                              \
@@ -547,8 +543,10 @@ int main(int argc, char **argv) {
     }
   }
   for (unsigned i = 0; i < NumValsF32; ++i) {
-    {
+    for (unsigned j = 0; j < 2; ++j) {
       float Val = ValsF32[i];
+      if (j > 0)
+        Val = -Val;
       COMPARE(float, F32, "%f", bool, Ui1, "%u", Val);
       COMPARE(float, F32, "%f", unsigned char, Ui8, "%u", Val);
       COMPARE(float, F32, "%f", signed char, Si8, "%d", Val);
@@ -564,8 +562,10 @@ int main(int argc, char **argv) {
     }
   }
   for (unsigned i = 0; i < NumValsF64; ++i) {
-    {
+    for (unsigned j = 0; j < 2; ++j) {
       double Val = ValsF64[i];
+      if (j > 0)
+        Val = -Val;
       COMPARE(double, F64, "%f", bool, Ui1, "%u", Val);
       COMPARE(double, F64, "%f", unsigned char, Ui8, "%u", Val);
       COMPARE(double, F64, "%f", signed char, Si8, "%d", Val);
