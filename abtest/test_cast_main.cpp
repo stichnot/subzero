@@ -282,7 +282,7 @@ double Subzero_castbits_Ui64ToF64(uint64_t a);
 #define STR(s) #s
 #define COMPARE(FromCName, FromIceName, FromPrintf, ToCName, ToIceName,        \
                 ToPrintf, Input)                                               \
-  {                                                                            \
+  do {                                                                         \
     ToCName ResultSz, ResultLlc;                                               \
     ResultLlc = cast##FromIceName##To##ToIceName(Input);                       \
     ResultSz = Subzero_cast##FromIceName##To##ToIceName(Input);                \
@@ -296,7 +296,7 @@ double Subzero_castbits_Ui64ToF64(uint64_t a);
                              "sz=" ToPrintf " llc=" ToPrintf "\n",             \
              Input, ResultSz, ResultLlc);                                      \
     }                                                                          \
-  }
+  } while (0)
 
 int main(int argc, char **argv) {
   unsigned TotalTests = 0;
