@@ -102,13 +102,12 @@ protected:
     Legal_All = ~Legal_None
   };
   typedef uint32_t LegalMask;
-  IceOperand *legalizeOperand(IceOperand *From, LegalMask Allowed,
-                              bool AllowOverlap = false,
-                              int32_t RegNum = IceVariable::NoRegister);
-  IceVariable *legalizeOperandToVar(IceOperand *From, bool AllowOverlap = false,
-                                    int32_t RegNum = IceVariable::NoRegister);
-  IceVariable *makeVariableWithReg(IceType Type,
-                                   int32_t RegNum = IceVariable::NoRegister);
+  IceOperand *legalize(IceOperand *From, LegalMask Allowed = Legal_All,
+                       bool AllowOverlap = false,
+                       int32_t RegNum = IceVariable::NoRegister);
+  IceVariable *legalizeToVar(IceOperand *From, bool AllowOverlap = false,
+                             int32_t RegNum = IceVariable::NoRegister);
+  IceVariable *makeReg(IceType Type, int32_t RegNum = IceVariable::NoRegister);
   IceInstCall *makeHelperCall(const IceString &Name, IceType Type,
                               IceVariable *Dest, uint32_t MaxSrcs) {
     bool SuppressMangling = true;
@@ -135,22 +134,25 @@ protected:
   void _and(IceVariable *Dest, IceOperand *Src0) {
     Context.insert(IceInstX8632And::create(Cfg, Dest, Src0));
   }
-  void _br(IceCfgNode *TargetTrue, IceCfgNode *TargetFalse,
-           IceInstX8632Br::BrCond Condition) {
+  void _br(IceInstX8632Br::BrCond Condition, IceCfgNode *TargetTrue,
+           IceCfgNode *TargetFalse) {
     Context.insert(
         IceInstX8632Br::create(Cfg, TargetTrue, TargetFalse, Condition));
   }
   void _br(IceCfgNode *Target) {
     Context.insert(IceInstX8632Br::create(Cfg, Target));
   }
-  void _br(IceCfgNode *Target, IceInstX8632Br::BrCond Condition) {
+  void _br(IceInstX8632Br::BrCond Condition, IceCfgNode *Target) {
     Context.insert(IceInstX8632Br::create(Cfg, Target, Condition));
   }
-  void _br(IceInstX8632Label *Label, IceInstX8632Br::BrCond Condition) {
+  void _br(IceInstX8632Br::BrCond Condition, IceInstX8632Label *Label) {
     Context.insert(IceInstX8632Br::create(Cfg, Label, Condition));
   }
   void _cdq(IceVariable *Dest, IceOperand *Src0) {
     Context.insert(IceInstX8632Cdq::create(Cfg, Dest, Src0));
+  }
+  void _cmp(IceOperand *Src0, IceOperand *Src1) {
+    Context.insert(IceInstX8632Icmp::create(Cfg, Src0, Src1));
   }
   void _cvt(IceVariable *Dest, IceOperand *Src0) {
     Context.insert(IceInstX8632Cvt::create(Cfg, Dest, Src0));
@@ -167,9 +169,6 @@ protected:
   void _fstp(IceVariable *Dest) {
     Context.insert(IceInstX8632Fstp::create(Cfg, Dest));
   }
-  void _icmp(IceOperand *Src0, IceOperand *Src1) {
-    Context.insert(IceInstX8632Icmp::create(Cfg, Src0, Src1));
-  }
   void _idiv(IceVariable *Dest, IceOperand *Src0, IceOperand *Src1) {
     Context.insert(IceInstX8632Idiv::create(Cfg, Dest, Src0, Src1));
   }
@@ -182,7 +181,7 @@ protected:
   void _mov(IceVariable *&Dest, IceOperand *Src0,
             int32_t RegNum = IceVariable::NoRegister) {
     if (Dest == NULL) {
-      Dest = legalizeOperandToVar(Src0, false, RegNum);
+      Dest = legalizeToVar(Src0, false, RegNum);
     } else {
       Context.insert(IceInstX8632Mov::create(Cfg, Dest, Src0));
     }
