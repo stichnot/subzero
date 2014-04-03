@@ -70,6 +70,7 @@ build:
 check: llvm2ice
 	LLVM_BIN_PATH=$(LLVM_BIN_PATH) \
 	$(LLVM_SRC_PATH)/utils/lit/lit.py -sv tests_lit
+	(cd abtest; ./runtests.sh)
 
 # TODO: Fix the use of wildcards.
 format:
