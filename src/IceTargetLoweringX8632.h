@@ -108,10 +108,11 @@ protected:
   IceVariable *legalizeToVar(IceOperand *From, bool AllowOverlap = false,
                              int32_t RegNum = IceVariable::NoRegister);
   IceVariable *makeReg(IceType Type, int32_t RegNum = IceVariable::NoRegister);
-  IceInstCall *makeHelperCall(const IceString &Name, IceType Type,
-                              IceVariable *Dest, uint32_t MaxSrcs) {
+  IceInstCall *makeHelperCall(const IceString &Name, IceVariable *Dest,
+                              uint32_t MaxSrcs) {
     bool SuppressMangling = true;
     bool Tailcall = false;
+    IceType Type = Dest ? Dest->getType() : IceType_void;
     IceConstant *CallTarget =
         Cfg->getConstantSym(Type, NULL, 0, Name, SuppressMangling);
     IceInstCall *Call =
