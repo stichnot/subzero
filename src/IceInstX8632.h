@@ -35,6 +35,8 @@ public:
 protected:
   IceOperandX8632(IceCfg *Cfg, IceOperandTypeX8632 Kind, IceType Type)
       : IceOperand(Cfg, static_cast<OperandKind>(Kind), Type) {}
+  IceOperandX8632(const IceOperandX8632 &) LLVM_DELETED_FUNCTION;
+  IceOperandX8632 &operator=(const IceOperandX8632 &) LLVM_DELETED_FUNCTION;
 };
 
 class IceOperandX8632Mem : public IceOperandX8632 {
@@ -61,6 +63,9 @@ public:
 private:
   IceOperandX8632Mem(IceCfg *Cfg, IceType Type, IceVariable *Base,
                      IceConstant *Offset, IceVariable *Index, uint32_t Shift);
+  IceOperandX8632Mem(const IceOperandX8632Mem &) LLVM_DELETED_FUNCTION;
+  IceOperandX8632Mem &
+  operator=(const IceOperandX8632Mem &) LLVM_DELETED_FUNCTION;
   IceVariable *Base;
   IceConstant *Offset;
   IceVariable *Index;
@@ -91,6 +96,8 @@ private:
     Vars[0] = Var;
     NumVars = 1;
   }
+  IceVariableSplit(const IceVariableSplit &) LLVM_DELETED_FUNCTION;
+  IceVariableSplit &operator=(const IceVariableSplit &) LLVM_DELETED_FUNCTION;
   IceVariable *Var;
   Portion Part;
 };
@@ -148,6 +155,10 @@ protected:
   static bool isClassof(const IceInst *Inst, InstKindX8632 MyKind) {
     return Inst->getKind() == static_cast<InstKind>(MyKind);
   }
+
+private:
+  IceInstX8632(const IceInstX8632 &) LLVM_DELETED_FUNCTION;
+  IceInstX8632 &operator=(const IceInstX8632 &) LLVM_DELETED_FUNCTION;
 };
 
 // IceInstX8632Label represents an intra-block label that is the
@@ -198,6 +209,8 @@ public:
 
 private:
   IceInstX8632Label(IceCfg *Cfg, IceTargetX8632 *Target);
+  IceInstX8632Label(const IceInstX8632Label &) LLVM_DELETED_FUNCTION;
+  IceInstX8632Label &operator=(const IceInstX8632Label &) LLVM_DELETED_FUNCTION;
   uint32_t Number; // used only for unique label string generation
 };
 
@@ -246,6 +259,8 @@ public:
 private:
   IceInstX8632Br(IceCfg *Cfg, IceCfgNode *TargetTrue, IceCfgNode *TargetFalse,
                  IceInstX8632Label *Label, BrCond Condition);
+  IceInstX8632Br(const IceInstX8632Br &) LLVM_DELETED_FUNCTION;
+  IceInstX8632Br &operator=(const IceInstX8632Br &) LLVM_DELETED_FUNCTION;
   BrCond Condition;
   IceCfgNode *TargetTrue;
   IceCfgNode *TargetFalse;
@@ -267,6 +282,8 @@ public:
 private:
   IceInstX8632Call(IceCfg *Cfg, IceVariable *Dest, IceOperand *CallTarget,
                    bool Tail);
+  IceInstX8632Call(const IceInstX8632Call &) LLVM_DELETED_FUNCTION;
+  IceInstX8632Call &operator=(const IceInstX8632Call &) LLVM_DELETED_FUNCTION;
   const bool Tail;
 };
 
@@ -297,6 +314,8 @@ private:
     addSource(Dest);
     addSource(Source);
   }
+  IceInstX8632Binop(const IceInstX8632Binop &) LLVM_DELETED_FUNCTION;
+  IceInstX8632Binop &operator=(const IceInstX8632Binop &) LLVM_DELETED_FUNCTION;
   static const char *Opcode;
 };
 
@@ -329,6 +348,9 @@ private:
     addSource(Source1);
     addSource(Source2);
   }
+  IceInstX8632Ternop(const IceInstX8632Ternop &) LLVM_DELETED_FUNCTION;
+  IceInstX8632Ternop &
+  operator=(const IceInstX8632Ternop &) LLVM_DELETED_FUNCTION;
   static const char *Opcode;
 };
 
@@ -364,6 +386,8 @@ public:
 private:
   IceInstX8632Mul(IceCfg *Cfg, IceVariable *Dest, IceVariable *Source1,
                   IceOperand *Source2);
+  IceInstX8632Mul(const IceInstX8632Mul &) LLVM_DELETED_FUNCTION;
+  IceInstX8632Mul &operator=(const IceInstX8632Mul &) LLVM_DELETED_FUNCTION;
 };
 
 class IceInstX8632Shld : public IceInstX8632 {
@@ -380,6 +404,8 @@ public:
 private:
   IceInstX8632Shld(IceCfg *Cfg, IceVariable *Dest, IceVariable *Source1,
                    IceVariable *Source2);
+  IceInstX8632Shld(const IceInstX8632Shld &) LLVM_DELETED_FUNCTION;
+  IceInstX8632Shld &operator=(const IceInstX8632Shld &) LLVM_DELETED_FUNCTION;
 };
 
 class IceInstX8632Shrd : public IceInstX8632 {
@@ -396,6 +422,8 @@ public:
 private:
   IceInstX8632Shrd(IceCfg *Cfg, IceVariable *Dest, IceVariable *Source1,
                    IceVariable *Source2);
+  IceInstX8632Shrd(const IceInstX8632Shrd &) LLVM_DELETED_FUNCTION;
+  IceInstX8632Shrd &operator=(const IceInstX8632Shrd &) LLVM_DELETED_FUNCTION;
 };
 
 // Sign-extend eax into edx
@@ -412,6 +440,8 @@ public:
 
 private:
   IceInstX8632Cdq(IceCfg *Cfg, IceVariable *Dest, IceOperand *Source);
+  IceInstX8632Cdq(const IceInstX8632Cdq &) LLVM_DELETED_FUNCTION;
+  IceInstX8632Cdq &operator=(const IceInstX8632Cdq &) LLVM_DELETED_FUNCTION;
 };
 
 // Cvt instruction - wrapper for cvtsX2sY where X and Y are in {s,d,i}
@@ -431,6 +461,8 @@ public:
 
 private:
   IceInstX8632Cvt(IceCfg *Cfg, IceVariable *Dest, IceOperand *Source);
+  IceInstX8632Cvt(const IceInstX8632Cvt &) LLVM_DELETED_FUNCTION;
+  IceInstX8632Cvt &operator=(const IceInstX8632Cvt &) LLVM_DELETED_FUNCTION;
 };
 
 class IceInstX8632Icmp : public IceInstX8632 {
@@ -446,6 +478,8 @@ public:
 
 private:
   IceInstX8632Icmp(IceCfg *Cfg, IceOperand *Src1, IceOperand *Src2);
+  IceInstX8632Icmp(const IceInstX8632Icmp &) LLVM_DELETED_FUNCTION;
+  IceInstX8632Icmp &operator=(const IceInstX8632Icmp &) LLVM_DELETED_FUNCTION;
 };
 
 class IceInstX8632Ucomiss : public IceInstX8632 {
@@ -461,6 +495,9 @@ public:
 
 private:
   IceInstX8632Ucomiss(IceCfg *Cfg, IceOperand *Src1, IceOperand *Src2);
+  IceInstX8632Ucomiss(const IceInstX8632Ucomiss &) LLVM_DELETED_FUNCTION;
+  IceInstX8632Ucomiss &
+  operator=(const IceInstX8632Ucomiss &) LLVM_DELETED_FUNCTION;
 };
 
 class IceInstX8632Test : public IceInstX8632 {
@@ -476,6 +513,8 @@ public:
 
 private:
   IceInstX8632Test(IceCfg *Cfg, IceOperand *Source1, IceOperand *Source2);
+  IceInstX8632Test(const IceInstX8632Test &) LLVM_DELETED_FUNCTION;
+  IceInstX8632Test &operator=(const IceInstX8632Test &) LLVM_DELETED_FUNCTION;
 };
 
 // This is essentially a "mov" instruction with an IceOperandX8632Mem
@@ -494,6 +533,8 @@ public:
 
 private:
   IceInstX8632Store(IceCfg *Cfg, IceOperand *Value, IceOperandX8632 *Mem);
+  IceInstX8632Store(const IceInstX8632Store &) LLVM_DELETED_FUNCTION;
+  IceInstX8632Store &operator=(const IceInstX8632Store &) LLVM_DELETED_FUNCTION;
 };
 
 class IceInstX8632Mov : public IceInstX8632 {
@@ -510,6 +551,8 @@ public:
 
 private:
   IceInstX8632Mov(IceCfg *Cfg, IceVariable *Dest, IceOperand *Source);
+  IceInstX8632Mov(const IceInstX8632Mov &) LLVM_DELETED_FUNCTION;
+  IceInstX8632Mov &operator=(const IceInstX8632Mov &) LLVM_DELETED_FUNCTION;
 };
 
 class IceInstX8632Movsx : public IceInstX8632 {
@@ -525,6 +568,8 @@ public:
 
 private:
   IceInstX8632Movsx(IceCfg *Cfg, IceVariable *Dest, IceOperand *Source);
+  IceInstX8632Movsx(const IceInstX8632Movsx &) LLVM_DELETED_FUNCTION;
+  IceInstX8632Movsx &operator=(const IceInstX8632Movsx &) LLVM_DELETED_FUNCTION;
 };
 
 class IceInstX8632Movzx : public IceInstX8632 {
@@ -540,6 +585,8 @@ public:
 
 private:
   IceInstX8632Movzx(IceCfg *Cfg, IceVariable *Dest, IceOperand *Source);
+  IceInstX8632Movzx(const IceInstX8632Movzx &) LLVM_DELETED_FUNCTION;
+  IceInstX8632Movzx &operator=(const IceInstX8632Movzx &) LLVM_DELETED_FUNCTION;
 };
 
 class IceInstX8632Fld : public IceInstX8632 {
@@ -553,6 +600,8 @@ public:
 
 private:
   IceInstX8632Fld(IceCfg *Cfg, IceOperand *Src);
+  IceInstX8632Fld(const IceInstX8632Fld &) LLVM_DELETED_FUNCTION;
+  IceInstX8632Fld &operator=(const IceInstX8632Fld &) LLVM_DELETED_FUNCTION;
 };
 
 class IceInstX8632Fstp : public IceInstX8632 {
@@ -566,6 +615,8 @@ public:
 
 private:
   IceInstX8632Fstp(IceCfg *Cfg, IceVariable *Dest);
+  IceInstX8632Fstp(const IceInstX8632Fstp &) LLVM_DELETED_FUNCTION;
+  IceInstX8632Fstp &operator=(const IceInstX8632Fstp &) LLVM_DELETED_FUNCTION;
 };
 
 class IceInstX8632Pop : public IceInstX8632 {
@@ -579,6 +630,8 @@ public:
 
 private:
   IceInstX8632Pop(IceCfg *Cfg, IceVariable *Dest);
+  IceInstX8632Pop(const IceInstX8632Pop &) LLVM_DELETED_FUNCTION;
+  IceInstX8632Pop &operator=(const IceInstX8632Pop &) LLVM_DELETED_FUNCTION;
 };
 
 class IceInstX8632Push : public IceInstX8632 {
@@ -593,6 +646,8 @@ public:
 
 private:
   IceInstX8632Push(IceCfg *Cfg, IceOperand *Source);
+  IceInstX8632Push(const IceInstX8632Push &) LLVM_DELETED_FUNCTION;
+  IceInstX8632Push &operator=(const IceInstX8632Push &) LLVM_DELETED_FUNCTION;
 };
 
 class IceInstX8632Ret : public IceInstX8632 {
@@ -606,6 +661,8 @@ public:
 
 private:
   IceInstX8632Ret(IceCfg *Cfg, IceVariable *Source);
+  IceInstX8632Ret(const IceInstX8632Ret &) LLVM_DELETED_FUNCTION;
+  IceInstX8632Ret &operator=(const IceInstX8632Ret &) LLVM_DELETED_FUNCTION;
 };
 
 #endif // SUBZERO_SRC_ICEINSTX8632_H

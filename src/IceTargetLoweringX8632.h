@@ -258,6 +258,10 @@ protected:
   bool ComputedLiveRanges;
   IceVarList PhysicalRegisters;
   static IceString RegNames[];
+
+private:
+  IceTargetX8632(const IceTargetX8632 &) LLVM_DELETED_FUNCTION;
+  IceTargetX8632 &operator=(const IceTargetX8632 &) LLVM_DELETED_FUNCTION;
 };
 
 class IceTargetX8632Fast : public IceTargetX8632 {
@@ -270,6 +274,11 @@ public:
 protected:
   IceTargetX8632Fast(IceCfg *Cfg) : IceTargetX8632(Cfg) {}
   virtual void postLower();
+
+private:
+  IceTargetX8632Fast(const IceTargetX8632Fast &) LLVM_DELETED_FUNCTION;
+  IceTargetX8632Fast &
+  operator=(const IceTargetX8632Fast &) LLVM_DELETED_FUNCTION;
 };
 
 #endif // SUBZERO_SRC_ICETARGETLOWERINGX8632_H

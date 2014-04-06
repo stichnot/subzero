@@ -119,6 +119,10 @@ protected:
   IceOperand **Srcs;
 
   uint32_t LiveRangesEnded; // only first 32 src operands tracked, sorry
+
+private:
+  IceInst(const IceInst &) LLVM_DELETED_FUNCTION;
+  IceInst &operator=(const IceInst &) LLVM_DELETED_FUNCTION;
 };
 
 IceOstream &operator<<(IceOstream &Str, const IceInst *I);
@@ -136,10 +140,11 @@ public:
   virtual void dump(IceOstream &Str) const;
   static bool classof(const IceInst *Inst) { return Inst->getKind() == Alloca; }
 
-protected:
 private:
   IceInstAlloca(IceCfg *Cfg, IceOperand *ByteCount, uint32_t Align,
                 IceVariable *Dest);
+  IceInstAlloca(const IceInstAlloca &) LLVM_DELETED_FUNCTION;
+  IceInstAlloca &operator=(const IceInstAlloca &) LLVM_DELETED_FUNCTION;
   const uint32_t Align;
 };
 
@@ -185,6 +190,8 @@ public:
 private:
   IceInstArithmetic(IceCfg *Cfg, OpKind Op, IceVariable *Dest,
                     IceOperand *Source1, IceOperand *Source2);
+  IceInstArithmetic(const IceInstArithmetic &) LLVM_DELETED_FUNCTION;
+  IceInstArithmetic &operator=(const IceInstArithmetic &) LLVM_DELETED_FUNCTION;
 
   const OpKind Op;
 };
@@ -207,6 +214,8 @@ public:
 
 private:
   IceInstAssign(IceCfg *Cfg, IceVariable *Dest, IceOperand *Source);
+  IceInstAssign(const IceInstAssign &) LLVM_DELETED_FUNCTION;
+  IceInstAssign &operator=(const IceInstAssign &) LLVM_DELETED_FUNCTION;
 };
 
 // Branch instruction.  This represents both conditional and
@@ -238,6 +247,8 @@ private:
             IceCfgNode *TargetFalse);
   // Unconditional branch
   IceInstBr(IceCfg *Cfg, IceCfgNode *Target);
+  IceInstBr(const IceInstBr &) LLVM_DELETED_FUNCTION;
+  IceInstBr &operator=(const IceInstBr &) LLVM_DELETED_FUNCTION;
 
   IceCfgNode *const TargetFalse; // Doubles as unconditional branch target
   IceCfgNode *const TargetTrue;  // NULL if unconditional branch
@@ -270,6 +281,8 @@ private:
     HasSideEffects = true;
     addSource(CallTarget);
   }
+  IceInstCall(const IceInstCall &) LLVM_DELETED_FUNCTION;
+  IceInstCall &operator=(const IceInstCall &) LLVM_DELETED_FUNCTION;
   const bool Tail;
 };
 
@@ -303,6 +316,8 @@ public:
 private:
   IceInstCast(IceCfg *Cfg, OpKind CastKind, IceVariable *Dest,
               IceOperand *Source);
+  IceInstCast(const IceInstCast &) LLVM_DELETED_FUNCTION;
+  IceInstCast &operator=(const IceInstCast &) LLVM_DELETED_FUNCTION;
   OpKind CastKind;
 };
 
@@ -341,6 +356,8 @@ public:
 private:
   IceInstFcmp(IceCfg *Cfg, FCond Condition, IceVariable *Dest,
               IceOperand *Source1, IceOperand *Source2);
+  IceInstFcmp(const IceInstFcmp &) LLVM_DELETED_FUNCTION;
+  IceInstFcmp &operator=(const IceInstFcmp &) LLVM_DELETED_FUNCTION;
   FCond Condition;
 };
 
@@ -374,6 +391,8 @@ public:
 private:
   IceInstIcmp(IceCfg *Cfg, ICond Condition, IceVariable *Dest,
               IceOperand *Source1, IceOperand *Source2);
+  IceInstIcmp(const IceInstIcmp &) LLVM_DELETED_FUNCTION;
+  IceInstIcmp &operator=(const IceInstIcmp &) LLVM_DELETED_FUNCTION;
   ICond Condition;
 };
 
@@ -390,6 +409,8 @@ public:
 
 private:
   IceInstLoad(IceCfg *Cfg, IceVariable *Dest, IceOperand *SourceAddr);
+  IceInstLoad(const IceInstLoad &) LLVM_DELETED_FUNCTION;
+  IceInstLoad &operator=(const IceInstLoad &) LLVM_DELETED_FUNCTION;
 };
 
 // Phi instruction.  For incoming edge I, the node is Labels[I] and
@@ -409,6 +430,8 @@ public:
 
 private:
   IceInstPhi(IceCfg *Cfg, uint32_t MaxSrcs, IceVariable *Dest);
+  IceInstPhi(const IceInstPhi &) LLVM_DELETED_FUNCTION;
+  IceInstPhi &operator=(const IceInstPhi &) LLVM_DELETED_FUNCTION;
   // Labels[] duplicates the InEdges[] information in the enclosing
   // IceCfgNode, but the Phi instruction is created before InEdges[]
   // is available, so it's more complicated to share the list.
@@ -429,6 +452,8 @@ public:
 
 private:
   IceInstRet(IceCfg *Cfg, IceOperand *Source);
+  IceInstRet(const IceInstRet &) LLVM_DELETED_FUNCTION;
+  IceInstRet &operator=(const IceInstRet &) LLVM_DELETED_FUNCTION;
 };
 
 // Select instruction.  The condition, true, and false operands are captured.
@@ -449,6 +474,8 @@ public:
 private:
   IceInstSelect(IceCfg *Cfg, IceVariable *Dest, IceOperand *Condition,
                 IceOperand *Source1, IceOperand *Source2);
+  IceInstSelect(const IceInstSelect &) LLVM_DELETED_FUNCTION;
+  IceInstSelect &operator=(const IceInstSelect &) LLVM_DELETED_FUNCTION;
 };
 
 // Store instruction.  The address operand is captured, along with the
@@ -466,6 +493,8 @@ public:
 
 private:
   IceInstStore(IceCfg *Cfg, IceOperand *Data, IceOperand *Addr);
+  IceInstStore(const IceInstStore &) LLVM_DELETED_FUNCTION;
+  IceInstStore &operator=(const IceInstStore &) LLVM_DELETED_FUNCTION;
 };
 
 // Switch instruction.  The single source operand is captured as
@@ -495,6 +524,8 @@ public:
 private:
   IceInstSwitch(IceCfg *Cfg, uint32_t NumCases, IceOperand *Source,
                 IceCfgNode *LabelDefault);
+  IceInstSwitch(const IceInstSwitch &) LLVM_DELETED_FUNCTION;
+  IceInstSwitch &operator=(const IceInstSwitch &) LLVM_DELETED_FUNCTION;
   IceCfgNode *LabelDefault;
   uint32_t NumCases;   // not including the default case
   uint64_t *Values;    // size is NumCases
@@ -517,6 +548,9 @@ public:
 
 private:
   IceInstUnreachable(IceCfg *Cfg);
+  IceInstUnreachable(const IceInstUnreachable &) LLVM_DELETED_FUNCTION;
+  IceInstUnreachable &
+  operator=(const IceInstUnreachable &) LLVM_DELETED_FUNCTION;
 };
 
 // FakeDef instruction.  This creates a fake definition of a variable,
@@ -546,6 +580,8 @@ public:
 
 private:
   IceInstFakeDef(IceCfg *Cfg, IceVariable *Dest, IceVariable *Src);
+  IceInstFakeDef(const IceInstFakeDef &) LLVM_DELETED_FUNCTION;
+  IceInstFakeDef &operator=(const IceInstFakeDef &) LLVM_DELETED_FUNCTION;
 };
 
 // FakeUse instruction.  This creates a fake use of a variable, to
@@ -566,6 +602,8 @@ public:
 
 private:
   IceInstFakeUse(IceCfg *Cfg, IceVariable *Src);
+  IceInstFakeUse(const IceInstFakeUse &) LLVM_DELETED_FUNCTION;
+  IceInstFakeUse &operator=(const IceInstFakeUse &) LLVM_DELETED_FUNCTION;
 };
 
 // FakeKill instruction.  This "kills" a set of variables by adding a
@@ -594,6 +632,8 @@ public:
 private:
   IceInstFakeKill(IceCfg *Cfg, const IceVarList &KilledRegs,
                   const IceInst *Linked);
+  IceInstFakeKill(const IceInstFakeKill &) LLVM_DELETED_FUNCTION;
+  IceInstFakeKill &operator=(const IceInstFakeKill &) LLVM_DELETED_FUNCTION;
   // This instruction is ignored if Linked->isDeleted() is true.
   const IceInst *Linked;
 };
@@ -612,6 +652,8 @@ protected:
       : IceInst(Cfg, Kind, MaxSrcs, Dest) {
     assert(Kind >= Target);
   }
+  IceInstTarget(const IceInstTarget &) LLVM_DELETED_FUNCTION;
+  IceInstTarget &operator=(const IceInstTarget &) LLVM_DELETED_FUNCTION;
 };
 
 #endif // SUBZERO_SRC_ICEINST_H

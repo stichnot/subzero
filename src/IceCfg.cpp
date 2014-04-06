@@ -63,12 +63,12 @@ bool IceCfg::HasEmittedFirstMethod = false;
 IceCfg::IceCfg()
     : Str(this), Name(""), TestPrefix(""), Type(IceType_void),
       IsInternal(false), HasError(false), ErrorMessage(""), Entry(NULL),
-      NextInstNumber(1), ConstantPool(new IceConstantPool(this)), Target(NULL), Liveness(NULL) {
+      NextInstNumber(1), ConstantPool(new IceConstantPool(this)), Target(NULL),
+      Liveness(NULL) {
   GlobalStr = &Str;
 }
 
-IceCfg::~IceCfg() {
-}
+IceCfg::~IceCfg() {}
 
 // In this context, name mangling means to rewrite a symbol using a
 // given prefix.  For a C++ symbol, we'd like to demangle it, prepend

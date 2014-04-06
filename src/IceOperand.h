@@ -61,6 +61,10 @@ protected:
   // Vars and NumVars are initialized by the derived class.
   uint32_t NumVars;
   IceVariable **Vars;
+
+private:
+  IceOperand(const IceOperand &) LLVM_DELETED_FUNCTION;
+  IceOperand &operator=(const IceOperand &) LLVM_DELETED_FUNCTION;
 };
 
 IceOstream &operator<<(IceOstream &Str, const IceOperand *O);
@@ -84,6 +88,10 @@ protected:
     Vars = NULL;
     NumVars = 0;
   }
+
+private:
+  IceConstant(const IceConstant &) LLVM_DELETED_FUNCTION;
+  IceConstant &operator=(const IceConstant &) LLVM_DELETED_FUNCTION;
 };
 
 // IceConstantPrimitive<> wraps a primitive type.
@@ -106,6 +114,9 @@ public:
 private:
   IceConstantPrimitive(IceCfg *Cfg, IceType Type, T Value)
       : IceConstant(Cfg, K, Type), Value(Value) {}
+  IceConstantPrimitive(const IceConstantPrimitive &) LLVM_DELETED_FUNCTION;
+  IceConstantPrimitive &
+  operator=(const IceConstantPrimitive &) LLVM_DELETED_FUNCTION;
   const T Value;
 };
 
@@ -147,6 +158,9 @@ private:
                          uint32_t CPIndex)
       : IceConstant(Cfg, ConstantRelocatable, Type), CPIndex(CPIndex),
         Handle(Handle), Offset(Offset), Name(Name), SuppressMangling(false) {}
+  IceConstantRelocatable(const IceConstantRelocatable &) LLVM_DELETED_FUNCTION;
+  IceConstantRelocatable &
+  operator=(const IceConstantRelocatable &) LLVM_DELETED_FUNCTION;
   const uint32_t CPIndex;   // index into ICE constant pool
   const void *const Handle; // opaque handle e.g. to LLVM
   const int64_t Offset;     // fixed offset to add
@@ -324,6 +338,8 @@ private:
     Vars[0] = this;
     NumVars = 1;
   }
+  IceVariable(const IceVariable &) LLVM_DELETED_FUNCTION;
+  IceVariable &operator=(const IceVariable &) LLVM_DELETED_FUNCTION;
   // Number is unique across all variables, and is used as a
   // (bit)vector index for liveness analysis.
   const uint32_t Number;

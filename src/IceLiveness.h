@@ -40,6 +40,12 @@ public:
   // and end of each variable's live range within this block.  The
   // size of each vector is NumLocals + IceLiveness::NumGlobals.
   std::vector<int> LiveBegin, LiveEnd;
+
+private:
+  // TODO: Disable these constructors when IceLiveness::Nodes is no
+  // longer an STL container.
+  // IceLivenessNode(const IceLivenessNode &) LLVM_DELETED_FUNCTION;
+  // IceLivenessNode &operator=(const IceLivenessNode &) LLVM_DELETED_FUNCTION;
 };
 
 class IceLiveness {
@@ -83,6 +89,8 @@ private:
   std::vector<IceVariable *> LiveToVarMap;
   // LiveRanges maps an IceVariable::Number to its live range.
   std::vector<IceLiveRange> LiveRanges;
+  IceLiveness(const IceLiveness &) LLVM_DELETED_FUNCTION;
+  IceLiveness &operator=(const IceLiveness &) LLVM_DELETED_FUNCTION;
 };
 
 #endif // SUBZERO_SRC_ICELIVENESS_H

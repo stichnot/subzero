@@ -58,6 +58,8 @@ public:
 
 private:
   IceCfgNode(IceCfg *Cfg, uint32_t LabelIndex, IceString Name);
+  IceCfgNode(const IceCfgNode &) LLVM_DELETED_FUNCTION;
+  IceCfgNode &operator=(const IceCfgNode &) LLVM_DELETED_FUNCTION;
   IceCfg *const Cfg;
   const uint32_t Number; // label index
   IceString Name;        // for dumping only

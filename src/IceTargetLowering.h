@@ -61,6 +61,9 @@ public:
 private:
   void skipDeleted(IceInstList::iterator &I);
   void advance(IceInstList::iterator &I);
+  IceLoweringContext(const IceLoweringContext &) LLVM_DELETED_FUNCTION;
+  IceLoweringContext &
+  operator=(const IceLoweringContext &) LLVM_DELETED_FUNCTION;
 };
 
 class IceTargetLowering {
@@ -148,6 +151,10 @@ protected:
   // natural location, as arguments are pushed for a function call.
   int32_t StackAdjustment;
   IceLoweringContext Context;
+
+private:
+  IceTargetLowering(const IceTargetLowering &) LLVM_DELETED_FUNCTION;
+  IceTargetLowering &operator=(const IceTargetLowering &) LLVM_DELETED_FUNCTION;
 };
 
 #endif // SUBZERO_SRC_ICETARGETLOWERING_H

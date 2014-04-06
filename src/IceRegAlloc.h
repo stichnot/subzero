@@ -37,6 +37,11 @@ public:
   }
   IceVariable *const Var;
   void dump(IceOstream &Str) const;
+
+private:
+  // IceLiveRangeWrapper(const IceLiveRangeWrapper &) LLVM_DELETED_FUNCTION;
+  IceLiveRangeWrapper &
+  operator=(const IceLiveRangeWrapper &) LLVM_DELETED_FUNCTION;
 };
 IceOstream &operator<<(IceOstream &Str, const IceLiveRangeWrapper &R);
 
@@ -65,6 +70,8 @@ private:
   typedef std::list<IceLiveRangeWrapper> UnorderedRanges;
   OrderedRanges Unhandled;
   UnorderedRanges Active, Inactive, Handled;
+  IceLinearScan(const IceLinearScan &) LLVM_DELETED_FUNCTION;
+  IceLinearScan &operator=(const IceLinearScan &) LLVM_DELETED_FUNCTION;
 };
 
 #endif // SUBZERO_SRC_ICEREGALLOC_H
