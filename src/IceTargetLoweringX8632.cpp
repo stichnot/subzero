@@ -203,7 +203,7 @@ void IceTargetX8632::setArgOffsetAndCopy(IceVariable *Arg,
         Cfg->getConstantInt(IceType_i32, Arg->getStackOffset()));
     _mov(Arg, Mem);
   }
-  InArgsSizeBytes += typeWidthOnStack(Type);
+  InArgsSizeBytes += typeWidthInBytesOnStack(Type);
 }
 
 void IceTargetX8632::addProlog(IceCfgNode *Node) {
@@ -260,7 +260,7 @@ void IceTargetX8632::addProlog(IceCfgNode *Node) {
           continue;
       }
     }
-    int32_t Increment = typeWidthOnStack(Var->getType());
+    int32_t Increment = typeWidthInBytesOnStack(Var->getType());
     if (SimpleCoalescing) {
       if (Var->isMultiblockLife()) {
         GlobalsSize += Increment;
@@ -349,7 +349,7 @@ void IceTargetX8632::addProlog(IceCfgNode *Node) {
         }
       }
     }
-    int32_t Increment = typeWidthOnStack(Var->getType());
+    int32_t Increment = typeWidthInBytesOnStack(Var->getType());
     if (SimpleCoalescing) {
       if (Var->isMultiblockLife()) {
         GlobalsSize += Increment;
@@ -952,7 +952,7 @@ void IceTargetX8632::lowerCall(const IceInstCall *Inst) {
     } else {
       _push(Arg);
     }
-    StackOffset += typeWidthOnStack(Arg->getType());
+    StackOffset += typeWidthInBytesOnStack(Arg->getType());
   }
   // Generate the call instruction.  Assign its result to a temporary
   // with high register allocation weight.

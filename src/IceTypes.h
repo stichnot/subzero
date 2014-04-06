@@ -36,7 +36,8 @@ enum IceTargetArch {
   IceTarget_ARM64
 };
 
-uint32_t iceTypeWidth(IceType T);
-IceOstream &operator<<(class IceOstream &Str, IceType T);
+size_t iceTypeWidthInBytes(IceType Type);
+
+template <> IceOstream &operator<<(class IceOstream &Str, const IceType &Type);
 
 #endif // SUBZERO_SRC_ICETYPES_H

@@ -195,7 +195,7 @@ void IceVariable::emit(IceOstream &Str, uint32_t Option) const {
     Str << Str.Cfg->getTarget()->getRegName(RegNum, getType());
     return;
   }
-  switch (iceTypeWidth(getType())) {
+  switch (iceTypeWidthInBytes(getType())) {
   case 1:
     Str << "byte";
     break;

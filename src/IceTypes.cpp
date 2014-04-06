@@ -14,63 +14,47 @@
 #include "IceDefs.h"
 #include "IceTypes.h"
 
-uint32_t iceTypeWidth(IceType T) {
-  switch (T) {
-  case IceType_i1:
-    return 1;
-  case IceType_i8:
-    return 1;
-  case IceType_i16:
-    return 2;
-  case IceType_i32:
-    return 4;
-  case IceType_i64:
-    return 8;
-  case IceType_f32:
-    return 4;
-  case IceType_f64:
-    return 8;
-  case IceType_void:
-  case IceType_NUM:
-    break;
+namespace {
+
+const struct {
+  IceType Type;
+  size_t TypeWidthInBytes;
+  IceString DisplayString;
+} TypeAttributes[] = { { IceType_void, 0, "void" },
+                       { IceType_i1, 1, "i1" },
+                       { IceType_i8, 1, "i8" },
+                       { IceType_i16, 2, "i16" },
+                       { IceType_i32, 4, "i32" },
+                       { IceType_i64, 8, "i64" },
+                       { IceType_f32, 4, "float" },
+                       { IceType_f64, 8, "double" }, };
+const uint32_t TypeAttributesSize =
+    sizeof(TypeAttributes) / sizeof(*TypeAttributes);
+
+} // end anonymous namespace
+
+size_t iceTypeWidthInBytes(IceType Type) {
+  size_t Width = 0;
+  uint32_t Index = static_cast<uint32_t>(Type);
+  if (Index < TypeAttributesSize) {
+    assert(TypeAttributes[Index].Type == Type);
+    Width = TypeAttributes[Index].TypeWidthInBytes;
   }
-  assert(0 && "Invalid type for iceTypeWidth()");
-  return 0;
+  assert(Width && "Invalid type for iceTypeWidthInBytes()");
+  return Width;
 }
 
 // ======================== Dump routines ======================== //
 
-IceOstream &operator<<(IceOstream &Str, IceType T) {
-  switch (T) {
-  case IceType_void:
-    Str << "void";
-    return Str;
-  case IceType_i1:
-    Str << "i1";
-    return Str;
-  case IceType_i8:
-    Str << "i8";
-    return Str;
-  case IceType_i16:
-    Str << "i16";
-    return Str;
-  case IceType_i32:
-    Str << "i32";
-    return Str;
-  case IceType_i64:
-    Str << "i64";
-    return Str;
-  case IceType_f32:
-    Str << "float";
-    return Str;
-  case IceType_f64:
-    Str << "double";
-    return Str;
-  case IceType_NUM:
-  default:
+template <> IceOstream &operator<<(IceOstream &Str, const IceType &Type) {
+  uint32_t Index = static_cast<uint32_t>(Type);
+  if (Index < TypeAttributesSize) {
+    assert(TypeAttributes[Index].Type == Type);
+    Str << TypeAttributes[Index].DisplayString;
+  } else {
+    Str << "???";
     assert(0 && "Invalid type for printing");
-    break;
   }
-  Str << "???";
+
   return Str;
 }

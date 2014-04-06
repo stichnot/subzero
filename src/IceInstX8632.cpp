@@ -644,8 +644,8 @@ void IceInstX8632Mov::emit(IceOstream &Str, uint32_t Option) const {
   // safe, we instead widen the dest to match src.  This works even
   // for stack-allocated dest variables because typeWidthOnStack()
   // pads to a 4-byte boundary even if only a lower portion is used.
-  assert(Str.Cfg->getTarget()->typeWidthOnStack(getDest()->getType()) ==
-         Str.Cfg->getTarget()->typeWidthOnStack(getSrc(0)->getType()));
+  assert(Str.Cfg->getTarget()->typeWidthInBytesOnStack(getDest()->getType()) ==
+         Str.Cfg->getTarget()->typeWidthInBytesOnStack(getSrc(0)->getType()));
   getDest()->asType(Str.Cfg, getSrc(0)->getType()).emit(Str, Option);
   Str << ", ";
   getSrc(0)->emit(Str, Option);
@@ -737,7 +737,7 @@ void IceInstX8632Fstp::emit(IceOstream &Str, uint32_t Option) const {
   // memory.  Hack this by creating a temporary stack slot, spilling
   // st(0) there, loading it into the xmm register, and deallocating
   // the stack slot.
-  uint32_t Width = iceTypeWidth(getDest()->getType());
+  uint32_t Width = iceTypeWidthInBytes(getDest()->getType());
   Str << "\tsub\tesp, " << Width << "\n";
   Str << "\tfstp\t" << (Width == 8 ? "q" : "d") << "word ptr [esp]\n";
   Str << "\tmovs" << (Width == 8 ? "d" : "s") << "\t";
@@ -771,8 +771,8 @@ void IceInstX8632Push::emit(IceOstream &Str, uint32_t Option) const {
   if ((Type == IceType_f32 || Type == IceType_f64) && Var && Var->hasReg()) {
     // The xmm registers can't be directly pushed, so we fake it by
     // decrementing esp and then storing to [esp].
-    Str << "\tsub\tesp, " << iceTypeWidth(Type) << "\n";
-    Str.Cfg->getTarget()->updateStackAdjustment(iceTypeWidth(Type));
+    Str << "\tsub\tesp, " << iceTypeWidthInBytes(Type) << "\n";
+    Str.Cfg->getTarget()->updateStackAdjustment(iceTypeWidthInBytes(Type));
     Str << "\tmov" << (Type == IceType_f32 ? "ss\td" : "sd\tq")
         << "word ptr [esp], ";
     getSrc(0)->emit(Str, Option);

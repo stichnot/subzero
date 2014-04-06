@@ -37,8 +37,8 @@ public:
   virtual uint32_t getFrameOrStackReg() const {
     return IsEbpBasedFrame ? Reg_ebp : Reg_esp;
   }
-  virtual uint32_t typeWidthOnStack(IceType Type) {
-    return (iceTypeWidth(Type) + 3) & ~3;
+  virtual size_t typeWidthInBytesOnStack(IceType Type) {
+    return (iceTypeWidthInBytes(Type) + 3) & ~3;
   }
   virtual void addProlog(IceCfgNode *Node);
   virtual void addEpilog(IceCfgNode *Node);

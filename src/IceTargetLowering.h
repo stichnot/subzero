@@ -88,7 +88,7 @@ public:
 
   virtual bool hasFramePointer() const { return false; }
   virtual uint32_t getFrameOrStackReg() const = 0;
-  virtual uint32_t typeWidthOnStack(IceType Type) = 0;
+  virtual size_t typeWidthInBytesOnStack(IceType Type) = 0;
   bool hasComputedFrame() const { return HasComputedFrame; }
   int32_t getStackAdjustment() const { return StackAdjustment; }
   void updateStackAdjustment(int32_t Offset) { StackAdjustment += Offset; }
