@@ -63,17 +63,11 @@ bool IceCfg::HasEmittedFirstMethod = false;
 IceCfg::IceCfg()
     : Str(this), Name(""), TestPrefix(""), Type(IceType_void),
       IsInternal(false), HasError(false), ErrorMessage(""), Entry(NULL),
-      NextInstNumber(1), Target(NULL), Liveness(NULL) {
+      NextInstNumber(1), ConstantPool(new IceConstantPool(this)), Target(NULL), Liveness(NULL) {
   GlobalStr = &Str;
-  ConstantPool = new IceConstantPool(this);
 }
 
 IceCfg::~IceCfg() {
-  // TODO: All ICE data destructors should have proper destructors.
-  // However, be careful with delete statements since we'll likely be
-  // using arena-based allocation.
-  delete ConstantPool;
-  delete Liveness;
 }
 
 // In this context, name mangling means to rewrite a symbol using a
@@ -240,7 +234,7 @@ void IceCfg::doAddressOpt() {
 }
 
 void IceCfg::genCode() {
-  if (Target == NULL) {
+  if (getTarget() == NULL) {
     setError("IceCfg::makeTarget() wasn't called.");
     return;
   }
@@ -263,19 +257,17 @@ void IceCfg::genFrame() {
 }
 
 void IceCfg::liveness(IceLivenessMode Mode) {
-  delete Liveness;
-  Liveness = NULL;
   if (Mode == IceLiveness_LREndLightweight) {
     // Lightweight liveness is a quick single pass and doesn't need to
     // iterate until convergence.
     for (IceNodeList::iterator I = Nodes.begin(), E = Nodes.end(); I != E;
          ++I) {
-      (*I)->liveness(Mode, Liveness);
+      (*I)->liveness(Mode, getLiveness());
     }
     return;
   }
 
-  Liveness = new IceLiveness(this, Mode);
+  Liveness.reset(new IceLiveness(this, Mode));
   Liveness->init();
   llvm::BitVector NeedToProcess(Nodes.size());
   // Mark all nodes as needing to be processed.
@@ -289,7 +281,7 @@ void IceCfg::liveness(IceLivenessMode Mode) {
       IceCfgNode *Node = *I;
       if (NeedToProcess[Node->getIndex()]) {
         NeedToProcess[Node->getIndex()] = false;
-        bool Changed = Node->liveness(Mode, Liveness);
+        bool Changed = Node->liveness(Mode, getLiveness());
         if (Changed) {
           // If the beginning-of-block liveness changed since the last
           // iteration, mark all in-edges as needing to be processed.
@@ -316,7 +308,7 @@ void IceCfg::liveness(IceLivenessMode Mode) {
   // Make a final pass over instructions to delete dead instructions
   // and build each IceVariable's live range.
   for (IceNodeList::iterator I = Nodes.begin(), E = Nodes.end(); I != E; ++I) {
-    (*I)->livenessPostprocess(Mode, Liveness);
+    (*I)->livenessPostprocess(Mode, getLiveness());
   }
   if (Mode == IceLiveness_RangesFull) {
     // Special treatment for live in-args.  Their liveness needs to
@@ -405,7 +397,7 @@ bool IceCfg::validateLiveness() const {
 }
 
 void IceCfg::makeTarget(IceTargetArch Arch) {
-  Target = IceTargetLowering::createLowering(Arch, this);
+  Target.reset(IceTargetLowering::createLowering(Arch, this));
 }
 
 // ======================== Dump routines ======================== //

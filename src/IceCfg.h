@@ -18,6 +18,7 @@
 #include "IceDefs.h"
 #include "IceTypes.h"
 
+#include "llvm/ADT/OwningPtr.h"
 #include "llvm/Support/Allocator.h"
 
 class IceCfg {
@@ -86,8 +87,8 @@ public:
                               bool SuppressMangling = false);
 
   // Miscellaneous accessors.
-  IceTargetLowering *getTarget() const { return Target; }
-  IceLiveness *getLiveness() const { return Liveness; }
+  IceTargetLowering *getTarget() const { return Target.get(); }
+  IceLiveness *getLiveness() const { return Liveness.get(); }
   bool hasComputedFrame() const;
 
   // Passes over the CFG.
@@ -105,7 +106,7 @@ public:
   void emit(uint32_t Option) const;
   void dump() const;
 
-  // Allocate data of type T using the per-Cfg instruction allocator.
+  // Allocate data of type T using the per-Cfg allocator.
   template <typename T> T *allocate() { return Allocator.Allocate<T>(); }
 
   // Allocate an instruction of type T using the per-Cfg instruction allocator.
@@ -137,9 +138,9 @@ private:
   int32_t NextInstNumber;
   IceVarList Variables;
   IceVarList Args; // subset of Variables, in argument order
-  class IceConstantPool *ConstantPool;
-  IceTargetLowering *Target;
-  IceLiveness *Liveness;
+  llvm::OwningPtr<class IceConstantPool> ConstantPool;
+  llvm::OwningPtr<IceTargetLowering> Target;
+  llvm::OwningPtr<IceLiveness> Liveness;
 
   void makeTarget(IceTargetArch Arch);
 
@@ -148,6 +149,9 @@ private:
   // the beginning of emission, doing it once per file rather than
   // once per function.
   static bool HasEmittedFirstMethod;
+
+  IceCfg(const IceCfg &) LLVM_DELETED_FUNCTION;
+  IceCfg &operator=(const IceCfg &) LLVM_DELETED_FUNCTION;
 };
 
 #endif // SUBZERO_SRC_ICECFG_H
