@@ -359,7 +359,7 @@ void IceInstX8632Call::dump(IceOstream &Str) const {
   }
   if (Tail)
     Str << "tail ";
-  Str << "call " << getCallTarget();
+  Str << "call " << *getCallTarget();
 }
 
 void IceEmitTwoAddress(const char *Opcode, const IceInst *Inst, IceOstream &Str,
@@ -619,8 +619,8 @@ void IceInstX8632Store::emit(IceOstream &Str, uint32_t Option) const {
 }
 
 void IceInstX8632Store::dump(IceOstream &Str) const {
-  Str << "mov." << getSrc(0)->getType() << " " << getSrc(1) << ", "
-      << getSrc(0);
+  Str << "mov." << getSrc(0)->getType() << " " << *getSrc(1) << ", "
+      << *getSrc(0);
 }
 
 void IceInstX8632Mov::emit(IceOstream &Str, uint32_t Option) const {
@@ -869,7 +869,7 @@ void IceOperandX8632Mem::dump(IceOstream &Str) const {
   bool Dumped = false;
   Str << "[";
   if (Base) {
-    Str << Base;
+    Str << *Base;
     Dumped = true;
   }
   if (Index) {
@@ -877,7 +877,7 @@ void IceOperandX8632Mem::dump(IceOstream &Str) const {
     Str << "+";
     if (Shift > 0)
       Str << (1u << Shift) << "*";
-    Str << Index;
+    Str << *Index;
     Dumped = true;
   }
   // Pretty-print the Offset.
@@ -895,7 +895,7 @@ void IceOperandX8632Mem::dump(IceOstream &Str) const {
       if (!OffsetIsNegative) // Suppress if Offset is known to be negative
         Str << "+";
     }
-    Str << Offset;
+    Str << *Offset;
   }
   Str << "]";
 }
@@ -932,5 +932,5 @@ void IceVariableSplit::dump(IceOstream &Str) const {
     Str << "???";
     break;
   }
-  Str << "(" << Var << ")";
+  Str << "(" << *Var << ")";
 }

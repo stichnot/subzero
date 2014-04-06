@@ -357,7 +357,7 @@ void IceLinearScan::scan(const llvm::SmallBitVector &RegMaskFull) {
         Cfg->Str << (RegNum == Item.Var->getRegNum() ? "Reassigning "
                                                      : "Assigning ")
                  << Cfg->getTarget()->getRegName(RegNum, IceType_i32) << "(r"
-                 << RegNum << ") to " << Item.Var << "\n";
+                 << RegNum << ") to " << *Item.Var << "\n";
       }
     }
     Item.Var->setRegNum(Item.Var->getRegNumTmp());
@@ -380,7 +380,7 @@ void IceLinearScan::scan(const llvm::SmallBitVector &RegMaskFull) {
 void IceLiveRangeWrapper::dump(IceOstream &Str) const {
   char buf[30];
   sprintf(buf, "%2d", Var->getRegNumTmp());
-  Str << "R=" << buf << "  V=" << Var << "  Range=";
+  Str << "R=" << buf << "  V=" << *Var << "  Range=";
   range().dump(Str);
 }
 

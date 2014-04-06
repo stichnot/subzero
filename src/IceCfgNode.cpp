@@ -301,7 +301,7 @@ bool IceCfgNode::liveness(IceLivenessMode Mode, IceLiveness *Liveness) {
       Str << "LiveOrig-Live =";
       for (uint32_t i = Live.size(); i < LiveOrig.size(); ++i) {
         if (LiveOrig.test(i))
-          Str << " " << Liveness->getVariable(i, this);
+          Str << " " << *Liveness->getVariable(i, this);
       }
       Str << "\n";
     }
@@ -468,12 +468,13 @@ void IceCfgNode::dump(IceOstream &Str) const {
   if (Str.isVerbose(IceV_Instructions)) {
     for (IcePhiList::const_iterator I = Phis.begin(), E = Phis.end(); I != E;
          ++I) {
-      Str << (*I);
+      const IceInst *Inst = *I;
+      Str << *Inst;
     }
     IceInstList::const_iterator I = Insts.begin(), E = Insts.end();
     while (I != E) {
       IceInst *Inst = *I++;
-      Str << Inst;
+      Str << *Inst;
     }
   }
   // Dump the live-out variables.

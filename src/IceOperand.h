@@ -67,7 +67,9 @@ private:
   IceOperand &operator=(const IceOperand &) LLVM_DELETED_FUNCTION;
 };
 
-IceOstream &operator<<(IceOstream &Str, const IceOperand *O);
+template <> IceOstream &operator<<(IceOstream &Str, const IceOperand &O);
+
+template <> IceOstream &operator<<(IceOstream &Str, const IceVariable &V);
 
 // IceConstant is the abstract base class for constants.
 // TODO: better design of a minimal per-module constant pool,
@@ -93,6 +95,8 @@ private:
   IceConstant(const IceConstant &) LLVM_DELETED_FUNCTION;
   IceConstant &operator=(const IceConstant &) LLVM_DELETED_FUNCTION;
 };
+
+template <> IceOstream &operator<<(IceOstream &Str, const IceConstant &C);
 
 // IceConstantPrimitive<> wraps a primitive type.
 template <typename T, IceOperand::OperandKind K>

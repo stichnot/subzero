@@ -386,24 +386,23 @@ IceInstFakeKill::IceInstFakeKill(IceCfg *Cfg, const IceVarList &KilledRegs,
 
 // ======================== Dump routines ======================== //
 
-IceOstream &operator<<(IceOstream &Str, const IceInst *I) {
-  if (!Str.isVerbose(IceV_Deleted) &&
-      (I->isDeleted() || I->isRedundantAssign()))
+template <> IceOstream &operator<<(IceOstream &Str, const IceInst &I) {
+  if (!Str.isVerbose(IceV_Deleted) && (I.isDeleted() || I.isRedundantAssign()))
     return Str;
   if (Str.isVerbose(IceV_InstNumbers)) {
     char buf[30];
-    int32_t Number = I->getNumber();
+    int32_t Number = I.getNumber();
     if (Number < 0)
       sprintf(buf, "[XXX]");
     else
-      sprintf(buf, "[%3d]", I->getNumber());
+      sprintf(buf, "[%3d]", Number);
     Str << buf;
   }
   Str << "  ";
-  if (I->isDeleted())
+  if (I.isDeleted())
     Str << "  //";
-  I->dump(Str);
-  I->dumpExtras(Str);
+  I.dump(Str);
+  I.dumpExtras(Str);
   Str << "\n";
   return Str;
 }
@@ -437,7 +436,7 @@ void IceInst::dumpExtras(IceOstream &Str) const {
             Str << " // LIVEEND={";
           else
             Str << ",";
-          Str << Var;
+          Str << *Var;
           First = false;
         }
       }
@@ -451,19 +450,19 @@ void IceInst::dumpSources(IceOstream &Str) const {
   for (uint32_t I = 0; I < getSrcSize(); ++I) {
     if (I > 0)
       Str << ", ";
-    Str << getSrc(I);
+    Str << *getSrc(I);
   }
 }
 
 void IceInst::dumpDest(IceOstream &Str) const {
   if (getDest())
-    Str << getDest();
+    Str << *getDest();
 }
 
 void IceInstAlloca::dump(IceOstream &Str) const {
   dumpDest(Str);
   Str << " = alloca i8, i32 ";
-  Str << getSrc(0) << ", align " << Align;
+  Str << *getSrc(0) << ", align " << Align;
 }
 
 void IceInstArithmetic::dump(IceOstream &Str) const {
@@ -542,7 +541,7 @@ void IceInstBr::dump(IceOstream &Str) const {
   dumpDest(Str);
   Str << "br ";
   if (!isUnconditional()) {
-    Str << "i1 " << getSrc(0) << ", label %" << getTargetTrue()->getName()
+    Str << "i1 " << *getSrc(0) << ", label %" << getTargetTrue()->getName()
         << ", ";
   }
   Str << "label %" << getTargetFalse()->getName();
@@ -560,11 +559,11 @@ void IceInstCall::dump(IceOstream &Str) const {
     Str << getDest()->getType();
   else
     Str << "void";
-  Str << " " << getCallTarget() << "(";
+  Str << " " << *getCallTarget() << "(";
   for (uint32_t I = 0; I < getNumArgs(); ++I) {
     if (I > 0)
       Str << ", ";
-    Str << getArg(I)->getType() << " " << getArg(I);
+    Str << getArg(I)->getType() << " " << *getArg(I);
   }
   Str << ")";
 }
@@ -738,8 +737,8 @@ void IceInstLoad::dump(IceOstream &Str) const {
 
 void IceInstStore::dump(IceOstream &Str) const {
   IceType Type = getData()->getType();
-  Str << "store " << Type << " " << getData() << ", " << Type << "* "
-      << getAddr() << ", align ";
+  Str << "store " << Type << " " << *getData() << ", " << Type << "* "
+      << *getAddr() << ", align ";
   switch (Type) {
   case IceType_f32:
     Str << "4";
@@ -755,7 +754,7 @@ void IceInstStore::dump(IceOstream &Str) const {
 
 void IceInstSwitch::dump(IceOstream &Str) const {
   IceType Type = getSrc(0)->getType();
-  Str << "switch " << Type << " " << getSrc(0) << ", label %"
+  Str << "switch " << Type << " " << *getSrc(0) << ", label %"
       << getLabelDefault()->getName() << " [\n";
   for (uint32_t I = 0; I < getNumCases(); ++I) {
     Str << "    " << Type << " " << getValue(I) << ", label %"
@@ -770,7 +769,7 @@ void IceInstPhi::dump(IceOstream &Str) const {
   for (uint32_t I = 0; I < getSrcSize(); ++I) {
     if (I > 0)
       Str << ", ";
-    Str << "[ " << getSrc(I) << ", %" << Labels[I]->getName() << " ]";
+    Str << "[ " << *getSrc(I) << ", %" << Labels[I]->getName() << " ]";
   }
 }
 
@@ -788,9 +787,9 @@ void IceInstSelect::dump(IceOstream &Str) const {
   IceOperand *Condition = getCondition();
   IceOperand *TrueOp = getTrueOperand();
   IceOperand *FalseOp = getFalseOperand();
-  Str << " = select " << Condition->getType() << " " << Condition << ", "
-      << TrueOp->getType() << " " << TrueOp << ", " << FalseOp->getType() << " "
-      << FalseOp;
+  Str << " = select " << Condition->getType() << " " << *Condition << ", "
+      << TrueOp->getType() << " " << *TrueOp << ", " << FalseOp->getType()
+      << " " << *FalseOp;
 }
 
 void IceInstUnreachable::dump(IceOstream &Str) const { Str << "unreachable"; }

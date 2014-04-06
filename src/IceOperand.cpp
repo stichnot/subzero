@@ -173,11 +173,18 @@ IceVariable IceVariable::asType(IceCfg *Cfg, IceType Type) {
 
 // ======================== dump routines ======================== //
 
-IceOstream &operator<<(IceOstream &Str, const IceOperand *O) {
-  if (O)
-    O->dump(Str);
-  else
-    Str << "<NULL>";
+template <> IceOstream &operator<<(IceOstream &Str, const IceOperand &O) {
+  O.dump(Str);
+  return Str;
+}
+
+template <> IceOstream &operator<<(IceOstream &Str, const IceVariable &V) {
+  V.dump(Str);
+  return Str;
+}
+
+template <> IceOstream &operator<<(IceOstream &Str, const IceConstant &C) {
+  C.dump(Str);
   return Str;
 }
 

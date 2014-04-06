@@ -125,7 +125,7 @@ private:
   IceInst &operator=(const IceInst &) LLVM_DELETED_FUNCTION;
 };
 
-IceOstream &operator<<(IceOstream &Str, const IceInst *I);
+template <> IceOstream &operator<<(IceOstream &Str, const IceInst &I);
 
 // Alloca instruction.  This captures the size in bytes as getSrc(0),
 // and the alignment.

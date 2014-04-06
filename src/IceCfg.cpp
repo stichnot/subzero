@@ -442,7 +442,7 @@ void IceCfg::dump() const {
     for (uint32_t i = 0; i < Args.size(); ++i) {
       if (i > 0)
         Str << ", ";
-      Str << Args[i]->getType() << " " << Args[i];
+      Str << Args[i]->getType() << " " << *Args[i];
     }
     Str << ") {\n";
   }
@@ -452,11 +452,9 @@ void IceCfg::dump() const {
     for (IceVarList::const_iterator I = Variables.begin(), E = Variables.end();
          I != E; ++I) {
       IceVariable *Var = *I;
-      if (!Var)
-        continue;
       Str << "//"
           << " multiblock=" << Var->isMultiblockLife() << " "
-          << " weight=" << Var->getWeight() << " " << Var
+          << " weight=" << Var->getWeight() << " " << *Var
           << " LIVE=" << Var->getLiveRange() << "\n";
     }
   }

@@ -146,45 +146,10 @@ private:
   const IceCfgNode *CurrentNode;
 };
 
-inline IceOstream &operator<<(IceOstream &Str, const char *S) {
+template <typename T>
+inline IceOstream &operator<<(IceOstream &Str, const T &Val) {
   if (Str.Stream)
-    *(Str.Stream) << S;
-  return Str;
-}
-
-inline IceOstream &operator<<(IceOstream &Str, const IceString &S) {
-  if (Str.Stream)
-    *(Str.Stream) << S;
-  return Str;
-}
-
-inline IceOstream &operator<<(IceOstream &Str, uint32_t U) {
-  if (Str.Stream)
-    *(Str.Stream) << U;
-  return Str;
-}
-
-inline IceOstream &operator<<(IceOstream &Str, int32_t I) {
-  if (Str.Stream)
-    *(Str.Stream) << I;
-  return Str;
-}
-
-inline IceOstream &operator<<(IceOstream &Str, uint64_t U) {
-  if (Str.Stream)
-    *(Str.Stream) << U;
-  return Str;
-}
-
-inline IceOstream &operator<<(IceOstream &Str, int64_t I) {
-  if (Str.Stream)
-    *(Str.Stream) << I;
-  return Str;
-}
-
-inline IceOstream &operator<<(IceOstream &Str, double D) {
-  if (Str.Stream)
-    *(Str.Stream) << D;
+    (*Str.Stream) << Val;
   return Str;
 }
 
