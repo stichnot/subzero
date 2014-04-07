@@ -326,7 +326,7 @@ void IceLinearScan::scan(const llvm::SmallBitVector &RegMaskFull) {
           Cfg->Str << "Allocating   " << Cur << "\n";
       }
     }
-    dump(Cfg->Str);
+    dump(Cfg);
   }
   // Move anything Active or Inactive to Handled for easier handling.
   for (UnorderedRanges::iterator I = Active.begin(), E = Active.end(); I != E;
@@ -343,7 +343,7 @@ void IceLinearScan::scan(const llvm::SmallBitVector &RegMaskFull) {
     Handled.push_back(*I);
     Inactive.erase(I);
   }
-  dump(Cfg->Str);
+  dump(Cfg);
 
   // Finish up by assigning RegNumTmp->RegNum for each IceVariable.
   for (UnorderedRanges::const_iterator I = Handled.begin(), E = Handled.end();
@@ -377,7 +377,8 @@ void IceLinearScan::scan(const llvm::SmallBitVector &RegMaskFull) {
 
 // ======================== Dump routines ======================== //
 
-void IceLiveRangeWrapper::dump(IceOstream &Str) const {
+void IceLiveRangeWrapper::dump(const IceCfg *Cfg) const {
+  IceOstream &Str = Cfg->Str;
   char buf[30];
   sprintf(buf, "%2d", Var->getRegNumTmp());
   Str << "R=" << buf << "  V=" << *Var << "  Range=";
@@ -385,11 +386,12 @@ void IceLiveRangeWrapper::dump(IceOstream &Str) const {
 }
 
 IceOstream &operator<<(IceOstream &Str, const IceLiveRangeWrapper &R) {
-  R.dump(Str);
+  R.dump(Str.Cfg);
   return Str;
 }
 
-void IceLinearScan::dump(IceOstream &Str) const {
+void IceLinearScan::dump(const IceCfg *Cfg) const {
+  IceOstream &Str = Cfg->Str;
   if (!Cfg->Str.isVerbose(IceV_LinearScan))
     return;
   Cfg->Str.setCurrentNode(NULL);

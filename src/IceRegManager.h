@@ -73,7 +73,7 @@ public:
   void store(IceInst *Inst);
   bool contains(const IceOperand *Operand) const;
   IceVariable *getVar() const { return Var; }
-  void dump(IceOstream &Str) const;
+  void dump(const IceCfg *Cfg) const;
 
 private:
   IceRegManagerEntry(IceCfg *Cfg, IceVariable *Var, uint32_t NumReg);
@@ -107,7 +107,7 @@ public:
   bool registerContains(const IceVariable *Reg, const IceOperand *Op) const;
   void notifyLoad(IceInst *Inst, bool IsAssign = true);
   void notifyStore(IceInst *Inst);
-  void dump(IceOstream &Str) const;
+  void dump(const IceCfg *Cfg) const;
 
 private:
   IceRegManager(IceCfg *Cfg, IceCfgNode *Node, uint32_t NumReg);

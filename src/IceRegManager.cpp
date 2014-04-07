@@ -177,14 +177,15 @@ void IceRegManager::notifyStore(IceInst *Inst) {
 
 // ======================== Dump routines ======================== //
 
-void IceRegManager::dump(IceOstream &Str) const {
+void IceRegManager::dump(const IceCfg *Cfg) const {
   for (QueueType::const_iterator I = Queue.begin(), E = Queue.end(); I != E;
        ++I) {
-    (*I)->dump(Str);
+    (*I)->dump(Cfg);
   }
 }
 
-void IceRegManagerEntry::dump(IceOstream &Str) const {
+void IceRegManagerEntry::dump(const IceCfg *Cfg) const {
+  IceOstream &Str = Cfg->Str;
   Str << " " << getVar() << "={";
   for (IceOpList::const_iterator I = Available.begin(), E = Available.end();
        I != E; ++I) {
