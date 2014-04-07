@@ -94,7 +94,7 @@ IceInstX8632Label::IceInstX8632Label(IceCfg *Cfg, IceTargetX8632 *Target)
     : IceInstX8632(Cfg, IceInstX8632::Label, 0, NULL),
       Number(Target->makeNextLabelNumber()) {}
 
-IceString IceInstX8632Label::getName(IceCfg *Cfg) const {
+IceString IceInstX8632Label::getName(const IceCfg *Cfg) const {
   char buf[30];
   sprintf(buf, "%u", Number);
   return ".L" + Cfg->getName() + "$__" + buf;
@@ -230,7 +230,7 @@ void IceInstX8632Label::emit(const IceCfg *Cfg, uint32_t Option) const {
 
 void IceInstX8632Label::dump(const IceCfg *Cfg) const {
   IceOstream &Str = Cfg->Str;
-  Str << getName(Str.Cfg) << ":";
+  Str << getName(Cfg) << ":";
 }
 
 void IceInstX8632Br::emit(const IceCfg *Cfg, uint32_t Option) const {
@@ -278,7 +278,7 @@ void IceInstX8632Br::emit(const IceCfg *Cfg, uint32_t Option) const {
     break;
   }
   if (Label) {
-    Str << "\t" << Label->getName(Str.Cfg) << "\n";
+    Str << "\t" << Label->getName(Cfg) << "\n";
   } else {
     if (Condition == Br_None) {
       Str << "\t" << getTargetFalse()->getAsmName() << "\n";
@@ -333,12 +333,12 @@ void IceInstX8632Br::dump(const IceCfg *Cfg) const {
     break;
   case Br_None:
     Str << "label %"
-        << (Label ? Label->getName(Str.Cfg) : getTargetFalse()->getName());
+        << (Label ? Label->getName(Cfg) : getTargetFalse()->getName());
     return;
     break;
   }
   if (Label) {
-    Str << ", label %" << Label->getName(Str.Cfg);
+    Str << ", label %" << Label->getName(Cfg);
   } else {
     Str << ", label %" << getTargetTrue()->getName();
     if (getTargetFalse()) {
@@ -355,7 +355,7 @@ void IceInstX8632Call::emit(const IceCfg *Cfg, uint32_t Option) const {
   if (Tail)
     Str << "\t# tail";
   Str << "\n";
-  Str.Cfg->getTarget()->resetStackAdjustment();
+  Cfg->getTarget()->resetStackAdjustment();
 }
 
 void IceInstX8632Call::dump(const IceCfg *Cfg) const {
@@ -672,9 +672,9 @@ void IceInstX8632Mov::emit(const IceCfg *Cfg, uint32_t Option) const {
   // safe, we instead widen the dest to match src.  This works even
   // for stack-allocated dest variables because typeWidthOnStack()
   // pads to a 4-byte boundary even if only a lower portion is used.
-  assert(Str.Cfg->getTarget()->typeWidthInBytesOnStack(getDest()->getType()) ==
-         Str.Cfg->getTarget()->typeWidthInBytesOnStack(getSrc(0)->getType()));
-  getDest()->asType(Str.Cfg, getSrc(0)->getType()).emit(Cfg, Option);
+  assert(Cfg->getTarget()->typeWidthInBytesOnStack(getDest()->getType()) ==
+         Cfg->getTarget()->typeWidthInBytesOnStack(getSrc(0)->getType()));
+  getDest()->asType(getSrc(0)->getType()).emit(Cfg, Option);
   Str << ", ";
   getSrc(0)->emit(Cfg, Option);
   Str << "\n";
@@ -812,7 +812,7 @@ void IceInstX8632Push::emit(const IceCfg *Cfg, uint32_t Option) const {
     // The xmm registers can't be directly pushed, so we fake it by
     // decrementing esp and then storing to [esp].
     Str << "\tsub\tesp, " << iceTypeWidthInBytes(Type) << "\n";
-    Str.Cfg->getTarget()->updateStackAdjustment(iceTypeWidthInBytes(Type));
+    Cfg->getTarget()->updateStackAdjustment(iceTypeWidthInBytes(Type));
     Str << "\tmov" << (Type == IceType_f32 ? "ss\td" : "sd\tq")
         << "word ptr [esp], ";
     getSrc(0)->emit(Cfg, Option);
@@ -826,7 +826,7 @@ void IceInstX8632Push::emit(const IceCfg *Cfg, uint32_t Option) const {
     Str << "\tpush\t";
     getSrc(0)->emit(Cfg, Option);
     Str << "\n";
-    Str.Cfg->getTarget()->updateStackAdjustment(4);
+    Cfg->getTarget()->updateStackAdjustment(4);
   }
 }
 
@@ -953,10 +953,10 @@ void IceVariableSplit::emit(const IceCfg *Cfg, uint32_t Option) const {
   assert(!Var->hasReg());
   // The following is copied/adapted from IceVariable::emit().
   Str << "dword ptr ["
-      << Str.Cfg->getTarget()->getRegName(
-             Str.Cfg->getTarget()->getFrameOrStackReg(), IceType_i32);
+      << Cfg->getTarget()->getRegName(Cfg->getTarget()->getFrameOrStackReg(),
+                                      IceType_i32);
   int32_t Offset =
-      Var->getStackOffset() + Str.Cfg->getTarget()->getStackAdjustment();
+      Var->getStackOffset() + Cfg->getTarget()->getStackAdjustment();
   if (Part == High)
     Offset += 4;
   if (Offset) {

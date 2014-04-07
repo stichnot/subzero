@@ -164,8 +164,9 @@ IceString IceVariable::getName() const {
   return buf;
 }
 
-IceVariable IceVariable::asType(IceCfg *Cfg, IceType Type) {
-  IceVariable V = IceVariable(Cfg, Type, DefNode, Number, Name);
+IceVariable IceVariable::asType(IceType Type) {
+  IceCfg *Cfg = NULL; // TODO: fix this
+  IceVariable V(Cfg, Type, DefNode, Number, Name);
   V.RegNum = RegNum;
   V.StackOffset = StackOffset;
   return V;
@@ -193,7 +194,7 @@ void IceVariable::emit(const IceCfg *Cfg, uint32_t Option) const {
   IceOstream &Str = Cfg->Str;
   assert(DefNode == NULL || DefNode == Str.getCurrentNode());
   if (hasReg()) {
-    Str << Str.Cfg->getTarget()->getRegName(RegNum, getType());
+    Str << Cfg->getTarget()->getRegName(RegNum, getType());
     return;
   }
   switch (iceTypeWidthInBytes(getType())) {
@@ -213,11 +214,9 @@ void IceVariable::emit(const IceCfg *Cfg, uint32_t Option) const {
     assert(0);
     break;
   }
-  Str << " ptr ["
-      << Str.Cfg->getTarget()->getRegName(
-             Str.Cfg->getTarget()->getFrameOrStackReg(), IceType_i32);
-  int32_t Offset =
-      getStackOffset() + Str.Cfg->getTarget()->getStackAdjustment();
+  Str << " ptr [" << Cfg->getTarget()->getRegName(
+                         Cfg->getTarget()->getFrameOrStackReg(), IceType_i32);
+  int32_t Offset = getStackOffset() + Cfg->getTarget()->getStackAdjustment();
   if (Offset) {
     if (Offset > 0)
       Str << "+";
@@ -231,18 +230,17 @@ void IceVariable::dump(const IceCfg *Cfg) const {
   const IceCfgNode *CurrentNode = Str.getCurrentNode();
   (void)CurrentNode; // used only in assert()
   assert(CurrentNode == NULL || DefNode == NULL || DefNode == CurrentNode);
-  if (Str.isVerbose(IceV_RegOrigins) ||
-      (!hasReg() && !Str.Cfg->hasComputedFrame()))
+  if (Str.isVerbose(IceV_RegOrigins) || (!hasReg() && !Cfg->hasComputedFrame()))
     Str << "%" << getName();
   if (hasReg()) {
     if (Str.isVerbose(IceV_RegOrigins))
       Str << ":";
-    Str << Str.Cfg->getTarget()->getRegName(RegNum, getType());
-  } else if (Str.Cfg->hasComputedFrame()) {
+    Str << Cfg->getTarget()->getRegName(RegNum, getType());
+  } else if (Cfg->hasComputedFrame()) {
     if (Str.isVerbose(IceV_RegOrigins))
       Str << ":";
-    Str << "[" << Str.Cfg->getTarget()->getRegName(
-                      Str.Cfg->getTarget()->getFrameOrStackReg(), IceType_i32);
+    Str << "[" << Cfg->getTarget()->getRegName(
+                      Cfg->getTarget()->getFrameOrStackReg(), IceType_i32);
     int32_t Offset = getStackOffset();
     if (Offset) {
       if (Offset > 0)
@@ -265,7 +263,7 @@ void IceConstantRelocatable::emit(const IceCfg *Cfg, uint32_t Option) const {
   if (SuppressMangling)
     Str << Name;
   else
-    Str << Str.Cfg->mangleName(Name);
+    Str << Cfg->mangleName(Name);
   if (Offset) {
     if (Offset > 0)
       Str << "+";

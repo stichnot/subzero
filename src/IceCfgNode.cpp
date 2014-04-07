@@ -438,7 +438,7 @@ void IceCfgNode::emit(const IceCfg *Cfg, uint32_t Option) const {
 void IceCfgNode::dump(const IceCfg *Cfg) const {
   IceOstream &Str = Cfg->Str;
   Str.setCurrentNode(this);
-  IceLiveness *Liveness = Str.Cfg->getLiveness();
+  IceLiveness *Liveness = Cfg->getLiveness();
   if (Str.isVerbose(IceV_Instructions)) {
     Str << getName() << ":\n";
   }
@@ -471,12 +471,12 @@ void IceCfgNode::dump(const IceCfg *Cfg) const {
     for (IcePhiList::const_iterator I = Phis.begin(), E = Phis.end(); I != E;
          ++I) {
       const IceInst *Inst = *I;
-      Str << *Inst;
+      Inst->dumpDecorated(Cfg);
     }
     IceInstList::const_iterator I = Insts.begin(), E = Insts.end();
     while (I != E) {
       IceInst *Inst = *I++;
-      Str << *Inst;
+      Inst->dumpDecorated(Cfg);
     }
   }
   // Dump the live-out variables.

@@ -203,7 +203,7 @@ public:
     return new (Cfg->allocate<IceInstX8632Label>())
         IceInstX8632Label(Cfg, Target);
   }
-  IceString getName(IceCfg *Cfg) const;
+  IceString getName(const IceCfg *Cfg) const;
   virtual void emit(const IceCfg *Cfg, uint32_t Option) const;
   virtual void dump(const IceCfg *Cfg) const;
 

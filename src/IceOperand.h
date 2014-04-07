@@ -324,7 +324,7 @@ public:
   // Creates a temporary copy of the variable with a different type.
   // Used primarily for syntactic correctness of textual assembly
   // emission.
-  IceVariable asType(IceCfg *Cfg, IceType Type);
+  IceVariable asType(IceType Type);
 
   virtual void emit(const IceCfg *Cfg, uint32_t Option) const;
   virtual void dump(const IceCfg *Cfg) const;
@@ -341,7 +341,7 @@ private:
         RegNum(NoRegister), RegNumTmp(NoRegister), Weight(1),
         RegisterPreference(NULL), AllowRegisterOverlap(false), LoVar(NULL),
         HiVar(NULL) {
-    Vars = Cfg->allocateArrayOf<IceVariable *>(1);
+    Vars = VarsReal;
     Vars[0] = this;
     NumVars = 1;
   }
@@ -389,6 +389,9 @@ private:
   // wasteful for a 64-bit target.
   IceVariable *LoVar;
   IceVariable *HiVar;
+  // VarsReal (and IceOperand::Vars) are set up such that Vars[0] ==
+  // this.
+  IceVariable *VarsReal[1];
 };
 
 #endif // SUBZERO_SRC_ICEOPERAND_H

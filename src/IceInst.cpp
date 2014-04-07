@@ -386,12 +386,13 @@ IceInstFakeKill::IceInstFakeKill(IceCfg *Cfg, const IceVarList &KilledRegs,
 
 // ======================== Dump routines ======================== //
 
-template <> IceOstream &operator<<(IceOstream &Str, const IceInst &I) {
-  if (!Str.isVerbose(IceV_Deleted) && (I.isDeleted() || I.isRedundantAssign()))
-    return Str;
+void IceInst::dumpDecorated(const IceCfg *Cfg) const {
+  IceOstream &Str = Cfg->Str;
+  if (!Str.isVerbose(IceV_Deleted) && (isDeleted() || isRedundantAssign()))
+    return;
   if (Str.isVerbose(IceV_InstNumbers)) {
     char buf[30];
-    int32_t Number = I.getNumber();
+    int32_t Number = getNumber();
     if (Number < 0)
       sprintf(buf, "[XXX]");
     else
@@ -399,12 +400,11 @@ template <> IceOstream &operator<<(IceOstream &Str, const IceInst &I) {
     Str << buf;
   }
   Str << "  ";
-  if (I.isDeleted())
+  if (isDeleted())
     Str << "  //";
-  I.dump(Str.Cfg);
-  I.dumpExtras(Str.Cfg);
+  dump(Cfg);
+  dumpExtras(Cfg);
   Str << "\n";
-  return Str;
 }
 
 void IceInst::emit(const IceCfg *Cfg, uint32_t Option) const {
@@ -412,7 +412,10 @@ void IceInst::emit(const IceCfg *Cfg, uint32_t Option) const {
   Str << "??? ";
   dump(Cfg);
   Str << "\n";
-  Str.Cfg->setError("emit() called on a non-lowered instruction");
+  assert(0 && "emit() called on a non-lowered instruction");
+  // Ideally, Cfg->setError() would be called, but Cfg is a const
+  // pointer and setError() changes its contents.
+  // Cfg->setError("emit() called on a non-lowered instruction");
 }
 
 void IceInst::dump(const IceCfg *Cfg) const {

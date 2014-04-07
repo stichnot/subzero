@@ -82,6 +82,7 @@ public:
   virtual void emit(const IceCfg *Cfg, uint32_t Option) const;
   virtual void dump(const IceCfg *Cfg) const;
   virtual void dumpExtras(const IceCfg *Cfg) const;
+  void dumpDecorated(const IceCfg *Cfg) const;
   void dumpSources(const IceCfg *Cfg) const;
   void dumpDest(const IceCfg *Cfg) const;
   virtual bool isRedundantAssign() const { return false; }
@@ -125,7 +126,7 @@ private:
   IceInst &operator=(const IceInst &) LLVM_DELETED_FUNCTION;
 };
 
-template <> IceOstream &operator<<(IceOstream &Str, const IceInst &I);
+// template <> IceOstream &operator<<(IceOstream &Str, const IceInst &I);
 
 // Alloca instruction.  This captures the size in bytes as getSrc(0),
 // and the alignment.
