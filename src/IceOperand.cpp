@@ -278,8 +278,7 @@ void IceConstantRelocatable::dump(const IceCfg *Cfg) const {
     Str << "+" << Offset;
 }
 
-void IceLiveRange::dump(const IceCfg *Cfg) const {
-  IceOstream &Str = Cfg->Str;
+void IceLiveRange::dump(IceOstream &Str) const {
   Str << "(weight=" << Weight << ") ";
   for (RangeType::const_iterator I = Range.begin(), E = Range.end(); I != E;
        ++I) {
@@ -290,7 +289,7 @@ void IceLiveRange::dump(const IceCfg *Cfg) const {
 }
 
 IceOstream &operator<<(IceOstream &Str, const IceLiveRange &L) {
-  L.dump(Str.Cfg);
+  L.dump(Str);
   return Str;
 }
 

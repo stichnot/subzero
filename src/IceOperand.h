@@ -228,7 +228,7 @@ public:
   IceRegWeight getWeight() const { return Weight; }
   void setWeight(const IceRegWeight &NewWeight) { Weight = NewWeight; }
   void addWeight(uint32_t Delta) { Weight.addWeight(Delta); }
-  void dump(const IceCfg *Cfg) const;
+  void dump(IceOstream &Str) const;
 
   // Defining USE_SET uses std::set to hold the segments instead of
   // std::list.  Using std::list will be slightly faster, but is more

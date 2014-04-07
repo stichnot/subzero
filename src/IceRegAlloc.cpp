@@ -377,16 +377,14 @@ void IceLinearScan::scan(const llvm::SmallBitVector &RegMaskFull) {
 
 // ======================== Dump routines ======================== //
 
-void IceLiveRangeWrapper::dump(const IceCfg *Cfg) const {
-  IceOstream &Str = Cfg->Str;
+void IceLiveRangeWrapper::dump(IceOstream &Str) const {
   char buf[30];
   sprintf(buf, "%2d", Var->getRegNumTmp());
-  Str << "R=" << buf << "  V=" << *Var << "  Range=";
-  range().dump(Cfg);
+  Str << "R=" << buf << "  V=" << *Var << "  Range=" << range();
 }
 
 IceOstream &operator<<(IceOstream &Str, const IceLiveRangeWrapper &R) {
-  R.dump(Str.Cfg);
+  R.dump(Str);
   return Str;
 }
 

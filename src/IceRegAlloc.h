@@ -36,7 +36,7 @@ public:
     return range().overlaps(Other.range());
   }
   IceVariable *const Var;
-  void dump(const IceCfg *Cfg) const;
+  void dump(IceOstream &Str) const;
 
 private:
   // IceLiveRangeWrapper(const IceLiveRangeWrapper &) LLVM_DELETED_FUNCTION;
