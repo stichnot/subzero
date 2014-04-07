@@ -424,7 +424,7 @@ void IceCfg::emit(uint32_t Option) const {
   }
   for (IceNodeList::const_iterator I = Nodes.begin(), E = Nodes.end(); I != E;
        ++I) {
-    (*I)->emit(Str, Option);
+    (*I)->emit(this, Option);
   }
   Str << "\n";
   // TODO: have the Target emit a footer?
@@ -461,7 +461,7 @@ void IceCfg::dump() const {
   // Print each basic block
   for (IceNodeList::const_iterator I = Nodes.begin(), E = Nodes.end(); I != E;
        ++I) {
-    (*I)->dump(Str);
+    (*I)->dump(this);
   }
   if (Str.isVerbose(IceV_Instructions)) {
     Str << "}\n";

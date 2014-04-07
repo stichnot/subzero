@@ -142,7 +142,9 @@ private:
   // validating IceVariable::DefNode.  Normally, a traversal over
   // IceCfgNodes maintains this, but before global operations like
   // register allocation, setCurrentNode(NULL) should be called to
-  // avoid spurious validation failures.
+  // avoid spurious validation failures.  TODO: Move this out of
+  // IceOstream since streams will be split for dumping/emitting, and
+  // this obviously won't be thread-safe.
   const IceCfgNode *CurrentNode;
 };
 

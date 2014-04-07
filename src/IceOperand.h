@@ -48,8 +48,8 @@ public:
     return Vars[I];
   }
   virtual void setUse(const IceInst *Inst, const IceCfgNode *Node) {}
-  virtual void emit(IceOstream &Str, uint32_t Option) const;
-  virtual void dump(IceOstream &Str) const;
+  virtual void emit(const IceCfg *Cfg, uint32_t Option) const;
+  virtual void dump(const IceCfg *Cfg) const;
 
   virtual ~IceOperand() {}
 
@@ -76,8 +76,8 @@ template <> IceOstream &operator<<(IceOstream &Str, const IceVariable &V);
 // including synchronized access for parallel translation.
 class IceConstant : public IceOperand {
 public:
-  virtual void emit(IceOstream &Str, uint32_t Option) const = 0;
-  virtual void dump(IceOstream &Str) const = 0;
+  virtual void emit(const IceCfg *Cfg, uint32_t Option) const = 0;
+  virtual void dump(const IceCfg *Cfg) const = 0;
 
   static bool classof(const IceOperand *Operand) {
     OperandKind Kind = Operand->getKind();
@@ -108,8 +108,13 @@ public:
     return new IceConstantPrimitive(Cfg, Type, Value);
   }
   T getValue() const { return Value; }
-  virtual void emit(IceOstream &Str, uint32_t Option) const { dump(Str); }
-  virtual void dump(IceOstream &Str) const { Str << getValue(); }
+  virtual void emit(const IceCfg *Cfg, uint32_t Option) const {
+    dump(Cfg);
+  }
+  virtual void dump(const IceCfg *Cfg) const {
+    IceOstream &Str = Cfg->Str;
+    Str << getValue();
+  }
 
   static bool classof(const IceOperand *Operand) {
     return Operand->getKind() == K;
@@ -148,8 +153,8 @@ public:
   IceString getName() const { return Name; }
   void setSuppressMangling(bool Value) { SuppressMangling = Value; }
   bool getSuppressMangling() const { return SuppressMangling; }
-  virtual void emit(IceOstream &Str, uint32_t Option) const;
-  virtual void dump(IceOstream &Str) const;
+  virtual void emit(const IceCfg *Cfg, uint32_t Option) const;
+  virtual void dump(const IceCfg *Cfg) const;
 
   static bool classof(const IceOperand *Operand) {
     OperandKind Kind = Operand->getKind();
@@ -225,7 +230,7 @@ public:
   IceRegWeight getWeight() const { return Weight; }
   void setWeight(const IceRegWeight &NewWeight) { Weight = NewWeight; }
   void addWeight(uint32_t Delta) { Weight.addWeight(Delta); }
-  void dump(IceOstream &Str) const;
+  void dump(const IceCfg *Cfg) const;
 
   // Defining USE_SET uses std::set to hold the segments instead of
   // std::list.  Using std::list will be slightly faster, but is more
@@ -323,8 +328,8 @@ public:
   // emission.
   IceVariable asType(IceCfg *Cfg, IceType Type);
 
-  virtual void emit(IceOstream &Str, uint32_t Option) const;
-  virtual void dump(IceOstream &Str) const;
+  virtual void emit(const IceCfg *Cfg, uint32_t Option) const;
+  virtual void dump(const IceCfg *Cfg) const;
 
   static bool classof(const IceOperand *Operand) {
     return Operand->getKind() == Variable;

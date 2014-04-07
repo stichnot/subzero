@@ -407,7 +407,8 @@ void IceCfgNode::livenessPostprocess(IceLivenessMode Mode,
 
 // ======================== Dump routines ======================== //
 
-void IceCfgNode::emit(IceOstream &Str, uint32_t Option) const {
+void IceCfgNode::emit(const IceCfg *Cfg, uint32_t Option) const {
+  IceOstream &Str = Cfg->Str;
   Str.setCurrentNode(this);
   if (Cfg->getEntryNode() == this) {
     Str << Cfg->mangleName(Cfg->getName()) << ":\n";
@@ -419,7 +420,7 @@ void IceCfgNode::emit(IceOstream &Str, uint32_t Option) const {
     if (Inst->isDeleted())
       continue;
     // Emitting a Phi instruction should cause an error.
-    Inst->emit(Str, Option);
+    Inst->emit(Cfg, Option);
   }
   for (IceInstList::const_iterator I = Insts.begin(), E = Insts.end(); I != E;
        ++I) {
@@ -430,11 +431,12 @@ void IceCfgNode::emit(IceOstream &Str, uint32_t Option) const {
     // suppress them.
     if (Inst->isRedundantAssign())
       continue;
-    (*I)->emit(Str, Option);
+    (*I)->emit(Cfg, Option);
   }
 }
 
-void IceCfgNode::dump(IceOstream &Str) const {
+void IceCfgNode::dump(const IceCfg *Cfg) const {
+  IceOstream &Str = Cfg->Str;
   Str.setCurrentNode(this);
   IceLiveness *Liveness = Str.Cfg->getLiveness();
   if (Str.isVerbose(IceV_Instructions)) {

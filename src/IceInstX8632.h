@@ -29,8 +29,8 @@ public:
     Mem,
     Split
   };
-  virtual void emit(IceOstream &Str, uint32_t Option) const = 0;
-  void dump(IceOstream &Str) const;
+  virtual void emit(const IceCfg *Cfg, uint32_t Option) const = 0;
+  void dump(const IceCfg *Cfg) const;
 
 protected:
   IceOperandX8632(IceCfg *Cfg, IceOperandTypeX8632 Kind, IceType Type)
@@ -53,8 +53,8 @@ public:
   IceVariable *getIndex() const { return Index; }
   uint32_t getShift() const { return Shift; }
   virtual void setUse(const IceInst *Inst, const IceCfgNode *Node);
-  virtual void emit(IceOstream &Str, uint32_t Option) const;
-  virtual void dump(IceOstream &Str) const;
+  virtual void emit(const IceCfg *Cfg, uint32_t Option) const;
+  virtual void dump(const IceCfg *Cfg) const;
 
   static bool classof(const IceOperand *Operand) {
     return Operand->getKind() == static_cast<OperandKind>(Mem);
@@ -82,8 +82,8 @@ public:
     return new (Cfg->allocate<IceVariableSplit>())
         IceVariableSplit(Cfg, Var, Part);
   }
-  virtual void emit(IceOstream &Str, uint32_t Option) const;
-  virtual void dump(IceOstream &Str) const;
+  virtual void emit(const IceCfg *Cfg, uint32_t Option) const;
+  virtual void dump(const IceCfg *Cfg) const;
 
   static bool classof(const IceOperand *Operand) {
     return Operand->getKind() == static_cast<OperandKind>(Split);
@@ -145,8 +145,8 @@ public:
     Ucomiss,
     Xor
   };
-  virtual void emit(IceOstream &Str, uint32_t Option) const = 0;
-  virtual void dump(IceOstream &Str) const;
+  virtual void emit(const IceCfg *Cfg, uint32_t Option) const = 0;
+  virtual void dump(const IceCfg *Cfg) const;
 
 protected:
   IceInstX8632(IceCfg *Cfg, InstKindX8632 Kind, uint32_t Maxsrcs,
@@ -204,8 +204,8 @@ public:
         IceInstX8632Label(Cfg, Target);
   }
   IceString getName(IceCfg *Cfg) const;
-  virtual void emit(IceOstream &Str, uint32_t Option) const;
-  virtual void dump(IceOstream &Str) const;
+  virtual void emit(const IceCfg *Cfg, uint32_t Option) const;
+  virtual void dump(const IceCfg *Cfg) const;
 
 private:
   IceInstX8632Label(IceCfg *Cfg, IceTargetX8632 *Target);
@@ -252,8 +252,8 @@ public:
   }
   IceCfgNode *getTargetTrue() const { return TargetTrue; }
   IceCfgNode *getTargetFalse() const { return TargetFalse; }
-  virtual void emit(IceOstream &Str, uint32_t Option) const;
-  virtual void dump(IceOstream &Str) const;
+  virtual void emit(const IceCfg *Cfg, uint32_t Option) const;
+  virtual void dump(const IceCfg *Cfg) const;
   static bool classof(const IceInst *Inst) { return isClassof(Inst, Br); }
 
 private:
@@ -275,8 +275,8 @@ public:
         IceInstX8632Call(Cfg, Dest, CallTarget, Tail);
   }
   IceOperand *getCallTarget() const { return getSrc(0); }
-  virtual void emit(IceOstream &Str, uint32_t Option) const;
-  virtual void dump(IceOstream &Str) const;
+  virtual void emit(const IceCfg *Cfg, uint32_t Option) const;
+  virtual void dump(const IceCfg *Cfg) const;
   static bool classof(const IceInst *Inst) { return isClassof(Inst, Call); }
 
 private:
@@ -287,7 +287,7 @@ private:
   const bool Tail;
 };
 
-void IceEmitTwoAddress(const char *Opcode, const IceInst *Inst, IceOstream &Str,
+void IceEmitTwoAddress(const char *Opcode, const IceInst *Inst, const IceCfg *Cfg,
                        uint32_t Option, bool ShiftHack = false);
 
 template <bool ShiftHack, IceInstX8632::InstKindX8632 K>
@@ -298,13 +298,14 @@ public:
     return new (Cfg->allocate<IceInstX8632Binop>())
         IceInstX8632Binop(Cfg, Dest, Source);
   }
-  virtual void emit(IceOstream &Str, uint32_t Option) const {
-    IceEmitTwoAddress(Opcode, this, Str, Option, ShiftHack);
+  virtual void emit(const IceCfg *Cfg, uint32_t Option) const {
+    IceEmitTwoAddress(Opcode, this, Cfg, Option, ShiftHack);
   }
-  virtual void dump(IceOstream &Str) const {
-    dumpDest(Str);
+  virtual void dump(const IceCfg *Cfg) const {
+  IceOstream &Str = Cfg->Str;
+    dumpDest(Cfg);
     Str << " = " << Opcode << "." << getDest()->getType() << " ";
-    dumpSources(Str);
+    dumpSources(Cfg);
   }
   static bool classof(const IceInst *Inst) { return isClassof(Inst, K); }
 
@@ -327,16 +328,18 @@ public:
     return new (Cfg->allocate<IceInstX8632Ternop>())
         IceInstX8632Ternop(Cfg, Dest, Source1, Source2);
   }
-  virtual void emit(IceOstream &Str, uint32_t Option) const {
+  virtual void emit(const IceCfg *Cfg, uint32_t Option) const {
+    IceOstream &Str = Cfg->Str;
     assert(getSrcSize() == 3);
     Str << "\t" << Opcode << "\t";
-    getSrc(1)->emit(Str, Option);
+    getSrc(1)->emit(Cfg, Option);
     Str << "\n";
   }
-  virtual void dump(IceOstream &Str) const {
-    dumpDest(Str);
+  virtual void dump(const IceCfg *Cfg) const {
+    IceOstream &Str = Cfg->Str;
+    dumpDest(Cfg);
     Str << " = " << Opcode << "." << getDest()->getType() << " ";
-    dumpSources(Str);
+    dumpSources(Cfg);
   }
   static bool classof(const IceInst *Inst) { return isClassof(Inst, K); }
 
@@ -379,8 +382,8 @@ public:
     return new (Cfg->allocate<IceInstX8632Mul>())
         IceInstX8632Mul(Cfg, Dest, Source1, Source2);
   }
-  virtual void emit(IceOstream &Str, uint32_t Option) const;
-  virtual void dump(IceOstream &Str) const;
+  virtual void emit(const IceCfg *Cfg, uint32_t Option) const;
+  virtual void dump(const IceCfg *Cfg) const;
   static bool classof(const IceInst *Inst) { return isClassof(Inst, Mul); }
 
 private:
@@ -397,8 +400,8 @@ public:
     return new (Cfg->allocate<IceInstX8632Shld>())
         IceInstX8632Shld(Cfg, Dest, Source1, Source2);
   }
-  virtual void emit(IceOstream &Str, uint32_t Option) const;
-  virtual void dump(IceOstream &Str) const;
+  virtual void emit(const IceCfg *Cfg, uint32_t Option) const;
+  virtual void dump(const IceCfg *Cfg) const;
   static bool classof(const IceInst *Inst) { return isClassof(Inst, Shld); }
 
 private:
@@ -415,8 +418,8 @@ public:
     return new (Cfg->allocate<IceInstX8632Shrd>())
         IceInstX8632Shrd(Cfg, Dest, Source1, Source2);
   }
-  virtual void emit(IceOstream &Str, uint32_t Option) const;
-  virtual void dump(IceOstream &Str) const;
+  virtual void emit(const IceCfg *Cfg, uint32_t Option) const;
+  virtual void dump(const IceCfg *Cfg) const;
   static bool classof(const IceInst *Inst) { return isClassof(Inst, Shrd); }
 
 private:
@@ -434,8 +437,8 @@ public:
     return new (Cfg->allocate<IceInstX8632Cdq>())
         IceInstX8632Cdq(Cfg, Dest, Source);
   }
-  virtual void emit(IceOstream &Str, uint32_t Option) const;
-  virtual void dump(IceOstream &Str) const;
+  virtual void emit(const IceCfg *Cfg, uint32_t Option) const;
+  virtual void dump(const IceCfg *Cfg) const;
   static bool classof(const IceInst *Inst) { return isClassof(Inst, Cdq); }
 
 private:
@@ -455,8 +458,8 @@ public:
     return new (Cfg->allocate<IceInstX8632Cvt>())
         IceInstX8632Cvt(Cfg, Dest, Source);
   }
-  virtual void emit(IceOstream &Str, uint32_t Option) const;
-  virtual void dump(IceOstream &Str) const;
+  virtual void emit(const IceCfg *Cfg, uint32_t Option) const;
+  virtual void dump(const IceCfg *Cfg) const;
   static bool classof(const IceInst *Inst) { return isClassof(Inst, Cvt); }
 
 private:
@@ -472,8 +475,8 @@ public:
     return new (Cfg->allocate<IceInstX8632Icmp>())
         IceInstX8632Icmp(Cfg, Src1, Src2);
   }
-  virtual void emit(IceOstream &Str, uint32_t Option) const;
-  virtual void dump(IceOstream &Str) const;
+  virtual void emit(const IceCfg *Cfg, uint32_t Option) const;
+  virtual void dump(const IceCfg *Cfg) const;
   static bool classof(const IceInst *Inst) { return isClassof(Inst, Icmp); }
 
 private:
@@ -489,8 +492,8 @@ public:
     return new (Cfg->allocate<IceInstX8632Ucomiss>())
         IceInstX8632Ucomiss(Cfg, Src1, Src2);
   }
-  virtual void emit(IceOstream &Str, uint32_t Option) const;
-  virtual void dump(IceOstream &Str) const;
+  virtual void emit(const IceCfg *Cfg, uint32_t Option) const;
+  virtual void dump(const IceCfg *Cfg) const;
   static bool classof(const IceInst *Inst) { return isClassof(Inst, Ucomiss); }
 
 private:
@@ -507,8 +510,8 @@ public:
     return new (Cfg->allocate<IceInstX8632Test>())
         IceInstX8632Test(Cfg, Source1, Source2);
   }
-  virtual void emit(IceOstream &Str, uint32_t Option) const;
-  virtual void dump(IceOstream &Str) const;
+  virtual void emit(const IceCfg *Cfg, uint32_t Option) const;
+  virtual void dump(const IceCfg *Cfg) const;
   static bool classof(const IceInst *Inst) { return isClassof(Inst, Test); }
 
 private:
@@ -527,8 +530,8 @@ public:
     return new (Cfg->allocate<IceInstX8632Store>())
         IceInstX8632Store(Cfg, Value, Mem);
   }
-  virtual void emit(IceOstream &Str, uint32_t Option) const;
-  virtual void dump(IceOstream &Str) const;
+  virtual void emit(const IceCfg *Cfg, uint32_t Option) const;
+  virtual void dump(const IceCfg *Cfg) const;
   static bool classof(const IceInst *Inst) { return isClassof(Inst, Store); }
 
 private:
@@ -545,8 +548,8 @@ public:
         IceInstX8632Mov(Cfg, Dest, Source);
   }
   virtual bool isRedundantAssign() const;
-  virtual void emit(IceOstream &Str, uint32_t Option) const;
-  virtual void dump(IceOstream &Str) const;
+  virtual void emit(const IceCfg *Cfg, uint32_t Option) const;
+  virtual void dump(const IceCfg *Cfg) const;
   static bool classof(const IceInst *Inst) { return isClassof(Inst, Mov); }
 
 private:
@@ -562,8 +565,8 @@ public:
     return new (Cfg->allocate<IceInstX8632Movsx>())
         IceInstX8632Movsx(Cfg, Dest, Source);
   }
-  virtual void emit(IceOstream &Str, uint32_t Option) const;
-  virtual void dump(IceOstream &Str) const;
+  virtual void emit(const IceCfg *Cfg, uint32_t Option) const;
+  virtual void dump(const IceCfg *Cfg) const;
   static bool classof(const IceInst *Inst) { return isClassof(Inst, Movsx); }
 
 private:
@@ -579,8 +582,8 @@ public:
     return new (Cfg->allocate<IceInstX8632Movzx>())
         IceInstX8632Movzx(Cfg, Dest, Source);
   }
-  virtual void emit(IceOstream &Str, uint32_t Option) const;
-  virtual void dump(IceOstream &Str) const;
+  virtual void emit(const IceCfg *Cfg, uint32_t Option) const;
+  virtual void dump(const IceCfg *Cfg) const;
   static bool classof(const IceInst *Inst) { return isClassof(Inst, Movzx); }
 
 private:
@@ -594,8 +597,8 @@ public:
   static IceInstX8632Fld *create(IceCfg *Cfg, IceOperand *Src) {
     return new (Cfg->allocate<IceInstX8632Fld>()) IceInstX8632Fld(Cfg, Src);
   }
-  virtual void emit(IceOstream &Str, uint32_t Option) const;
-  virtual void dump(IceOstream &Str) const;
+  virtual void emit(const IceCfg *Cfg, uint32_t Option) const;
+  virtual void dump(const IceCfg *Cfg) const;
   static bool classof(const IceInst *Inst) { return isClassof(Inst, Fld); }
 
 private:
@@ -609,8 +612,8 @@ public:
   static IceInstX8632Fstp *create(IceCfg *Cfg, IceVariable *Dest) {
     return new (Cfg->allocate<IceInstX8632Fstp>()) IceInstX8632Fstp(Cfg, Dest);
   }
-  virtual void emit(IceOstream &Str, uint32_t Option) const;
-  virtual void dump(IceOstream &Str) const;
+  virtual void emit(const IceCfg *Cfg, uint32_t Option) const;
+  virtual void dump(const IceCfg *Cfg) const;
   static bool classof(const IceInst *Inst) { return isClassof(Inst, Fstp); }
 
 private:
@@ -624,8 +627,8 @@ public:
   static IceInstX8632Pop *create(IceCfg *Cfg, IceVariable *Dest) {
     return new (Cfg->allocate<IceInstX8632Pop>()) IceInstX8632Pop(Cfg, Dest);
   }
-  virtual void emit(IceOstream &Str, uint32_t Option) const;
-  virtual void dump(IceOstream &Str) const;
+  virtual void emit(const IceCfg *Cfg, uint32_t Option) const;
+  virtual void dump(const IceCfg *Cfg) const;
   static bool classof(const IceInst *Inst) { return isClassof(Inst, Pop); }
 
 private:
@@ -640,8 +643,8 @@ public:
     return new (Cfg->allocate<IceInstX8632Push>())
         IceInstX8632Push(Cfg, Source);
   }
-  virtual void emit(IceOstream &Str, uint32_t Option) const;
-  virtual void dump(IceOstream &Str) const;
+  virtual void emit(const IceCfg *Cfg, uint32_t Option) const;
+  virtual void dump(const IceCfg *Cfg) const;
   static bool classof(const IceInst *Inst) { return isClassof(Inst, Push); }
 
 private:
@@ -655,8 +658,8 @@ public:
   static IceInstX8632Ret *create(IceCfg *Cfg, IceVariable *Source = NULL) {
     return new (Cfg->allocate<IceInstX8632Ret>()) IceInstX8632Ret(Cfg, Source);
   }
-  virtual void emit(IceOstream &Str, uint32_t Option) const;
-  virtual void dump(IceOstream &Str) const;
+  virtual void emit(const IceCfg *Cfg, uint32_t Option) const;
+  virtual void dump(const IceCfg *Cfg) const;
   static bool classof(const IceInst *Inst) { return isClassof(Inst, Ret); }
 
 private:

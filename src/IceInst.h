@@ -79,11 +79,11 @@ public:
 
   void liveness(IceLivenessMode Mode, int32_t InstNumber, llvm::BitVector &Live,
                 IceLiveness *Liveness, const IceCfgNode *Node);
-  virtual void emit(IceOstream &Str, uint32_t Option) const;
-  virtual void dump(IceOstream &Str) const;
-  virtual void dumpExtras(IceOstream &Str) const;
-  void dumpSources(IceOstream &Str) const;
-  void dumpDest(IceOstream &Str) const;
+  virtual void emit(const IceCfg *Cfg, uint32_t Option) const;
+  virtual void dump(const IceCfg *Cfg) const;
+  virtual void dumpExtras(const IceCfg *Cfg) const;
+  void dumpSources(const IceCfg *Cfg) const;
+  void dumpDest(const IceCfg *Cfg) const;
   virtual bool isRedundantAssign() const { return false; }
 
   virtual ~IceInst() {}
@@ -137,7 +137,7 @@ public:
         IceInstAlloca(Cfg, ByteCount, Align, Dest);
   }
   uint32_t getAlign() const { return Align; }
-  virtual void dump(IceOstream &Str) const;
+  virtual void dump(const IceCfg *Cfg) const;
   static bool classof(const IceInst *Inst) { return Inst->getKind() == Alloca; }
 
 private:
@@ -182,7 +182,7 @@ public:
   }
   OpKind getOp() const { return Op; }
   bool isCommutative() const;
-  virtual void dump(IceOstream &Str) const;
+  virtual void dump(const IceCfg *Cfg) const;
   static bool classof(const IceInst *Inst) {
     return Inst->getKind() == Arithmetic;
   }
@@ -209,7 +209,7 @@ public:
     return new (Cfg->allocateInst<IceInstAssign>())
         IceInstAssign(Cfg, Dest, Source);
   }
-  virtual void dump(IceOstream &Str) const;
+  virtual void dump(const IceCfg *Cfg) const;
   static bool classof(const IceInst *Inst) { return Inst->getKind() == Assign; }
 
 private:
@@ -238,7 +238,7 @@ public:
     return getTargetFalse();
   }
   virtual IceNodeList getTerminatorEdges() const;
-  virtual void dump(IceOstream &Str) const;
+  virtual void dump(const IceCfg *Cfg) const;
   static bool classof(const IceInst *Inst) { return Inst->getKind() == Br; }
 
 private:
@@ -268,7 +268,7 @@ public:
   IceOperand *getArg(uint32_t I) const { return getSrc(I + 1); }
   uint32_t getNumArgs() const { return getSrcSize() - 1; }
   bool isTail() const { return Tail; }
-  virtual void dump(IceOstream &Str) const;
+  virtual void dump(const IceCfg *Cfg) const;
   static bool classof(const IceInst *Inst) { return Inst->getKind() == Call; }
 
 private:
@@ -310,7 +310,7 @@ public:
         IceInstCast(Cfg, CastKind, Dest, Source);
   }
   OpKind getCastKind() const { return CastKind; }
-  virtual void dump(IceOstream &Str) const;
+  virtual void dump(const IceCfg *Cfg) const;
   static bool classof(const IceInst *Inst) { return Inst->getKind() == Cast; }
 
 private:
@@ -350,7 +350,7 @@ public:
         IceInstFcmp(Cfg, Condition, Dest, Source1, Source2);
   }
   FCond getCondition() const { return Condition; }
-  virtual void dump(IceOstream &Str) const;
+  virtual void dump(const IceCfg *Cfg) const;
   static bool classof(const IceInst *Inst) { return Inst->getKind() == Fcmp; }
 
 private:
@@ -385,7 +385,7 @@ public:
         IceInstIcmp(Cfg, Condition, Dest, Source1, Source2);
   }
   ICond getCondition() const { return Condition; }
-  virtual void dump(IceOstream &Str) const;
+  virtual void dump(const IceCfg *Cfg) const;
   static bool classof(const IceInst *Inst) { return Inst->getKind() == Icmp; }
 
 private:
@@ -404,7 +404,7 @@ public:
     return new (Cfg->allocateInst<IceInstLoad>())
         IceInstLoad(Cfg, Dest, SourceAddr);
   }
-  virtual void dump(IceOstream &Str) const;
+  virtual void dump(const IceCfg *Cfg) const;
   static bool classof(const IceInst *Inst) { return Inst->getKind() == Load; }
 
 private:
@@ -425,7 +425,7 @@ public:
   void livenessPhiOperand(llvm::BitVector &Live, IceCfgNode *Target,
                           IceLiveness *Liveness);
   IceInst *lower(IceCfg *Cfg, IceCfgNode *Node);
-  virtual void dump(IceOstream &Str) const;
+  virtual void dump(const IceCfg *Cfg) const;
   static bool classof(const IceInst *Inst) { return Inst->getKind() == Phi; }
 
 private:
@@ -447,7 +447,7 @@ public:
     return new (Cfg->allocateInst<IceInstRet>()) IceInstRet(Cfg, Source);
   }
   virtual IceNodeList getTerminatorEdges() const { return IceNodeList(); }
-  virtual void dump(IceOstream &Str) const;
+  virtual void dump(const IceCfg *Cfg) const;
   static bool classof(const IceInst *Inst) { return Inst->getKind() == Ret; }
 
 private:
@@ -468,7 +468,7 @@ public:
   IceOperand *getCondition() const { return getSrc(0); }
   IceOperand *getTrueOperand() const { return getSrc(1); }
   IceOperand *getFalseOperand() const { return getSrc(2); }
-  virtual void dump(IceOstream &Str) const;
+  virtual void dump(const IceCfg *Cfg) const;
   static bool classof(const IceInst *Inst) { return Inst->getKind() == Select; }
 
 private:
@@ -488,7 +488,7 @@ public:
   }
   IceOperand *getAddr() const { return getSrc(1); }
   IceOperand *getData() const { return getSrc(0); }
-  virtual void dump(IceOstream &Str) const;
+  virtual void dump(const IceCfg *Cfg) const;
   static bool classof(const IceInst *Inst) { return Inst->getKind() == Store; }
 
 private:
@@ -518,7 +518,7 @@ public:
   }
   void addBranch(uint32_t CaseIndex, uint64_t Value, IceCfgNode *Label);
   virtual IceNodeList getTerminatorEdges() const;
-  virtual void dump(IceOstream &Str) const;
+  virtual void dump(const IceCfg *Cfg) const;
   static bool classof(const IceInst *Inst) { return Inst->getKind() == Switch; }
 
 private:
@@ -541,7 +541,7 @@ public:
         IceInstUnreachable(Cfg);
   }
   virtual IceNodeList getTerminatorEdges() const { return IceNodeList(); }
-  virtual void dump(IceOstream &Str) const;
+  virtual void dump(const IceCfg *Cfg) const;
   static bool classof(const IceInst *Inst) {
     return Inst->getKind() == Unreachable;
   }
@@ -572,8 +572,8 @@ public:
     return new (Cfg->allocateInst<IceInstFakeDef>())
         IceInstFakeDef(Cfg, Dest, Src);
   }
-  virtual void emit(IceOstream &Str, uint32_t Option) const;
-  virtual void dump(IceOstream &Str) const;
+  virtual void emit(const IceCfg *Cfg, uint32_t Option) const;
+  virtual void dump(const IceCfg *Cfg) const;
   static bool classof(const IceInst *Inst) {
     return Inst->getKind() == FakeDef;
   }
@@ -594,8 +594,8 @@ public:
   static IceInstFakeUse *create(IceCfg *Cfg, IceVariable *Src) {
     return new (Cfg->allocateInst<IceInstFakeUse>()) IceInstFakeUse(Cfg, Src);
   }
-  virtual void emit(IceOstream &Str, uint32_t Option) const;
-  virtual void dump(IceOstream &Str) const;
+  virtual void emit(const IceCfg *Cfg, uint32_t Option) const;
+  virtual void dump(const IceCfg *Cfg) const;
   static bool classof(const IceInst *Inst) {
     return Inst->getKind() == FakeUse;
   }
@@ -623,8 +623,8 @@ public:
         IceInstFakeKill(Cfg, KilledRegs, Linked);
   }
   const IceInst *getLinked() const { return Linked; }
-  virtual void emit(IceOstream &Str, uint32_t Option) const;
-  virtual void dump(IceOstream &Str) const;
+  virtual void emit(const IceCfg *Cfg, uint32_t Option) const;
+  virtual void dump(const IceCfg *Cfg) const;
   static bool classof(const IceInst *Inst) {
     return Inst->getKind() == FakeKill;
   }
@@ -642,9 +642,9 @@ private:
 // instructions.
 class IceInstTarget : public IceInst {
 public:
-  virtual void emit(IceOstream &Str, uint32_t Option) const = 0;
-  virtual void dump(IceOstream &Str) const;
-  virtual void dumpExtras(IceOstream &Str) const;
+  virtual void emit(const IceCfg *Cfg, uint32_t Option) const = 0;
+  virtual void dump(const IceCfg *Cfg) const;
+  virtual void dumpExtras(const IceCfg *Cfg) const;
   static bool classof(const IceInst *Inst) { return Inst->getKind() >= Target; }
 
 protected:

@@ -381,7 +381,7 @@ void IceLiveRangeWrapper::dump(IceOstream &Str) const {
   char buf[30];
   sprintf(buf, "%2d", Var->getRegNumTmp());
   Str << "R=" << buf << "  V=" << *Var << "  Range=";
-  range().dump(Str);
+  range().dump(Str.Cfg);
 }
 
 IceOstream &operator<<(IceOstream &Str, const IceLiveRangeWrapper &R) {

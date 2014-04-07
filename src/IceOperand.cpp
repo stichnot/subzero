@@ -174,22 +174,23 @@ IceVariable IceVariable::asType(IceCfg *Cfg, IceType Type) {
 // ======================== dump routines ======================== //
 
 template <> IceOstream &operator<<(IceOstream &Str, const IceOperand &O) {
-  O.dump(Str);
+  O.dump(Str.Cfg);
   return Str;
 }
 
 template <> IceOstream &operator<<(IceOstream &Str, const IceVariable &V) {
-  V.dump(Str);
+  V.dump(Str.Cfg);
   return Str;
 }
 
 template <> IceOstream &operator<<(IceOstream &Str, const IceConstant &C) {
-  C.dump(Str);
+  C.dump(Str.Cfg);
   return Str;
 }
 
 // TODO: This should be handed by the IceTargetLowering subclass.
-void IceVariable::emit(IceOstream &Str, uint32_t Option) const {
+void IceVariable::emit(const IceCfg *Cfg, uint32_t Option) const {
+  IceOstream &Str = Cfg->Str;
   assert(DefNode == NULL || DefNode == Str.getCurrentNode());
   if (hasReg()) {
     Str << Str.Cfg->getTarget()->getRegName(RegNum, getType());
@@ -225,7 +226,8 @@ void IceVariable::emit(IceOstream &Str, uint32_t Option) const {
   Str << "]";
 }
 
-void IceVariable::dump(IceOstream &Str) const {
+void IceVariable::dump(const IceCfg *Cfg) const {
+  IceOstream &Str = Cfg->Str;
   const IceCfgNode *CurrentNode = Str.getCurrentNode();
   (void)CurrentNode; // used only in assert()
   assert(CurrentNode == NULL || DefNode == NULL || DefNode == CurrentNode);
@@ -251,11 +253,15 @@ void IceVariable::dump(IceOstream &Str) const {
   }
 }
 
-void IceOperand::emit(IceOstream &Str, uint32_t Option) const { dump(Str); }
+void IceOperand::emit(const IceCfg *Cfg, uint32_t Option) const { dump(Cfg); }
 
-void IceOperand::dump(IceOstream &Str) const { Str << "IceOperand<?>"; }
+void IceOperand::dump(const IceCfg *Cfg) const {
+  IceOstream &Str = Cfg->Str;
+  Str << "IceOperand<?>";
+}
 
-void IceConstantRelocatable::emit(IceOstream &Str, uint32_t Option) const {
+void IceConstantRelocatable::emit(const IceCfg *Cfg, uint32_t Option) const {
+  IceOstream &Str = Cfg->Str;
   if (SuppressMangling)
     Str << Name;
   else
@@ -267,13 +273,15 @@ void IceConstantRelocatable::emit(IceOstream &Str, uint32_t Option) const {
   }
 }
 
-void IceConstantRelocatable::dump(IceOstream &Str) const {
+void IceConstantRelocatable::dump(const IceCfg *Cfg) const {
+  IceOstream &Str = Cfg->Str;
   Str << "@" << Name;
   if (Offset)
     Str << "+" << Offset;
 }
 
-void IceLiveRange::dump(IceOstream &Str) const {
+void IceLiveRange::dump(const IceCfg *Cfg) const {
+  IceOstream &Str = Cfg->Str;
   Str << "(weight=" << Weight << ") ";
   for (RangeType::const_iterator I = Range.begin(), E = Range.end(); I != E;
        ++I) {
@@ -284,7 +292,7 @@ void IceLiveRange::dump(IceOstream &Str) const {
 }
 
 IceOstream &operator<<(IceOstream &Str, const IceLiveRange &L) {
-  L.dump(Str);
+  L.dump(Str.Cfg);
   return Str;
 }
 
