@@ -108,9 +108,7 @@ public:
     return new IceConstantPrimitive(Cfg, Type, Value);
   }
   T getValue() const { return Value; }
-  virtual void emit(const IceCfg *Cfg, uint32_t Option) const {
-    dump(Cfg);
-  }
+  virtual void emit(const IceCfg *Cfg, uint32_t Option) const { dump(Cfg); }
   virtual void dump(const IceCfg *Cfg) const {
     IceOstream &Str = Cfg->Str;
     Str << getValue();

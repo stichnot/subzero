@@ -287,8 +287,9 @@ private:
   const bool Tail;
 };
 
-void IceEmitTwoAddress(const char *Opcode, const IceInst *Inst, const IceCfg *Cfg,
-                       uint32_t Option, bool ShiftHack = false);
+void IceEmitTwoAddress(const char *Opcode, const IceInst *Inst,
+                       const IceCfg *Cfg, uint32_t Option,
+                       bool ShiftHack = false);
 
 template <bool ShiftHack, IceInstX8632::InstKindX8632 K>
 class IceInstX8632Binop : public IceInstX8632 {
@@ -302,7 +303,7 @@ public:
     IceEmitTwoAddress(Opcode, this, Cfg, Option, ShiftHack);
   }
   virtual void dump(const IceCfg *Cfg) const {
-  IceOstream &Str = Cfg->Str;
+    IceOstream &Str = Cfg->Str;
     dumpDest(Cfg);
     Str << " = " << Opcode << "." << getDest()->getType() << " ";
     dumpSources(Cfg);

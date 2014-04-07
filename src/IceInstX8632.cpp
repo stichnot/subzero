@@ -369,8 +369,8 @@ void IceInstX8632Call::dump(const IceCfg *Cfg) const {
   Str << "call " << *getCallTarget();
 }
 
-void IceEmitTwoAddress(const char *Opcode, const IceInst *Inst, const IceCfg *Cfg,
-                       uint32_t Option, bool ShiftHack) {
+void IceEmitTwoAddress(const char *Opcode, const IceInst *Inst,
+                       const IceCfg *Cfg, uint32_t Option, bool ShiftHack) {
   IceOstream &Str = Cfg->Str;
   assert(Inst->getSrcSize() == 2);
   assert(Inst->getDest() == Inst->getSrc(0));
