@@ -54,8 +54,7 @@ public:
   virtual ~IceOperand() {}
 
 protected:
-  IceOperand(IceCfg *Cfg, OperandKind Kind, IceType Type)
-      : Type(Type), Kind(Kind) {}
+  IceOperand(OperandKind Kind, IceType Type) : Type(Type), Kind(Kind) {}
   const IceType Type;
   const OperandKind Kind;
   // Vars and NumVars are initialized by the derived class.
@@ -67,9 +66,8 @@ private:
   IceOperand &operator=(const IceOperand &) LLVM_DELETED_FUNCTION;
 };
 
-// IceConstant is the abstract base class for constants.
-// TODO: better design of a minimal per-module constant pool,
-// including synchronized access for parallel translation.
+// IceConstant is the abstract base class for constants.  All
+// constants are allocated from a global arena and are pooled.
 class IceConstant : public IceOperand {
 public:
   virtual void emit(const IceCfg *Cfg, uint32_t Option) const = 0;
@@ -81,8 +79,7 @@ public:
   }
 
 protected:
-  IceConstant(IceCfg *Cfg, OperandKind Kind, IceType Type)
-      : IceOperand(Cfg, Kind, Type) {
+  IceConstant(OperandKind Kind, IceType Type) : IceOperand(Kind, Type) {
     Vars = NULL;
     NumVars = 0;
   }
@@ -96,10 +93,10 @@ private:
 template <typename T, IceOperand::OperandKind K>
 class IceConstantPrimitive : public IceConstant {
 public:
-  static IceConstantPrimitive *create(IceCfg *Cfg, IceType Type, T Value) {
-    // Use non-placement allocation for constants for now, until
-    // global constant pool issues are worked out.
-    return new IceConstantPrimitive(Cfg, Type, Value);
+  static IceConstantPrimitive *create(IceGlobalContext *Ctx, IceType Type,
+                                      T Value) {
+    return new (Ctx->allocate<IceConstantPrimitive>())
+        IceConstantPrimitive(Type, Value);
   }
   T getValue() const { return Value; }
   virtual void emit(const IceCfg *Cfg, uint32_t Option) const {
@@ -116,8 +113,8 @@ public:
   }
 
 private:
-  IceConstantPrimitive(IceCfg *Cfg, IceType Type, T Value)
-      : IceConstant(Cfg, K, Type), Value(Value) {}
+  IceConstantPrimitive(IceType Type, T Value)
+      : IceConstant(K, Type), Value(Value) {}
   IceConstantPrimitive(const IceConstantPrimitive &) LLVM_DELETED_FUNCTION;
   IceConstantPrimitive &
   operator=(const IceConstantPrimitive &) LLVM_DELETED_FUNCTION;
@@ -134,13 +131,14 @@ IceConstantDouble;
 // a fixed offset.
 class IceConstantRelocatable : public IceConstant {
 public:
-  static IceConstantRelocatable *create(IceCfg *Cfg, uint32_t CPIndex,
+  static IceConstantRelocatable *create(IceGlobalContext *Ctx, uint32_t CPIndex,
                                         IceType Type, const void *Handle,
                                         int64_t Offset,
                                         const IceString &Name = "") {
     // Use non-placement allocation for constants for now, until
     // global constant pool issues are worked out.
-    return new IceConstantRelocatable(Cfg, Type, Handle, Offset, Name, CPIndex);
+    return new (Ctx->allocate<IceConstantRelocatable>())
+        IceConstantRelocatable(Type, Handle, Offset, Name, CPIndex);
   }
   uint32_t getCPIndex() const { return CPIndex; }
   const void *getHandle() const { return Handle; }
@@ -157,10 +155,9 @@ public:
   }
 
 private:
-  IceConstantRelocatable(IceCfg *Cfg, IceType Type, const void *Handle,
-                         int64_t Offset, const IceString &Name,
-                         uint32_t CPIndex)
-      : IceConstant(Cfg, ConstantRelocatable, Type), CPIndex(CPIndex),
+  IceConstantRelocatable(IceType Type, const void *Handle, int64_t Offset,
+                         const IceString &Name, uint32_t CPIndex)
+      : IceConstant(ConstantRelocatable, Type), CPIndex(CPIndex),
         Handle(Handle), Offset(Offset), Name(Name), SuppressMangling(false) {}
   IceConstantRelocatable(const IceConstantRelocatable &) LLVM_DELETED_FUNCTION;
   IceConstantRelocatable &
@@ -254,7 +251,7 @@ public:
   static IceVariable *create(IceCfg *Cfg, IceType Type, const IceCfgNode *Node,
                              uint32_t Index, const IceString &Name) {
     return new (Cfg->allocate<IceVariable>())
-        IceVariable(Cfg, Type, Node, Index, Name);
+        IceVariable(Type, Node, Index, Name);
   }
 
   uint32_t getIndex() const { return Number; }
@@ -331,13 +328,12 @@ public:
   }
 
 private:
-  IceVariable(IceCfg *Cfg, IceType Type, const IceCfgNode *Node, uint32_t Index,
+  IceVariable(IceType Type, const IceCfgNode *Node, uint32_t Index,
               const IceString &Name)
-      : IceOperand(Cfg, Variable, Type), Number(Index), Name(Name),
-        DefInst(NULL), DefNode(Node), IsArgument(false), StackOffset(0),
-        RegNum(NoRegister), RegNumTmp(NoRegister), Weight(1),
-        RegisterPreference(NULL), AllowRegisterOverlap(false), LoVar(NULL),
-        HiVar(NULL) {
+      : IceOperand(Variable, Type), Number(Index), Name(Name), DefInst(NULL),
+        DefNode(Node), IsArgument(false), StackOffset(0), RegNum(NoRegister),
+        RegNumTmp(NoRegister), Weight(1), RegisterPreference(NULL),
+        AllowRegisterOverlap(false), LoVar(NULL), HiVar(NULL) {
     Vars = VarsReal;
     Vars[0] = this;
     NumVars = 1;

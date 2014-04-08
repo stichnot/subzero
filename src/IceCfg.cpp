@@ -20,53 +20,16 @@
 #include "IceOperand.h"
 #include "IceTargetLowering.h"
 
-class IceConstantPool {
-public:
-  IceConstantPool(IceCfg *Cfg) : Cfg(Cfg) {}
-  IceConstantRelocatable *getOrAddRelocatable(IceType Type, const void *Handle,
-                                              int64_t Offset,
-                                              const IceString &Name) {
-    uint32_t Index = NameToIndex.translate(
-        KeyType(Type, std::pair<IceString, int64_t>(Name, Offset)));
-    if (Index >= RelocatablePool.size()) {
-      RelocatablePool.resize(Index + 1);
-      void *Handle = NULL;
-      RelocatablePool[Index] = IceConstantRelocatable::create(
-          Cfg, Index, Type, Handle, Offset, Name);
-    }
-    IceConstantRelocatable *Constant = RelocatablePool[Index];
-    assert(Constant);
-    return Constant;
-  }
-  uint32_t getSize() const { return RelocatablePool.size(); }
-  IceConstantRelocatable *getEntry(uint32_t Index) const {
-    assert(Index < RelocatablePool.size());
-    return RelocatablePool[Index];
-  }
-
-private:
-  // KeyType is a triple of {Type, Name, Offset}.
-  typedef std::pair<IceType, std::pair<IceString, int64_t> > KeyType;
-  // TODO: Cfg is being captured primarily for arena allocation for
-  // new IceConstants.  If IceConstants live beyond a function/Cfg,
-  // they need to be allocated from a global arena and there needs to
-  // be appropriate locking.
-  IceCfg *Cfg;
-  // Use IceValueTranslation<> to map (Name,Type) pairs to an index.
-  IceValueTranslation<KeyType> NameToIndex;
-  std::vector<IceConstantRelocatable *> RelocatablePool;
-};
-
 IceOstream *GlobalStr = NULL;
 bool IceCfg::HasEmittedFirstMethod = false;
 
-IceCfg::IceCfg(IceGlobalContext *Context)
-    : Context(Context), Name(""), Type(IceType_void), IsInternal(false),
+IceCfg::IceCfg(IceGlobalContext *Ctx)
+    : Ctx(Ctx), Name(""), Type(IceType_void), IsInternal(false),
       HasError(false), ErrorMessage(""), Entry(NULL), NextInstNumber(1),
-      ConstantPool(new IceConstantPool(this)), Liveness(NULL),
-      Target(IceTargetLowering::createLowering(Context->getTargetArch(), this)),
+      Liveness(NULL),
+      Target(IceTargetLowering::createLowering(Ctx->getTargetArch(), this)),
       CurrentNode(NULL) {
-  GlobalStr = &Context->StrDump;
+  GlobalStr = &Ctx->StrDump;
 }
 
 IceCfg::~IceCfg() {}
@@ -74,7 +37,7 @@ IceCfg::~IceCfg() {}
 void IceCfg::setError(const IceString &Message) {
   HasError = true;
   ErrorMessage = Message;
-  Context->StrDump << "ICE translation error: " << ErrorMessage << "\n";
+  Ctx->StrDump << "ICE translation error: " << ErrorMessage << "\n";
 }
 
 IceCfgNode *IceCfg::makeNode(const IceString &Name) {
@@ -121,29 +84,6 @@ void IceCfg::addArg(IceVariable *Arg) {
   Args.push_back(Arg);
 }
 
-IceConstant *IceCfg::getConstantInt(IceType Type, uint64_t ConstantInt64) {
-  return IceConstantInteger::create(this, Type, ConstantInt64);
-}
-
-// TODO: Add float and double constants to the global constant pool,
-// instead of creating a new instance each time.
-IceConstant *IceCfg::getConstantFloat(float ConstantFloat) {
-  return IceConstantFloat::create(this, IceType_f32, ConstantFloat);
-}
-
-IceConstant *IceCfg::getConstantDouble(double ConstantDouble) {
-  return IceConstantDouble::create(this, IceType_f64, ConstantDouble);
-}
-
-IceConstant *IceCfg::getConstantSym(IceType Type, const void *Handle,
-                                    int64_t Offset, const IceString &Name,
-                                    bool SuppressMangling) {
-  IceConstantRelocatable *Const =
-      ConstantPool->getOrAddRelocatable(Type, Handle, Offset, Name);
-  Const->setSuppressMangling(SuppressMangling);
-  return Const;
-}
-
 // Returns whether the stack frame layout has been computed yet.  This
 // is used for dumping the stack frame location of IceVariables.
 bool IceCfg::hasComputedFrame() const {
@@ -151,11 +91,11 @@ bool IceCfg::hasComputedFrame() const {
 }
 
 void IceCfg::translate(IceTargetArch TargetArch) {
-  IceOstream &Str = Context->StrDump;
+  IceOstream &Str = Ctx->StrDump;
   if (hasError())
     return;
 
-  if (Context->isVerbose())
+  if (Ctx->isVerbose())
     Str << "================ Initial CFG ================\n";
   dump();
 
@@ -165,7 +105,7 @@ void IceCfg::translate(IceTargetArch TargetArch) {
   getTarget()->translate();
   T_translate.printElapsedUs(getContext(), "translate()");
 
-  if (Context->isVerbose())
+  if (Ctx->isVerbose())
     Str << "================ Final output ================\n";
   dump();
 }
@@ -375,7 +315,7 @@ bool IceCfg::validateLiveness() const {
 // ======================== Dump routines ======================== //
 
 void IceCfg::emit(uint32_t Option) {
-  IceOstream &Str = Context->StrEmit;
+  IceOstream &Str = Ctx->StrEmit;
   IceTimer T_emit;
   if (!HasEmittedFirstMethod) {
     HasEmittedFirstMethod = true;
@@ -401,11 +341,11 @@ void IceCfg::emit(uint32_t Option) {
   }
   Str << "\n";
   // TODO: have the Target emit a footer?
-  T_emit.printElapsedUs(Context, "emit()");
+  T_emit.printElapsedUs(Ctx, "emit()");
 }
 
 void IceCfg::dump() {
-  IceOstream &Str = Context->StrDump;
+  IceOstream &Str = Ctx->StrDump;
   setCurrentNode(getEntryNode());
   // Print function name+args
   if (getContext()->isVerbose(IceV_Instructions)) {

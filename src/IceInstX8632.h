@@ -33,8 +33,8 @@ public:
   void dump(const IceCfg *Cfg) const;
 
 protected:
-  IceOperandX8632(IceCfg *Cfg, IceOperandTypeX8632 Kind, IceType Type)
-      : IceOperand(Cfg, static_cast<OperandKind>(Kind), Type) {}
+  IceOperandX8632(IceOperandTypeX8632 Kind, IceType Type)
+      : IceOperand(static_cast<OperandKind>(Kind), Type) {}
   IceOperandX8632(const IceOperandX8632 &) LLVM_DELETED_FUNCTION;
   IceOperandX8632 &operator=(const IceOperandX8632 &) LLVM_DELETED_FUNCTION;
 };
@@ -91,7 +91,7 @@ public:
 
 private:
   IceVariableSplit(IceCfg *Cfg, IceVariable *Var, Portion Part)
-      : IceOperandX8632(Cfg, Split, IceType_i32), Var(Var), Part(Part) {
+      : IceOperandX8632(Split, IceType_i32), Var(Var), Part(Part) {
     Vars = Cfg->allocateArrayOf<IceVariable *>(1);
     Vars[0] = Var;
     NumVars = 1;

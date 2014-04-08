@@ -144,7 +144,7 @@ public:
     llvm::TimeRecord End = llvm::TimeRecord::getCurrentTime(false);
     return End.getWallTime() - Start.getWallTime();
   }
-  void printElapsedUs(IceGlobalContext *Context, const IceString &Tag) const;
+  void printElapsedUs(IceGlobalContext *Ctx, const IceString &Tag) const;
 
 private:
   const llvm::TimeRecord Start;

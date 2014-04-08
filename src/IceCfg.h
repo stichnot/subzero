@@ -25,10 +25,10 @@
 
 class IceCfg {
 public:
-  IceCfg(IceGlobalContext *Context);
+  IceCfg(IceGlobalContext *Ctx);
   ~IceCfg();
 
-  IceGlobalContext *getContext() const { return Context; }
+  IceGlobalContext *getContext() const { return Ctx; }
 
   // Manage the name and return type of the function being translated.
   void setName(const IceString &FunctionName) { Name = FunctionName; }
@@ -69,18 +69,6 @@ public:
   // Manage arguments to the function.
   void addArg(IceVariable *Arg);
   const IceVarList &getArgs() const { return Args; }
-
-  // Manage IceConstants.
-  // getConstant*() functions are not const because they might add
-  // something to the constant pool.
-  IceConstant *getConstantInt(IceType Type, uint64_t ConstantInt64);
-  IceConstant *getConstantFloat(float Value);
-  IceConstant *getConstantDouble(double Value);
-  // Returns a symbolic constant.  Handle is currently unused but is
-  // reserved to hold something LLVM-specific to facilitate linking.
-  IceConstant *getConstantSym(IceType Type, const void *Handle, int64_t Offset,
-                              const IceString &Name = "",
-                              bool SuppressMangling = false);
 
   // Miscellaneous accessors.
   IceTargetLowering *getTarget() const { return Target.get(); }
@@ -123,7 +111,7 @@ private:
   // implementation over at a later point.
   llvm::BumpPtrAllocator Allocator;
 
-  IceGlobalContext *Context;
+  IceGlobalContext *Ctx;
   IceString Name;  // function name
   IceType Type;    // return type
   bool IsInternal; // internal linkage
@@ -134,7 +122,6 @@ private:
   int32_t NextInstNumber;
   IceVarList Variables;
   IceVarList Args; // subset of Variables, in argument order
-  llvm::OwningPtr<class IceConstantPool> ConstantPool;
   llvm::OwningPtr<IceLiveness> Liveness;
   llvm::OwningPtr<IceTargetLowering> Target;
 

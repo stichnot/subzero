@@ -22,11 +22,15 @@
 #include "IceDefs.h"
 #include "IceTypes.h"
 
+// TODO: Accesses to all non-const fields of IceGlobalContext need to
+// be synchronized, especially the constant pool, the allocator, and
+// the output streams.
 class IceGlobalContext {
 public:
   IceGlobalContext(llvm::raw_ostream *OsDump, llvm::raw_ostream *OsEmit,
                    IceVerboseMask VerboseMask, IceTargetArch TargetArch,
                    IceString TestPrefix);
+  ~IceGlobalContext();
 
   // Returns true if any of the specified options in the verbose mask
   // are set.  If the argument is omitted, it checks if any verbose
@@ -49,6 +53,18 @@ public:
   IceString getTestPrefix() const { return TestPrefix; }
   IceString mangleName(const IceString &Name) const;
 
+  // Manage IceConstants.
+  // getConstant*() functions are not const because they might add
+  // something to the constant pool.
+  IceConstant *getConstantInt(IceType Type, uint64_t ConstantInt64);
+  IceConstant *getConstantFloat(float Value);
+  IceConstant *getConstantDouble(double Value);
+  // Returns a symbolic constant.  Handle is currently unused but is
+  // reserved to hold something LLVM-specific to facilitate linking.
+  IceConstant *getConstantSym(IceType Type, const void *Handle, int64_t Offset,
+                              const IceString &Name = "",
+                              bool SuppressMangling = false);
+
   // Allocate data of type T using the global allocator.
   template <typename T> T *allocate() { return Allocator.Allocate<T>(); }
 
@@ -58,9 +74,11 @@ public:
 private:
   llvm::BumpPtrAllocator Allocator;
   IceVerboseMask VerboseMask;
-  // llvm::OwningPtr<class IceConstantPool> ConstantPool;
-  IceTargetArch TargetArch;
-  IceString TestPrefix;
+  llvm::OwningPtr<class IceConstantPool> ConstantPool;
+  const IceTargetArch TargetArch;
+  const IceString TestPrefix;
+  IceGlobalContext(const IceGlobalContext &) LLVM_DELETED_FUNCTION;
+  IceGlobalContext &operator=(const IceGlobalContext &) LLVM_DELETED_FUNCTION;
 };
 
 #endif // SUBZERO_SRC_ICEGLOBALCONTEXT_H

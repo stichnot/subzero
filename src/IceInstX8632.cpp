@@ -39,7 +39,7 @@ static const char *OpcodeTypeFromIceType(IceType type) {
 IceOperandX8632Mem::IceOperandX8632Mem(IceCfg *Cfg, IceType Type,
                                        IceVariable *Base, IceConstant *Offset,
                                        IceVariable *Index, uint32_t Shift)
-    : IceOperandX8632(Cfg, Mem, Type), Base(Base), Offset(Offset), Index(Index),
+    : IceOperandX8632(Mem, Type), Base(Base), Offset(Offset), Index(Index),
       Shift(Shift) {
   Vars = NULL;
   NumVars = 0;

@@ -114,7 +114,7 @@ protected:
     bool Tailcall = false;
     IceType Type = Dest ? Dest->getType() : IceType_void;
     IceConstant *CallTarget =
-        Cfg->getConstantSym(Type, NULL, 0, Name, SuppressMangling);
+        Ctx->getConstantSym(Type, NULL, 0, Name, SuppressMangling);
     IceInstCall *Call =
         IceInstCall::create(Cfg, MaxSrcs, Dest, CallTarget, Tailcall);
     return Call;

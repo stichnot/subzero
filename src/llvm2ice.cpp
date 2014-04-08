@@ -56,8 +56,8 @@ template <typename T> static std::string LLVMObjectAsString(const T *O) {
 //
 class LLVM2ICEConverter {
 public:
-  LLVM2ICEConverter(IceGlobalContext *Context)
-      : Context(Context), Cfg(NULL), CurrentNode(NULL) {
+  LLVM2ICEConverter(IceGlobalContext *Ctx)
+      : Ctx(Ctx), Cfg(NULL), CurrentNode(NULL) {
     // All PNaCl pointer widths are 32 bits because of the sandbox
     // model.
     SubzeroPointerType = IceType_i32;
@@ -66,7 +66,7 @@ public:
   IceCfg *convertFunction(const Function *F) {
     VarMap.clear();
     NodeMap.clear();
-    Cfg = new IceCfg(Context);
+    Cfg = new IceCfg(Ctx);
     Cfg->setName(F->getName());
     Cfg->setReturnType(convertType(F->getReturnType()));
     Cfg->setInternal(F->hasInternalLinkage());
@@ -178,17 +178,17 @@ private:
   IceOperand *convertValue(const Value *Op) {
     if (const Constant *Const = dyn_cast<Constant>(Op)) {
       if (const GlobalValue *GV = dyn_cast<GlobalValue>(Const)) {
-        return Cfg->getConstantSym(convertType(GV->getType()), GV, 0,
+        return Ctx->getConstantSym(convertType(GV->getType()), GV, 0,
                                    GV->getName());
       } else if (const ConstantInt *CI = dyn_cast<ConstantInt>(Const)) {
-        return Cfg->getConstantInt(convertIntegerType(CI->getType()),
+        return Ctx->getConstantInt(convertIntegerType(CI->getType()),
                                    CI->getZExtValue());
       } else if (const ConstantFP *CFP = dyn_cast<ConstantFP>(Const)) {
         IceType Type = convertType(CFP->getType());
         if (Type == IceType_f32)
-          return Cfg->getConstantFloat(CFP->getValueAPF().convertToFloat());
+          return Ctx->getConstantFloat(CFP->getValueAPF().convertToFloat());
         else if (Type == IceType_f64)
-          return Cfg->getConstantDouble(CFP->getValueAPF().convertToDouble());
+          return Ctx->getConstantDouble(CFP->getValueAPF().convertToDouble());
         assert(0 && "Unexpected floating point type");
         return NULL;
       } else {
@@ -546,7 +546,7 @@ private:
 
 private:
   // Data
-  IceGlobalContext *Context;
+  IceGlobalContext *Ctx;
   IceCfg *Cfg;
   IceCfgNode *CurrentNode;
   IceType SubzeroPointerType;
@@ -630,12 +630,12 @@ int main(int argc, char **argv) {
       new raw_os_ostream(OutputFilename == "-" ? std::cout : Ofs);
   Os->SetUnbuffered();
 
-  IceGlobalContext Context(Os, Os, VerboseMask, TargetArch, TestPrefix);
+  IceGlobalContext Ctx(Os, Os, VerboseMask, TargetArch, TestPrefix);
 
   for (Module::const_iterator I = Mod->begin(), E = Mod->end(); I != E; ++I) {
     if (I->empty())
       continue;
-    LLVM2ICEConverter FunctionConverter(&Context);
+    LLVM2ICEConverter FunctionConverter(&Ctx);
 
     IceTimer TConvert;
     IceCfg *Cfg = FunctionConverter.convertFunction(I);

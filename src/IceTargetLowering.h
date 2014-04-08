@@ -118,7 +118,8 @@ public:
 
 protected:
   IceTargetLowering(IceCfg *Cfg)
-      : Cfg(Cfg), HasComputedFrame(false), StackAdjustment(0) {}
+      : Cfg(Cfg), Ctx(Cfg->getContext()), HasComputedFrame(false),
+        StackAdjustment(0) {}
   virtual void lowerAlloca(const IceInstAlloca *Inst) = 0;
   virtual void lowerArithmetic(const IceInstArithmetic *Inst) = 0;
   virtual void lowerAssign(const IceInstAssign *Inst) = 0;
@@ -146,6 +147,7 @@ protected:
   virtual void postLower() {}
 
   IceCfg *Cfg;
+  IceGlobalContext *Ctx;
   bool HasComputedFrame;
   // StackAdjustment keeps track of the current stack offset from its
   // natural location, as arguments are pushed for a function call.

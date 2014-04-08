@@ -16,42 +16,79 @@
 #include "IceTypes.h"
 #include "IceCfg.h"
 #include "IceGlobalContext.h"
+#include "IceOperand.h"
 #include "IceTargetLowering.h"
 
-#if 0
 class IceConstantPool {
+  // TODO: Try to refactor the getOrAdd*() methods.
 public:
   IceConstantPool(IceGlobalContext *Ctx) : Ctx(Ctx) {}
   IceConstantRelocatable *getOrAddRelocatable(IceType Type, const void *Handle,
                                               int64_t Offset,
                                               const IceString &Name) {
-    uint32_t Index = NameToIndex.translate(
-        KeyType(Type, std::pair<IceString, int64_t>(Name, Offset)));
+    uint32_t Index = NameToIndexReloc.translate(
+        KeyTypeReloc(Type, std::pair<IceString, int64_t>(Name, Offset)));
     if (Index >= RelocatablePool.size()) {
       RelocatablePool.resize(Index + 1);
       void *Handle = NULL;
       RelocatablePool[Index] = IceConstantRelocatable::create(
-          Cfg, Index, Type, Handle, Offset, Name);
+          Ctx, Index, Type, Handle, Offset, Name);
     }
     IceConstantRelocatable *Constant = RelocatablePool[Index];
     assert(Constant);
     return Constant;
   }
-  uint32_t getSize() const { return RelocatablePool.size(); }
+  uint32_t getRelocatableSize() const { return RelocatablePool.size(); }
   IceConstantRelocatable *getEntry(uint32_t Index) const {
     assert(Index < RelocatablePool.size());
     return RelocatablePool[Index];
   }
+  IceConstantInteger *getOrAddInteger(IceType Type, uint64_t Value) {
+    uint32_t Index = NameToIndexInteger.translate(KeyTypeInteger(Type, Value));
+    if (Index >= IntegerPool.size()) {
+      IntegerPool.resize(Index + 1);
+      IntegerPool[Index] = IceConstantInteger::create(Ctx, Type, Value);
+    }
+    IceConstantInteger *Constant = IntegerPool[Index];
+    assert(Constant);
+    return Constant;
+  }
+  IceConstantFloat *getOrAddFloat(float Value) {
+    uint32_t Index = NameToIndexFloat.translate(Value);
+    if (Index >= FloatPool.size()) {
+      FloatPool.resize(Index + 1);
+      FloatPool[Index] = IceConstantFloat::create(Ctx, IceType_f32, Value);
+    }
+    IceConstantFloat *Constant = FloatPool[Index];
+    assert(Constant);
+    return Constant;
+  }
+  IceConstantDouble *getOrAddDouble(double Value) {
+    uint32_t Index = NameToIndexDouble.translate(Value);
+    if (Index >= DoublePool.size()) {
+      DoublePool.resize(Index + 1);
+      DoublePool[Index] = IceConstantDouble::create(Ctx, IceType_f64, Value);
+    }
+    IceConstantDouble *Constant = DoublePool[Index];
+    assert(Constant);
+    return Constant;
+  }
 
 private:
-  // KeyType is a triple of {Type, Name, Offset}.
-  typedef std::pair<IceType, std::pair<IceString, int64_t> > KeyType;
+  // KeyTypeReloc is a triple of {Type, Name, Offset}.
+  typedef std::pair<IceType, std::pair<IceString, int64_t> > KeyTypeReloc;
+  typedef std::pair<IceType, int64_t> KeyTypeInteger;
   IceGlobalContext *Ctx;
   // Use IceValueTranslation<> to map (Name,Type) pairs to an index.
-  IceValueTranslation<KeyType> NameToIndex;
+  IceValueTranslation<KeyTypeReloc> NameToIndexReloc;
+  IceValueTranslation<KeyTypeInteger> NameToIndexInteger;
+  IceValueTranslation<float> NameToIndexFloat;
+  IceValueTranslation<double> NameToIndexDouble;
   std::vector<IceConstantRelocatable *> RelocatablePool;
+  std::vector<IceConstantInteger *> IntegerPool;
+  std::vector<IceConstantFloat *> FloatPool;
+  std::vector<IceConstantDouble *> DoublePool;
 };
-#endif
 
 IceGlobalContext::IceGlobalContext(llvm::raw_ostream *OsDump,
                                    llvm::raw_ostream *OsEmit,
@@ -59,7 +96,8 @@ IceGlobalContext::IceGlobalContext(llvm::raw_ostream *OsDump,
                                    IceTargetArch TargetArch,
                                    IceString TestPrefix)
     : StrDump(OsDump), StrEmit(OsEmit), VerboseMask(VerboseMask),
-      TargetArch(TargetArch), TestPrefix(TestPrefix) {}
+      ConstantPool(new IceConstantPool(this)), TargetArch(TargetArch),
+      TestPrefix(TestPrefix) {}
 
 // In this context, name mangling means to rewrite a symbol using a
 // given prefix.  For a C++ symbol, we'd like to demangle it, prepend
@@ -86,11 +124,36 @@ IceString IceGlobalContext::mangleName(const IceString &Name) const {
   return NewNumber;
 }
 
-void IceTimer::printElapsedUs(IceGlobalContext *Context,
+IceGlobalContext::~IceGlobalContext() {}
+
+IceConstant *IceGlobalContext::getConstantInt(IceType Type,
+                                              uint64_t ConstantInt64) {
+  return ConstantPool->getOrAddInteger(Type, ConstantInt64);
+}
+
+IceConstant *IceGlobalContext::getConstantFloat(float ConstantFloat) {
+  return ConstantPool->getOrAddFloat(ConstantFloat);
+}
+
+IceConstant *IceGlobalContext::getConstantDouble(double ConstantDouble) {
+  return ConstantPool->getOrAddDouble(ConstantDouble);
+}
+
+IceConstant *IceGlobalContext::getConstantSym(IceType Type, const void *Handle,
+                                              int64_t Offset,
+                                              const IceString &Name,
+                                              bool SuppressMangling) {
+  IceConstantRelocatable *Const =
+      ConstantPool->getOrAddRelocatable(Type, Handle, Offset, Name);
+  Const->setSuppressMangling(SuppressMangling);
+  return Const;
+}
+
+void IceTimer::printElapsedUs(IceGlobalContext *Ctx,
                               const IceString &Tag) const {
-  if (Context->isVerbose(IceV_Timing)) {
+  if (Ctx->isVerbose(IceV_Timing)) {
     // Prefixing with '#' allows timing strings to be included
     // without error in textual assembly output.
-    Context->StrDump << "# " << getElapsedUs() << " usec " << Tag << "\n";
+    Ctx->StrDump << "# " << getElapsedUs() << " usec " << Tag << "\n";
   }
 }

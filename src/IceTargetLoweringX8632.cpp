@@ -199,7 +199,7 @@ void IceTargetX8632::setArgOffsetAndCopy(IceVariable *Arg,
     assert(Type != IceType_i64);
     IceOperandX8632Mem *Mem = IceOperandX8632Mem::create(
         Cfg, Type, FramePtr,
-        Cfg->getConstantInt(IceType_i32, Arg->getStackOffset()));
+        Ctx->getConstantInt(IceType_i32, Arg->getStackOffset()));
     _mov(Arg, Mem);
   }
   InArgsSizeBytes += typeWidthInBytesOnStack(Type);
@@ -297,7 +297,7 @@ void IceTargetX8632::addProlog(IceCfgNode *Node) {
   // Generate "sub esp, LocalsSizeBytes"
   if (LocalsSizeBytes)
     _sub(getPhysicalRegister(Reg_esp),
-         Cfg->getConstantInt(IceType_i32, LocalsSizeBytes));
+         Ctx->getConstantInt(IceType_i32, LocalsSizeBytes));
 
   resetStackAdjustment();
 
@@ -402,7 +402,7 @@ void IceTargetX8632::addEpilog(IceCfgNode *Node) {
   } else {
     // add esp, LocalsSizeBytes
     if (LocalsSizeBytes)
-      _add(esp, Cfg->getConstantInt(IceType_i32, LocalsSizeBytes));
+      _add(esp, Ctx->getConstantInt(IceType_i32, LocalsSizeBytes));
   }
 
   // Add pop instructions for preserved registers.
@@ -455,7 +455,7 @@ IceOperand *IceTargetX8632::loOperand(IceOperand *Operand) {
   }
   if (IceConstantInteger *Const = llvm::dyn_cast<IceConstantInteger>(Operand)) {
     uint64_t Mask = (1ul << 32) - 1;
-    return Cfg->getConstantInt(IceType_i32, Const->getValue() & Mask);
+    return Ctx->getConstantInt(IceType_i32, Const->getValue() & Mask);
   }
   if (IceOperandX8632Mem *Mem = llvm::dyn_cast<IceOperandX8632Mem>(Operand)) {
     return IceOperandX8632Mem::create(Cfg, IceType_i32, Mem->getBase(),
@@ -475,21 +475,21 @@ IceOperand *IceTargetX8632::hiOperand(IceOperand *Operand) {
     return Var->getHi();
   }
   if (IceConstantInteger *Const = llvm::dyn_cast<IceConstantInteger>(Operand)) {
-    return Cfg->getConstantInt(IceType_i32, Const->getValue() >> 32);
+    return Ctx->getConstantInt(IceType_i32, Const->getValue() >> 32);
   }
   if (IceOperandX8632Mem *Mem = llvm::dyn_cast<IceOperandX8632Mem>(Operand)) {
     IceConstant *Offset = Mem->getOffset();
     if (Offset == NULL)
-      Offset = Cfg->getConstantInt(IceType_i32, 4);
+      Offset = Ctx->getConstantInt(IceType_i32, 4);
     else if (IceConstantInteger *IntOffset =
                  llvm::dyn_cast<IceConstantInteger>(Offset)) {
-      Offset = Cfg->getConstantInt(IceType_i32, 4 + IntOffset->getValue());
+      Offset = Ctx->getConstantInt(IceType_i32, 4 + IntOffset->getValue());
     } else if (IceConstantRelocatable *SymOffset =
                    llvm::dyn_cast<IceConstantRelocatable>(Offset)) {
       // TODO: This creates a new entry in the constant pool, instead
       // of reusing the existing entry.
       Offset =
-          Cfg->getConstantSym(IceType_i32, SymOffset->getHandle(),
+          Ctx->getConstantSym(IceType_i32, SymOffset->getHandle(),
                               4 + SymOffset->getOffset(), SymOffset->getName());
     }
     return IceOperandX8632Mem::create(Cfg, IceType_i32, Mem->getBase(), Offset,
@@ -636,8 +636,8 @@ void IceTargetX8632::lowerArithmetic(const IceInstArithmetic *Inst) {
       //   a.lo = t2
       //   a.hi = t3
       IceVariable *T_1 = NULL, *T_2 = NULL, *T_3 = NULL;
-      IceConstant *BitTest = Cfg->getConstantInt(IceType_i32, 0x20);
-      IceConstant *Zero = Cfg->getConstantInt(IceType_i32, 0);
+      IceConstant *BitTest = Ctx->getConstantInt(IceType_i32, 0x20);
+      IceConstant *Zero = Ctx->getConstantInt(IceType_i32, 0);
       IceInstX8632Label *Label = IceInstX8632Label::create(Cfg, this);
       _mov(T_1, Src1Lo, Reg_ecx);
       _mov(T_2, Src0Lo);
@@ -672,8 +672,8 @@ void IceTargetX8632::lowerArithmetic(const IceInstArithmetic *Inst) {
       //   a.lo = t2
       //   a.hi = t3
       IceVariable *T_1 = NULL, *T_2 = NULL, *T_3 = NULL;
-      IceConstant *BitTest = Cfg->getConstantInt(IceType_i32, 0x20);
-      IceConstant *Zero = Cfg->getConstantInt(IceType_i32, 0);
+      IceConstant *BitTest = Ctx->getConstantInt(IceType_i32, 0x20);
+      IceConstant *Zero = Ctx->getConstantInt(IceType_i32, 0);
       IceInstX8632Label *Label = IceInstX8632Label::create(Cfg, this);
       _mov(T_1, Src1Lo, Reg_ecx);
       _mov(T_2, Src0Lo);
@@ -708,8 +708,8 @@ void IceTargetX8632::lowerArithmetic(const IceInstArithmetic *Inst) {
       //   a.lo = t2
       //   a.hi = t3
       IceVariable *T_1 = NULL, *T_2 = NULL, *T_3 = NULL;
-      IceConstant *BitTest = Cfg->getConstantInt(IceType_i32, 0x20);
-      IceConstant *SignExtend = Cfg->getConstantInt(IceType_i32, 0x1f);
+      IceConstant *BitTest = Ctx->getConstantInt(IceType_i32, 0x20);
+      IceConstant *SignExtend = Ctx->getConstantInt(IceType_i32, 0x1f);
       IceInstX8632Label *Label = IceInstX8632Label::create(Cfg, this);
       _mov(T_1, Src1Lo, Reg_ecx);
       _mov(T_2, Src0Lo);
@@ -825,7 +825,7 @@ void IceTargetX8632::lowerArithmetic(const IceInstArithmetic *Inst) {
       _mov(Dest, T);
       break;
     case IceInstArithmetic::Udiv: {
-      IceConstant *Zero = Cfg->getConstantInt(IceType_i32, 0);
+      IceConstant *Zero = Ctx->getConstantInt(IceType_i32, 0);
       _mov(T, Src0, Reg_eax);
       _mov(T_edx, Zero, Reg_edx);
       _div(T, Src1, T_edx);
@@ -839,7 +839,7 @@ void IceTargetX8632::lowerArithmetic(const IceInstArithmetic *Inst) {
       _mov(Dest, T);
       break;
     case IceInstArithmetic::Urem: {
-      IceConstant *Zero = Cfg->getConstantInt(IceType_i32, 0);
+      IceConstant *Zero = Ctx->getConstantInt(IceType_i32, 0);
       _mov(T_edx, Zero, Reg_edx);
       _mov(T, Src0, Reg_eax);
       _mov(T_edx, Zero);
@@ -916,7 +916,7 @@ void IceTargetX8632::lowerBr(const IceInstBr *Inst) {
     _br(Inst->getTargetUnconditional());
   } else {
     IceOperand *Src0 = legalize(Inst->getSrc(0));
-    IceConstant *Zero = Cfg->getConstantInt(IceType_i32, 0);
+    IceConstant *Zero = Ctx->getConstantInt(IceType_i32, 0);
     _cmp(Src0, Zero);
     _br(IceInstX8632Br::Br_ne, Inst->getTargetTrue(), Inst->getTargetFalse());
   }
@@ -993,7 +993,7 @@ void IceTargetX8632::lowerCall(const IceInstCall *Inst) {
   // Add the appropriate offset to esp.
   if (StackOffset) {
     IceVariable *esp = Cfg->getTarget()->getPhysicalRegister(Reg_esp);
-    _add(esp, Cfg->getConstantInt(IceType_i32, StackOffset));
+    _add(esp, Ctx->getConstantInt(IceType_i32, StackOffset));
   }
 
   // Insert a register-kill pseudo instruction.
@@ -1065,7 +1065,7 @@ void IceTargetX8632::lowerCast(const IceInstCast *Inst) {
         _movsx(T_Lo, Src0RM);
       _mov(DestLo, T_Lo);
       IceVariable *T_Hi = NULL;
-      IceConstant *Shift = Cfg->getConstantInt(IceType_i32, 31);
+      IceConstant *Shift = Ctx->getConstantInt(IceType_i32, 31);
       _mov(T_Hi, T_Lo);
       _sar(T_Hi, Shift);
       _mov(DestHi, T_Hi);
@@ -1081,7 +1081,7 @@ void IceTargetX8632::lowerCast(const IceInstCast *Inst) {
   case IceInstCast::Zext:
     if (Dest->getType() == IceType_i64) {
       // t1=movzx src; dst.lo=t1; dst.hi=0
-      IceConstant *Zero = Cfg->getConstantInt(IceType_i32, 0);
+      IceConstant *Zero = Ctx->getConstantInt(IceType_i32, 0);
       IceVariable *DestLo = llvm::cast<IceVariable>(loOperand(Dest));
       IceVariable *DestHi = llvm::cast<IceVariable>(hiOperand(Dest));
       IceVariable *Tmp = makeReg(DestLo->getType());
@@ -1093,7 +1093,7 @@ void IceTargetX8632::lowerCast(const IceInstCast *Inst) {
       _mov(DestHi, Zero);
     } else if (Src0RM->getType() == IceType_i1) {
       // t = Src0RM; t &= 1; Dest = t
-      IceOperand *One = Cfg->getConstantInt(IceType_i32, 1);
+      IceOperand *One = Ctx->getConstantInt(IceType_i32, 1);
       IceVariable *T = makeReg(IceType_i32);
       _movzx(T, Src0RM);
       _and(T, One);
@@ -1370,7 +1370,7 @@ void IceTargetX8632::lowerFcmp(const IceInstFcmp *Inst) {
     _ucomiss(T, Src1RM);
   }
   IceConstant *Default =
-      Cfg->getConstantInt(IceType_i32, TableFcmp[Index].Default);
+      Ctx->getConstantInt(IceType_i32, TableFcmp[Index].Default);
   _mov(Dest, Default);
   if (HasC1) {
     IceInstX8632Label *Label = IceInstX8632Label::create(Cfg, this);
@@ -1380,7 +1380,7 @@ void IceTargetX8632::lowerFcmp(const IceInstFcmp *Inst) {
     }
     Context.insert(IceInstFakeUse::create(Cfg, Dest));
     IceConstant *NonDefault =
-        Cfg->getConstantInt(IceType_i32, !TableFcmp[Index].Default);
+        Ctx->getConstantInt(IceType_i32, !TableFcmp[Index].Default);
     _mov(Dest, NonDefault);
     Context.insert(Label);
   }
@@ -1475,8 +1475,8 @@ void IceTargetX8632::lowerIcmp(const IceInstIcmp *Inst) {
   }
 
   // a=icmp cond, b, c ==> cmp b,c; a=1; br cond,L1; FakeUse(a); a=0; L1:
-  IceConstant *Zero = Cfg->getConstantInt(IceType_i32, 0);
-  IceConstant *One = Cfg->getConstantInt(IceType_i32, 1);
+  IceConstant *Zero = Ctx->getConstantInt(IceType_i32, 0);
+  IceConstant *One = Ctx->getConstantInt(IceType_i32, 1);
   if (Src0->getType() == IceType_i64) {
     IceInstIcmp::ICond Condition = Inst->getCondition();
     uint32_t Index = static_cast<uint32_t>(Condition);
@@ -1719,7 +1719,7 @@ void IceTargetX8632::doAddressOptLoad() {
   IceVariable *Base = llvm::dyn_cast<IceVariable>(Addr);
   computeAddressOpt(Cfg, Base, Index, Shift, Offset);
   if (Base && Addr != Base) {
-    IceConstant *OffsetOp = Cfg->getConstantInt(IceType_i32, Offset);
+    IceConstant *OffsetOp = Ctx->getConstantInt(IceType_i32, Offset);
     Addr = IceOperandX8632Mem::create(Cfg, Dest->getType(), Base, OffsetOp,
                                       Index, Shift);
     Inst->setDeleted();
@@ -1763,7 +1763,7 @@ void IceTargetX8632::lowerSelect(const IceInstSelect *Inst) {
   IceOperand *SrcT = Inst->getTrueOperand();
   IceOperand *SrcF = Inst->getFalseOperand();
   IceOperand *Condition = legalize(Inst->getCondition());
-  IceConstant *Zero = Cfg->getConstantInt(IceType_i32, 0);
+  IceConstant *Zero = Ctx->getConstantInt(IceType_i32, 0);
   IceInstX8632Label *Label = IceInstX8632Label::create(Cfg, this);
 
   if (Dest->getType() == IceType_i64) {
@@ -1839,7 +1839,7 @@ void IceTargetX8632::doAddressOptStore() {
   IceVariable *Base = llvm::dyn_cast<IceVariable>(Addr);
   computeAddressOpt(Cfg, Base, Index, Shift, Offset);
   if (Base && Addr != Base) {
-    IceConstant *OffsetOp = Cfg->getConstantInt(IceType_i32, Offset);
+    IceConstant *OffsetOp = Ctx->getConstantInt(IceType_i32, Offset);
     Addr = IceOperandX8632Mem::create(Cfg, Data->getType(), Base, OffsetOp,
                                       Index, Shift);
     Inst->setDeleted();
@@ -1859,7 +1859,7 @@ void IceTargetX8632::lowerSwitch(const IceInstSwitch *Inst) {
   else
     Src0 = legalize(Src0, Legal_All, true);
   for (uint32_t I = 0; I < NumCases; ++I) {
-    IceOperand *Value = Cfg->getConstantInt(IceType_i32, Inst->getValue(I));
+    IceOperand *Value = Ctx->getConstantInt(IceType_i32, Inst->getValue(I));
     _cmp(Src0, Value);
     _br(IceInstX8632Br::Br_e, Inst->getLabel(I));
   }

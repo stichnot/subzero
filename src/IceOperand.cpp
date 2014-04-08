@@ -165,8 +165,7 @@ IceString IceVariable::getName() const {
 }
 
 IceVariable IceVariable::asType(IceType Type) {
-  IceCfg *Cfg = NULL; // TODO: fix this
-  IceVariable V(Cfg, Type, DefNode, Number, Name);
+  IceVariable V(Type, DefNode, Number, Name);
   V.RegNum = RegNum;
   V.StackOffset = StackOffset;
   return V;
