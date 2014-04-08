@@ -48,8 +48,8 @@ public:
     return Vars[I];
   }
   virtual void setUse(const IceInst *Inst, const IceCfgNode *Node) {}
-  virtual void emit(const IceCfg *Cfg, uint32_t Option) const;
-  virtual void dump(const IceCfg *Cfg) const;
+  virtual void emit(const IceCfg *Cfg, uint32_t Option) const = 0;
+  virtual void dump(const IceCfg *Cfg) const = 0;
 
   virtual ~IceOperand() {}
 
@@ -66,10 +66,6 @@ private:
   IceOperand(const IceOperand &) LLVM_DELETED_FUNCTION;
   IceOperand &operator=(const IceOperand &) LLVM_DELETED_FUNCTION;
 };
-
-template <> IceOstream &operator<<(IceOstream &Str, const IceOperand &O);
-
-template <> IceOstream &operator<<(IceOstream &Str, const IceVariable &V);
 
 // IceConstant is the abstract base class for constants.
 // TODO: better design of a minimal per-module constant pool,
@@ -96,8 +92,6 @@ private:
   IceConstant &operator=(const IceConstant &) LLVM_DELETED_FUNCTION;
 };
 
-template <> IceOstream &operator<<(IceOstream &Str, const IceConstant &C);
-
 // IceConstantPrimitive<> wraps a primitive type.
 template <typename T, IceOperand::OperandKind K>
 class IceConstantPrimitive : public IceConstant {
@@ -108,9 +102,12 @@ public:
     return new IceConstantPrimitive(Cfg, Type, Value);
   }
   T getValue() const { return Value; }
-  virtual void emit(const IceCfg *Cfg, uint32_t Option) const { dump(Cfg); }
+  virtual void emit(const IceCfg *Cfg, uint32_t Option) const {
+    IceOstream &Str = Cfg->getContext()->StrEmit;
+    Str << getValue();
+  }
   virtual void dump(const IceCfg *Cfg) const {
-    IceOstream &Str = Cfg->Str;
+    IceOstream &Str = Cfg->getContext()->StrDump;
     Str << getValue();
   }
 

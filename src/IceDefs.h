@@ -35,6 +35,7 @@
 class IceCfg;
 class IceCfgNode;
 class IceConstant;
+class IceGlobalContext;
 class IceInst;
 class IceInstPhi;
 class IceInstTarget;
@@ -114,38 +115,11 @@ typedef uint32_t IceVerboseMask;
 
 class IceOstream {
 public:
-  IceOstream(IceCfg *Cfg)
-      : Stream(NULL), Cfg(Cfg), Verbose(IceV_Instructions | IceV_Preds),
-        CurrentNode(NULL) {}
-
-  // Returns true if any of the specified options in the verbose mask
-  // are set.  If the argument is omitted, it checks if any verbose
-  // options at all are set.  IceV_Timing is treated specially, so
-  // that running with just IceV_Timing verbosity doesn't trigger an
-  // avalanche of extra output.
-  bool isVerbose(IceVerboseMask Mask = (IceV_All & ~IceV_Timing)) {
-    return Verbose & Mask;
-  }
-  void setVerbose(IceVerboseMask Mask) { Verbose = Mask; }
-  void addVerbose(IceVerboseMask Mask) { Verbose |= Mask; }
-  void subVerbose(IceVerboseMask Mask) { Verbose &= ~Mask; }
-
-  void setCurrentNode(const IceCfgNode *Node) { CurrentNode = Node; }
-  const IceCfgNode *getCurrentNode() const { return CurrentNode; }
+  IceOstream(llvm::raw_ostream *Stream) : Stream(Stream) {}
 
   llvm::raw_ostream *Stream;
-  IceCfg *const Cfg;
 
 private:
-  IceVerboseMask Verbose;
-  // CurrentNode is maintained during dumping/emitting just for
-  // validating IceVariable::DefNode.  Normally, a traversal over
-  // IceCfgNodes maintains this, but before global operations like
-  // register allocation, setCurrentNode(NULL) should be called to
-  // avoid spurious validation failures.  TODO: Move this out of
-  // IceOstream since streams will be split for dumping/emitting, and
-  // this obviously won't be thread-safe.
-  const IceCfgNode *CurrentNode;
 };
 
 template <typename T>
@@ -170,13 +144,7 @@ public:
     llvm::TimeRecord End = llvm::TimeRecord::getCurrentTime(false);
     return End.getWallTime() - Start.getWallTime();
   }
-  void printElapsedUs(IceOstream &Str, const IceString &Tag) const {
-    if (Str.isVerbose(IceV_Timing)) {
-      // Prefixing with '#' allows timing strings to be included
-      // without error in textual assembly output.
-      Str << "# " << getElapsedUs() << " usec " << Tag << "\n";
-    }
-  }
+  void printElapsedUs(IceGlobalContext *Context, const IceString &Tag) const;
 
 private:
   const llvm::TimeRecord Start;

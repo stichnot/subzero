@@ -53,8 +53,8 @@ public:
   void genCode();
   bool liveness(IceLivenessMode Mode, IceLiveness *Liveness);
   void livenessPostprocess(IceLivenessMode Mode, IceLiveness *Liveness);
-  void emit(const IceCfg *Cfg, uint32_t Option) const;
-  void dump(const IceCfg *Cfg) const;
+  void emit(IceCfg *Cfg, uint32_t Option) const;
+  void dump(IceCfg *Cfg) const;
 
 private:
   IceCfgNode(IceCfg *Cfg, uint32_t LabelIndex, IceString Name);

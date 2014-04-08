@@ -21,23 +21,19 @@
 #include "llvm/ADT/OwningPtr.h"
 #include "llvm/Support/Allocator.h"
 
+#include "IceGlobalContext.h"
+
 class IceCfg {
 public:
-  IceCfg();
+  IceCfg(IceGlobalContext *Context);
   ~IceCfg();
+
+  IceGlobalContext *getContext() const { return Context; }
 
   // Manage the name and return type of the function being translated.
   void setName(const IceString &FunctionName) { Name = FunctionName; }
   IceString getName() const { return Name; }
   void setReturnType(IceType ReturnType) { Type = ReturnType; }
-
-  // When emitting assembly, we allow a string to be prepended to
-  // names of translated functions.  This makes it easier to create an
-  // execution test against a reference translator like llc, with both
-  // translators using the same bitcode as input.
-  void setTestPrefix(const IceString &Prefix) { TestPrefix = Prefix; }
-  IceString getTestPrefix() const { return TestPrefix; }
-  IceString mangleName(const IceString &Name) const;
 
   // Manage the "internal" attribute of the function.
   void setInternal(bool Internal) { IsInternal = Internal; }
@@ -87,7 +83,7 @@ public:
                               bool SuppressMangling = false);
 
   // Miscellaneous accessors.
-  IceTargetLowering *getTarget() const { return Target.get(); }
+  IceTargetLowering *getTarget() const { return Context->getTarget(); }
   IceLiveness *getLiveness() const { return Liveness.get(); }
   bool hasComputedFrame() const;
 
@@ -103,8 +99,10 @@ public:
   void genFrame();
   void liveness(IceLivenessMode Mode);
   bool validateLiveness() const;
-  void emit(uint32_t Option) const;
-  void dump() const;
+  void setCurrentNode(const IceCfgNode *Node) { CurrentNode = Node; }
+  const IceCfgNode *getCurrentNode() const { return CurrentNode; }
+  void emit(uint32_t Option);
+  void dump();
 
   // Allocate data of type T using the per-Cfg allocator.
   template <typename T> T *allocate() { return Allocator.Allocate<T>(); }
@@ -117,8 +115,6 @@ public:
     return Allocator.Allocate<T>(NumElems);
   }
 
-  mutable IceOstream Str;
-
 private:
   // TODO: for now, everything is allocated from the same allocator. In the
   // future we may want to split this to several allocators, for example in
@@ -127,10 +123,10 @@ private:
   // implementation over at a later point.
   llvm::BumpPtrAllocator Allocator;
 
-  IceString Name;       // function name
-  IceString TestPrefix; // prepended to all symbol names, for testing
-  IceType Type;         // return type
-  bool IsInternal;      // internal linkage
+  IceGlobalContext *Context;
+  IceString Name;  // function name
+  IceType Type;    // return type
+  bool IsInternal; // internal linkage
   bool HasError;
   IceString ErrorMessage;
   IceCfgNode *Entry; // entry basic block
@@ -139,10 +135,16 @@ private:
   IceVarList Variables;
   IceVarList Args; // subset of Variables, in argument order
   llvm::OwningPtr<class IceConstantPool> ConstantPool;
-  llvm::OwningPtr<IceTargetLowering> Target;
   llvm::OwningPtr<IceLiveness> Liveness;
 
-  void makeTarget(IceTargetArch Arch);
+  // CurrentNode is maintained during dumping/emitting just for
+  // validating IceVariable::DefNode.  Normally, a traversal over
+  // IceCfgNodes maintains this, but before global operations like
+  // register allocation, setCurrentNode(NULL) should be called to
+  // avoid spurious validation failures.  TODO: Move this out of
+  // IceOstream since streams will be split for dumping/emitting, and
+  // this obviously won't be thread-safe.
+  const IceCfgNode *CurrentNode;
 
   // TODO: This is a hack, and should be moved into a global context
   // guarded with a mutex.  The purpose is to add a header comment at

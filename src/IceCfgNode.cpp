@@ -296,12 +296,14 @@ bool IceCfgNode::liveness(IceLivenessMode Mode, IceLiveness *Liveness) {
     // The following block helps debug why the previous assertion
     // failed.
     if (!(IsEntry || Live == LiveOrig)) {
-      IceOstream &Str = Cfg->Str;
-      Str.setCurrentNode(NULL);
+      IceOstream &Str = Cfg->getContext()->StrDump;
+      Cfg->setCurrentNode(NULL);
       Str << "LiveOrig-Live =";
       for (uint32_t i = Live.size(); i < LiveOrig.size(); ++i) {
-        if (LiveOrig.test(i))
-          Str << " " << *Liveness->getVariable(i, this);
+        if (LiveOrig.test(i)) {
+          Str << " ";
+          Liveness->getVariable(i, this)->dump(Cfg);
+        }
       }
       Str << "\n";
     }
@@ -407,11 +409,11 @@ void IceCfgNode::livenessPostprocess(IceLivenessMode Mode,
 
 // ======================== Dump routines ======================== //
 
-void IceCfgNode::emit(const IceCfg *Cfg, uint32_t Option) const {
-  IceOstream &Str = Cfg->Str;
-  Str.setCurrentNode(this);
+void IceCfgNode::emit(IceCfg *Cfg, uint32_t Option) const {
+  Cfg->setCurrentNode(this);
+  IceOstream &Str = Cfg->getContext()->StrEmit;
   if (Cfg->getEntryNode() == this) {
-    Str << Cfg->mangleName(Cfg->getName()) << ":\n";
+    Str << Cfg->getContext()->mangleName(Cfg->getName()) << ":\n";
   }
   Str << getAsmName() << ":\n";
   for (IcePhiList::const_iterator I = Phis.begin(), E = Phis.end(); I != E;
@@ -435,15 +437,15 @@ void IceCfgNode::emit(const IceCfg *Cfg, uint32_t Option) const {
   }
 }
 
-void IceCfgNode::dump(const IceCfg *Cfg) const {
-  IceOstream &Str = Cfg->Str;
-  Str.setCurrentNode(this);
+void IceCfgNode::dump(IceCfg *Cfg) const {
+  Cfg->setCurrentNode(this);
+  IceOstream &Str = Cfg->getContext()->StrDump;
   IceLiveness *Liveness = Cfg->getLiveness();
-  if (Str.isVerbose(IceV_Instructions)) {
+  if (Cfg->getContext()->isVerbose(IceV_Instructions)) {
     Str << getName() << ":\n";
   }
   // Dump list of predecessor nodes.
-  if (Str.isVerbose(IceV_Preds) && !InEdges.empty()) {
+  if (Cfg->getContext()->isVerbose(IceV_Preds) && !InEdges.empty()) {
     Str << "    // preds = ";
     for (IceNodeList::const_iterator I = InEdges.begin(), E = InEdges.end();
          I != E; ++I) {
@@ -457,7 +459,7 @@ void IceCfgNode::dump(const IceCfg *Cfg) const {
   llvm::BitVector LiveIn;
   if (Liveness)
     LiveIn = Liveness->getLiveIn(this);
-  if (Str.isVerbose(IceV_Liveness) && !LiveIn.empty()) {
+  if (Cfg->getContext()->isVerbose(IceV_Liveness) && !LiveIn.empty()) {
     Str << "    // LiveIn:";
     for (uint32_t i = 0; i < LiveIn.size(); ++i) {
       if (LiveIn[i]) {
@@ -467,7 +469,7 @@ void IceCfgNode::dump(const IceCfg *Cfg) const {
     Str << "\n";
   }
   // Dump each instruction.
-  if (Str.isVerbose(IceV_Instructions)) {
+  if (Cfg->getContext()->isVerbose(IceV_Instructions)) {
     for (IcePhiList::const_iterator I = Phis.begin(), E = Phis.end(); I != E;
          ++I) {
       const IceInst *Inst = *I;
@@ -483,7 +485,7 @@ void IceCfgNode::dump(const IceCfg *Cfg) const {
   llvm::BitVector LiveOut;
   if (Liveness)
     LiveOut = Liveness->getLiveOut(this);
-  if (Str.isVerbose(IceV_Liveness) && !LiveOut.empty()) {
+  if (Cfg->getContext()->isVerbose(IceV_Liveness) && !LiveOut.empty()) {
     Str << "    // LiveOut:";
     for (uint32_t i = 0; i < LiveOut.size(); ++i) {
       if (LiveOut[i]) {
@@ -493,7 +495,7 @@ void IceCfgNode::dump(const IceCfg *Cfg) const {
     Str << "\n";
   }
   // Dump list of successor nodes.
-  if (Str.isVerbose(IceV_Succs)) {
+  if (Cfg->getContext()->isVerbose(IceV_Succs)) {
     Str << "    // succs = ";
     for (IceNodeList::const_iterator I = OutEdges.begin(), E = OutEdges.end();
          I != E; ++I) {

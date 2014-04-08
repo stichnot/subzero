@@ -60,45 +60,21 @@ private:
 IceOstream *GlobalStr = NULL;
 bool IceCfg::HasEmittedFirstMethod = false;
 
-IceCfg::IceCfg()
-    : Str(this), Name(""), TestPrefix(""), Type(IceType_void),
-      IsInternal(false), HasError(false), ErrorMessage(""), Entry(NULL),
-      NextInstNumber(1), ConstantPool(new IceConstantPool(this)), Target(NULL),
-      Liveness(NULL) {
-  GlobalStr = &Str;
+IceCfg::IceCfg(IceGlobalContext *Context)
+    : Context(Context), Name(""), Type(IceType_void), IsInternal(false),
+      HasError(false), ErrorMessage(""), Entry(NULL), NextInstNumber(1),
+      ConstantPool(new IceConstantPool(this)), Liveness(NULL),
+      CurrentNode(NULL) {
+  GlobalStr = &Context->StrDump;
+  getTarget()->Cfg = this;
 }
 
 IceCfg::~IceCfg() {}
 
-// In this context, name mangling means to rewrite a symbol using a
-// given prefix.  For a C++ symbol, we'd like to demangle it, prepend
-// the prefix to the original symbol, and remangle it for C++.  For
-// other symbols, just prepend the prefix.
-IceString IceCfg::mangleName(const IceString &Name) const {
-  // TODO: This handles only non-nested C++ symbols, and not ones that
-  // begin with "_ZN".  For the latter, we need to rewrite only the
-  // last name component.
-  if (getTestPrefix() == "")
-    return Name;
-  IceString Default = getTestPrefix() + Name;
-  uint32_t BaseLength = 0;
-  char Buffer[1 + Name.length()];
-  int ItemsParsed = sscanf(Name.c_str(), "_Z%u%s", &BaseLength, Buffer);
-  if (ItemsParsed != 2)
-    return Default;
-  if (strlen(Buffer) < BaseLength)
-    return Default;
-
-  BaseLength += getTestPrefix().length();
-  char NewNumber[30 + Name.length() + getTestPrefix().length()];
-  sprintf(NewNumber, "_Z%u%s%s", BaseLength, getTestPrefix().c_str(), Buffer);
-  return NewNumber;
-}
-
 void IceCfg::setError(const IceString &Message) {
   HasError = true;
   ErrorMessage = Message;
-  Str << "ICE translation error: " << ErrorMessage << "\n";
+  Context->StrDump << "ICE translation error: " << ErrorMessage << "\n";
 }
 
 IceCfgNode *IceCfg::makeNode(const IceString &Name) {
@@ -175,11 +151,11 @@ bool IceCfg::hasComputedFrame() const {
 }
 
 void IceCfg::translate(IceTargetArch TargetArch) {
-  makeTarget(TargetArch);
+  IceOstream &Str = Context->StrDump;
   if (hasError())
     return;
 
-  if (Str.isVerbose())
+  if (Context->isVerbose())
     Str << "================ Initial CFG ================\n";
   dump();
 
@@ -187,9 +163,9 @@ void IceCfg::translate(IceTargetArch TargetArch) {
   // The set of translation passes and their order are determined by
   // the target.
   getTarget()->translate();
-  T_translate.printElapsedUs(Str, "translate()");
+  T_translate.printElapsedUs(getContext(), "translate()");
 
-  if (Str.isVerbose())
+  if (Context->isVerbose())
     Str << "================ Final output ================\n";
   dump();
 }
@@ -340,9 +316,9 @@ void IceCfg::liveness(IceLivenessMode Mode) {
       Var->setLiveRange(Liveness->getLiveRange(Var));
       if (Var->getWeight().isInf())
         Var->setLiveRangeInfiniteWeight();
-      Str.setCurrentNode(NULL);
+      setCurrentNode(NULL);
     }
-    T_liveRange.printElapsedUs(Str, "live range construction");
+    T_liveRange.printElapsedUs(getContext(), "live range construction");
     dump();
     // TODO: validateLiveness() is a heavyweight operation inside an
     // assert().  In a Release build with asserts enabled, we may want
@@ -396,13 +372,10 @@ bool IceCfg::validateLiveness() const {
   return Valid;
 }
 
-void IceCfg::makeTarget(IceTargetArch Arch) {
-  Target.reset(IceTargetLowering::createLowering(Arch, this));
-}
-
 // ======================== Dump routines ======================== //
 
-void IceCfg::emit(uint32_t Option) const {
+void IceCfg::emit(uint32_t Option) {
+  IceOstream &Str = Context->StrEmit;
   IceTimer T_emit;
   if (!HasEmittedFirstMethod) {
     HasEmittedFirstMethod = true;
@@ -419,8 +392,8 @@ void IceCfg::emit(uint32_t Option) const {
   // TODO: emit to a specified file
   Str << "\t.text\n";
   if (!getInternal()) {
-    Str << "\t.globl\t" << mangleName(Name) << "\n";
-    Str << "\t.type\t" << mangleName(Name) << ",@function\n";
+    Str << "\t.globl\t" << getContext()->mangleName(Name) << "\n";
+    Str << "\t.type\t" << getContext()->mangleName(Name) << ",@function\n";
   }
   for (IceNodeList::const_iterator I = Nodes.begin(), E = Nodes.end(); I != E;
        ++I) {
@@ -428,13 +401,14 @@ void IceCfg::emit(uint32_t Option) const {
   }
   Str << "\n";
   // TODO: have the Target emit a footer?
-  T_emit.printElapsedUs(Str, "emit()");
+  T_emit.printElapsedUs(Context, "emit()");
 }
 
-void IceCfg::dump() const {
-  Str.setCurrentNode(getEntryNode());
+void IceCfg::dump() {
+  IceOstream &Str = Context->StrDump;
+  setCurrentNode(getEntryNode());
   // Print function name+args
-  if (Str.isVerbose(IceV_Instructions)) {
+  if (getContext()->isVerbose(IceV_Instructions)) {
     Str << "define ";
     if (getInternal())
       Str << "internal ";
@@ -442,20 +416,22 @@ void IceCfg::dump() const {
     for (uint32_t i = 0; i < Args.size(); ++i) {
       if (i > 0)
         Str << ", ";
-      Str << Args[i]->getType() << " " << *Args[i];
+      Str << Args[i]->getType() << " ";
+      Args[i]->dump(this);
     }
     Str << ") {\n";
   }
-  Str.setCurrentNode(NULL);
-  if (Str.isVerbose(IceV_Liveness)) {
+  setCurrentNode(NULL);
+  if (getContext()->isVerbose(IceV_Liveness)) {
     // Print summary info about variables
     for (IceVarList::const_iterator I = Variables.begin(), E = Variables.end();
          I != E; ++I) {
       IceVariable *Var = *I;
       Str << "//"
           << " multiblock=" << Var->isMultiblockLife() << " "
-          << " weight=" << Var->getWeight() << " " << *Var
-          << " LIVE=" << Var->getLiveRange() << "\n";
+          << " weight=" << Var->getWeight() << " ";
+      Var->dump(this);
+      Str << " LIVE=" << Var->getLiveRange() << "\n";
     }
   }
   // Print each basic block
@@ -463,7 +439,7 @@ void IceCfg::dump() const {
        ++I) {
     (*I)->dump(this);
   }
-  if (Str.isVerbose(IceV_Instructions)) {
+  if (getContext()->isVerbose(IceV_Instructions)) {
     Str << "}\n";
   }
 }

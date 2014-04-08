@@ -53,39 +53,51 @@ IceTargetX8632::IceTargetX8632(IceCfg *Cfg)
 }
 
 void IceTargetX8632::translate() {
+  // TODO: all this (plus Cfg) should be in a separate per-Cfg context.
+  IsEbpBasedFrame = false;
+  FrameSizeLocals = 0;
+  LocalsSizeBytes = 0;
+  NextLabelNumber = 0;
+  ComputedLiveRanges = false;
+  PhysicalRegisters.assign(Reg_NUM, NULL);
+  HasComputedFrame = false;
+  StackAdjustment = 0;
+
+  IceGlobalContext *Context = Cfg->getContext();
+  IceOstream &Str = Context->StrDump;
   IceTimer T_placePhiLoads;
   Cfg->placePhiLoads();
   if (Cfg->hasError())
     return;
-  T_placePhiLoads.printElapsedUs(Cfg->Str, "placePhiLoads()");
+  T_placePhiLoads.printElapsedUs(Context, "placePhiLoads()");
   IceTimer T_placePhiStores;
   Cfg->placePhiStores();
   if (Cfg->hasError())
     return;
-  T_placePhiStores.printElapsedUs(Cfg->Str, "placePhiStores()");
+  T_placePhiStores.printElapsedUs(Context, "placePhiStores()");
   IceTimer T_deletePhis;
   Cfg->deletePhis();
   if (Cfg->hasError())
     return;
-  T_deletePhis.printElapsedUs(Cfg->Str, "deletePhis()");
+  T_deletePhis.printElapsedUs(Context, "deletePhis()");
   IceTimer T_renumber1;
   Cfg->renumberInstructions();
   if (Cfg->hasError())
     return;
-  T_renumber1.printElapsedUs(Cfg->Str, "renumberInstructions()");
-  if (Cfg->Str.isVerbose())
-    Cfg->Str << "================ After Phi lowering ================\n";
+  T_renumber1.printElapsedUs(Context, "renumberInstructions()");
+  if (Context->isVerbose())
+    Str << "================ After Phi lowering ================\n";
   Cfg->dump();
 
   IceTimer T_doAddressOpt;
   Cfg->doAddressOpt();
-  T_doAddressOpt.printElapsedUs(Cfg->Str, "doAddressOpt()");
+  T_doAddressOpt.printElapsedUs(Context, "doAddressOpt()");
   // Liveness may be incorrect after address mode optimization.
   IceTimer T_renumber2;
   Cfg->renumberInstructions();
   if (Cfg->hasError())
     return;
-  T_renumber2.printElapsedUs(Cfg->Str, "renumberInstructions()");
+  T_renumber2.printElapsedUs(Context, "renumberInstructions()");
   // TODO: It should be sufficient to use the fastest liveness
   // calculation, i.e. IceLiveness_LREndLightweight.  However, for
   // some reason that slows down the rest of the translation.
@@ -94,49 +106,46 @@ void IceTargetX8632::translate() {
   Cfg->liveness(IceLiveness_LREndFull);
   if (Cfg->hasError())
     return;
-  T_liveness1.printElapsedUs(Cfg->Str, "liveness()");
-  if (Cfg->Str.isVerbose())
-    Cfg->Str
-        << "================ After x86 address mode opt ================\n";
+  T_liveness1.printElapsedUs(Context, "liveness()");
+  if (Context->isVerbose())
+    Str << "================ After x86 address mode opt ================\n";
   Cfg->dump();
   IceTimer T_genCode;
   Cfg->genCode();
   if (Cfg->hasError())
     return;
-  T_genCode.printElapsedUs(Cfg->Str, "genCode()");
+  T_genCode.printElapsedUs(Context, "genCode()");
   IceTimer T_renumber3;
   Cfg->renumberInstructions();
   if (Cfg->hasError())
     return;
-  T_renumber3.printElapsedUs(Cfg->Str, "renumberInstructions()");
+  T_renumber3.printElapsedUs(Context, "renumberInstructions()");
   IceTimer T_liveness2;
   Cfg->liveness(IceLiveness_RangesFull);
   if (Cfg->hasError())
     return;
-  T_liveness2.printElapsedUs(Cfg->Str, "liveness()");
+  T_liveness2.printElapsedUs(Context, "liveness()");
   ComputedLiveRanges = true;
-  if (Cfg->Str.isVerbose())
-    Cfg->Str
-        << "================ After initial x8632 codegen ================\n";
+  if (Context->isVerbose())
+    Str << "================ After initial x8632 codegen ================\n";
   Cfg->dump();
 
   IceTimer T_regAlloc;
   regAlloc();
   if (Cfg->hasError())
     return;
-  T_regAlloc.printElapsedUs(Cfg->Str, "regAlloc()");
-  if (Cfg->Str.isVerbose())
-    Cfg->Str
-        << "================ After linear scan regalloc ================\n";
+  T_regAlloc.printElapsedUs(Context, "regAlloc()");
+  if (Context->isVerbose())
+    Str << "================ After linear scan regalloc ================\n";
   Cfg->dump();
 
   IceTimer T_genFrame;
   Cfg->genFrame();
   if (Cfg->hasError())
     return;
-  T_genFrame.printElapsedUs(Cfg->Str, "genFrame()");
-  if (Cfg->Str.isVerbose())
-    Cfg->Str << "================ After stack frame mapping ================\n";
+  T_genFrame.printElapsedUs(Context, "genFrame()");
+  if (Context->isVerbose())
+    Str << "================ After stack frame mapping ================\n";
   Cfg->dump();
 }
 
@@ -370,10 +379,11 @@ void IceTargetX8632::addProlog(IceCfgNode *Node) {
   this->FrameSizeLocals = NextStackOffset;
   this->HasComputedFrame = true;
 
-  if (Cfg->Str.isVerbose(IceV_Frame)) {
-    Cfg->Str << "LocalsSizeBytes=" << LocalsSizeBytes << "\n"
-             << "InArgsSizeBytes=" << InArgsSizeBytes << "\n"
-             << "PreservedRegsSizeBytes=" << PreservedRegsSizeBytes << "\n";
+  if (Cfg->getContext()->isVerbose(IceV_Frame)) {
+    Cfg->getContext()->StrDump << "LocalsSizeBytes=" << LocalsSizeBytes << "\n"
+                               << "InArgsSizeBytes=" << InArgsSizeBytes << "\n"
+                               << "PreservedRegsSizeBytes="
+                               << PreservedRegsSizeBytes << "\n";
   }
 }
 
@@ -1947,42 +1957,43 @@ IceVariable *IceTargetX8632::makeReg(IceType Type, int32_t RegNum) {
 ////////////////////////////////////////////////////////////////
 
 void IceTargetX8632Fast::translate() {
+  IceGlobalContext *Context = Cfg->getContext();
+  IceOstream &Str = Context->StrDump;
   IceTimer T_placePhiLoads;
   Cfg->placePhiLoads();
   if (Cfg->hasError())
     return;
-  T_placePhiLoads.printElapsedUs(Cfg->Str, "placePhiLoads()");
+  T_placePhiLoads.printElapsedUs(Context, "placePhiLoads()");
   IceTimer T_placePhiStores;
   Cfg->placePhiStores();
   if (Cfg->hasError())
     return;
-  T_placePhiStores.printElapsedUs(Cfg->Str, "placePhiStores()");
+  T_placePhiStores.printElapsedUs(Context, "placePhiStores()");
   IceTimer T_deletePhis;
   Cfg->deletePhis();
   if (Cfg->hasError())
     return;
-  T_deletePhis.printElapsedUs(Cfg->Str, "deletePhis()");
-  if (Cfg->Str.isVerbose())
-    Cfg->Str << "================ After Phi lowering ================\n";
+  T_deletePhis.printElapsedUs(Context, "deletePhis()");
+  if (Context->isVerbose())
+    Str << "================ After Phi lowering ================\n";
   Cfg->dump();
 
   IceTimer T_genCode;
   Cfg->genCode();
   if (Cfg->hasError())
     return;
-  T_genCode.printElapsedUs(Cfg->Str, "genCode()");
-  if (Cfg->Str.isVerbose())
-    Cfg->Str
-        << "================ After initial x8632 codegen ================\n";
+  T_genCode.printElapsedUs(Context, "genCode()");
+  if (Context->isVerbose())
+    Str << "================ After initial x8632 codegen ================\n";
   Cfg->dump();
 
   IceTimer T_genFrame;
   Cfg->genFrame();
   if (Cfg->hasError())
     return;
-  T_genFrame.printElapsedUs(Cfg->Str, "genFrame()");
-  if (Cfg->Str.isVerbose())
-    Cfg->Str << "================ After stack frame mapping ================\n";
+  T_genFrame.printElapsedUs(Context, "genFrame()");
+  if (Context->isVerbose())
+    Str << "================ After stack frame mapping ================\n";
   Cfg->dump();
 }
 

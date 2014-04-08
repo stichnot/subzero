@@ -83,6 +83,7 @@ public:
   virtual void dump(const IceCfg *Cfg) const;
   virtual void dumpExtras(const IceCfg *Cfg) const;
   void dumpDecorated(const IceCfg *Cfg) const;
+  void emitSources(const IceCfg *Cfg, uint32_t Option) const;
   void dumpSources(const IceCfg *Cfg) const;
   void dumpDest(const IceCfg *Cfg) const;
   virtual bool isRedundantAssign() const { return false; }

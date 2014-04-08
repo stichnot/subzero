@@ -116,6 +116,8 @@ public:
 
   virtual ~IceTargetLowering() {}
 
+  IceCfg *Cfg;
+
 protected:
   IceTargetLowering(IceCfg *Cfg)
       : Cfg(Cfg), HasComputedFrame(false), StackAdjustment(0) {}
@@ -145,7 +147,6 @@ protected:
   // subsequent global register allocation pass.
   virtual void postLower() {}
 
-  IceCfg *const Cfg;
   bool HasComputedFrame;
   // StackAdjustment keeps track of the current stack offset from its
   // natural location, as arguments are pushed for a function call.

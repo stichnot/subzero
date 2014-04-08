@@ -16,6 +16,7 @@
 #include "IceCfg.h"
 #include "IceCfgNode.h"
 #include "IceDefs.h"
+#include "IceGlobalContext.h"
 #include "IceInst.h"
 #include "IceOperand.h"
 #include "IceTypes.h"
@@ -55,7 +56,8 @@ template <typename T> static std::string LLVMObjectAsString(const T *O) {
 //
 class LLVM2ICEConverter {
 public:
-  LLVM2ICEConverter(IceTargetArch TargetArch) : Cfg(NULL), CurrentNode(NULL) {
+  LLVM2ICEConverter(IceGlobalContext *Context)
+      : Context(Context), Cfg(NULL), CurrentNode(NULL) {
     // All PNaCl pointer widths are 32 bits because of the sandbox
     // model.
     SubzeroPointerType = IceType_i32;
@@ -64,7 +66,7 @@ public:
   IceCfg *convertFunction(const Function *F) {
     VarMap.clear();
     NodeMap.clear();
-    Cfg = new IceCfg;
+    Cfg = new IceCfg(Context);
     Cfg->setName(F->getName());
     Cfg->setReturnType(convertType(F->getReturnType()));
     Cfg->setInternal(F->hasInternalLinkage());
@@ -544,6 +546,7 @@ private:
 
 private:
   // Data
+  IceGlobalContext *Context;
   IceCfg *Cfg;
   IceCfgNode *CurrentNode;
   IceType SubzeroPointerType;
@@ -627,10 +630,12 @@ int main(int argc, char **argv) {
       new raw_os_ostream(OutputFilename == "-" ? std::cout : Ofs);
   Os->SetUnbuffered();
 
+  IceGlobalContext Context(Os, Os, VerboseMask, TargetArch, TestPrefix);
+
   for (Module::const_iterator I = Mod->begin(), E = Mod->end(); I != E; ++I) {
     if (I->empty())
       continue;
-    LLVM2ICEConverter FunctionConverter(TargetArch);
+    LLVM2ICEConverter FunctionConverter(&Context);
 
     IceTimer TConvert;
     IceCfg *Cfg = FunctionConverter.convertFunction(I);
@@ -642,9 +647,6 @@ int main(int argc, char **argv) {
                 << ": " << TConvert.getElapsedSec() << " sec\n";
     }
 
-    Cfg->setTestPrefix(TestPrefix);
-    Cfg->Str.Stream = Os;
-    Cfg->Str.setVerbose(VerboseMask);
     if (DisableTranslation) {
       Cfg->dump();
     } else {

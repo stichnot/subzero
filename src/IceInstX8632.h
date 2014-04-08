@@ -303,7 +303,7 @@ public:
     IceEmitTwoAddress(Opcode, this, Cfg, Option, ShiftHack);
   }
   virtual void dump(const IceCfg *Cfg) const {
-    IceOstream &Str = Cfg->Str;
+    IceOstream &Str = Cfg->getContext()->StrDump;
     dumpDest(Cfg);
     Str << " = " << Opcode << "." << getDest()->getType() << " ";
     dumpSources(Cfg);
@@ -330,14 +330,14 @@ public:
         IceInstX8632Ternop(Cfg, Dest, Source1, Source2);
   }
   virtual void emit(const IceCfg *Cfg, uint32_t Option) const {
-    IceOstream &Str = Cfg->Str;
+    IceOstream &Str = Cfg->getContext()->StrEmit;
     assert(getSrcSize() == 3);
     Str << "\t" << Opcode << "\t";
     getSrc(1)->emit(Cfg, Option);
     Str << "\n";
   }
   virtual void dump(const IceCfg *Cfg) const {
-    IceOstream &Str = Cfg->Str;
+    IceOstream &Str = Cfg->getContext()->StrDump;
     dumpDest(Cfg);
     Str << " = " << Opcode << "." << getDest()->getType() << " ";
     dumpSources(Cfg);

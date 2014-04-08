@@ -36,20 +36,19 @@ public:
     return range().overlaps(Other.range());
   }
   IceVariable *const Var;
-  void dump(IceOstream &Str) const;
+  void dump(const IceCfg *Cfg) const;
 
 private:
   // IceLiveRangeWrapper(const IceLiveRangeWrapper &) LLVM_DELETED_FUNCTION;
   IceLiveRangeWrapper &
   operator=(const IceLiveRangeWrapper &) LLVM_DELETED_FUNCTION;
 };
-IceOstream &operator<<(IceOstream &Str, const IceLiveRangeWrapper &R);
 
 class IceLinearScan {
 public:
   IceLinearScan(IceCfg *Cfg) : Cfg(Cfg) {}
   void scan(const llvm::SmallBitVector &RegMask);
-  void dump(const IceCfg *Cfg) const;
+  void dump(IceCfg *Cfg) const;
 
 private:
   IceCfg *const Cfg;

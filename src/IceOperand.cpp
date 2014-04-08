@@ -174,25 +174,10 @@ IceVariable IceVariable::asType(IceType Type) {
 
 // ======================== dump routines ======================== //
 
-template <> IceOstream &operator<<(IceOstream &Str, const IceOperand &O) {
-  O.dump(Str.Cfg);
-  return Str;
-}
-
-template <> IceOstream &operator<<(IceOstream &Str, const IceVariable &V) {
-  V.dump(Str.Cfg);
-  return Str;
-}
-
-template <> IceOstream &operator<<(IceOstream &Str, const IceConstant &C) {
-  C.dump(Str.Cfg);
-  return Str;
-}
-
 // TODO: This should be handed by the IceTargetLowering subclass.
 void IceVariable::emit(const IceCfg *Cfg, uint32_t Option) const {
-  IceOstream &Str = Cfg->Str;
-  assert(DefNode == NULL || DefNode == Str.getCurrentNode());
+  IceOstream &Str = Cfg->getContext()->StrEmit;
+  assert(DefNode == NULL || DefNode == Cfg->getCurrentNode());
   if (hasReg()) {
     Str << Cfg->getTarget()->getRegName(RegNum, getType());
     return;
@@ -226,18 +211,19 @@ void IceVariable::emit(const IceCfg *Cfg, uint32_t Option) const {
 }
 
 void IceVariable::dump(const IceCfg *Cfg) const {
-  IceOstream &Str = Cfg->Str;
-  const IceCfgNode *CurrentNode = Str.getCurrentNode();
+  IceOstream &Str = Cfg->getContext()->StrDump;
+  const IceCfgNode *CurrentNode = Cfg->getCurrentNode();
   (void)CurrentNode; // used only in assert()
   assert(CurrentNode == NULL || DefNode == NULL || DefNode == CurrentNode);
-  if (Str.isVerbose(IceV_RegOrigins) || (!hasReg() && !Cfg->hasComputedFrame()))
+  if (Cfg->getContext()->isVerbose(IceV_RegOrigins) ||
+      (!hasReg() && !Cfg->getContext()->getTarget()->hasComputedFrame()))
     Str << "%" << getName();
   if (hasReg()) {
-    if (Str.isVerbose(IceV_RegOrigins))
+    if (Cfg->getContext()->isVerbose(IceV_RegOrigins))
       Str << ":";
     Str << Cfg->getTarget()->getRegName(RegNum, getType());
-  } else if (Cfg->hasComputedFrame()) {
-    if (Str.isVerbose(IceV_RegOrigins))
+  } else if (Cfg->getTarget()->hasComputedFrame()) {
+    if (Cfg->getContext()->isVerbose(IceV_RegOrigins))
       Str << ":";
     Str << "[" << Cfg->getTarget()->getRegName(
                       Cfg->getTarget()->getFrameOrStackReg(), IceType_i32);
@@ -251,19 +237,12 @@ void IceVariable::dump(const IceCfg *Cfg) const {
   }
 }
 
-void IceOperand::emit(const IceCfg *Cfg, uint32_t Option) const { dump(Cfg); }
-
-void IceOperand::dump(const IceCfg *Cfg) const {
-  IceOstream &Str = Cfg->Str;
-  Str << "IceOperand<?>";
-}
-
 void IceConstantRelocatable::emit(const IceCfg *Cfg, uint32_t Option) const {
-  IceOstream &Str = Cfg->Str;
+  IceOstream &Str = Cfg->getContext()->StrEmit;
   if (SuppressMangling)
     Str << Name;
   else
-    Str << Cfg->mangleName(Name);
+    Str << Cfg->getContext()->mangleName(Name);
   if (Offset) {
     if (Offset > 0)
       Str << "+";
@@ -272,7 +251,7 @@ void IceConstantRelocatable::emit(const IceCfg *Cfg, uint32_t Option) const {
 }
 
 void IceConstantRelocatable::dump(const IceCfg *Cfg) const {
-  IceOstream &Str = Cfg->Str;
+  IceOstream &Str = Cfg->getContext()->StrDump;
   Str << "@" << Name;
   if (Offset)
     Str << "+" << Offset;
