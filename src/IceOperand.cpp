@@ -216,7 +216,7 @@ void IceVariable::dump(const IceCfg *Cfg) const {
   (void)CurrentNode; // used only in assert()
   assert(CurrentNode == NULL || DefNode == NULL || DefNode == CurrentNode);
   if (Cfg->getContext()->isVerbose(IceV_RegOrigins) ||
-      (!hasReg() && !Cfg->getContext()->getTarget()->hasComputedFrame()))
+      (!hasReg() && !Cfg->getTarget()->hasComputedFrame()))
     Str << "%" << getName();
   if (hasReg()) {
     if (Cfg->getContext()->isVerbose(IceV_RegOrigins))

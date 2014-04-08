@@ -40,7 +40,7 @@ public:
   void addVerbose(IceVerboseMask Mask) { VerboseMask |= Mask; }
   void subVerbose(IceVerboseMask Mask) { VerboseMask &= ~Mask; }
 
-  IceTargetLowering *getTarget() const { return Target; }
+  IceTargetArch getTargetArch() const { return TargetArch; }
 
   // When emitting assembly, we allow a string to be prepended to
   // names of translated functions.  This makes it easier to create an
@@ -59,7 +59,7 @@ private:
   llvm::BumpPtrAllocator Allocator;
   IceVerboseMask VerboseMask;
   // llvm::OwningPtr<class IceConstantPool> ConstantPool;
-  IceTargetLowering *Target; // TODO: make OwningPtr<>
+  IceTargetArch TargetArch;
   IceString TestPrefix;
 };
 

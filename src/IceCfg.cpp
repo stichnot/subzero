@@ -64,9 +64,9 @@ IceCfg::IceCfg(IceGlobalContext *Context)
     : Context(Context), Name(""), Type(IceType_void), IsInternal(false),
       HasError(false), ErrorMessage(""), Entry(NULL), NextInstNumber(1),
       ConstantPool(new IceConstantPool(this)), Liveness(NULL),
+      Target(IceTargetLowering::createLowering(Context->getTargetArch(), this)),
       CurrentNode(NULL) {
   GlobalStr = &Context->StrDump;
-  getTarget()->Cfg = this;
 }
 
 IceCfg::~IceCfg() {}

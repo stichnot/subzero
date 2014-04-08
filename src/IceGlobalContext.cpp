@@ -59,8 +59,7 @@ IceGlobalContext::IceGlobalContext(llvm::raw_ostream *OsDump,
                                    IceTargetArch TargetArch,
                                    IceString TestPrefix)
     : StrDump(OsDump), StrEmit(OsEmit), VerboseMask(VerboseMask),
-      Target(IceTargetLowering::createLowering(TargetArch, NULL)),
-      TestPrefix(TestPrefix) {}
+      TargetArch(TargetArch), TestPrefix(TestPrefix) {}
 
 // In this context, name mangling means to rewrite a symbol using a
 // given prefix.  For a C++ symbol, we'd like to demangle it, prepend

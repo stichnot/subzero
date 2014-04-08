@@ -53,16 +53,6 @@ IceTargetX8632::IceTargetX8632(IceCfg *Cfg)
 }
 
 void IceTargetX8632::translate() {
-  // TODO: all this (plus Cfg) should be in a separate per-Cfg context.
-  IsEbpBasedFrame = false;
-  FrameSizeLocals = 0;
-  LocalsSizeBytes = 0;
-  NextLabelNumber = 0;
-  ComputedLiveRanges = false;
-  PhysicalRegisters.assign(Reg_NUM, NULL);
-  HasComputedFrame = false;
-  StackAdjustment = 0;
-
   IceGlobalContext *Context = Cfg->getContext();
   IceOstream &Str = Context->StrDump;
   IceTimer T_placePhiLoads;

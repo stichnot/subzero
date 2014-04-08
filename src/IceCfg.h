@@ -83,7 +83,7 @@ public:
                               bool SuppressMangling = false);
 
   // Miscellaneous accessors.
-  IceTargetLowering *getTarget() const { return Context->getTarget(); }
+  IceTargetLowering *getTarget() const { return Target.get(); }
   IceLiveness *getLiveness() const { return Liveness.get(); }
   bool hasComputedFrame() const;
 
@@ -136,6 +136,7 @@ private:
   IceVarList Args; // subset of Variables, in argument order
   llvm::OwningPtr<class IceConstantPool> ConstantPool;
   llvm::OwningPtr<IceLiveness> Liveness;
+  llvm::OwningPtr<IceTargetLowering> Target;
 
   // CurrentNode is maintained during dumping/emitting just for
   // validating IceVariable::DefNode.  Normally, a traversal over
