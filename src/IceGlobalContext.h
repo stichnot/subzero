@@ -29,7 +29,7 @@ class IceGlobalContext {
 public:
   IceGlobalContext(llvm::raw_ostream *OsDump, llvm::raw_ostream *OsEmit,
                    IceVerboseMask VerboseMask, IceTargetArch TargetArch,
-                   IceString TestPrefix);
+                   IceOptLevel OptLevel, IceString TestPrefix);
   ~IceGlobalContext();
 
   // Returns true if any of the specified options in the verbose mask
@@ -45,6 +45,7 @@ public:
   void subVerbose(IceVerboseMask Mask) { VerboseMask &= ~Mask; }
 
   IceTargetArch getTargetArch() const { return TargetArch; }
+  IceOptLevel getOptLevel() const { return OptLevel; }
 
   // When emitting assembly, we allow a string to be prepended to
   // names of translated functions.  This makes it easier to create an
@@ -76,6 +77,7 @@ private:
   IceVerboseMask VerboseMask;
   llvm::OwningPtr<class IceConstantPool> ConstantPool;
   const IceTargetArch TargetArch;
+  const IceOptLevel OptLevel;
   const IceString TestPrefix;
   IceGlobalContext(const IceGlobalContext &) LLVM_DELETED_FUNCTION;
   IceGlobalContext &operator=(const IceGlobalContext &) LLVM_DELETED_FUNCTION;

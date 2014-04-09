@@ -52,7 +52,7 @@ IceTargetX8632::IceTargetX8632(IceCfg *Cfg)
   ScratchRegs[Reg_edx] = true;
 }
 
-void IceTargetX8632::translate() {
+void IceTargetX8632::translateO2() {
   IceGlobalContext *Context = Cfg->getContext();
   IceOstream &Str = Context->StrDump;
   IceTimer T_placePhiLoads;
@@ -127,6 +127,47 @@ void IceTargetX8632::translate() {
   T_regAlloc.printElapsedUs(Context, "regAlloc()");
   if (Context->isVerbose())
     Str << "================ After linear scan regalloc ================\n";
+  Cfg->dump();
+
+  IceTimer T_genFrame;
+  Cfg->genFrame();
+  if (Cfg->hasError())
+    return;
+  T_genFrame.printElapsedUs(Context, "genFrame()");
+  if (Context->isVerbose())
+    Str << "================ After stack frame mapping ================\n";
+  Cfg->dump();
+}
+
+void IceTargetX8632::translateOm1() {
+  IceGlobalContext *Context = Cfg->getContext();
+  IceOstream &Str = Context->StrDump;
+  IceTimer T_placePhiLoads;
+  Cfg->placePhiLoads();
+  if (Cfg->hasError())
+    return;
+  T_placePhiLoads.printElapsedUs(Context, "placePhiLoads()");
+  IceTimer T_placePhiStores;
+  Cfg->placePhiStores();
+  if (Cfg->hasError())
+    return;
+  T_placePhiStores.printElapsedUs(Context, "placePhiStores()");
+  IceTimer T_deletePhis;
+  Cfg->deletePhis();
+  if (Cfg->hasError())
+    return;
+  T_deletePhis.printElapsedUs(Context, "deletePhis()");
+  if (Context->isVerbose())
+    Str << "================ After Phi lowering ================\n";
+  Cfg->dump();
+
+  IceTimer T_genCode;
+  Cfg->genCode();
+  if (Cfg->hasError())
+    return;
+  T_genCode.printElapsedUs(Context, "genCode()");
+  if (Context->isVerbose())
+    Str << "================ After initial x8632 codegen ================\n";
   Cfg->dump();
 
   IceTimer T_genFrame;
@@ -1944,50 +1985,9 @@ IceVariable *IceTargetX8632::makeReg(IceType Type, int32_t RegNum) {
   return Reg;
 }
 
-////////////////////////////////////////////////////////////////
-
-void IceTargetX8632Fast::translate() {
-  IceGlobalContext *Context = Cfg->getContext();
-  IceOstream &Str = Context->StrDump;
-  IceTimer T_placePhiLoads;
-  Cfg->placePhiLoads();
-  if (Cfg->hasError())
+void IceTargetX8632::postLower() {
+  if (Ctx->getOptLevel() != IceOpt_m1)
     return;
-  T_placePhiLoads.printElapsedUs(Context, "placePhiLoads()");
-  IceTimer T_placePhiStores;
-  Cfg->placePhiStores();
-  if (Cfg->hasError())
-    return;
-  T_placePhiStores.printElapsedUs(Context, "placePhiStores()");
-  IceTimer T_deletePhis;
-  Cfg->deletePhis();
-  if (Cfg->hasError())
-    return;
-  T_deletePhis.printElapsedUs(Context, "deletePhis()");
-  if (Context->isVerbose())
-    Str << "================ After Phi lowering ================\n";
-  Cfg->dump();
-
-  IceTimer T_genCode;
-  Cfg->genCode();
-  if (Cfg->hasError())
-    return;
-  T_genCode.printElapsedUs(Context, "genCode()");
-  if (Context->isVerbose())
-    Str << "================ After initial x8632 codegen ================\n";
-  Cfg->dump();
-
-  IceTimer T_genFrame;
-  Cfg->genFrame();
-  if (Cfg->hasError())
-    return;
-  T_genFrame.printElapsedUs(Context, "genFrame()");
-  if (Context->isVerbose())
-    Str << "================ After stack frame mapping ================\n";
-  Cfg->dump();
-}
-
-void IceTargetX8632Fast::postLower() {
   llvm::SmallBitVector WhiteList = getRegisterSet(RegSet_All, RegSet_None);
   // Make one pass to black-list pre-colored registers.  TODO: If
   // there was some prior register allocation pass that made register

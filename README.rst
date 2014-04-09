@@ -35,7 +35,11 @@ At this time, ``llvm2ice`` accepts a few arguments:
     ``-notranslate`` -- Suppress the ICE translation phase, which is useful if
     ICE is missing some support.
 
-    ``-target=<TARGET>`` -- Set the target architecture (default x8632).
+    ``-target=<TARGET>`` -- Set the target architecture (default x8632).  Future
+    targets include X8664, ARM, and ARM64.
+
+    ``-O<optlevel>`` -- Set the optimization level (default 2).  Valid levels
+    are 2, 1, 0, and m1 (-O-1 is a synonym for -Om1).
 
     ``-verbose=<list>`` -- Set verbosity flags.  This argument allows
     a comma-separated list of values.  The default is ``none``, and

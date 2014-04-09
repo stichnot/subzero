@@ -94,10 +94,10 @@ IceGlobalContext::IceGlobalContext(llvm::raw_ostream *OsDump,
                                    llvm::raw_ostream *OsEmit,
                                    IceVerboseMask VerboseMask,
                                    IceTargetArch TargetArch,
-                                   IceString TestPrefix)
+                                   IceOptLevel OptLevel, IceString TestPrefix)
     : StrDump(OsDump), StrEmit(OsEmit), VerboseMask(VerboseMask),
       ConstantPool(new IceConstantPool(this)), TargetArch(TargetArch),
-      TestPrefix(TestPrefix) {}
+      OptLevel(OptLevel), TestPrefix(TestPrefix) {}
 
 // In this context, name mangling means to rewrite a symbol using a
 // given prefix.  For a C++ symbol, we'd like to demangle it, prepend

@@ -573,11 +573,16 @@ static cl::list<IceVerbose> VerboseList(
         clEnumValN(IceV_None, "none", "No verbosity"), clEnumValEnd));
 static cl::opt<IceTargetArch> TargetArch(
     "target", cl::desc("Target architecture:"), cl::init(IceTarget_X8632),
-    cl::values(clEnumValN(IceTarget_X8632, "x8632", "x86-32"),
-               clEnumValN(IceTarget_X8632Fast, "x8632fast", "x86-32 fast"),
-               clEnumValN(IceTarget_X8664, "x8664", "x86-64"),
-               clEnumValN(IceTarget_ARM32, "arm32", "ARM32"),
-               clEnumValN(IceTarget_ARM64, "arm64", "ARM64"), clEnumValEnd));
+    cl::values(clEnumValN(IceTarget_X8632, "X8632", "x86-32"),
+               clEnumValN(IceTarget_X8664, "X8664", "x86-64"),
+               clEnumValN(IceTarget_ARM32, "ARM", "ARM32"),
+               clEnumValN(IceTarget_ARM64, "ARM64", "ARM64"), clEnumValEnd));
+static cl::opt<IceOptLevel> OptLevel(
+    cl::desc("Optimization level"), cl::init(IceOpt_2), cl::value_desc("level"),
+    cl::values(clEnumValN(IceOpt_m1, "Om1", "-1"),
+               clEnumValN(IceOpt_m1, "O-1", "-1"),
+               clEnumValN(IceOpt_0, "O0", "0"), clEnumValN(IceOpt_0, "O1", "1"),
+               clEnumValN(IceOpt_2, "O2", "2"), clEnumValEnd));
 static cl::opt<std::string> IRFilename(cl::Positional, cl::desc("<IR file>"),
                                        cl::Required);
 static cl::opt<std::string> OutputFilename("o", cl::desc("Set output filename"),
@@ -638,7 +643,7 @@ int main(int argc, char **argv) {
   raw_os_ostream *Ls = new raw_os_ostream(LogFilename == "-" ? std::cout : Lfs);
   Ls->SetUnbuffered();
 
-  IceGlobalContext Ctx(Ls, Os, VerboseMask, TargetArch, TestPrefix);
+  IceGlobalContext Ctx(Ls, Os, VerboseMask, TargetArch, OptLevel, TestPrefix);
 
   for (Module::const_iterator I = Mod->begin(), E = Mod->end(); I != E; ++I) {
     if (I->empty())

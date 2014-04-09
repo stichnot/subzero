@@ -54,8 +54,6 @@ IceTargetLowering *IceTargetLowering::createLowering(IceTargetArch Target,
   // to a subset of the available targets.
   if (Target == IceTarget_X8632)
     return IceTargetX8632::create(Cfg);
-  if (Target == IceTarget_X8632Fast)
-    return IceTargetX8632Fast::create(Cfg);
 #if 0
   if (Target == IceTarget_X8664)
     return IceTargetX8664::create(Cfg);

@@ -23,7 +23,9 @@
 class IceTargetX8632 : public IceTargetLowering {
 public:
   static IceTargetX8632 *create(IceCfg *Cfg) { return new IceTargetX8632(Cfg); }
-  virtual void translate();
+
+  virtual void translateOm1();
+  virtual void translateO2();
 
   virtual IceVariable *getPhysicalRegister(uint32_t RegNum);
   virtual IceString getRegName(uint32_t RegNum, IceType Type) const;
@@ -75,6 +77,8 @@ public:
 
 protected:
   IceTargetX8632(IceCfg *Cfg);
+
+  virtual void postLower();
 
   virtual void lowerAlloca(const IceInstAlloca *Inst);
   virtual void lowerArithmetic(const IceInstArithmetic *Inst);
@@ -262,23 +266,6 @@ protected:
 private:
   IceTargetX8632(const IceTargetX8632 &) LLVM_DELETED_FUNCTION;
   IceTargetX8632 &operator=(const IceTargetX8632 &) LLVM_DELETED_FUNCTION;
-};
-
-class IceTargetX8632Fast : public IceTargetX8632 {
-public:
-  static IceTargetX8632Fast *create(IceCfg *Cfg) {
-    return new IceTargetX8632Fast(Cfg);
-  }
-  virtual void translate();
-
-protected:
-  IceTargetX8632Fast(IceCfg *Cfg) : IceTargetX8632(Cfg) {}
-  virtual void postLower();
-
-private:
-  IceTargetX8632Fast(const IceTargetX8632Fast &) LLVM_DELETED_FUNCTION;
-  IceTargetX8632Fast &
-  operator=(const IceTargetX8632Fast &) LLVM_DELETED_FUNCTION;
 };
 
 #endif // SUBZERO_SRC_ICETARGETLOWERINGX8632_H

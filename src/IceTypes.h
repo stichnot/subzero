@@ -30,10 +30,16 @@ enum IceType {
 
 enum IceTargetArch {
   IceTarget_X8632,
-  IceTarget_X8632Fast,
   IceTarget_X8664,
   IceTarget_ARM32,
   IceTarget_ARM64
+};
+
+enum IceOptLevel {
+  IceOpt_m1,
+  IceOpt_0,
+  IceOpt_1,
+  IceOpt_2
 };
 
 size_t iceTypeWidthInBytes(IceType Type);

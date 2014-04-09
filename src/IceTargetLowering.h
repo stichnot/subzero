@@ -69,8 +69,36 @@ private:
 class IceTargetLowering {
 public:
   static IceTargetLowering *createLowering(IceTargetArch Target, IceCfg *Cfg);
-  virtual void translate() {
-    Cfg->setError("Target doesn't specify lowering steps.");
+  void translate() {
+    switch (Ctx->getOptLevel()) {
+    case IceOpt_m1:
+      translateOm1();
+      break;
+    case IceOpt_0:
+      translateO0();
+      break;
+    case IceOpt_1:
+      translateO1();
+      break;
+    case IceOpt_2:
+      translateO2();
+      break;
+    default:
+      Cfg->setError("Target doesn't specify lowering steps.");
+      break;
+    }
+  }
+  virtual void translateOm1() {
+    Cfg->setError("Target doesn't specify Om1 lowering steps.");
+  }
+  virtual void translateO0() {
+    Cfg->setError("Target doesn't specify O0 lowering steps.");
+  }
+  virtual void translateO1() {
+    Cfg->setError("Target doesn't specify O1 lowering steps.");
+  }
+  virtual void translateO2() {
+    Cfg->setError("Target doesn't specify O2 lowering steps.");
   }
 
   // Tries to do address mode optimization on a single instruction.
