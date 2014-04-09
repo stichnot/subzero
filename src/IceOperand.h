@@ -135,8 +135,6 @@ public:
                                         IceType Type, const void *Handle,
                                         int64_t Offset,
                                         const IceString &Name = "") {
-    // Use non-placement allocation for constants for now, until
-    // global constant pool issues are worked out.
     return new (Ctx->allocate<IceConstantRelocatable>())
         IceConstantRelocatable(Type, Handle, Offset, Name, CPIndex);
   }

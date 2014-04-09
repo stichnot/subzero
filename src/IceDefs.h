@@ -118,8 +118,6 @@ public:
   IceOstream(llvm::raw_ostream *Stream) : Stream(Stream) {}
 
   llvm::raw_ostream *Stream;
-
-private:
 };
 
 template <typename T>

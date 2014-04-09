@@ -17,11 +17,10 @@
 
 #include "IceDefs.h"
 #include "IceTypes.h"
+#include "IceGlobalContext.h"
 
 #include "llvm/ADT/OwningPtr.h"
 #include "llvm/Support/Allocator.h"
-
-#include "IceGlobalContext.h"
 
 class IceCfg {
 public:
@@ -129,9 +128,7 @@ private:
   // validating IceVariable::DefNode.  Normally, a traversal over
   // IceCfgNodes maintains this, but before global operations like
   // register allocation, setCurrentNode(NULL) should be called to
-  // avoid spurious validation failures.  TODO: Move this out of
-  // IceOstream since streams will be split for dumping/emitting, and
-  // this obviously won't be thread-safe.
+  // avoid spurious validation failures.
   const IceCfgNode *CurrentNode;
 
   // TODO: This is a hack, and should be moved into a global context
