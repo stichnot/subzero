@@ -580,10 +580,12 @@ static cl::opt<IceTargetArch> TargetArch(
                clEnumValN(IceTarget_ARM64, "arm64", "ARM64"), clEnumValEnd));
 static cl::opt<std::string> IRFilename(cl::Positional, cl::desc("<IR file>"),
                                        cl::Required);
-static cl::opt<std::string> OutputFilename("o",
-                                           cl::desc("Override output filename"),
+static cl::opt<std::string> OutputFilename("o", cl::desc("Set output filename"),
                                            cl::init("-"),
                                            cl::value_desc("filename"));
+static cl::opt<std::string> LogFilename("log", cl::desc("Set log filename"),
+                                        cl::init("-"),
+                                        cl::value_desc("filename"));
 static cl::opt<std::string>
 TestPrefix("prefix", cl::desc("Prepend a prefix to symbol names for testing"),
            cl::init(""), cl::value_desc("prefix"));
@@ -629,8 +631,14 @@ int main(int argc, char **argv) {
   raw_os_ostream *Os =
       new raw_os_ostream(OutputFilename == "-" ? std::cout : Ofs);
   Os->SetUnbuffered();
+  std::ofstream Lfs;
+  if (LogFilename != "-") {
+    Lfs.open(LogFilename.c_str(), std::ofstream::out);
+  }
+  raw_os_ostream *Ls = new raw_os_ostream(LogFilename == "-" ? std::cout : Lfs);
+  Ls->SetUnbuffered();
 
-  IceGlobalContext Ctx(Os, Os, VerboseMask, TargetArch, TestPrefix);
+  IceGlobalContext Ctx(Ls, Os, VerboseMask, TargetArch, TestPrefix);
 
   for (Module::const_iterator I = Mod->begin(), E = Mod->end(); I != E; ++I) {
     if (I->empty())
