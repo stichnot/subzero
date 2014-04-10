@@ -1057,6 +1057,7 @@ void IceTargetX8632::lowerCall(const IceInstCall *Inst) {
   // Generate Dest=eax assignment.
   if (Dest && eax) {
     if (edx) {
+      split64(Dest);
       IceVariable *DestLo = Dest->getLo();
       IceVariable *DestHi = Dest->getHi();
       DestLo->setPreferredRegister(eax, false);
