@@ -19,3 +19,25 @@ bool icmpSlt64Bool(int64_t a, int64_t b);
 bool icmpUlt64Bool(uint64_t a, uint64_t b);
 bool icmpSle64Bool(int64_t a, int64_t b);
 bool icmpUle64Bool(uint64_t a, uint64_t b);
+
+bool icmpEq16Bool(int16_t a, int16_t b);
+bool icmpNe16Bool(int16_t a, int16_t b);
+bool icmpSgt16Bool(int16_t a, int16_t b);
+bool icmpUgt16Bool(uint16_t a, uint16_t b);
+bool icmpSge16Bool(int16_t a, int16_t b);
+bool icmpUge16Bool(uint16_t a, uint16_t b);
+bool icmpSlt16Bool(int16_t a, int16_t b);
+bool icmpUlt16Bool(uint16_t a, uint16_t b);
+bool icmpSle16Bool(int16_t a, int16_t b);
+bool icmpUle16Bool(uint16_t a, uint16_t b);
+
+bool icmpEq8Bool(int8_t a, int8_t b);
+bool icmpNe8Bool(int8_t a, int8_t b);
+bool icmpSgt8Bool(int8_t a, int8_t b);
+bool icmpUgt8Bool(uint8_t a, uint8_t b);
+bool icmpSge8Bool(int8_t a, int8_t b);
+bool icmpUge8Bool(uint8_t a, uint8_t b);
+bool icmpSlt8Bool(int8_t a, int8_t b);
+bool icmpUlt8Bool(uint8_t a, uint8_t b);
+bool icmpSle8Bool(int8_t a, int8_t b);
+bool icmpUle8Bool(uint8_t a, uint8_t b);

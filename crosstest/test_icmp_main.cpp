@@ -14,6 +14,61 @@ int main(int argc, char **argv) {
     0x80000000, 0x80000001, 0xfffffffe, 0xffffffff,
   };
   const static unsigned NumValues = sizeof(Values) / sizeof(*Values);
+
+  typedef bool (*FuncType8)(uint8_t, uint8_t);
+  static struct {
+    const char *Name;
+    FuncType8 FuncSz;
+    FuncType8 FuncLlc;
+  } Func8[] = { { "icmpEq8Bool", (FuncType8)Subzero_::icmpEq8Bool,
+                   (FuncType8)icmpEq8Bool },
+                 { "icmpNe8Bool", (FuncType8)Subzero_::icmpNe8Bool,
+                   (FuncType8)icmpNe8Bool },
+                 { "icmpSgt8Bool", (FuncType8)Subzero_::icmpSgt8Bool,
+                   (FuncType8)icmpSgt8Bool },
+                 { "icmpUgt8Bool", (FuncType8)Subzero_::icmpUgt8Bool,
+                   (FuncType8)icmpUgt8Bool },
+                 { "icmpSge8Bool", (FuncType8)Subzero_::icmpSge8Bool,
+                   (FuncType8)icmpSge8Bool },
+                 { "icmpUge8Bool", (FuncType8)Subzero_::icmpUge8Bool,
+                   (FuncType8)icmpUge8Bool },
+                 { "icmpSlt8Bool", (FuncType8)Subzero_::icmpSlt8Bool,
+                   (FuncType8)icmpSlt8Bool },
+                 { "icmpUlt8Bool", (FuncType8)Subzero_::icmpUlt8Bool,
+                   (FuncType8)icmpUlt8Bool },
+                 { "icmpSle8Bool", (FuncType8)Subzero_::icmpSle8Bool,
+                   (FuncType8)icmpSle8Bool },
+                 { "icmpUle8Bool", (FuncType8)Subzero_::icmpUle8Bool,
+                   (FuncType8)icmpUle8Bool }, };
+  const static unsigned NumFunc8 = sizeof(Func8) / sizeof(*Func8);
+
+  typedef bool (*FuncType16)(uint16_t, uint16_t);
+  static struct {
+    const char *Name;
+    FuncType16 FuncSz;
+    FuncType16 FuncLlc;
+  } Func16[] = { { "icmpEq16Bool", (FuncType16)Subzero_::icmpEq16Bool,
+                   (FuncType16)icmpEq16Bool },
+                 { "icmpNe16Bool", (FuncType16)Subzero_::icmpNe16Bool,
+                   (FuncType16)icmpNe16Bool },
+                 { "icmpSgt16Bool", (FuncType16)Subzero_::icmpSgt16Bool,
+                   (FuncType16)icmpSgt16Bool },
+                 { "icmpUgt16Bool", (FuncType16)Subzero_::icmpUgt16Bool,
+                   (FuncType16)icmpUgt16Bool },
+                 { "icmpSge16Bool", (FuncType16)Subzero_::icmpSge16Bool,
+                   (FuncType16)icmpSge16Bool },
+                 { "icmpUge16Bool", (FuncType16)Subzero_::icmpUge16Bool,
+                   (FuncType16)icmpUge16Bool },
+                 { "icmpSlt16Bool", (FuncType16)Subzero_::icmpSlt16Bool,
+                   (FuncType16)icmpSlt16Bool },
+                 { "icmpUlt16Bool", (FuncType16)Subzero_::icmpUlt16Bool,
+                   (FuncType16)icmpUlt16Bool },
+                 { "icmpSle16Bool", (FuncType16)Subzero_::icmpSle16Bool,
+                   (FuncType16)icmpSle16Bool },
+                 { "icmpUle16Bool", (FuncType16)Subzero_::icmpUle16Bool,
+                   (FuncType16)icmpUle16Bool }, };
+  const static unsigned NumFunc16 = sizeof(Func16) / sizeof(*Func16);
+
   typedef bool (*FuncType32)(uint32_t, uint32_t);
   static struct {
     const char *Name;
@@ -73,6 +128,41 @@ int main(int argc, char **argv) {
   unsigned TotalTests = 0;
   unsigned Passes = 0;
   unsigned Failures = 0;
+
+  for (unsigned f = 0; f < NumFunc8; ++f) {
+    for (unsigned i = 0; i < NumValues; ++i) {
+      for (unsigned j = 0; j < NumValues; ++j) {
+        ++TotalTests;
+        ResultSz = Func8[f].FuncSz(Values[i], Values[j]);
+        ResultLlc = Func8[f].FuncLlc(Values[i], Values[j]);
+        if (ResultSz == ResultLlc) {
+          ++Passes;
+        } else {
+          ++Failures;
+          printf("%s(0x%08x, 0x%08x): sz=%d llc=%d\n", Func8[f].Name,
+                 Values[i], Values[j], ResultSz, ResultLlc);
+        }
+      }
+    }
+  }
+
+  for (unsigned f = 0; f < NumFunc16; ++f) {
+    for (unsigned i = 0; i < NumValues; ++i) {
+      for (unsigned j = 0; j < NumValues; ++j) {
+        ++TotalTests;
+        ResultSz = Func16[f].FuncSz(Values[i], Values[j]);
+        ResultLlc = Func16[f].FuncLlc(Values[i], Values[j]);
+        if (ResultSz == ResultLlc) {
+          ++Passes;
+        } else {
+          ++Failures;
+          printf("%s(0x%08x, 0x%08x): sz=%d llc=%d\n", Func16[f].Name,
+                 Values[i], Values[j], ResultSz, ResultLlc);
+        }
+      }
+    }
+  }
+
   for (unsigned f = 0; f < NumFunc32; ++f) {
     for (unsigned i = 0; i < NumValues; ++i) {
       for (unsigned j = 0; j < NumValues; ++j) {
