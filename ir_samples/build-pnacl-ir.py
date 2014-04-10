@@ -11,6 +11,8 @@ if __name__ == '__main__':
         help='C file(s) to convert')
     argparser.add_argument('--nacl_sdk_root', nargs='?', type=str,
         help='Path to NACL_SDK_ROOT')
+    argparser.add_argument('--dir', nargs='?', type=str, default='.',
+                           help='Output directory')
     argparser.add_argument('--disable-verify', action='store_true')
     args = argparser.parse_args()
 
@@ -35,6 +37,7 @@ Please set the NACL_SDK_ROOT environment variable or pass the path through
         basename = os.path.splitext(cname)[0]
         llname = os.path.join(tempdir, basename + '.ll')
         pnaclname = basename + '.pnacl.ll'
+        pnaclname = os.path.join(args.dir, pnaclname)
 
         shellcmd(clang_path + ' -I{0} -c {1} -o {2}'.format(
             includes_path, cname, llname))

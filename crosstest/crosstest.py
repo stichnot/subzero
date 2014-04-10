@@ -23,6 +23,8 @@ if __name__ == '__main__':
                            help='String prepended to Subzero symbol names')
     argparser.add_argument('--output', '-o', required=True,
                            help='Executable to produce')
+    argparser.add_argument('--dir', required=False, default='.',
+                           help='Output directory for all files')
     args = argparser.parse_args()
 
     objs = []
@@ -31,14 +33,14 @@ if __name__ == '__main__':
         if ext == '.ll':
             bitcode = arg
         else:
-            bitcode = base + '.pnacl.ll'
-            shellcmd(['../ir_samples/build-pnacl-ir.py', arg])
+            bitcode = os.path.join(args.dir, base + '.pnacl.ll')
+            shellcmd(['../ir_samples/build-pnacl-ir.py', '--dir', args.dir, arg])
             shellcmd('sed -i "s/^define internal /define /" ' + bitcode)
             shellcmd('sed -i "s/le32-unknown-nacl/i686-pc-linux-gnu/" ' + bitcode)
 
-        asm_sz = base + '.sz.s'
-        obj_sz = base + '.sz.o'
-        obj_llc = base + '.llc.o'
+        asm_sz = os.path.join(args.dir, base + '.sz.s')
+        obj_sz = os.path.join(args.dir, base + '.sz.o')
+        obj_llc = os.path.join(args.dir, base + '.llc.o')
         shellcmd(['../llvm2ice',
                   '-O' + args.optlevel,
                   '--target=' + args.target,
@@ -61,4 +63,4 @@ if __name__ == '__main__':
 
     shellcmd(['$LLVM_BIN_PATH/clang', '-g', '-m32', args.driver] +
              objs +
-             ['-lm', '-o', args.output])
+             ['-lm', '-o', os.path.join(args.dir, args.output)])
