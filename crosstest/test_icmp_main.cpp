@@ -25,27 +25,29 @@ bool icmpUlt64Bool(uint64_t a, uint64_t b);
 bool icmpSle64Bool(int64_t a, int64_t b);
 bool icmpUle64Bool(uint64_t a, uint64_t b);
 
-bool Subzero_icmpEq32Bool(int32_t a, int32_t b);
-bool Subzero_icmpNe32Bool(int32_t a, int32_t b);
-bool Subzero_icmpSgt32Bool(int32_t a, int32_t b);
-bool Subzero_icmpUgt32Bool(uint32_t a, uint32_t b);
-bool Subzero_icmpSge32Bool(int32_t a, int32_t b);
-bool Subzero_icmpUge32Bool(uint32_t a, uint32_t b);
-bool Subzero_icmpSlt32Bool(int32_t a, int32_t b);
-bool Subzero_icmpUlt32Bool(uint32_t a, uint32_t b);
-bool Subzero_icmpSle32Bool(int32_t a, int32_t b);
-bool Subzero_icmpUle32Bool(uint32_t a, uint32_t b);
+namespace Subzero_ {
+bool icmpEq32Bool(int32_t a, int32_t b);
+bool icmpNe32Bool(int32_t a, int32_t b);
+bool icmpSgt32Bool(int32_t a, int32_t b);
+bool icmpUgt32Bool(uint32_t a, uint32_t b);
+bool icmpSge32Bool(int32_t a, int32_t b);
+bool icmpUge32Bool(uint32_t a, uint32_t b);
+bool icmpSlt32Bool(int32_t a, int32_t b);
+bool icmpUlt32Bool(uint32_t a, uint32_t b);
+bool icmpSle32Bool(int32_t a, int32_t b);
+bool icmpUle32Bool(uint32_t a, uint32_t b);
 
-bool Subzero_icmpEq64Bool(int64_t a, int64_t b);
-bool Subzero_icmpNe64Bool(int64_t a, int64_t b);
-bool Subzero_icmpSgt64Bool(int64_t a, int64_t b);
-bool Subzero_icmpUgt64Bool(uint64_t a, uint64_t b);
-bool Subzero_icmpSge64Bool(int64_t a, int64_t b);
-bool Subzero_icmpUge64Bool(uint64_t a, uint64_t b);
-bool Subzero_icmpSlt64Bool(int64_t a, int64_t b);
-bool Subzero_icmpUlt64Bool(uint64_t a, uint64_t b);
-bool Subzero_icmpSle64Bool(int64_t a, int64_t b);
-bool Subzero_icmpUle64Bool(uint64_t a, uint64_t b);
+bool icmpEq64Bool(int64_t a, int64_t b);
+bool icmpNe64Bool(int64_t a, int64_t b);
+bool icmpSgt64Bool(int64_t a, int64_t b);
+bool icmpUgt64Bool(uint64_t a, uint64_t b);
+bool icmpSge64Bool(int64_t a, int64_t b);
+bool icmpUge64Bool(uint64_t a, uint64_t b);
+bool icmpSlt64Bool(int64_t a, int64_t b);
+bool icmpUlt64Bool(uint64_t a, uint64_t b);
+bool icmpSle64Bool(int64_t a, int64_t b);
+bool icmpUle64Bool(uint64_t a, uint64_t b);
+}; // end of namespace Subzero_
 
 int main(int argc, char **argv) {
   static unsigned Values[] = {
@@ -58,25 +60,25 @@ int main(int argc, char **argv) {
     const char *Name;
     FuncType32 FuncSz;
     FuncType32 FuncLlc;
-  } Func32[] = { { "icmpEq32Bool", (FuncType32)Subzero_icmpEq32Bool,
+  } Func32[] = { { "icmpEq32Bool", (FuncType32)Subzero_::icmpEq32Bool,
                    (FuncType32)icmpEq32Bool },
-                 { "icmpNe32Bool", (FuncType32)Subzero_icmpNe32Bool,
+                 { "icmpNe32Bool", (FuncType32)Subzero_::icmpNe32Bool,
                    (FuncType32)icmpNe32Bool },
-                 { "icmpSgt32Bool", (FuncType32)Subzero_icmpSgt32Bool,
+                 { "icmpSgt32Bool", (FuncType32)Subzero_::icmpSgt32Bool,
                    (FuncType32)icmpSgt32Bool },
-                 { "icmpUgt32Bool", (FuncType32)Subzero_icmpUgt32Bool,
+                 { "icmpUgt32Bool", (FuncType32)Subzero_::icmpUgt32Bool,
                    (FuncType32)icmpUgt32Bool },
-                 { "icmpSge32Bool", (FuncType32)Subzero_icmpSge32Bool,
+                 { "icmpSge32Bool", (FuncType32)Subzero_::icmpSge32Bool,
                    (FuncType32)icmpSge32Bool },
-                 { "icmpUge32Bool", (FuncType32)Subzero_icmpUge32Bool,
+                 { "icmpUge32Bool", (FuncType32)Subzero_::icmpUge32Bool,
                    (FuncType32)icmpUge32Bool },
-                 { "icmpSlt32Bool", (FuncType32)Subzero_icmpSlt32Bool,
+                 { "icmpSlt32Bool", (FuncType32)Subzero_::icmpSlt32Bool,
                    (FuncType32)icmpSlt32Bool },
-                 { "icmpUlt32Bool", (FuncType32)Subzero_icmpUlt32Bool,
+                 { "icmpUlt32Bool", (FuncType32)Subzero_::icmpUlt32Bool,
                    (FuncType32)icmpUlt32Bool },
-                 { "icmpSle32Bool", (FuncType32)Subzero_icmpSle32Bool,
+                 { "icmpSle32Bool", (FuncType32)Subzero_::icmpSle32Bool,
                    (FuncType32)icmpSle32Bool },
-                 { "icmpUle32Bool", (FuncType32)Subzero_icmpUle32Bool,
+                 { "icmpUle32Bool", (FuncType32)Subzero_::icmpUle32Bool,
                    (FuncType32)icmpUle32Bool }, };
   const static unsigned NumFunc32 = sizeof(Func32) / sizeof(*Func32);
 
@@ -85,25 +87,25 @@ int main(int argc, char **argv) {
     const char *Name;
     FuncType64 FuncSz;
     FuncType64 FuncLlc;
-  } Func64[] = { { "icmpEq64Bool", (FuncType64)Subzero_icmpEq64Bool,
+  } Func64[] = { { "icmpEq64Bool", (FuncType64)Subzero_::icmpEq64Bool,
                    (FuncType64)icmpEq64Bool },
-                 { "icmpNe64Bool", (FuncType64)Subzero_icmpNe64Bool,
+                 { "icmpNe64Bool", (FuncType64)Subzero_::icmpNe64Bool,
                    (FuncType64)icmpNe64Bool },
-                 { "icmpSgt64Bool", (FuncType64)Subzero_icmpSgt64Bool,
+                 { "icmpSgt64Bool", (FuncType64)Subzero_::icmpSgt64Bool,
                    (FuncType64)icmpSgt64Bool },
-                 { "icmpUgt64Bool", (FuncType64)Subzero_icmpUgt64Bool,
+                 { "icmpUgt64Bool", (FuncType64)Subzero_::icmpUgt64Bool,
                    (FuncType64)icmpUgt64Bool },
-                 { "icmpSge64Bool", (FuncType64)Subzero_icmpSge64Bool,
+                 { "icmpSge64Bool", (FuncType64)Subzero_::icmpSge64Bool,
                    (FuncType64)icmpSge64Bool },
-                 { "icmpUge64Bool", (FuncType64)Subzero_icmpUge64Bool,
+                 { "icmpUge64Bool", (FuncType64)Subzero_::icmpUge64Bool,
                    (FuncType64)icmpUge64Bool },
-                 { "icmpSlt64Bool", (FuncType64)Subzero_icmpSlt64Bool,
+                 { "icmpSlt64Bool", (FuncType64)Subzero_::icmpSlt64Bool,
                    (FuncType64)icmpSlt64Bool },
-                 { "icmpUlt64Bool", (FuncType64)Subzero_icmpUlt64Bool,
+                 { "icmpUlt64Bool", (FuncType64)Subzero_::icmpUlt64Bool,
                    (FuncType64)icmpUlt64Bool },
-                 { "icmpSle64Bool", (FuncType64)Subzero_icmpSle64Bool,
+                 { "icmpSle64Bool", (FuncType64)Subzero_::icmpSle64Bool,
                    (FuncType64)icmpSle64Bool },
-                 { "icmpUle64Bool", (FuncType64)Subzero_icmpUle64Bool,
+                 { "icmpUle64Bool", (FuncType64)Subzero_::icmpUle64Bool,
                    (FuncType64)icmpUle64Bool }, };
   const static unsigned NumFunc64 = sizeof(Func64) / sizeof(*Func64);
 

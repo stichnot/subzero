@@ -78,28 +78,53 @@ IceGlobalContext::IceGlobalContext(llvm::raw_ostream *OsDump,
       OptLevel(OptLevel), TestPrefix(TestPrefix) {}
 
 // In this context, name mangling means to rewrite a symbol using a
-// given prefix.  For a C++ symbol, we'd like to demangle it, prepend
-// the prefix to the original symbol, and remangle it for C++.  For
-// other symbols, just prepend the prefix.
+// given prefix.  For a C++ symbol, nest the original symbol inside
+// the "prefix" namespace.  For other symbols, just prepend the
+// prefix.
 IceString IceGlobalContext::mangleName(const IceString &Name) const {
-  // TODO: This handles only non-nested C++ symbols, and not ones that
-  // begin with "_ZN".  For the latter, we need to rewrite only the
-  // last name component.
+  // An already-nested name like foo::bar() gets pushed down one
+  // level, making it equivalent to Prefix::foo::bar().
+  //   _ZN3foo3barExyz ==> _ZN6Prefix3foo3barExyz
+  // A non-nested but mangled name like bar() gets nested, making it
+  // equivalent to Prefix::bar().
+  //   _Z3barxyz ==> ZN6Prefix3barExyz
+  // An unmangled, extern "C" style name, gets a simple prefix:
+  //   bar ==> Prefixbar
   if (getTestPrefix() == "")
     return Name;
-  IceString Default = getTestPrefix() + Name;
-  uint32_t BaseLength = 0;
-  char Buffer[1 + Name.length()];
-  int ItemsParsed = sscanf(Name.c_str(), "_Z%u%s", &BaseLength, Buffer);
-  if (ItemsParsed != 2)
-    return Default;
-  if (strlen(Buffer) < BaseLength)
-    return Default;
 
-  BaseLength += getTestPrefix().length();
-  char NewNumber[30 + Name.length() + getTestPrefix().length()];
-  sprintf(NewNumber, "_Z%u%s%s", BaseLength, getTestPrefix().c_str(), Buffer);
-  return NewNumber;
+  unsigned PrefixLength = getTestPrefix().length();
+  char NameBase[1 + Name.length()];
+  char NewName[30 + Name.length() + PrefixLength];
+  uint32_t BaseLength = 0;
+
+  int ItemsParsed = sscanf(Name.c_str(), "_ZN%s", NameBase);
+  if (ItemsParsed == 1) {
+    // Transform _ZN3foo3barExyz ==> _ZN6Prefix3foo3barExyz
+    //   (splice in "6Prefix")          ^^^^^^^
+    sprintf(NewName, "_ZN%u%s%s", PrefixLength, getTestPrefix().c_str(),
+            NameBase);
+    return NewName;
+  }
+
+  ItemsParsed = sscanf(Name.c_str(), "_Z%u%s", &BaseLength, NameBase);
+  if (ItemsParsed == 2) {
+    // Transform _Z3barxyz ==> ZN6Prefix3barExyz
+    //                          ^^^^^^^^    ^
+    // (splice in "N6Prefix", and insert "E" after "3bar")
+    char OrigName[Name.length()];
+    char OrigSuffix[Name.length()];
+    strncpy(OrigName, NameBase, BaseLength);
+    OrigName[BaseLength] = '\0';
+    strcpy(OrigSuffix, NameBase + BaseLength);
+    sprintf(NewName, "_ZN%u%s%u%sE%s", PrefixLength, getTestPrefix().c_str(),
+            BaseLength, OrigName, OrigSuffix);
+    return NewName;
+  }
+
+  // Transform bar ==> Prefixbar
+  //                   ^^^^^^
+  return getTestPrefix() + Name;
 }
 
 IceGlobalContext::~IceGlobalContext() {}
