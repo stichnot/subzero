@@ -1,4 +1,5 @@
 #include <stdint.h>
+#include "test_cast.h"
 
 #if 0
 // The bitcode for *ToUi1() needs to be hand-modified to change the

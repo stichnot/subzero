@@ -3,6 +3,8 @@ typedef unsigned long long uint64_t;
 typedef int int32_t;
 typedef unsigned uint32_t;
 
+#include "test_icmp.h"
+
 bool icmpEq32Bool(int32_t a, int32_t b) { return a == b; }
 bool icmpNe32Bool(int32_t a, int32_t b) { return a != b; }
 bool icmpSgt32Bool(int32_t a, int32_t b) { return a > b; }
