@@ -19,75 +19,53 @@
 #include "IceOperand.h"
 #include "IceTargetLowering.h"
 
-class IceConstantPool {
-  // TODO: Try to refactor the getOrAdd*() methods.
+// IceTypePool maps constants of type KeyType (e.g. float) to pointers
+// to type ValueType (e.g. IceConstantFloat).  KeyType values are
+// compared using memcmp() because of potential NaN values in KeyType
+// values.  TODO: allow a custom KeyType comparator for a KeyType
+// containing e.g. a non-pooled string.
+template <typename KeyType, typename ValueType> class IceTypePool {
+  IceTypePool(const IceTypePool &) LLVM_DELETED_FUNCTION;
+  IceTypePool &operator=(const IceTypePool &) LLVM_DELETED_FUNCTION;
+
 public:
-  IceConstantPool(IceGlobalContext *Ctx) : Ctx(Ctx) {}
-  IceConstantRelocatable *getOrAddRelocatable(IceType Type, const void *Handle,
-                                              int64_t Offset,
-                                              const IceString &Name) {
-    uint32_t Index = NameToIndexReloc.translate(
-        KeyTypeReloc(Type, std::pair<IceString, int64_t>(Name, Offset)));
-    if (Index >= RelocatablePool.size()) {
-      RelocatablePool.resize(Index + 1);
-      void *Handle = NULL;
-      RelocatablePool[Index] = IceConstantRelocatable::create(
-          Ctx, Index, Type, Handle, Offset, Name);
+  IceTypePool() {}
+  ValueType *getOrAdd(IceGlobalContext *Ctx, IceType Type, KeyType Key) {
+    uint32_t Index = KeyToIndex.translate(TupleType(Type, Key));
+    if (Index >= Pool.size()) {
+      Pool.resize(Index + 1);
+      Pool[Index] = ValueType::create(Ctx, Type, Key);
     }
-    IceConstantRelocatable *Constant = RelocatablePool[Index];
-    assert(Constant);
-    return Constant;
-  }
-  uint32_t getRelocatableSize() const { return RelocatablePool.size(); }
-  IceConstantRelocatable *getEntry(uint32_t Index) const {
-    assert(Index < RelocatablePool.size());
-    return RelocatablePool[Index];
-  }
-  IceConstantInteger *getOrAddInteger(IceType Type, uint64_t Value) {
-    uint32_t Index = NameToIndexInteger.translate(KeyTypeInteger(Type, Value));
-    if (Index >= IntegerPool.size()) {
-      IntegerPool.resize(Index + 1);
-      IntegerPool[Index] = IceConstantInteger::create(Ctx, Type, Value);
-    }
-    IceConstantInteger *Constant = IntegerPool[Index];
-    assert(Constant);
-    return Constant;
-  }
-  IceConstantFloat *getOrAddFloat(float Value) {
-    uint32_t Index = NameToIndexFloat.translate(Value);
-    if (Index >= FloatPool.size()) {
-      FloatPool.resize(Index + 1);
-      FloatPool[Index] = IceConstantFloat::create(Ctx, IceType_f32, Value);
-    }
-    IceConstantFloat *Constant = FloatPool[Index];
-    assert(Constant);
-    return Constant;
-  }
-  IceConstantDouble *getOrAddDouble(double Value) {
-    uint32_t Index = NameToIndexDouble.translate(Value);
-    if (Index >= DoublePool.size()) {
-      DoublePool.resize(Index + 1);
-      DoublePool[Index] = IceConstantDouble::create(Ctx, IceType_f64, Value);
-    }
-    IceConstantDouble *Constant = DoublePool[Index];
+    ValueType *Constant = Pool[Index];
     assert(Constant);
     return Constant;
   }
 
 private:
-  // KeyTypeReloc is a triple of {Type, Name, Offset}.
-  typedef std::pair<IceType, std::pair<IceString, int64_t> > KeyTypeReloc;
-  typedef std::pair<IceType, int64_t> KeyTypeInteger;
-  IceGlobalContext *Ctx;
-  // Use IceValueTranslation<> to map (Name,Type) pairs to an index.
-  IceValueTranslation<KeyTypeReloc> NameToIndexReloc;
-  IceValueTranslation<KeyTypeInteger> NameToIndexInteger;
-  IceValueTranslation<float> NameToIndexFloat;
-  IceValueTranslation<double> NameToIndexDouble;
-  std::vector<IceConstantRelocatable *> RelocatablePool;
-  std::vector<IceConstantInteger *> IntegerPool;
-  std::vector<IceConstantFloat *> FloatPool;
-  std::vector<IceConstantDouble *> DoublePool;
+  typedef std::pair<IceType, KeyType> TupleType;
+  struct TupleCompare {
+    bool operator()(const TupleType &A, const TupleType &B) {
+      if (A.first != B.first)
+        return A.first < B.first;
+      return memcmp(&A.second, &B.second, sizeof(KeyType)) < 0;
+    }
+  };
+  IceValueTranslation<TupleType, TupleCompare> KeyToIndex;
+  std::vector<ValueType *> Pool;
+};
+
+// The global constant pool bundles individual pools of each type of
+// interest.
+class IceConstantPool {
+  IceConstantPool(const IceConstantPool &) LLVM_DELETED_FUNCTION;
+  IceConstantPool &operator=(const IceConstantPool &) LLVM_DELETED_FUNCTION;
+
+public:
+  IceConstantPool() {}
+  IceTypePool<float, IceConstantFloat> Floats;
+  IceTypePool<double, IceConstantDouble> Doubles;
+  IceTypePool<uint64_t, IceConstantInteger> Integers;
+  IceTypePool<IceRelocatableTuple, IceConstantRelocatable> Relocatables;
 };
 
 IceGlobalContext::IceGlobalContext(llvm::raw_ostream *OsDump,
@@ -96,7 +74,7 @@ IceGlobalContext::IceGlobalContext(llvm::raw_ostream *OsDump,
                                    IceTargetArch TargetArch,
                                    IceOptLevel OptLevel, IceString TestPrefix)
     : StrDump(OsDump), StrEmit(OsEmit), VerboseMask(VerboseMask),
-      ConstantPool(new IceConstantPool(this)), TargetArch(TargetArch),
+      ConstantPool(new IceConstantPool()), TargetArch(TargetArch),
       OptLevel(OptLevel), TestPrefix(TestPrefix) {}
 
 // In this context, name mangling means to rewrite a symbol using a
@@ -128,25 +106,23 @@ IceGlobalContext::~IceGlobalContext() {}
 
 IceConstant *IceGlobalContext::getConstantInt(IceType Type,
                                               uint64_t ConstantInt64) {
-  return ConstantPool->getOrAddInteger(Type, ConstantInt64);
+  return ConstantPool->Integers.getOrAdd(this, Type, ConstantInt64);
 }
 
 IceConstant *IceGlobalContext::getConstantFloat(float ConstantFloat) {
-  return ConstantPool->getOrAddFloat(ConstantFloat);
+  return ConstantPool->Floats.getOrAdd(this, IceType_f32, ConstantFloat);
 }
 
 IceConstant *IceGlobalContext::getConstantDouble(double ConstantDouble) {
-  return ConstantPool->getOrAddDouble(ConstantDouble);
+  return ConstantPool->Doubles.getOrAdd(this, IceType_f64, ConstantDouble);
 }
 
 IceConstant *IceGlobalContext::getConstantSym(IceType Type, const void *Handle,
                                               int64_t Offset,
                                               const IceString &Name,
                                               bool SuppressMangling) {
-  IceConstantRelocatable *Const =
-      ConstantPool->getOrAddRelocatable(Type, Handle, Offset, Name);
-  Const->setSuppressMangling(SuppressMangling);
-  return Const;
+  return ConstantPool->Relocatables.getOrAdd(
+      this, Type, IceRelocatableTuple(Handle, Offset, Name, SuppressMangling));
 }
 
 void IceTimer::printElapsedUs(IceGlobalContext *Ctx,

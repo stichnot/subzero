@@ -127,18 +127,38 @@ typedef IceConstantPrimitive<float, IceOperand::ConstantFloat> IceConstantFloat;
 typedef IceConstantPrimitive<double, IceOperand::ConstantDouble>
 IceConstantDouble;
 
+// IceRelocatableTuple bundles the parameters that are used to
+// construct an IceConstantRelocatable.  It is done this way so that
+// IceConstantRelocatable can fit into the global constant pool
+// template mechanism.
+class IceRelocatableTuple {
+  IceRelocatableTuple &
+  operator=(const IceRelocatableTuple &) LLVM_DELETED_FUNCTION;
+
+public:
+  IceRelocatableTuple(const void *Handle, const int64_t Offset,
+                      const IceString &Name, bool SuppressMangling)
+      : Handle(Handle), Offset(Offset), Name(Name),
+        SuppressMangling(SuppressMangling) {}
+  IceRelocatableTuple(const IceRelocatableTuple &Other)
+      : Handle(Other.Handle), Offset(Other.Offset), Name(Other.Name),
+        SuppressMangling(Other.SuppressMangling) {}
+
+  const void *Handle;
+  const int64_t Offset;
+  const IceString Name;
+  bool SuppressMangling;
+};
+
 // IceConstantRelocatable represents a symbolic constant combined with
 // a fixed offset.
 class IceConstantRelocatable : public IceConstant {
 public:
-  static IceConstantRelocatable *create(IceGlobalContext *Ctx, uint32_t CPIndex,
-                                        IceType Type, const void *Handle,
-                                        int64_t Offset,
-                                        const IceString &Name = "") {
-    return new (Ctx->allocate<IceConstantRelocatable>())
-        IceConstantRelocatable(Type, Handle, Offset, Name, CPIndex);
+  static IceConstantRelocatable *create(IceGlobalContext *Ctx, IceType Type,
+                                        const IceRelocatableTuple &Tuple) {
+    return new (Ctx->allocate<IceConstantRelocatable>()) IceConstantRelocatable(
+        Type, Tuple.Handle, Tuple.Offset, Tuple.Name, Tuple.SuppressMangling);
   }
-  uint32_t getCPIndex() const { return CPIndex; }
   const void *getHandle() const { return Handle; }
   int64_t getOffset() const { return Offset; }
   IceString getName() const { return Name; }
@@ -154,13 +174,12 @@ public:
 
 private:
   IceConstantRelocatable(IceType Type, const void *Handle, int64_t Offset,
-                         const IceString &Name, uint32_t CPIndex)
-      : IceConstant(ConstantRelocatable, Type), CPIndex(CPIndex),
-        Handle(Handle), Offset(Offset), Name(Name), SuppressMangling(false) {}
+                         const IceString &Name, bool SuppressMangling)
+      : IceConstant(ConstantRelocatable, Type), Handle(Handle), Offset(Offset),
+        Name(Name), SuppressMangling(SuppressMangling) {}
   IceConstantRelocatable(const IceConstantRelocatable &) LLVM_DELETED_FUNCTION;
   IceConstantRelocatable &
   operator=(const IceConstantRelocatable &) LLVM_DELETED_FUNCTION;
-  const uint32_t CPIndex;   // index into ICE constant pool
   const void *const Handle; // opaque handle e.g. to LLVM
   const int64_t Offset;     // fixed offset to add
   const IceString Name;     // optional for debug/dump
