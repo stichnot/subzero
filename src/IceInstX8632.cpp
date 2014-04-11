@@ -436,7 +436,14 @@ template <>
 void IceInstX8632Imul::emit(const IceCfg *Cfg, uint32_t Option) const {
   IceOstream &Str = Cfg->getContext()->StrEmit;
   assert(getSrcSize() == 2);
-  if (llvm::isa<IceConstant>(getSrc(1))) {
+  if (getDest()->getType() == IceType_i8) {
+    // The 8-bit version of imul only allows the form "imul r/m8".
+    IceVariable *Src0 = llvm::dyn_cast<IceVariable>(getSrc(0));
+    assert (Src0 && Src0->getRegNum() == IceTargetX8632::Reg_eax);
+    Str << "\timul\t";
+    getSrc(1)->emit(Cfg, Option);
+    Str << "\n";
+  } else if (llvm::isa<IceConstant>(getSrc(1))) {
     Str << "\timul\t";
     getDest()->emit(Cfg, Option);
     Str << ", ";

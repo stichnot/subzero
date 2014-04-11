@@ -840,7 +840,13 @@ void IceTargetX8632::lowerArithmetic(const IceInstArithmetic *Inst) {
       // TODO: Strength-reduce multiplications by a constant,
       // particularly -1 and powers of 2.  Advanced: use lea to
       // multiply by 3, 5, 9.
-      _mov(T, Src0);
+      //
+      // The 8-bit version of imul only allows the form "imul r/m8"
+      // where T must be in eax.
+      if (Dest->getType() == IceType_i8)
+        _mov(T, Src0, Reg_eax);
+      else
+        _mov(T, Src0);
       _imul(T, Src1);
       _mov(Dest, T);
       break;
