@@ -14,7 +14,7 @@ if __name__ == '__main__':
                            help='List of C/C++/.ll files with test functions')
     argparser.add_argument('--driver', required=True,
                            help='Driver program')
-    argparser.add_argument('--target', required=False, default='x8632',
+    argparser.add_argument('--target', required=False, default='X8632',
                            help='Translation target string')
     argparser.add_argument('-O', required=False, default='2', dest='optlevel',
                            choices=['m1', '-1', '0', '1', '2'],
