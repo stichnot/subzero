@@ -64,6 +64,7 @@ public:
     Reg_ebp = Reg_eax + 5,
     Reg_esi = Reg_eax + 6,
     Reg_edi = Reg_eax + 7,
+    Reg_ah, // special hack for 8-bit div instruction
     Reg_xmm0,
     Reg_xmm1 = Reg_xmm0 + 1,
     Reg_xmm2 = Reg_xmm0 + 2,

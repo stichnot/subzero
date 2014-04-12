@@ -182,6 +182,7 @@ void IceTargetX8632::translateOm1() {
 
 IceString IceTargetX8632::RegNames[] = { "eax",  "ecx",  "edx",  "ebx",
                                          "esp",  "ebp",  "esi",  "edi",
+                                         "???",
                                          "xmm0", "xmm1", "xmm2", "xmm3",
                                          "xmm4", "xmm5", "xmm6", "xmm7" };
 
@@ -199,7 +200,7 @@ IceVariable *IceTargetX8632::getPhysicalRegister(uint32_t RegNum) {
 
 IceString IceTargetX8632::getRegName(uint32_t RegNum, IceType Type) const {
   assert(RegNum < Reg_NUM);
-  static IceString RegNames8[] = { "al", "cl", "dl", "bl" };
+  static IceString RegNames8[] = { "al", "cl", "dl", "bl", "??", "??", "??", "??", "ah" };
   static IceString RegNames16[] = { "ax", "cx", "dx", "bx",
                                     "sp", "bp", "si", "di" };
   switch (Type) {
@@ -871,13 +872,24 @@ void IceTargetX8632::lowerArithmetic(const IceInstArithmetic *Inst) {
       _sar(T, Src1);
       _mov(Dest, T);
       break;
-    case IceInstArithmetic::Udiv: {
-      IceConstant *Zero = Ctx->getConstantInt(IceType_i32, 0);
-      _mov(T, Src0, Reg_eax);
-      _mov(T_edx, Zero, Reg_edx);
-      _div(T, Src1, T_edx);
-      _mov(Dest, T);
-    } break;
+    case IceInstArithmetic::Udiv:
+      if (Dest->getType() == IceType_i8) {
+        IceVariable *T_ah = NULL;
+        IceConstant *Zero = Ctx->getConstantInt(IceType_i8, 0);
+        _mov(T, Src0, Reg_eax);
+        _mov(T_ah, Zero, Reg_ah);
+        _div(T_ah, Src1, T);
+        Context.insert(IceInstFakeUse::create(Cfg, T_ah));
+        _mov(Dest, T);
+      } else {
+        // TODO: fix for 8-bit, see Urem
+        IceConstant *Zero = Ctx->getConstantInt(IceType_i32, 0);
+        _mov(T, Src0, Reg_eax);
+        _mov(T_edx, Zero, Reg_edx);
+        _div(T, Src1, T_edx);
+        _mov(Dest, T);
+      }
+      break;
     case IceInstArithmetic::Sdiv:
       T_edx = makeReg(IceType_i32, Reg_edx);
       _mov(T, Src0, Reg_eax);
@@ -885,14 +897,22 @@ void IceTargetX8632::lowerArithmetic(const IceInstArithmetic *Inst) {
       _idiv(T, Src1, T_edx);
       _mov(Dest, T);
       break;
-    case IceInstArithmetic::Urem: {
-      IceConstant *Zero = Ctx->getConstantInt(IceType_i32, 0);
-      _mov(T_edx, Zero, Reg_edx);
-      _mov(T, Src0, Reg_eax);
-      _mov(T_edx, Zero);
-      _div(T_edx, Src1, T);
-      _mov(Dest, T_edx);
-    } break;
+    case IceInstArithmetic::Urem:
+      if (Dest->getType() == IceType_i8) {
+        IceVariable *T_ah = NULL;
+        IceConstant *Zero = Ctx->getConstantInt(IceType_i8, 0);
+        _mov(T, Src0, Reg_eax);
+        _mov(T_ah, Zero, Reg_ah);
+        _div(T_ah, Src1, T);
+        _mov(Dest, T_ah);
+      } else {
+        IceConstant *Zero = Ctx->getConstantInt(IceType_i32, 0);
+        _mov(T_edx, Zero, Reg_edx);
+        _mov(T, Src0, Reg_eax);
+        _div(T_edx, Src1, T);
+        _mov(Dest, T_edx);
+      }
+      break;
     case IceInstArithmetic::Srem:
       T_edx = makeReg(IceType_i32, Reg_edx);
       _mov(T, Src0, Reg_eax);
