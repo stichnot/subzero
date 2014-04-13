@@ -180,11 +180,10 @@ void IceTargetX8632::translateOm1() {
   Cfg->dump();
 }
 
-IceString IceTargetX8632::RegNames[] = { "eax",  "ecx",  "edx",  "ebx",
-                                         "esp",  "ebp",  "esi",  "edi",
-                                         "???",
-                                         "xmm0", "xmm1", "xmm2", "xmm3",
-                                         "xmm4", "xmm5", "xmm6", "xmm7" };
+IceString IceTargetX8632::RegNames[] = { "eax",  "ecx",  "edx",  "ebx",  "esp",
+                                         "ebp",  "esi",  "edi",  "???",  "xmm0",
+                                         "xmm1", "xmm2", "xmm3", "xmm4", "xmm5",
+                                         "xmm6", "xmm7" };
 
 IceVariable *IceTargetX8632::getPhysicalRegister(uint32_t RegNum) {
   assert(RegNum < PhysicalRegisters.size());
@@ -200,7 +199,8 @@ IceVariable *IceTargetX8632::getPhysicalRegister(uint32_t RegNum) {
 
 IceString IceTargetX8632::getRegName(uint32_t RegNum, IceType Type) const {
   assert(RegNum < Reg_NUM);
-  static IceString RegNames8[] = { "al", "cl", "dl", "bl", "??", "??", "??", "??", "ah" };
+  static IceString RegNames8[] = { "al", "cl", "dl", "bl", "??",
+                                   "??", "??", "??", "ah" };
   static IceString RegNames16[] = { "ax", "cx", "dx", "bx",
                                     "sp", "bp", "si", "di" };
   switch (Type) {
@@ -1291,6 +1291,11 @@ void IceTargetX8632::lowerCast(const IceInstCast *Inst) {
     }
     break;
   case IceInstCast::Bitcast:
+    if (Dest->getType() == Src0RM->getType()) {
+      IceInstAssign *Assign = IceInstAssign::create(Cfg, Dest, Src0RM);
+      lowerAssign(Assign);
+      return;
+    }
     switch (Dest->getType()) {
     default:
       assert(0 && "Unexpected Bitcast dest type");
@@ -1633,7 +1638,8 @@ void computeAddressOpt(IceCfg *Cfg, IceVariable *&Base, IceVariable *&Index,
 
     // Index==NULL && Base is Base=Var1+Var2 ==>
     //   set Base=Var1, Index=Var2, Shift=0
-    IceOperand *BaseOperand1 = BaseInst ? BaseInst->getSrc(1) : NULL;
+    IceOperand *BaseOperand1 =
+        BaseInst && BaseInst->getSrcSize() >= 2 ? BaseInst->getSrc(1) : NULL;
     IceVariable *BaseVariable1 =
         llvm::dyn_cast_or_null<IceVariable>(BaseOperand1);
     if (Index == NULL && isAdd(BaseInst) && BaseVariable0 && BaseVariable1 &&

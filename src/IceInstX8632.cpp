@@ -439,7 +439,7 @@ void IceInstX8632Imul::emit(const IceCfg *Cfg, uint32_t Option) const {
   if (getDest()->getType() == IceType_i8) {
     // The 8-bit version of imul only allows the form "imul r/m8".
     IceVariable *Src0 = llvm::dyn_cast<IceVariable>(getSrc(0));
-    assert (Src0 && Src0->getRegNum() == IceTargetX8632::Reg_eax);
+    assert(Src0 && Src0->getRegNum() == IceTargetX8632::Reg_eax);
     Str << "\timul\t";
     getSrc(1)->emit(Cfg, Option);
     Str << "\n";
