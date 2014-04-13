@@ -1,6 +1,35 @@
 #include <stdint.h>
 #include "test_cast.h"
 
+template <typename FromType, typename ToType>
+class Caster {
+public:
+  static ToType __attribute__((noinline)) cast(FromType a) { return (ToType) a; }
+};
+
+template <typename ToType>
+class CasterCaster {
+  static ToType f(bool a) { return Caster<bool, ToType>::cast(a); }
+  static ToType f(int8_t a) { return Caster<int8_t, ToType>::cast(a); }
+  static ToType f(uint8_t a) { return Caster<uint8_t, ToType>::cast(a); }
+  static ToType f(int16_t a) { return Caster<int16_t, ToType>::cast(a); }
+  static ToType f(uint16_t a) { return Caster<uint16_t, ToType>::cast(a); }
+  static ToType f(int32_t a) { return Caster<int32_t, ToType>::cast(a); }
+  static ToType f(uint32_t a) { return Caster<uint32_t, ToType>::cast(a); }
+  static ToType f(int64_t a) { return Caster<int64_t, ToType>::cast(a); }
+  static ToType f(uint64_t a) { return Caster<uint64_t, ToType>::cast(a); }
+};
+
+template class CasterCaster<bool>;
+template class CasterCaster<int8_t>;
+template class CasterCaster<uint8_t>;
+template class CasterCaster<int16_t>;
+template class CasterCaster<uint16_t>;
+template class CasterCaster<int32_t>;
+template class CasterCaster<uint32_t>;
+template class CasterCaster<int64_t>;
+template class CasterCaster<uint64_t>;
+
 #if 0
 // The bitcode for *ToUi1() needs to be hand-modified to change the
 // icmp back to trunc or fptoui.
