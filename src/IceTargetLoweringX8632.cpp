@@ -1294,6 +1294,7 @@ void IceTargetX8632::lowerCast(const IceInstCast *Inst) {
     if (Dest->getType() == Src0RM->getType()) {
       IceInstAssign *Assign = IceInstAssign::create(Cfg, Dest, Src0RM);
       lowerAssign(Assign);
+      assert(0 && "Pointer bitcasts aren't lowered correctly.");
       return;
     }
     switch (Dest->getType()) {
