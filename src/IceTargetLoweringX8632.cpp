@@ -321,7 +321,8 @@ void IceTargetX8632::addProlog(IceCfgNode *Node) {
   for (uint32_t i = 0; i < CalleeSaves.size(); ++i) {
     if (CalleeSaves[i] && RegsUsed[i]) {
       PreservedRegsSizeBytes += 4;
-      _push(getPhysicalRegister(i));
+      bool SuppressStackAdjustment = true;
+      _push(getPhysicalRegister(i), SuppressStackAdjustment);
     }
   }
 
@@ -332,7 +333,8 @@ void IceTargetX8632::addProlog(IceCfgNode *Node) {
     PreservedRegsSizeBytes += 4;
     IceVariable *ebp = getPhysicalRegister(Reg_ebp);
     IceVariable *esp = getPhysicalRegister(Reg_esp);
-    _push(ebp);
+    bool SuppressStackAdjustment = true;
+    _push(ebp, SuppressStackAdjustment);
     _mov(ebp, esp);
   }
 

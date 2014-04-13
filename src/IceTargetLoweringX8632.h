@@ -210,8 +210,9 @@ protected:
   void _pop(IceVariable *Dest) {
     Context.insert(IceInstX8632Pop::create(Cfg, Dest));
   }
-  void _push(IceOperand *Src0) {
-    Context.insert(IceInstX8632Push::create(Cfg, Src0));
+  void _push(IceOperand *Src0, bool SuppressStackAdjustment = false) {
+    Context.insert(
+        IceInstX8632Push::create(Cfg, Src0, SuppressStackAdjustment));
   }
   void _ret(IceVariable *Src0 = NULL) {
     Context.insert(IceInstX8632Ret::create(Cfg, Src0));

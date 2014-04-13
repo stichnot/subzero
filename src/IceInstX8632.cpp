@@ -187,8 +187,10 @@ IceInstX8632Fstp::IceInstX8632Fstp(IceCfg *Cfg, IceVariable *Dest)
 IceInstX8632Pop::IceInstX8632Pop(IceCfg *Cfg, IceVariable *Dest)
     : IceInstX8632(Cfg, IceInstX8632::Pop, 1, Dest) {}
 
-IceInstX8632Push::IceInstX8632Push(IceCfg *Cfg, IceOperand *Source)
-    : IceInstX8632(Cfg, IceInstX8632::Push, 1, NULL) {
+IceInstX8632Push::IceInstX8632Push(IceCfg *Cfg, IceOperand *Source,
+                                   bool SuppressStackAdjustment)
+    : IceInstX8632(Cfg, IceInstX8632::Push, 1, NULL),
+      SuppressStackAdjustment(SuppressStackAdjustment) {
   addSource(Source);
 }
 
@@ -821,7 +823,8 @@ void IceInstX8632Push::emit(const IceCfg *Cfg, uint32_t Option) const {
     // The xmm registers can't be directly pushed, so we fake it by
     // decrementing esp and then storing to [esp].
     Str << "\tsub\tesp, " << iceTypeWidthInBytes(Type) << "\n";
-    Cfg->getTarget()->updateStackAdjustment(iceTypeWidthInBytes(Type));
+    if (!SuppressStackAdjustment)
+      Cfg->getTarget()->updateStackAdjustment(iceTypeWidthInBytes(Type));
     Str << "\tmov" << (Type == IceType_f32 ? "ss\td" : "sd\tq")
         << "word ptr [esp], ";
     getSrc(0)->emit(Cfg, Option);
@@ -835,7 +838,8 @@ void IceInstX8632Push::emit(const IceCfg *Cfg, uint32_t Option) const {
     Str << "\tpush\t";
     getSrc(0)->emit(Cfg, Option);
     Str << "\n";
-    Cfg->getTarget()->updateStackAdjustment(4);
+    if (!SuppressStackAdjustment)
+      Cfg->getTarget()->updateStackAdjustment(4);
   }
 }
 

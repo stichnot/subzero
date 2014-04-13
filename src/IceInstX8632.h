@@ -640,18 +640,21 @@ private:
 
 class IceInstX8632Push : public IceInstX8632 {
 public:
-  static IceInstX8632Push *create(IceCfg *Cfg, IceOperand *Source) {
+  static IceInstX8632Push *create(IceCfg *Cfg, IceOperand *Source,
+                                  bool SuppressStackAdjustment) {
     return new (Cfg->allocate<IceInstX8632Push>())
-        IceInstX8632Push(Cfg, Source);
+        IceInstX8632Push(Cfg, Source, SuppressStackAdjustment);
   }
   virtual void emit(const IceCfg *Cfg, uint32_t Option) const;
   virtual void dump(const IceCfg *Cfg) const;
   static bool classof(const IceInst *Inst) { return isClassof(Inst, Push); }
 
 private:
-  IceInstX8632Push(IceCfg *Cfg, IceOperand *Source);
+  IceInstX8632Push(IceCfg *Cfg, IceOperand *Source,
+                   bool SuppressStackAdjustment);
   IceInstX8632Push(const IceInstX8632Push &) LLVM_DELETED_FUNCTION;
   IceInstX8632Push &operator=(const IceInstX8632Push &) LLVM_DELETED_FUNCTION;
+  bool SuppressStackAdjustment;
 };
 
 class IceInstX8632Ret : public IceInstX8632 {
