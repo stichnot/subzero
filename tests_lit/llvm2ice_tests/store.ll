@@ -1,4 +1,4 @@
-; RUN: %llvm2ice %s -verbose inst | FileCheck %s
+; RUN: %llvm2ice %s --verbose inst | FileCheck %s
 ; RUN: %llvm2ice --verbose none %s | FileCheck --check-prefix=ERRORS %s
 ; RUN: %szdiff --llvm2ice=%llvm2ice %s | FileCheck --check-prefix=DUMP %s
 
