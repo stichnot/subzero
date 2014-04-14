@@ -248,6 +248,13 @@ void IceTargetX8632::setArgOffsetAndCopy(IceVariable *Arg,
 }
 
 void IceTargetX8632::addProlog(IceCfgNode *Node) {
+  // If SimpleCoalescing is false, each variable without a register
+  // gets its own unique stack slot, which leads to large stack
+  // frames.  If SimpleCoalescing is true, then each "global" variable
+  // without a register gets its own slot, but "local" variable slots
+  // are reused across basic blocks.  E.g., if A and B are local to
+  // block 1 and C is local to block 2, then C may share a slot with A
+  // or B.
   const bool SimpleCoalescing = true;
   int32_t InArgsSizeBytes = 0;
   int32_t RetIpSizeBytes = 4;
