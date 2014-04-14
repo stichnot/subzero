@@ -288,8 +288,6 @@ void IceTargetX8632::addProlog(IceCfgNode *Node) {
   for (IceVarList::const_iterator I = Variables.begin(), E = Variables.end();
        I != E; ++I) {
     IceVariable *Var = *I;
-    if (!Var)
-      continue;
     if (Var->hasReg()) {
       RegsUsed[Var->getRegNum()] = true;
       continue;
@@ -379,8 +377,6 @@ void IceTargetX8632::addProlog(IceCfgNode *Node) {
   for (IceVarList::const_iterator I = Variables.begin(), E = Variables.end();
        I != E; ++I) {
     IceVariable *Var = *I;
-    if (!Var)
-      continue;
     if (Var->hasReg()) {
       RegsUsed[Var->getRegNum()] = true;
       continue;
