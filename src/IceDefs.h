@@ -41,8 +41,8 @@ class IceGlobalContext;
 class Inst;
 class InstPhi;
 class InstTarget;
-class IceLiveRange;
-class IceLiveness;
+class LiveRange;
+class Liveness;
 class IceOperand;
 class IceTargetLowering;
 class IceVariable;
@@ -56,22 +56,22 @@ typedef std::vector<IceOperand *> IceOpList;
 typedef std::vector<IceVariable *> IceVarList;
 typedef std::vector<CfgNode *> IceNodeList;
 
-enum IceLivenessMode {
+enum LivenessMode {
   // Lightweight version of live-range-end calculation.  Marks the
   // last use of variables whose definition and uses are completely
   // within a single block.
-  IceLiveness_LREndLightweight,
+  Liveness_LREndLightweight,
 
   // Full version of live-range-end calculation.  Marks the last uses
   // of variables based on dataflow analysis.  Records the set of
   // live-in and live-out variables for each block.  Identifies and
   // deletes dead instructions (primarily stores).
-  IceLiveness_LREndFull,
+  Liveness_LREndFull,
 
-  // In addition to IceLiveness_LREndFull, also calculate the complete
+  // In addition to Liveness_LREndFull, also calculate the complete
   // live range for each variable in a form suitable for interference
   // calculation and register allocation.
-  IceLiveness_RangesFull
+  Liveness_RangesFull
 };
 
 // This is a convenience templated class that provides a mapping

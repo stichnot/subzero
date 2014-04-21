@@ -73,7 +73,7 @@ public:
 
   // Miscellaneous accessors.
   IceTargetLowering *getTarget() const { return Target.get(); }
-  IceLiveness *getLiveness() const { return Liveness.get(); }
+  Liveness *getLiveness() const { return Live.get(); }
   bool hasComputedFrame() const;
 
   // Passes over the CFG.
@@ -89,7 +89,7 @@ public:
   void doAddressOpt();
   void genCode();
   void genFrame();
-  void liveness(IceLivenessMode Mode);
+  void liveness(LivenessMode Mode);
   bool validateLiveness() const;
 
   // Manage the CurrentNode field, which is used for validating the
@@ -130,7 +130,7 @@ private:
   int32_t NextInstNumber;
   IceVarList Variables;
   IceVarList Args; // subset of Variables, in argument order
-  llvm::OwningPtr<IceLiveness> Liveness;
+  llvm::OwningPtr<Liveness> Live;
   llvm::OwningPtr<IceTargetLowering> Target;
 
   // CurrentNode is maintained during dumping/emitting just for

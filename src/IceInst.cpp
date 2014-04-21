@@ -74,8 +74,8 @@ void Inst::updateVars(CfgNode *Node) {
   }
 }
 
-void Inst::liveness(IceLivenessMode Mode, int32_t InstNumber,
-                    llvm::BitVector &Live, IceLiveness *Liveness,
+void Inst::liveness(LivenessMode Mode, int32_t InstNumber,
+                    llvm::BitVector &Live, Liveness *Liveness,
                     const CfgNode *Node) {
   if (isDeleted())
     return;
@@ -83,7 +83,7 @@ void Inst::liveness(IceLivenessMode Mode, int32_t InstNumber,
     return;
 
   // For lightweight liveness, do the simple calculation and return.
-  if (Mode == IceLiveness_LREndLightweight) {
+  if (Mode == Liveness_LREndLightweight) {
     resetLastUses();
     uint32_t VarIndex = 0;
     for (uint32_t I = 0; I < getSrcSize(); ++I) {
@@ -271,7 +271,7 @@ IceOperand *InstPhi::getOperandForTarget(CfgNode *Target) const {
 // predecessor edge.  Doesn't mark the operand as live if the Phi
 // instruction is dead or deleted.
 void InstPhi::livenessPhiOperand(llvm::BitVector &Live, CfgNode *Target,
-                                 IceLiveness *Liveness) {
+                                 Liveness *Liveness) {
   if (isDeleted() || Dead)
     return;
   for (uint32_t I = 0; I < getSrcSize(); ++I) {

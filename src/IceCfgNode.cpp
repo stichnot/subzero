@@ -237,14 +237,14 @@ void CfgNode::genCode() {
 // incoming liveness changed from before, false if it stayed the same.
 // (If it changes, the node's predecessors need to be processed
 // again.)
-bool CfgNode::liveness(IceLivenessMode Mode, IceLiveness *Liveness) {
+bool CfgNode::liveness(LivenessMode Mode, Liveness *Liveness) {
   uint32_t NumVars;
-  if (Mode == IceLiveness_LREndLightweight)
+  if (Mode == Liveness_LREndLightweight)
     NumVars = Cfg->getNumVariables();
   else
     NumVars = Liveness->getLocalSize(this);
   llvm::BitVector Live(NumVars);
-  if (Mode != IceLiveness_LREndLightweight) {
+  if (Mode != Liveness_LREndLightweight) {
     // Mark the beginning and ending of each variable's live range
     // with the sentinel instruction number 0.
     std::vector<int> &LiveBegin = Liveness->getLiveBegin(this);
@@ -288,7 +288,7 @@ bool CfgNode::liveness(IceLivenessMode Mode, IceLiveness *Liveness) {
   // by shrinking the Live vector and then testing it against the
   // pre-shrunk version.  (The shrinking is required, but the
   // validation is not.)
-  if (Mode != IceLiveness_LREndLightweight) {
+  if (Mode != Liveness_LREndLightweight) {
     llvm::BitVector LiveOrig = Live;
     Live.resize(Liveness->getGlobalSize());
     // Non-global arguments in the entry node are allowed to be live on
@@ -312,7 +312,7 @@ bool CfgNode::liveness(IceLivenessMode Mode, IceLiveness *Liveness) {
   }
 
   bool Changed = false;
-  if (Mode != IceLiveness_LREndLightweight) {
+  if (Mode != Liveness_LREndLightweight) {
     llvm::BitVector &LiveIn = Liveness->getLiveIn(this);
     // Add in current LiveIn
     Live |= LiveIn;
@@ -332,7 +332,7 @@ bool CfgNode::liveness(IceLivenessMode Mode, IceLiveness *Liveness) {
 // assignment to the phi-based temporary is in a different basic
 // block, and there is a single read that ends the live in the basic
 // block that contained the actual phi instruction.
-void CfgNode::livenessPostprocess(IceLivenessMode Mode, IceLiveness *Liveness) {
+void CfgNode::livenessPostprocess(LivenessMode Mode, Liveness *Liveness) {
   int32_t FirstInstNum = 0;
   int32_t LastInstNum = 0;
   // Process phis in any order.  Process only Dest operands.
@@ -360,7 +360,7 @@ void CfgNode::livenessPostprocess(IceLivenessMode Mode, IceLiveness *Liveness) {
     LastInstNum = Inst->getNumber();
     // Create fake live ranges for a Kill instruction, but only if the
     // linked instruction is still alive.
-    if (Mode == IceLiveness_RangesFull) {
+    if (Mode == Liveness_RangesFull) {
       if (InstFakeKill *Kill = llvm::dyn_cast<InstFakeKill>(Inst)) {
         if (!Kill->getLinked()->isDeleted()) {
           uint32_t NumSrcs = Inst->getSrcSize();
@@ -373,7 +373,7 @@ void CfgNode::livenessPostprocess(IceLivenessMode Mode, IceLiveness *Liveness) {
       }
     }
   }
-  if (Mode != IceLiveness_RangesFull)
+  if (Mode != Liveness_RangesFull)
     return;
 
   uint32_t NumVars = Liveness->getLocalSize(this);
@@ -441,7 +441,7 @@ void CfgNode::emit(IceCfg *Cfg, uint32_t Option) const {
 void CfgNode::dump(IceCfg *Cfg) const {
   Cfg->setCurrentNode(this);
   IceOstream &Str = Cfg->getContext()->StrDump;
-  IceLiveness *Liveness = Cfg->getLiveness();
+  Liveness *Liveness = Cfg->getLiveness();
   if (Cfg->getContext()->isVerbose(IceV_Instructions)) {
     Str << getName() << ":\n";
   }

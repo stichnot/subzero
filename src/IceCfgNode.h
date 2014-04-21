@@ -58,8 +58,8 @@ public:
   void deletePhis();
   void doAddressOpt();
   void genCode();
-  bool liveness(IceLivenessMode Mode, IceLiveness *Liveness);
-  void livenessPostprocess(IceLivenessMode Mode, IceLiveness *Liveness);
+  bool liveness(LivenessMode Mode, Liveness *Liveness);
+  void livenessPostprocess(LivenessMode Mode, Liveness *Liveness);
   void emit(IceCfg *Cfg, uint32_t Option) const;
   void dump(IceCfg *Cfg) const;
 

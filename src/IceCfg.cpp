@@ -28,7 +28,7 @@ bool IceCfg::HasEmittedFirstMethod = false;
 IceCfg::IceCfg(IceGlobalContext *Ctx)
     : Ctx(Ctx), Name(""), Type(IceType_void), IsInternal(false),
       HasError(false), ErrorMessage(""), Entry(NULL), NextInstNumber(1),
-      Liveness(NULL),
+      Live(NULL),
       Target(IceTargetLowering::createLowering(Ctx->getTargetArch(), this)),
       CurrentNode(NULL) {
   GlobalStr = &Ctx->StrDump;
@@ -174,8 +174,8 @@ void IceCfg::genFrame() {
   }
 }
 
-void IceCfg::liveness(IceLivenessMode Mode) {
-  if (Mode == IceLiveness_LREndLightweight) {
+void IceCfg::liveness(LivenessMode Mode) {
+  if (Mode == Liveness_LREndLightweight) {
     // Lightweight liveness is a quick single pass and doesn't need to
     // iterate until convergence.
     for (IceNodeList::iterator I = Nodes.begin(), E = Nodes.end(); I != E;
@@ -185,8 +185,8 @@ void IceCfg::liveness(IceLivenessMode Mode) {
     return;
   }
 
-  Liveness.reset(new IceLiveness(this, Mode));
-  Liveness->init();
+  Live.reset(new Liveness(this, Mode));
+  Live->init();
   llvm::BitVector NeedToProcess(Nodes.size());
   // Mark all nodes as needing to be processed.
   for (IceNodeList::iterator I = Nodes.begin(), E = Nodes.end(); I != E; ++I) {
@@ -214,7 +214,7 @@ void IceCfg::liveness(IceLivenessMode Mode) {
       }
     }
   }
-  if (Mode == IceLiveness_RangesFull) {
+  if (Mode == Liveness_RangesFull) {
     // Reset each variable's live range.
     for (IceVarList::const_iterator I = Variables.begin(), E = Variables.end();
          I != E; ++I) {
@@ -228,7 +228,7 @@ void IceCfg::liveness(IceLivenessMode Mode) {
   for (IceNodeList::iterator I = Nodes.begin(), E = Nodes.end(); I != E; ++I) {
     (*I)->livenessPostprocess(Mode, getLiveness());
   }
-  if (Mode == IceLiveness_RangesFull) {
+  if (Mode == Liveness_RangesFull) {
     // Special treatment for live in-args.  Their liveness needs to
     // extend beyond the beginning of the function, otherwise an arg
     // whose only use is in the first instruction will end up having
@@ -237,25 +237,25 @@ void IceCfg::liveness(IceLivenessMode Mode) {
     // "r=arg1+arg2", both args may be assigned the same register.
     for (uint32_t I = 0; I < Args.size(); ++I) {
       IceVariable *Arg = Args[I];
-      if (!Liveness->getLiveRange(Arg).isEmpty()) {
+      if (!Live->getLiveRange(Arg).isEmpty()) {
         // Add live range [-1,0) with weight 0.
-        Liveness->addLiveRange(Arg, -1, 0, 0);
+        Live->addLiveRange(Arg, -1, 0, 0);
       }
       IceVariable *Lo = Arg->getLo();
-      if (Lo && !Liveness->getLiveRange(Lo).isEmpty())
-        Liveness->addLiveRange(Lo, -1, 0, 0);
+      if (Lo && !Live->getLiveRange(Lo).isEmpty())
+        Live->addLiveRange(Lo, -1, 0, 0);
       IceVariable *Hi = Arg->getHi();
-      if (Hi && !Liveness->getLiveRange(Hi).isEmpty())
-        Liveness->addLiveRange(Hi, -1, 0, 0);
+      if (Hi && !Live->getLiveRange(Hi).isEmpty())
+        Live->addLiveRange(Hi, -1, 0, 0);
     }
-    // Copy IceLiveness::LiveRanges into individual variables.  TODO:
+    // Copy Liveness::LiveRanges into individual variables.  TODO:
     // Remove IceVariable::LiveRange and redirect to
-    // IceLiveness::LiveRanges.  TODO: make sure IceVariable weights
+    // Liveness::LiveRanges.  TODO: make sure IceVariable weights
     // are applied properly.
     uint32_t NumVars = Variables.size();
     for (uint32_t i = 0; i < NumVars; ++i) {
       IceVariable *Var = Variables[i];
-      Var->setLiveRange(Liveness->getLiveRange(Var));
+      Var->setLiveRange(Live->getLiveRange(Var));
       if (Var->getWeight().isInf())
         Var->setLiveRangeInfiniteWeight();
       setCurrentNode(NULL);

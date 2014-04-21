@@ -82,8 +82,8 @@ public:
   // basic blocks, i.e. used in a different block from their definition.
   void updateVars(CfgNode *Node);
 
-  void liveness(IceLivenessMode Mode, int32_t InstNumber, llvm::BitVector &Live,
-                IceLiveness *Liveness, const CfgNode *Node);
+  void liveness(LivenessMode Mode, int32_t InstNumber, llvm::BitVector &Live,
+                Liveness *Liveness, const CfgNode *Node);
   virtual void emit(const IceCfg *Cfg, uint32_t Option) const;
   virtual void dump(const IceCfg *Cfg) const;
   virtual void dumpExtras(const IceCfg *Cfg) const;
@@ -430,7 +430,7 @@ public:
   void addArgument(IceOperand *Source, CfgNode *Label);
   IceOperand *getOperandForTarget(CfgNode *Target) const;
   void livenessPhiOperand(llvm::BitVector &Live, CfgNode *Target,
-                          IceLiveness *Liveness);
+                          Liveness *Liveness);
   Inst *lower(IceCfg *Cfg, CfgNode *Node);
   virtual void dump(const IceCfg *Cfg) const;
   static bool classof(const Inst *Inst) { return Inst->getKind() == Phi; }

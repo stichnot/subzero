@@ -29,7 +29,7 @@ namespace Ice {
 // two interfering variables to share the same register in certain
 // cases.
 //
-// Requires running IceCfg::liveness(IceLiveness_RangesFull) in
+// Requires running IceCfg::liveness(Liveness_RangesFull) in
 // preparation.  Results are assigned to IceVariable::RegNum for each
 // IceVariable.
 void IceLinearScan::scan(const llvm::SmallBitVector &RegMaskFull) {
@@ -61,7 +61,7 @@ void IceLinearScan::scan(const llvm::SmallBitVector &RegMaskFull) {
     // it was never referenced.
     if (Var->getLiveRange().isEmpty())
       continue;
-    Unhandled.insert(IceLiveRangeWrapper(Var));
+    Unhandled.insert(LiveRangeWrapper(Var));
     if (Var->hasReg()) {
       Var->setRegNumTmp(Var->getRegNum());
       Var->setLiveRangeInfiniteWeight();
@@ -80,7 +80,7 @@ void IceLinearScan::scan(const llvm::SmallBitVector &RegMaskFull) {
   UnorderedRanges::iterator Next;
 
   while (!Unhandled.empty()) {
-    IceLiveRangeWrapper Cur = *Unhandled.begin();
+    LiveRangeWrapper Cur = *Unhandled.begin();
     Unhandled.erase(Unhandled.begin());
     if (Cfg->getContext()->isVerbose(IceV_LinearScan)) {
       Str << "\nConsidering  ";
@@ -115,7 +115,7 @@ void IceLinearScan::scan(const llvm::SmallBitVector &RegMaskFull) {
          I = Next) {
       Next = I;
       ++Next;
-      IceLiveRangeWrapper Item = *I;
+      LiveRangeWrapper Item = *I;
       bool Moved = false;
       if (Item.endsBefore(Cur)) {
         // Move Item from Active to Handled list.
@@ -152,7 +152,7 @@ void IceLinearScan::scan(const llvm::SmallBitVector &RegMaskFull) {
          I != E; I = Next) {
       Next = I;
       ++Next;
-      IceLiveRangeWrapper Item = *I;
+      LiveRangeWrapper Item = *I;
       if (Item.endsBefore(Cur)) {
         // Move Item from Inactive to Handled list.
         if (Cfg->getContext()->isVerbose(IceV_LinearScan)) {
@@ -191,7 +191,7 @@ void IceLinearScan::scan(const llvm::SmallBitVector &RegMaskFull) {
     for (UnorderedRanges::const_iterator I = Inactive.begin(),
                                          E = Inactive.end();
          I != E; ++I) {
-      IceLiveRangeWrapper Item = *I;
+      LiveRangeWrapper Item = *I;
       if (Item.overlaps(Cur)) {
         int32_t RegNum = Item.Var->getRegNumTmp();
         // Don't assert(Free[RegNum]) because in theory (though
@@ -209,7 +209,7 @@ void IceLinearScan::scan(const llvm::SmallBitVector &RegMaskFull) {
     for (OrderedRanges::const_iterator I = Unhandled.begin(),
                                        E = Unhandled.end();
          I != E && !Cur.endsBefore(*I); ++I) {
-      IceLiveRangeWrapper Item = *I;
+      LiveRangeWrapper Item = *I;
       if (Item.Var->hasReg() && Item.overlaps(Cur)) {
         Free[Item.Var->getRegNum()] = false; // Note: getRegNum not getRegNumTmp
       }
@@ -263,7 +263,7 @@ void IceLinearScan::scan(const llvm::SmallBitVector &RegMaskFull) {
       // Check Active ranges.
       for (UnorderedRanges::const_iterator I = Active.begin(), E = Active.end();
            I != E; ++I) {
-        IceLiveRangeWrapper Item = *I;
+        LiveRangeWrapper Item = *I;
         assert(Item.overlaps(Cur));
         int32_t RegNum = Item.Var->getRegNumTmp();
         assert(Item.Var->hasRegTmp());
@@ -273,7 +273,7 @@ void IceLinearScan::scan(const llvm::SmallBitVector &RegMaskFull) {
       for (UnorderedRanges::const_iterator I = Inactive.begin(),
                                            E = Inactive.end();
            I != E; ++I) {
-        IceLiveRangeWrapper Item = *I;
+        LiveRangeWrapper Item = *I;
         int32_t RegNum = Item.Var->getRegNumTmp();
         assert(Item.Var->hasRegTmp());
         Weights[RegNum].addWeight(Item.range().getWeight());
@@ -284,7 +284,7 @@ void IceLinearScan::scan(const llvm::SmallBitVector &RegMaskFull) {
       for (OrderedRanges::const_iterator I = Unhandled.begin(),
                                          E = Unhandled.end();
            I != E && !Cur.endsBefore(*I); ++I) {
-        IceLiveRangeWrapper Item = *I;
+        LiveRangeWrapper Item = *I;
         int32_t RegNum = Item.Var->getRegNumTmp();
         if (RegNum < 0)
           continue;
@@ -319,7 +319,7 @@ void IceLinearScan::scan(const llvm::SmallBitVector &RegMaskFull) {
              I != E; I = Next) {
           Next = I;
           ++Next;
-          IceLiveRangeWrapper Item = *I;
+          LiveRangeWrapper Item = *I;
           if (Item.Var->getRegNumTmp() == MinWeightIndex) {
             if (Cfg->getContext()->isVerbose(IceV_LinearScan)) {
               Str << "Evicting     ";
@@ -338,7 +338,7 @@ void IceLinearScan::scan(const llvm::SmallBitVector &RegMaskFull) {
              I != E; I = Next) {
           Next = I;
           ++Next;
-          IceLiveRangeWrapper Item = *I;
+          LiveRangeWrapper Item = *I;
           if (Item.Var->getRegNumTmp() == MinWeightIndex) {
             if (Cfg->getContext()->isVerbose(IceV_LinearScan)) {
               Str << "Evicting     ";
@@ -384,7 +384,7 @@ void IceLinearScan::scan(const llvm::SmallBitVector &RegMaskFull) {
   // Finish up by assigning RegNumTmp->RegNum for each IceVariable.
   for (UnorderedRanges::const_iterator I = Handled.begin(), E = Handled.end();
        I != E; ++I) {
-    IceLiveRangeWrapper Item = *I;
+    LiveRangeWrapper Item = *I;
     int32_t RegNum = Item.Var->getRegNumTmp();
     if (Cfg->getContext()->isVerbose(IceV_LinearScan)) {
       if (!Item.Var->hasRegTmp()) {
@@ -416,7 +416,7 @@ void IceLinearScan::scan(const llvm::SmallBitVector &RegMaskFull) {
 
 // ======================== Dump routines ======================== //
 
-void IceLiveRangeWrapper::dump(const IceCfg *Cfg) const {
+void LiveRangeWrapper::dump(const IceCfg *Cfg) const {
   IceOstream &Str = Cfg->getContext()->StrDump;
   const static size_t BufLen = 30;
   char buf[BufLen];

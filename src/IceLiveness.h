@@ -1,4 +1,4 @@
-//===- subzero/src/IceLiveness.h - Liveness analysis ------------*- C++ -*-===//
+//===- subzero/src/Liveness.h - Liveness analysis ------------*- C++ -*-===//
 //
 //                        The Subzero Code Generator
 //
@@ -7,7 +7,7 @@
 //
 //===----------------------------------------------------------------------===//
 //
-// This file declares the IceLiveness and IceLivenessNode classes,
+// This file declares the Liveness and LivenessNode classes,
 // which are used for liveness analysis.  The node-specific
 // information tracked for each IceVariable includes whether it is
 // live on entry, whether it is live on exit, the instruction number
@@ -25,34 +25,34 @@
 
 namespace Ice {
 
-class IceLivenessNode {
+class LivenessNode {
 public:
-  IceLivenessNode() : NumLocals(0) {}
+  LivenessNode() : NumLocals(0) {}
   // NumLocals is the number of IceVariables local to this block.
   uint32_t NumLocals;
   // LiveToVarMap maps a liveness bitvector index to an IceVariable.
   // This is generally just for printing/dumping.  The index should be
-  // less than NumLocals + IceLiveness::NumGlobals.
+  // less than NumLocals + Liveness::NumGlobals.
   std::vector<IceVariable *> LiveToVarMap;
   // LiveIn and LiveOut track the in- and out-liveness of the global
   // variables.  The size of each vector is
-  // IceLivenessNode::NumGlobals.
+  // LivenessNode::NumGlobals.
   llvm::BitVector LiveIn, LiveOut;
   // LiveBegin and LiveEnd track the instruction numbers of the start
   // and end of each variable's live range within this block.  The
-  // size of each vector is NumLocals + IceLiveness::NumGlobals.
+  // size of each vector is NumLocals + Liveness::NumGlobals.
   std::vector<int> LiveBegin, LiveEnd;
 
 private:
-  // TODO: Disable these constructors when IceLiveness::Nodes is no
+  // TODO: Disable these constructors when Liveness::Nodes is no
   // longer an STL container.
-  // IceLivenessNode(const IceLivenessNode &) LLVM_DELETED_FUNCTION;
-  // IceLivenessNode &operator=(const IceLivenessNode &) LLVM_DELETED_FUNCTION;
+  // LivenessNode(const LivenessNode &) LLVM_DELETED_FUNCTION;
+  // LivenessNode &operator=(const LivenessNode &) LLVM_DELETED_FUNCTION;
 };
 
-class IceLiveness {
+class Liveness {
 public:
-  IceLiveness(IceCfg *Cfg, IceLivenessMode Mode)
+  Liveness(IceCfg *Cfg, LivenessMode Mode)
       : Cfg(Cfg), Mode(Mode), NumGlobals(0) {}
   void init();
   IceVariable *getVariable(uint32_t LiveIndex, const CfgNode *Node) const;
@@ -73,26 +73,26 @@ public:
   std::vector<int> &getLiveEnd(const CfgNode *Node) {
     return Nodes[Node->getIndex()].LiveEnd;
   }
-  IceLiveRange &getLiveRange(IceVariable *Var);
+  LiveRange &getLiveRange(IceVariable *Var);
   void addLiveRange(IceVariable *Var, int32_t Start, int32_t End,
                     uint32_t WeightDelta);
 
 private:
   IceCfg *Cfg;
-  IceLivenessMode Mode;
+  LivenessMode Mode;
   uint32_t NumGlobals;
   // Size of Nodes is IceCfg::Nodes.size().
-  std::vector<IceLivenessNode> Nodes;
+  std::vector<LivenessNode> Nodes;
   // VarToLiveMap maps an IceVariable's IceVariable::Number to its
   // live index within its basic block.
   std::vector<uint32_t> VarToLiveMap;
-  // LiveToVarMap is analogous to IceLivenessNode::LiveToVarMap, but
+  // LiveToVarMap is analogous to LivenessNode::LiveToVarMap, but
   // for non-local variables.
   std::vector<IceVariable *> LiveToVarMap;
   // LiveRanges maps an IceVariable::Number to its live range.
-  std::vector<IceLiveRange> LiveRanges;
-  IceLiveness(const IceLiveness &) LLVM_DELETED_FUNCTION;
-  IceLiveness &operator=(const IceLiveness &) LLVM_DELETED_FUNCTION;
+  std::vector<LiveRange> LiveRanges;
+  Liveness(const Liveness &) LLVM_DELETED_FUNCTION;
+  Liveness &operator=(const Liveness &) LLVM_DELETED_FUNCTION;
 };
 
 } // end of namespace Ice

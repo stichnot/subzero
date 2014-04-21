@@ -91,11 +91,11 @@ void IceTargetX8632::translateO2() {
     return;
   T_renumber2.printElapsedUs(Context, "renumberInstructions()");
   // TODO: It should be sufficient to use the fastest liveness
-  // calculation, i.e. IceLiveness_LREndLightweight.  However, for
+  // calculation, i.e. Liveness_LREndLightweight.  However, for
   // some reason that slows down the rest of the translation.
   // Investigate.
   IceTimer T_liveness1;
-  Cfg->liveness(IceLiveness_LREndFull);
+  Cfg->liveness(Liveness_LREndFull);
   if (Cfg->hasError())
     return;
   T_liveness1.printElapsedUs(Context, "liveness()");
@@ -113,7 +113,7 @@ void IceTargetX8632::translateO2() {
     return;
   T_renumber3.printElapsedUs(Context, "renumberInstructions()");
   IceTimer T_liveness2;
-  Cfg->liveness(IceLiveness_RangesFull);
+  Cfg->liveness(Liveness_RangesFull);
   if (Cfg->hasError())
     return;
   T_liveness2.printElapsedUs(Context, "liveness()");

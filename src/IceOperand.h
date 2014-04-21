@@ -216,15 +216,15 @@ bool operator<(const IceRegWeight &A, const IceRegWeight &B);
 bool operator<=(const IceRegWeight &A, const IceRegWeight &B);
 bool operator==(const IceRegWeight &A, const IceRegWeight &B);
 
-// IceLiveRange is a set of instruction number intervals representing
+// LiveRange is a set of instruction number intervals representing
 // a variable's live range.  Generally there is one interval per basic
 // block where the variable is live, but adjacent intervals get
-// coalesced into a single interval.  IceLiveRange also includes a
+// coalesced into a single interval.  LiveRange also includes a
 // weight, in case e.g. we want a live range to have higher weight
 // inside a loop.
-class IceLiveRange {
+class LiveRange {
 public:
-  IceLiveRange() : Weight(0) {}
+  LiveRange() : Weight(0) {}
 
   void reset() {
     Range.clear();
@@ -232,8 +232,8 @@ public:
   }
   void addSegment(int32_t Start, int32_t End);
 
-  bool endsBefore(const IceLiveRange &Other) const;
-  bool overlaps(const IceLiveRange &Other) const;
+  bool endsBefore(const LiveRange &Other) const;
+  bool overlaps(const LiveRange &Other) const;
   bool containsValue(int32_t Value) const;
   bool isEmpty() const { return Range.empty(); }
   int32_t getStart() const { return Range.empty() ? -1 : Range.begin()->first; }
@@ -260,7 +260,7 @@ private:
   IceRegWeight Weight;
 };
 
-IceOstream &operator<<(IceOstream &Str, const IceLiveRange &L);
+IceOstream &operator<<(IceOstream &Str, const LiveRange &L);
 
 // IceVariable represents an operand that is register-allocated or
 // stack-allocated.  If it is register-allocated, it will ultimately
@@ -313,18 +313,18 @@ public:
     AllowRegisterOverlap = Overlap;
   }
 
-  const IceLiveRange &getLiveRange() const { return LiveRange; }
-  void setLiveRange(const IceLiveRange &Range) { LiveRange = Range; }
-  void resetLiveRange() { LiveRange.reset(); }
+  const LiveRange &getLiveRange() const { return Live; }
+  void setLiveRange(const LiveRange &Range) { Live = Range; }
+  void resetLiveRange() { Live.reset(); }
   void addLiveRange(int32_t Start, int32_t End, uint32_t WeightDelta) {
     assert(WeightDelta != IceRegWeight::Inf);
-    LiveRange.addSegment(Start, End);
+    Live.addSegment(Start, End);
     if (Weight.isInf())
-      LiveRange.setWeight(IceRegWeight::Inf);
+      Live.setWeight(IceRegWeight::Inf);
     else
-      LiveRange.addWeight(WeightDelta * Weight.getWeight());
+      Live.addWeight(WeightDelta * Weight.getWeight());
   }
-  void setLiveRangeInfiniteWeight() { LiveRange.setWeight(IceRegWeight::Inf); }
+  void setLiveRangeInfiniteWeight() { Live.setWeight(IceRegWeight::Inf); }
 
   IceVariable *getLo() const { return LoVar; }
   IceVariable *getHi() const { return HiVar; }
@@ -391,7 +391,7 @@ private:
   // RegisterPreference and "share" a register even if the two live
   // ranges overlap.
   bool AllowRegisterOverlap;
-  IceLiveRange LiveRange;
+  LiveRange Live;
   // LoVar and HiVar are needed for lowering from 64 to 32 bits.  When
   // lowering from I64 to I32 on a 32-bit architecture, we split the
   // variable into two machine-size pieces.  LoVar is the low-order

@@ -30,7 +30,7 @@ bool operator==(const IceRegWeight &A, const IceRegWeight &B) {
   return !(B < A) && !(A < B);
 }
 
-void IceLiveRange::addSegment(int32_t Start, int32_t End) {
+void LiveRange::addSegment(int32_t Start, int32_t End) {
 #ifdef USE_SET
   RangeElementType Element(Start, End);
   RangeType::iterator Next = Range.lower_bound(Element);
@@ -87,7 +87,7 @@ void IceLiveRange::addSegment(int32_t Start, int32_t End) {
 // starts.  This means that the highest instruction number in this
 // live range is less than or equal to the lowest instruction number
 // of the Other live range.
-bool IceLiveRange::endsBefore(const IceLiveRange &Other) const {
+bool LiveRange::endsBefore(const LiveRange &Other) const {
   // Neither range should be empty, but let's be graceful.
   if (Range.empty() || Other.Range.empty())
     return true;
@@ -97,7 +97,7 @@ bool IceLiveRange::endsBefore(const IceLiveRange &Other) const {
 }
 
 // Returns true if there is any overlap between the two live ranges.
-bool IceLiveRange::overlaps(const IceLiveRange &Other) const {
+bool LiveRange::overlaps(const LiveRange &Other) const {
   // Do a two-finger walk through the two sorted lists of segments.
   RangeType::const_iterator I1 = Range.begin(), I2 = Other.Range.begin();
   RangeType::const_iterator E1 = Range.end(), E2 = Other.Range.end();
@@ -118,7 +118,7 @@ bool IceLiveRange::overlaps(const IceLiveRange &Other) const {
 // Returns true if the live range contains the given instruction
 // number.  This is only used for validating the live range
 // calculation.
-bool IceLiveRange::containsValue(int32_t Value) const {
+bool LiveRange::containsValue(int32_t Value) const {
   for (RangeType::const_iterator I = Range.begin(), E = Range.end(); I != E;
        ++I) {
     if (I->first <= Value && Value <= I->second)
@@ -259,7 +259,7 @@ void IceConstantRelocatable::dump(const IceCfg *Cfg) const {
     Str << "+" << Offset;
 }
 
-void IceLiveRange::dump(IceOstream &Str) const {
+void LiveRange::dump(IceOstream &Str) const {
   Str << "(weight=" << Weight << ") ";
   for (RangeType::const_iterator I = Range.begin(), E = Range.end(); I != E;
        ++I) {
@@ -269,7 +269,7 @@ void IceLiveRange::dump(IceOstream &Str) const {
   }
 }
 
-IceOstream &operator<<(IceOstream &Str, const IceLiveRange &L) {
+IceOstream &operator<<(IceOstream &Str, const LiveRange &L) {
   L.dump(Str);
   return Str;
 }

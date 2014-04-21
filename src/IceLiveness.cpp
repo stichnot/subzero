@@ -1,4 +1,4 @@
-//===- subzero/src/IceLiveness.cpp - Liveness analysis implementation -----===//
+//===- subzero/src/Liveness.cpp - Liveness analysis implementation -----===//
 //
 //                        The Subzero Code Generator
 //
@@ -7,7 +7,7 @@
 //
 //===----------------------------------------------------------------------===//
 //
-// This file provides some of the support for the IceLiveness class.
+// This file provides some of the support for the Liveness class.
 // In particular, it handles the sparsity representation of the
 // mapping between IceVariables and CfgNodes.  The idea is that
 // since most variables are used only within a single basic block, we
@@ -29,13 +29,13 @@
 
 namespace Ice {
 
-void IceLiveness::init() {
+void Liveness::init() {
   // Initialize most of the container sizes.
   uint32_t NumVars = Cfg->getVariables().size();
   uint32_t NumNodes = Cfg->getNumNodes();
   Nodes.resize(NumNodes);
   VarToLiveMap.resize(NumVars);
-  if (Mode == IceLiveness_RangesFull)
+  if (Mode == Liveness_RangesFull)
     LiveRanges.resize(NumVars);
 
   // Count the number of globals, and the number of locals for each
@@ -50,7 +50,7 @@ void IceLiveness::init() {
     }
   }
 
-  // Resize each IceLivenessNode::LiveToVarMap, and the global
+  // Resize each LivenessNode::LiveToVarMap, and the global
   // LiveToVarMap.  Reset the counts to 0.
   for (uint32_t i = 0; i < NumNodes; ++i) {
     Nodes[i].LiveToVarMap.assign(Nodes[i].NumLocals, NULL);
@@ -82,7 +82,7 @@ void IceLiveness::init() {
   const IceNodeList &LNodes = Cfg->getNodes();
   uint32_t NumLNodes = LNodes.size();
   for (uint32_t i = 0; i < NumLNodes; ++i) {
-    IceLivenessNode &Node = Nodes[LNodes[i]->getIndex()];
+    LivenessNode &Node = Nodes[LNodes[i]->getIndex()];
     // NumLocals, LiveToVarMap already initialized
     Node.LiveIn.resize(NumGlobals);
     Node.LiveOut.resize(NumGlobals);
@@ -91,27 +91,27 @@ void IceLiveness::init() {
   }
 }
 
-IceVariable *IceLiveness::getVariable(uint32_t LiveIndex,
-                                      const CfgNode *Node) const {
+IceVariable *Liveness::getVariable(uint32_t LiveIndex,
+                                   const CfgNode *Node) const {
   if (LiveIndex < NumGlobals)
     return LiveToVarMap[LiveIndex];
   uint32_t NodeIndex = Node->getIndex();
   return Nodes[NodeIndex].LiveToVarMap[LiveIndex - NumGlobals];
 }
 
-uint32_t IceLiveness::getLiveIndex(const IceVariable *Var) const {
+uint32_t Liveness::getLiveIndex(const IceVariable *Var) const {
   return VarToLiveMap[Var->getIndex()];
 }
 
-void IceLiveness::addLiveRange(IceVariable *Var, int32_t Start, int32_t End,
-                               uint32_t WeightDelta) {
-  IceLiveRange &LiveRange = LiveRanges[Var->getIndex()];
+void Liveness::addLiveRange(IceVariable *Var, int32_t Start, int32_t End,
+                            uint32_t WeightDelta) {
+  LiveRange &LiveRange = LiveRanges[Var->getIndex()];
   assert(WeightDelta != IceRegWeight::Inf);
   LiveRange.addSegment(Start, End);
   LiveRange.addWeight(WeightDelta);
 }
 
-IceLiveRange &IceLiveness::getLiveRange(IceVariable *Var) {
+LiveRange &Liveness::getLiveRange(IceVariable *Var) {
   return LiveRanges[Var->getIndex()];
 }
 
