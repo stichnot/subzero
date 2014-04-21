@@ -101,11 +101,11 @@ public:
   }
   T getValue() const { return Value; }
   virtual void emit(const IceCfg *Cfg, uint32_t Option) const {
-    IceOstream &Str = Cfg->getContext()->StrEmit;
+    IceOstream &Str = Cfg->getContext()->getStrEmit();
     Str << getValue();
   }
   virtual void dump(const IceCfg *Cfg) const {
-    IceOstream &Str = Cfg->getContext()->StrDump;
+    IceOstream &Str = Cfg->getContext()->getStrDump();
     Str << getValue();
   }
 

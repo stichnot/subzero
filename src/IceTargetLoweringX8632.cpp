@@ -56,7 +56,7 @@ TargetX8632::TargetX8632(IceCfg *Cfg)
 
 void TargetX8632::translateO2() {
   GlobalContext *Context = Cfg->getContext();
-  IceOstream &Str = Context->StrDump;
+  IceOstream &Str = Context->getStrDump();
   IceTimer T_placePhiLoads;
   Cfg->placePhiLoads();
   if (Cfg->hasError())
@@ -143,7 +143,7 @@ void TargetX8632::translateO2() {
 
 void TargetX8632::translateOm1() {
   GlobalContext *Context = Cfg->getContext();
-  IceOstream &Str = Context->StrDump;
+  IceOstream &Str = Context->getStrDump();
   IceTimer T_placePhiLoads;
   Cfg->placePhiLoads();
   if (Cfg->hasError())
@@ -418,10 +418,12 @@ void TargetX8632::addProlog(CfgNode *Node) {
   this->HasComputedFrame = true;
 
   if (Cfg->getContext()->isVerbose(IceV_Frame)) {
-    Cfg->getContext()->StrDump << "LocalsSizeBytes=" << LocalsSizeBytes << "\n"
-                               << "InArgsSizeBytes=" << InArgsSizeBytes << "\n"
-                               << "PreservedRegsSizeBytes="
-                               << PreservedRegsSizeBytes << "\n";
+    Cfg->getContext()->getStrDump() << "LocalsSizeBytes=" << LocalsSizeBytes
+                                    << "\n"
+                                    << "InArgsSizeBytes=" << InArgsSizeBytes
+                                    << "\n"
+                                    << "PreservedRegsSizeBytes="
+                                    << PreservedRegsSizeBytes << "\n";
   }
 }
 

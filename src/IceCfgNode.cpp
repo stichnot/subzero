@@ -296,7 +296,7 @@ bool CfgNode::liveness(LivenessMode Mode, Liveness *Liveness) {
     // The following block helps debug why the previous assertion
     // failed.
     if (!(IsEntry || Live == LiveOrig)) {
-      IceOstream &Str = Cfg->getContext()->StrDump;
+      IceOstream &Str = Cfg->getContext()->getStrDump();
       Cfg->setCurrentNode(NULL);
       Str << "LiveOrig-Live =";
       for (uint32_t i = Live.size(); i < LiveOrig.size(); ++i) {
@@ -409,7 +409,7 @@ void CfgNode::livenessPostprocess(LivenessMode Mode, Liveness *Liveness) {
 
 void CfgNode::emit(IceCfg *Cfg, uint32_t Option) const {
   Cfg->setCurrentNode(this);
-  IceOstream &Str = Cfg->getContext()->StrEmit;
+  IceOstream &Str = Cfg->getContext()->getStrEmit();
   if (Cfg->getEntryNode() == this) {
     Str << Cfg->getContext()->mangleName(Cfg->getFunctionName()) << ":\n";
   }
@@ -436,7 +436,7 @@ void CfgNode::emit(IceCfg *Cfg, uint32_t Option) const {
 
 void CfgNode::dump(IceCfg *Cfg) const {
   Cfg->setCurrentNode(this);
-  IceOstream &Str = Cfg->getContext()->StrDump;
+  IceOstream &Str = Cfg->getContext()->getStrDump();
   Liveness *Liveness = Cfg->getLiveness();
   if (Cfg->getContext()->isVerbose(IceV_Instructions)) {
     Str << getName() << ":\n";

@@ -186,7 +186,7 @@ void RegManager::dump(const IceCfg *Cfg) const {
 }
 
 void RegManagerEntry::dump(const IceCfg *Cfg) const {
-  IceOstream &Str = Cfg->getContext()->StrDump;
+  IceOstream &Str = Cfg->getContext()->getStrDump();
   Str << " " << getVar() << "={";
   for (OperandList::const_iterator I = Available.begin(), E = Available.end();
        I != E; ++I) {

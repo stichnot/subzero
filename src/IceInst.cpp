@@ -385,7 +385,7 @@ InstFakeKill::InstFakeKill(IceCfg *Cfg, const VarList &KilledRegs,
 // ======================== Dump routines ======================== //
 
 void Inst::dumpDecorated(const IceCfg *Cfg) const {
-  IceOstream &Str = Cfg->getContext()->StrDump;
+  IceOstream &Str = Cfg->getContext()->getStrDump();
   if (!Cfg->getContext()->isVerbose(IceV_Deleted) &&
       (isDeleted() || isRedundantAssign()))
     return;
@@ -408,7 +408,7 @@ void Inst::dumpDecorated(const IceCfg *Cfg) const {
 }
 
 void Inst::emit(const IceCfg *Cfg, uint32_t Option) const {
-  IceOstream &Str = Cfg->getContext()->StrEmit;
+  IceOstream &Str = Cfg->getContext()->getStrEmit();
   Str << "??? ";
   dump(Cfg);
   Str << "\n";
@@ -419,14 +419,14 @@ void Inst::emit(const IceCfg *Cfg, uint32_t Option) const {
 }
 
 void Inst::dump(const IceCfg *Cfg) const {
-  IceOstream &Str = Cfg->getContext()->StrDump;
+  IceOstream &Str = Cfg->getContext()->getStrDump();
   dumpDest(Cfg);
   Str << " =~ ";
   dumpSources(Cfg);
 }
 
 void Inst::dumpExtras(const IceCfg *Cfg) const {
-  IceOstream &Str = Cfg->getContext()->StrDump;
+  IceOstream &Str = Cfg->getContext()->getStrDump();
   bool First = true;
   // Print "LIVEEND={a,b,c}" for all source operands whose live ranges
   // are known to end at this instruction.
@@ -453,7 +453,7 @@ void Inst::dumpExtras(const IceCfg *Cfg) const {
 }
 
 void Inst::dumpSources(const IceCfg *Cfg) const {
-  IceOstream &Str = Cfg->getContext()->StrDump;
+  IceOstream &Str = Cfg->getContext()->getStrDump();
   for (uint32_t I = 0; I < getSrcSize(); ++I) {
     if (I > 0)
       Str << ", ";
@@ -462,7 +462,7 @@ void Inst::dumpSources(const IceCfg *Cfg) const {
 }
 
 void Inst::emitSources(const IceCfg *Cfg, uint32_t Option) const {
-  IceOstream &Str = Cfg->getContext()->StrEmit;
+  IceOstream &Str = Cfg->getContext()->getStrEmit();
   for (uint32_t I = 0; I < getSrcSize(); ++I) {
     if (I > 0)
       Str << ", ";
@@ -476,7 +476,7 @@ void Inst::dumpDest(const IceCfg *Cfg) const {
 }
 
 void InstAlloca::dump(const IceCfg *Cfg) const {
-  IceOstream &Str = Cfg->getContext()->StrDump;
+  IceOstream &Str = Cfg->getContext()->getStrDump();
   dumpDest(Cfg);
   Str << " = alloca i8, i32 ";
   getSrc(0)->dump(Cfg);
@@ -484,7 +484,7 @@ void InstAlloca::dump(const IceCfg *Cfg) const {
 }
 
 void InstArithmetic::dump(const IceCfg *Cfg) const {
-  IceOstream &Str = Cfg->getContext()->StrDump;
+  IceOstream &Str = Cfg->getContext()->getStrDump();
   dumpDest(Cfg);
   Str << " = ";
   switch (getOp()) {
@@ -551,14 +551,14 @@ void InstArithmetic::dump(const IceCfg *Cfg) const {
 }
 
 void InstAssign::dump(const IceCfg *Cfg) const {
-  IceOstream &Str = Cfg->getContext()->StrDump;
+  IceOstream &Str = Cfg->getContext()->getStrDump();
   dumpDest(Cfg);
   Str << " = " << getDest()->getType() << " ";
   dumpSources(Cfg);
 }
 
 void InstBr::dump(const IceCfg *Cfg) const {
-  IceOstream &Str = Cfg->getContext()->StrDump;
+  IceOstream &Str = Cfg->getContext()->getStrDump();
   dumpDest(Cfg);
   Str << "br ";
   if (!isUnconditional()) {
@@ -570,7 +570,7 @@ void InstBr::dump(const IceCfg *Cfg) const {
 }
 
 void InstCall::dump(const IceCfg *Cfg) const {
-  IceOstream &Str = Cfg->getContext()->StrDump;
+  IceOstream &Str = Cfg->getContext()->getStrDump();
   if (getDest()) {
     dumpDest(Cfg);
     Str << " = ";
@@ -595,7 +595,7 @@ void InstCall::dump(const IceCfg *Cfg) const {
 }
 
 void InstCast::dump(const IceCfg *Cfg) const {
-  IceOstream &Str = Cfg->getContext()->StrDump;
+  IceOstream &Str = Cfg->getContext()->getStrDump();
   dumpDest(Cfg);
   Str << " = ";
   switch (getCastKind()) {
@@ -645,7 +645,7 @@ void InstCast::dump(const IceCfg *Cfg) const {
 }
 
 void InstIcmp::dump(const IceCfg *Cfg) const {
-  IceOstream &Str = Cfg->getContext()->StrDump;
+  IceOstream &Str = Cfg->getContext()->getStrDump();
   dumpDest(Cfg);
   Str << " = icmp ";
   switch (getCondition()) {
@@ -688,7 +688,7 @@ void InstIcmp::dump(const IceCfg *Cfg) const {
 }
 
 void InstFcmp::dump(const IceCfg *Cfg) const {
-  IceOstream &Str = Cfg->getContext()->StrDump;
+  IceOstream &Str = Cfg->getContext()->getStrDump();
   dumpDest(Cfg);
   Str << " = fcmp ";
 
@@ -747,7 +747,7 @@ void InstFcmp::dump(const IceCfg *Cfg) const {
 }
 
 void InstLoad::dump(const IceCfg *Cfg) const {
-  IceOstream &Str = Cfg->getContext()->StrDump;
+  IceOstream &Str = Cfg->getContext()->getStrDump();
   dumpDest(Cfg);
   IceType Type = getDest()->getType();
   Str << " = load " << Type << "* ";
@@ -766,7 +766,7 @@ void InstLoad::dump(const IceCfg *Cfg) const {
 }
 
 void InstStore::dump(const IceCfg *Cfg) const {
-  IceOstream &Str = Cfg->getContext()->StrDump;
+  IceOstream &Str = Cfg->getContext()->getStrDump();
   IceType Type = getData()->getType();
   Str << "store " << Type << " ";
   getData()->dump(Cfg);
@@ -787,7 +787,7 @@ void InstStore::dump(const IceCfg *Cfg) const {
 }
 
 void InstSwitch::dump(const IceCfg *Cfg) const {
-  IceOstream &Str = Cfg->getContext()->StrDump;
+  IceOstream &Str = Cfg->getContext()->getStrDump();
   IceType Type = getSrc(0)->getType();
   Str << "switch " << Type << " ";
   getSrc(0)->dump(Cfg);
@@ -800,7 +800,7 @@ void InstSwitch::dump(const IceCfg *Cfg) const {
 }
 
 void InstPhi::dump(const IceCfg *Cfg) const {
-  IceOstream &Str = Cfg->getContext()->StrDump;
+  IceOstream &Str = Cfg->getContext()->getStrDump();
   dumpDest(Cfg);
   Str << " = phi " << getDest()->getType() << " ";
   for (uint32_t I = 0; I < getSrcSize(); ++I) {
@@ -813,7 +813,7 @@ void InstPhi::dump(const IceCfg *Cfg) const {
 }
 
 void InstRet::dump(const IceCfg *Cfg) const {
-  IceOstream &Str = Cfg->getContext()->StrDump;
+  IceOstream &Str = Cfg->getContext()->getStrDump();
   IceType Type = getSrcSize() == 0 ? IceType_void : getSrc(0)->getType();
   Str << "ret " << Type;
   if (getSrcSize()) {
@@ -823,7 +823,7 @@ void InstRet::dump(const IceCfg *Cfg) const {
 }
 
 void InstSelect::dump(const IceCfg *Cfg) const {
-  IceOstream &Str = Cfg->getContext()->StrDump;
+  IceOstream &Str = Cfg->getContext()->getStrDump();
   dumpDest(Cfg);
   Operand *Condition = getCondition();
   Operand *TrueOp = getTrueOperand();
@@ -837,12 +837,12 @@ void InstSelect::dump(const IceCfg *Cfg) const {
 }
 
 void InstUnreachable::dump(const IceCfg *Cfg) const {
-  IceOstream &Str = Cfg->getContext()->StrDump;
+  IceOstream &Str = Cfg->getContext()->getStrDump();
   Str << "unreachable";
 }
 
 void InstFakeDef::emit(const IceCfg *Cfg, uint32_t Option) const {
-  IceOstream &Str = Cfg->getContext()->StrEmit;
+  IceOstream &Str = Cfg->getContext()->getStrEmit();
   Str << "\t# ";
   getDest()->emit(Cfg, Option);
   Str << " = def.pseudo ";
@@ -851,14 +851,14 @@ void InstFakeDef::emit(const IceCfg *Cfg, uint32_t Option) const {
 }
 
 void InstFakeDef::dump(const IceCfg *Cfg) const {
-  IceOstream &Str = Cfg->getContext()->StrDump;
+  IceOstream &Str = Cfg->getContext()->getStrDump();
   dumpDest(Cfg);
   Str << " = def.pseudo ";
   dumpSources(Cfg);
 }
 
 void InstFakeUse::emit(const IceCfg *Cfg, uint32_t Option) const {
-  IceOstream &Str = Cfg->getContext()->StrEmit;
+  IceOstream &Str = Cfg->getContext()->getStrEmit();
   Str << "\t# ";
   Str << "use.pseudo ";
   emitSources(Cfg, Option);
@@ -866,13 +866,13 @@ void InstFakeUse::emit(const IceCfg *Cfg, uint32_t Option) const {
 }
 
 void InstFakeUse::dump(const IceCfg *Cfg) const {
-  IceOstream &Str = Cfg->getContext()->StrDump;
+  IceOstream &Str = Cfg->getContext()->getStrDump();
   Str << "use.pseudo ";
   dumpSources(Cfg);
 }
 
 void InstFakeKill::emit(const IceCfg *Cfg, uint32_t Option) const {
-  IceOstream &Str = Cfg->getContext()->StrEmit;
+  IceOstream &Str = Cfg->getContext()->getStrEmit();
   Str << "\t# ";
   if (Linked->isDeleted())
     Str << "// ";
@@ -882,7 +882,7 @@ void InstFakeKill::emit(const IceCfg *Cfg, uint32_t Option) const {
 }
 
 void InstFakeKill::dump(const IceCfg *Cfg) const {
-  IceOstream &Str = Cfg->getContext()->StrDump;
+  IceOstream &Str = Cfg->getContext()->getStrDump();
   if (Linked->isDeleted())
     Str << "// ";
   Str << "kill.pseudo ";
@@ -890,7 +890,7 @@ void InstFakeKill::dump(const IceCfg *Cfg) const {
 }
 
 void InstTarget::dump(const IceCfg *Cfg) const {
-  IceOstream &Str = Cfg->getContext()->StrDump;
+  IceOstream &Str = Cfg->getContext()->getStrDump();
   Str << "[TARGET] ";
   Inst::dump(Cfg);
 }

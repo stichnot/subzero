@@ -210,23 +210,23 @@ InstX8632Ret::InstX8632Ret(IceCfg *Cfg, Variable *Source)
 // ======================== Dump routines ======================== //
 
 void InstX8632::dump(const IceCfg *Cfg) const {
-  IceOstream &Str = Cfg->getContext()->StrDump;
+  IceOstream &Str = Cfg->getContext()->getStrDump();
   Str << "[X8632] ";
   Inst::dump(Cfg);
 }
 
 void InstX8632Label::emit(const IceCfg *Cfg, uint32_t Option) const {
-  IceOstream &Str = Cfg->getContext()->StrEmit;
+  IceOstream &Str = Cfg->getContext()->getStrEmit();
   Str << getName(Cfg) << ":\n";
 }
 
 void InstX8632Label::dump(const IceCfg *Cfg) const {
-  IceOstream &Str = Cfg->getContext()->StrDump;
+  IceOstream &Str = Cfg->getContext()->getStrDump();
   Str << getName(Cfg) << ":";
 }
 
 void InstX8632Br::emit(const IceCfg *Cfg, uint32_t Option) const {
-  IceOstream &Str = Cfg->getContext()->StrEmit;
+  IceOstream &Str = Cfg->getContext()->getStrEmit();
   Str << "\t";
   switch (Condition) {
   case Br_a:
@@ -284,7 +284,7 @@ void InstX8632Br::emit(const IceCfg *Cfg, uint32_t Option) const {
 }
 
 void InstX8632Br::dump(const IceCfg *Cfg) const {
-  IceOstream &Str = Cfg->getContext()->StrDump;
+  IceOstream &Str = Cfg->getContext()->getStrDump();
   Str << "br ";
   switch (Condition) {
   case Br_a:
@@ -340,7 +340,7 @@ void InstX8632Br::dump(const IceCfg *Cfg) const {
 }
 
 void InstX8632Call::emit(const IceCfg *Cfg, uint32_t Option) const {
-  IceOstream &Str = Cfg->getContext()->StrEmit;
+  IceOstream &Str = Cfg->getContext()->getStrEmit();
   assert(getSrcSize() == 1);
   Str << "\tcall\t";
   getCallTarget()->emit(Cfg, Option);
@@ -351,7 +351,7 @@ void InstX8632Call::emit(const IceCfg *Cfg, uint32_t Option) const {
 }
 
 void InstX8632Call::dump(const IceCfg *Cfg) const {
-  IceOstream &Str = Cfg->getContext()->StrDump;
+  IceOstream &Str = Cfg->getContext()->getStrDump();
   if (getDest()) {
     dumpDest(Cfg);
     Str << " = ";
@@ -364,7 +364,7 @@ void InstX8632Call::dump(const IceCfg *Cfg) const {
 
 void IceEmitTwoAddress(const char *Opcode, const Inst *Inst, const IceCfg *Cfg,
                        uint32_t Option, bool ShiftHack) {
-  IceOstream &Str = Cfg->getContext()->StrEmit;
+  IceOstream &Str = Cfg->getContext()->getStrEmit();
   assert(Inst->getSrcSize() == 2);
   assert(Inst->getDest() == Inst->getSrc(0));
   Str << "\t" << Opcode << "\t";
@@ -426,7 +426,7 @@ void InstX8632Divss::emit(const IceCfg *Cfg, uint32_t Option) const {
 }
 
 template <> void InstX8632Imul::emit(const IceCfg *Cfg, uint32_t Option) const {
-  IceOstream &Str = Cfg->getContext()->StrEmit;
+  IceOstream &Str = Cfg->getContext()->getStrEmit();
   assert(getSrcSize() == 2);
   if (getDest()->getType() == IceType_i8) {
     // The 8-bit version of imul only allows the form "imul r/m8".
@@ -449,7 +449,7 @@ template <> void InstX8632Imul::emit(const IceCfg *Cfg, uint32_t Option) const {
 }
 
 void InstX8632Mul::emit(const IceCfg *Cfg, uint32_t Option) const {
-  IceOstream &Str = Cfg->getContext()->StrEmit;
+  IceOstream &Str = Cfg->getContext()->getStrEmit();
   assert(getSrcSize() == 2);
   assert(llvm::isa<Variable>(getSrc(0)));
   assert(llvm::dyn_cast<Variable>(getSrc(0))->getRegNum() ==
@@ -461,14 +461,14 @@ void InstX8632Mul::emit(const IceCfg *Cfg, uint32_t Option) const {
 }
 
 void InstX8632Mul::dump(const IceCfg *Cfg) const {
-  IceOstream &Str = Cfg->getContext()->StrDump;
+  IceOstream &Str = Cfg->getContext()->getStrDump();
   dumpDest(Cfg);
   Str << " = mul." << getDest()->getType() << " ";
   dumpSources(Cfg);
 }
 
 void InstX8632Shld::emit(const IceCfg *Cfg, uint32_t Option) const {
-  IceOstream &Str = Cfg->getContext()->StrEmit;
+  IceOstream &Str = Cfg->getContext()->getStrEmit();
   assert(getSrcSize() == 3);
   assert(getDest() == getSrc(0));
   Str << "\tshld\t";
@@ -491,14 +491,14 @@ void InstX8632Shld::emit(const IceCfg *Cfg, uint32_t Option) const {
 }
 
 void InstX8632Shld::dump(const IceCfg *Cfg) const {
-  IceOstream &Str = Cfg->getContext()->StrDump;
+  IceOstream &Str = Cfg->getContext()->getStrDump();
   dumpDest(Cfg);
   Str << " = shld." << getDest()->getType() << " ";
   dumpSources(Cfg);
 }
 
 void InstX8632Shrd::emit(const IceCfg *Cfg, uint32_t Option) const {
-  IceOstream &Str = Cfg->getContext()->StrEmit;
+  IceOstream &Str = Cfg->getContext()->getStrEmit();
   assert(getSrcSize() == 3);
   assert(getDest() == getSrc(0));
   Str << "\tshrd\t";
@@ -521,20 +521,20 @@ void InstX8632Shrd::emit(const IceCfg *Cfg, uint32_t Option) const {
 }
 
 void InstX8632Shrd::dump(const IceCfg *Cfg) const {
-  IceOstream &Str = Cfg->getContext()->StrDump;
+  IceOstream &Str = Cfg->getContext()->getStrDump();
   dumpDest(Cfg);
   Str << " = shrd." << getDest()->getType() << " ";
   dumpSources(Cfg);
 }
 
 void InstX8632Cdq::emit(const IceCfg *Cfg, uint32_t Option) const {
-  IceOstream &Str = Cfg->getContext()->StrEmit;
+  IceOstream &Str = Cfg->getContext()->getStrEmit();
   assert(getSrcSize() == 1);
   Str << "\tcdq\n";
 }
 
 void InstX8632Cdq::dump(const IceCfg *Cfg) const {
-  IceOstream &Str = Cfg->getContext()->StrDump;
+  IceOstream &Str = Cfg->getContext()->getStrDump();
   dumpDest(Cfg);
   Str << " = cdq." << getSrc(0)->getType() << " ";
   dumpSources(Cfg);
@@ -564,7 +564,7 @@ static IceString getCvtTypeString(IceType Type) {
 }
 
 void InstX8632Cvt::emit(const IceCfg *Cfg, uint32_t Option) const {
-  IceOstream &Str = Cfg->getContext()->StrEmit;
+  IceOstream &Str = Cfg->getContext()->getStrEmit();
   assert(getSrcSize() == 1);
   Str << "\tcvts" << getCvtTypeString(getSrc(0)->getType()) << "2s"
       << getCvtTypeString(getDest()->getType()) << "\t";
@@ -575,7 +575,7 @@ void InstX8632Cvt::emit(const IceCfg *Cfg, uint32_t Option) const {
 }
 
 void InstX8632Cvt::dump(const IceCfg *Cfg) const {
-  IceOstream &Str = Cfg->getContext()->StrDump;
+  IceOstream &Str = Cfg->getContext()->getStrDump();
   dumpDest(Cfg);
   Str << " = cvts" << getCvtTypeString(getSrc(0)->getType()) << "2s"
       << getCvtTypeString(getDest()->getType()) << " ";
@@ -583,7 +583,7 @@ void InstX8632Cvt::dump(const IceCfg *Cfg) const {
 }
 
 void InstX8632Icmp::emit(const IceCfg *Cfg, uint32_t Option) const {
-  IceOstream &Str = Cfg->getContext()->StrEmit;
+  IceOstream &Str = Cfg->getContext()->getStrEmit();
   assert(getSrcSize() == 2);
   Str << "\tcmp\t";
   getSrc(0)->emit(Cfg, Option);
@@ -593,13 +593,13 @@ void InstX8632Icmp::emit(const IceCfg *Cfg, uint32_t Option) const {
 }
 
 void InstX8632Icmp::dump(const IceCfg *Cfg) const {
-  IceOstream &Str = Cfg->getContext()->StrDump;
+  IceOstream &Str = Cfg->getContext()->getStrDump();
   Str << "cmp." << getSrc(0)->getType() << " ";
   dumpSources(Cfg);
 }
 
 void InstX8632Ucomiss::emit(const IceCfg *Cfg, uint32_t Option) const {
-  IceOstream &Str = Cfg->getContext()->StrEmit;
+  IceOstream &Str = Cfg->getContext()->getStrEmit();
   assert(getSrcSize() == 2);
   if (getSrc(0)->getType() == IceType_f32)
     Str << "\tucomiss\t";
@@ -612,13 +612,13 @@ void InstX8632Ucomiss::emit(const IceCfg *Cfg, uint32_t Option) const {
 }
 
 void InstX8632Ucomiss::dump(const IceCfg *Cfg) const {
-  IceOstream &Str = Cfg->getContext()->StrDump;
+  IceOstream &Str = Cfg->getContext()->getStrDump();
   Str << "ucomiss." << getSrc(0)->getType() << " ";
   dumpSources(Cfg);
 }
 
 void InstX8632Test::emit(const IceCfg *Cfg, uint32_t Option) const {
-  IceOstream &Str = Cfg->getContext()->StrEmit;
+  IceOstream &Str = Cfg->getContext()->getStrEmit();
   assert(getSrcSize() == 2);
   Str << "\ttest\t";
   getSrc(0)->emit(Cfg, Option);
@@ -628,13 +628,13 @@ void InstX8632Test::emit(const IceCfg *Cfg, uint32_t Option) const {
 }
 
 void InstX8632Test::dump(const IceCfg *Cfg) const {
-  IceOstream &Str = Cfg->getContext()->StrDump;
+  IceOstream &Str = Cfg->getContext()->getStrDump();
   Str << "test." << getSrc(0)->getType() << " ";
   dumpSources(Cfg);
 }
 
 void InstX8632Store::emit(const IceCfg *Cfg, uint32_t Option) const {
-  IceOstream &Str = Cfg->getContext()->StrEmit;
+  IceOstream &Str = Cfg->getContext()->getStrEmit();
   assert(getSrcSize() == 2);
   Str << "\tmov\t";
   getSrc(1)->emit(Cfg, Option);
@@ -644,7 +644,7 @@ void InstX8632Store::emit(const IceCfg *Cfg, uint32_t Option) const {
 }
 
 void InstX8632Store::dump(const IceCfg *Cfg) const {
-  IceOstream &Str = Cfg->getContext()->StrDump;
+  IceOstream &Str = Cfg->getContext()->getStrDump();
   Str << "mov." << getSrc(0)->getType() << " ";
   getSrc(1)->dump(Cfg);
   Str << ", ";
@@ -652,7 +652,7 @@ void InstX8632Store::dump(const IceCfg *Cfg) const {
 }
 
 void InstX8632Mov::emit(const IceCfg *Cfg, uint32_t Option) const {
-  IceOstream &Str = Cfg->getContext()->StrEmit;
+  IceOstream &Str = Cfg->getContext()->getStrEmit();
   assert(getSrcSize() == 1);
   Str << "\tmov";
   switch (getDest()->getType()) {
@@ -682,7 +682,7 @@ void InstX8632Mov::emit(const IceCfg *Cfg, uint32_t Option) const {
 }
 
 void InstX8632Mov::dump(const IceCfg *Cfg) const {
-  IceOstream &Str = Cfg->getContext()->StrDump;
+  IceOstream &Str = Cfg->getContext()->getStrDump();
   Str << "mov." << getDest()->getType() << " ";
   dumpDest(Cfg);
   Str << ", ";
@@ -690,7 +690,7 @@ void InstX8632Mov::dump(const IceCfg *Cfg) const {
 }
 
 void InstX8632Movsx::emit(const IceCfg *Cfg, uint32_t Option) const {
-  IceOstream &Str = Cfg->getContext()->StrEmit;
+  IceOstream &Str = Cfg->getContext()->getStrEmit();
   assert(getSrcSize() == 1);
   Str << "\tmovsx\t";
   getDest()->emit(Cfg, Option);
@@ -700,7 +700,7 @@ void InstX8632Movsx::emit(const IceCfg *Cfg, uint32_t Option) const {
 }
 
 void InstX8632Movsx::dump(const IceCfg *Cfg) const {
-  IceOstream &Str = Cfg->getContext()->StrDump;
+  IceOstream &Str = Cfg->getContext()->getStrDump();
   Str << "movs" << OpcodeTypeFromIceType(getSrc(0)->getType());
   Str << OpcodeTypeFromIceType(getDest()->getType());
   Str << " ";
@@ -710,7 +710,7 @@ void InstX8632Movsx::dump(const IceCfg *Cfg) const {
 }
 
 void InstX8632Movzx::emit(const IceCfg *Cfg, uint32_t Option) const {
-  IceOstream &Str = Cfg->getContext()->StrEmit;
+  IceOstream &Str = Cfg->getContext()->getStrEmit();
   assert(getSrcSize() == 1);
   Str << "\tmovzx\t";
   getDest()->emit(Cfg, Option);
@@ -720,7 +720,7 @@ void InstX8632Movzx::emit(const IceCfg *Cfg, uint32_t Option) const {
 }
 
 void InstX8632Movzx::dump(const IceCfg *Cfg) const {
-  IceOstream &Str = Cfg->getContext()->StrDump;
+  IceOstream &Str = Cfg->getContext()->getStrDump();
   Str << "movz" << OpcodeTypeFromIceType(getSrc(0)->getType());
   Str << OpcodeTypeFromIceType(getDest()->getType());
   Str << " ";
@@ -730,7 +730,7 @@ void InstX8632Movzx::dump(const IceCfg *Cfg) const {
 }
 
 void InstX8632Fld::emit(const IceCfg *Cfg, uint32_t Option) const {
-  IceOstream &Str = Cfg->getContext()->StrEmit;
+  IceOstream &Str = Cfg->getContext()->getStrEmit();
   assert(getSrcSize() == 1);
   bool isDouble = (getSrc(0)->getType() == IceType_f64);
   Variable *Var = llvm::dyn_cast<Variable>(getSrc(0));
@@ -752,13 +752,13 @@ void InstX8632Fld::emit(const IceCfg *Cfg, uint32_t Option) const {
 }
 
 void InstX8632Fld::dump(const IceCfg *Cfg) const {
-  IceOstream &Str = Cfg->getContext()->StrDump;
+  IceOstream &Str = Cfg->getContext()->getStrDump();
   Str << "fld." << getSrc(0)->getType() << " ";
   dumpSources(Cfg);
 }
 
 void InstX8632Fstp::emit(const IceCfg *Cfg, uint32_t Option) const {
-  IceOstream &Str = Cfg->getContext()->StrEmit;
+  IceOstream &Str = Cfg->getContext()->getStrEmit();
   assert(getSrcSize() == 0);
   if (getDest() == NULL) {
     Str << "\tfstp\tst(0)\n";
@@ -784,14 +784,14 @@ void InstX8632Fstp::emit(const IceCfg *Cfg, uint32_t Option) const {
 }
 
 void InstX8632Fstp::dump(const IceCfg *Cfg) const {
-  IceOstream &Str = Cfg->getContext()->StrDump;
+  IceOstream &Str = Cfg->getContext()->getStrDump();
   dumpDest(Cfg);
   Str << " = fstp." << getDest()->getType() << ", st(0)";
   Str << "\n";
 }
 
 void InstX8632Pop::emit(const IceCfg *Cfg, uint32_t Option) const {
-  IceOstream &Str = Cfg->getContext()->StrEmit;
+  IceOstream &Str = Cfg->getContext()->getStrEmit();
   assert(getSrcSize() == 0);
   Str << "\tpop\t";
   getDest()->emit(Cfg, Option);
@@ -799,13 +799,13 @@ void InstX8632Pop::emit(const IceCfg *Cfg, uint32_t Option) const {
 }
 
 void InstX8632Pop::dump(const IceCfg *Cfg) const {
-  IceOstream &Str = Cfg->getContext()->StrDump;
+  IceOstream &Str = Cfg->getContext()->getStrDump();
   dumpDest(Cfg);
   Str << " = pop." << getDest()->getType() << " ";
 }
 
 void InstX8632Push::emit(const IceCfg *Cfg, uint32_t Option) const {
-  IceOstream &Str = Cfg->getContext()->StrEmit;
+  IceOstream &Str = Cfg->getContext()->getStrEmit();
   assert(getSrcSize() == 1);
   IceType Type = getSrc(0)->getType();
   Variable *Var = llvm::dyn_cast<Variable>(getSrc(0));
@@ -834,30 +834,30 @@ void InstX8632Push::emit(const IceCfg *Cfg, uint32_t Option) const {
 }
 
 void InstX8632Push::dump(const IceCfg *Cfg) const {
-  IceOstream &Str = Cfg->getContext()->StrDump;
+  IceOstream &Str = Cfg->getContext()->getStrDump();
   Str << "push." << getSrc(0)->getType() << " ";
   dumpSources(Cfg);
 }
 
 void InstX8632Ret::emit(const IceCfg *Cfg, uint32_t Option) const {
-  IceOstream &Str = Cfg->getContext()->StrEmit;
+  IceOstream &Str = Cfg->getContext()->getStrEmit();
   Str << "\tret\n";
 }
 
 void InstX8632Ret::dump(const IceCfg *Cfg) const {
-  IceOstream &Str = Cfg->getContext()->StrDump;
+  IceOstream &Str = Cfg->getContext()->getStrDump();
   IceType Type = (getSrcSize() == 0 ? IceType_void : getSrc(0)->getType());
   Str << "ret." << Type << " ";
   dumpSources(Cfg);
 }
 
 void OperandX8632::dump(const IceCfg *Cfg) const {
-  IceOstream &Str = Cfg->getContext()->StrDump;
+  IceOstream &Str = Cfg->getContext()->getStrDump();
   Str << "<OperandX8632>";
 }
 
 void OperandX8632Mem::emit(const IceCfg *Cfg, uint32_t Option) const {
-  IceOstream &Str = Cfg->getContext()->StrEmit;
+  IceOstream &Str = Cfg->getContext()->getStrEmit();
   switch (getType()) {
   case IceType_i1:
   case IceType_i8:
@@ -913,7 +913,7 @@ void OperandX8632Mem::emit(const IceCfg *Cfg, uint32_t Option) const {
 }
 
 void OperandX8632Mem::dump(const IceCfg *Cfg) const {
-  IceOstream &Str = Cfg->getContext()->StrDump;
+  IceOstream &Str = Cfg->getContext()->getStrDump();
   bool Dumped = false;
   Str << "[";
   if (Base) {
@@ -948,7 +948,7 @@ void OperandX8632Mem::dump(const IceCfg *Cfg) const {
 }
 
 void VariableSplit::emit(const IceCfg *Cfg, uint32_t Option) const {
-  IceOstream &Str = Cfg->getContext()->StrEmit;
+  IceOstream &Str = Cfg->getContext()->getStrEmit();
   assert(Var->getLocalUseNode() == NULL ||
          Var->getLocalUseNode() == Cfg->getCurrentNode());
   assert(!Var->hasReg());
@@ -969,7 +969,7 @@ void VariableSplit::emit(const IceCfg *Cfg, uint32_t Option) const {
 }
 
 void VariableSplit::dump(const IceCfg *Cfg) const {
-  IceOstream &Str = Cfg->getContext()->StrDump;
+  IceOstream &Str = Cfg->getContext()->getStrDump();
   switch (Part) {
   case Low:
     Str << "low";

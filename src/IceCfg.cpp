@@ -31,7 +31,7 @@ IceCfg::IceCfg(GlobalContext *Ctx)
       NextInstNumber(1), Live(NULL),
       Target(TargetLowering::createLowering(Ctx->getTargetArch(), this)),
       CurrentNode(NULL) {
-  GlobalStr = &Ctx->StrDump;
+  GlobalStr = &Ctx->getStrDump();
 }
 
 IceCfg::~IceCfg() {}
@@ -39,7 +39,7 @@ IceCfg::~IceCfg() {}
 void IceCfg::setError(const IceString &Message) {
   HasError = true;
   ErrorMessage = Message;
-  Ctx->StrDump << "ICE translation error: " << ErrorMessage << "\n";
+  Ctx->getStrDump() << "ICE translation error: " << ErrorMessage << "\n";
 }
 
 CfgNode *IceCfg::makeNode(const IceString &Name) {
@@ -93,7 +93,7 @@ bool IceCfg::hasComputedFrame() const {
 }
 
 void IceCfg::translate(IceTargetArch TargetArch) {
-  IceOstream &Str = Ctx->StrDump;
+  IceOstream &Str = Ctx->getStrDump();
   if (hasError())
     return;
 
@@ -316,7 +316,7 @@ bool IceCfg::validateLiveness() const {
 // ======================== Dump routines ======================== //
 
 void IceCfg::emit(uint32_t Option) {
-  IceOstream &Str = Ctx->StrEmit;
+  IceOstream &Str = Ctx->getStrEmit();
   IceTimer T_emit;
   if (!HasEmittedFirstMethod) {
     HasEmittedFirstMethod = true;
@@ -347,7 +347,7 @@ void IceCfg::emit(uint32_t Option) {
 }
 
 void IceCfg::dump() {
-  IceOstream &Str = Ctx->StrDump;
+  IceOstream &Str = Ctx->getStrDump();
   setCurrentNode(getEntryNode());
   // Print function name+args
   if (getContext()->isVerbose(IceV_Instructions)) {

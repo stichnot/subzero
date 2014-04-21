@@ -159,7 +159,7 @@ void IceTimer::printElapsedUs(GlobalContext *Ctx, const IceString &Tag) const {
   if (Ctx->isVerbose(IceV_Timing)) {
     // Prefixing with '#' allows timing strings to be included
     // without error in textual assembly output.
-    Ctx->StrDump << "# " << getElapsedUs() << " usec " << Tag << "\n";
+    Ctx->getStrDump() << "# " << getElapsedUs() << " usec " << Tag << "\n";
   }
 }
 

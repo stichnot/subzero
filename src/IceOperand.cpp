@@ -176,7 +176,7 @@ Variable Variable::asType(IceType Type) {
 
 // TODO: This should be handed by the TargetLowering subclass.
 void Variable::emit(const IceCfg *Cfg, uint32_t Option) const {
-  IceOstream &Str = Cfg->getContext()->StrEmit;
+  IceOstream &Str = Cfg->getContext()->getStrEmit();
   assert(DefNode == NULL || DefNode == Cfg->getCurrentNode());
   if (hasReg()) {
     Str << Cfg->getTarget()->getRegName(RegNum, getType());
@@ -211,7 +211,7 @@ void Variable::emit(const IceCfg *Cfg, uint32_t Option) const {
 }
 
 void Variable::dump(const IceCfg *Cfg) const {
-  IceOstream &Str = Cfg->getContext()->StrDump;
+  IceOstream &Str = Cfg->getContext()->getStrDump();
   const CfgNode *CurrentNode = Cfg->getCurrentNode();
   (void)CurrentNode; // used only in assert()
   assert(CurrentNode == NULL || DefNode == NULL || DefNode == CurrentNode);
@@ -238,7 +238,7 @@ void Variable::dump(const IceCfg *Cfg) const {
 }
 
 void ConstantRelocatable::emit(const IceCfg *Cfg, uint32_t Option) const {
-  IceOstream &Str = Cfg->getContext()->StrEmit;
+  IceOstream &Str = Cfg->getContext()->getStrEmit();
   if (SuppressMangling)
     Str << Name;
   else
@@ -251,7 +251,7 @@ void ConstantRelocatable::emit(const IceCfg *Cfg, uint32_t Option) const {
 }
 
 void ConstantRelocatable::dump(const IceCfg *Cfg) const {
-  IceOstream &Str = Cfg->getContext()->StrDump;
+  IceOstream &Str = Cfg->getContext()->getStrDump();
   Str << "@" << Name;
   if (Offset)
     Str << "+" << Offset;
