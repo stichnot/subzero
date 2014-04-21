@@ -32,13 +32,13 @@ public:
   GlobalContext *getContext() const { return Ctx; }
 
   // Manage the name and return type of the function being translated.
-  void setName(const IceString &FunctionName) { Name = FunctionName; }
-  IceString getName() const { return Name; }
-  void setReturnType(IceType ReturnType) { Type = ReturnType; }
+  void setFunctionName(const IceString &Name) { FunctionName = Name; }
+  IceString getFunctionName() const { return FunctionName; }
+  void setReturnType(IceType Type) { ReturnType = Type; }
 
   // Manage the "internal" attribute of the function.
-  void setInternal(bool Internal) { IsInternal = Internal; }
-  bool getInternal() const { return IsInternal; }
+  void setInternal(bool Internal) { IsInternalLinkage = Internal; }
+  bool getInternal() const { return IsInternalLinkage; }
 
   // Translation error flagging.  If support for some construct is
   // known to be missing, instead of an assertion failure, setError()
@@ -120,9 +120,9 @@ private:
   llvm::BumpPtrAllocator Allocator;
 
   GlobalContext *Ctx;
-  IceString Name;  // function name
-  IceType Type;    // return type
-  bool IsInternal; // internal linkage
+  IceString FunctionName;
+  IceType ReturnType;
+  bool IsInternalLinkage;
   bool HasError;
   IceString ErrorMessage;
   CfgNode *Entry; // entry basic block

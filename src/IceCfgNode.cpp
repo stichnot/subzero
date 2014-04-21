@@ -411,7 +411,7 @@ void CfgNode::emit(IceCfg *Cfg, uint32_t Option) const {
   Cfg->setCurrentNode(this);
   IceOstream &Str = Cfg->getContext()->StrEmit;
   if (Cfg->getEntryNode() == this) {
-    Str << Cfg->getContext()->mangleName(Cfg->getName()) << ":\n";
+    Str << Cfg->getContext()->mangleName(Cfg->getFunctionName()) << ":\n";
   }
   Str << getAsmName() << ":\n";
   for (PhiList::const_iterator I = Phis.begin(), E = Phis.end(); I != E; ++I) {

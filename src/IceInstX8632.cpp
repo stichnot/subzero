@@ -100,7 +100,7 @@ IceString InstX8632Label::getName(const IceCfg *Cfg) const {
   const static size_t BufLen = 30;
   char buf[BufLen];
   snprintf(buf, BufLen, "%u", Number);
-  return ".L" + Cfg->getName() + "$__" + buf;
+  return ".L" + Cfg->getFunctionName() + "$__" + buf;
 }
 
 InstX8632Br::InstX8632Br(IceCfg *Cfg, CfgNode *TargetTrue, CfgNode *TargetFalse,

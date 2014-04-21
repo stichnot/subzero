@@ -26,9 +26,9 @@ IceOstream *GlobalStr = NULL;
 bool IceCfg::HasEmittedFirstMethod = false;
 
 IceCfg::IceCfg(GlobalContext *Ctx)
-    : Ctx(Ctx), Name(""), Type(IceType_void), IsInternal(false),
-      HasError(false), ErrorMessage(""), Entry(NULL), NextInstNumber(1),
-      Live(NULL),
+    : Ctx(Ctx), FunctionName(""), ReturnType(IceType_void),
+      IsInternalLinkage(false), HasError(false), ErrorMessage(""), Entry(NULL),
+      NextInstNumber(1), Live(NULL),
       Target(TargetLowering::createLowering(Ctx->getTargetArch(), this)),
       CurrentNode(NULL) {
   GlobalStr = &Ctx->StrDump;
@@ -333,8 +333,9 @@ void IceCfg::emit(uint32_t Option) {
   // TODO: emit to a specified file
   Str << "\t.text\n";
   if (!getInternal()) {
-    Str << "\t.globl\t" << getContext()->mangleName(Name) << "\n";
-    Str << "\t.type\t" << getContext()->mangleName(Name) << ",@function\n";
+    Str << "\t.globl\t" << getContext()->mangleName(getFunctionName()) << "\n";
+    Str << "\t.type\t" << getContext()->mangleName(getFunctionName())
+        << ",@function\n";
   }
   for (NodeList::const_iterator I = Nodes.begin(), E = Nodes.end(); I != E;
        ++I) {
@@ -353,7 +354,7 @@ void IceCfg::dump() {
     Str << "define ";
     if (getInternal())
       Str << "internal ";
-    Str << Type << " @" << Name << "(";
+    Str << ReturnType << " @" << getFunctionName() << "(";
     for (uint32_t i = 0; i < Args.size(); ++i) {
       if (i > 0)
         Str << ", ";

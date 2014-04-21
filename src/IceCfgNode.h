@@ -31,7 +31,7 @@ public:
   uint32_t getIndex() const { return Number; }
   IceString getName() const;
   IceString getAsmName() const {
-    return ".L" + Cfg->getName() + "$" + getName();
+    return ".L" + Cfg->getFunctionName() + "$" + getName();
   }
 
   // The HasReturn flag indicates that this node contains a return

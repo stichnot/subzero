@@ -67,7 +67,7 @@ public:
     VarMap.clear();
     NodeMap.clear();
     Cfg = new Ice::IceCfg(Ctx);
-    Cfg->setName(F->getName());
+    Cfg->setFunctionName(F->getName());
     Cfg->setReturnType(convertType(F->getReturnType()));
     Cfg->setInternal(F->hasInternalLinkage());
 
@@ -664,8 +664,9 @@ int main(int argc, char **argv) {
       Cfg->setInternal(false);
 
     if (SubzeroTimingEnabled) {
-      std::cerr << "[Subzero timing] Convert function " << Cfg->getName()
-                << ": " << TConvert.getElapsedSec() << " sec\n";
+      std::cerr << "[Subzero timing] Convert function "
+                << Cfg->getFunctionName() << ": " << TConvert.getElapsedSec()
+                << " sec\n";
     }
 
     if (DisableTranslation) {
@@ -674,8 +675,9 @@ int main(int argc, char **argv) {
       Ice::IceTimer TTranslate;
       Cfg->translate(TargetArch);
       if (SubzeroTimingEnabled) {
-        std::cerr << "[Subzero timing] Translate function " << Cfg->getName()
-                  << ": " << TTranslate.getElapsedSec() << " sec\n";
+        std::cerr << "[Subzero timing] Translate function "
+                  << Cfg->getFunctionName() << ": "
+                  << TTranslate.getElapsedSec() << " sec\n";
       }
       if (Cfg->hasError()) {
         errs() << "ICE translation error: " << Cfg->getError() << "\n";
@@ -685,8 +687,8 @@ int main(int argc, char **argv) {
       Ice::IceTimer TEmit;
       Cfg->emit(AsmFormat);
       if (SubzeroTimingEnabled) {
-        std::cerr << "[Subzero timing] Emit function " << Cfg->getName() << ": "
-                  << TEmit.getElapsedSec() << " sec\n";
+        std::cerr << "[Subzero timing] Emit function " << Cfg->getFunctionName()
+                  << ": " << TEmit.getElapsedSec() << " sec\n";
       }
     }
   }
