@@ -21,17 +21,17 @@
 
 namespace Ice {
 
-// IceTypePool maps constants of type KeyType (e.g. float) to pointers
+// TypePool maps constants of type KeyType (e.g. float) to pointers
 // to type ValueType (e.g. ConstantFloat).  KeyType values are
 // compared using memcmp() because of potential NaN values in KeyType
 // values.  TODO: allow a custom KeyType comparator for a KeyType
 // containing e.g. a non-pooled string.
-template <typename KeyType, typename ValueType> class IceTypePool {
-  IceTypePool(const IceTypePool &) LLVM_DELETED_FUNCTION;
-  IceTypePool &operator=(const IceTypePool &) LLVM_DELETED_FUNCTION;
+template <typename KeyType, typename ValueType> class TypePool {
+  TypePool(const TypePool &) LLVM_DELETED_FUNCTION;
+  TypePool &operator=(const TypePool &) LLVM_DELETED_FUNCTION;
 
 public:
-  IceTypePool() {}
+  TypePool() {}
   ValueType *getOrAdd(GlobalContext *Ctx, IceType Type, KeyType Key) {
     uint32_t Index = KeyToIndex.translate(TupleType(Type, Key));
     if (Index >= Pool.size()) {
@@ -64,10 +64,10 @@ class ConstantPool {
 
 public:
   ConstantPool() {}
-  IceTypePool<float, ConstantFloat> Floats;
-  IceTypePool<double, ConstantDouble> Doubles;
-  IceTypePool<uint64_t, ConstantInteger> Integers;
-  IceTypePool<IceRelocatableTuple, ConstantRelocatable> Relocatables;
+  TypePool<float, ConstantFloat> Floats;
+  TypePool<double, ConstantDouble> Doubles;
+  TypePool<uint64_t, ConstantInteger> Integers;
+  TypePool<IceRelocatableTuple, ConstantRelocatable> Relocatables;
 };
 
 GlobalContext::GlobalContext(llvm::raw_ostream *OsDump,
