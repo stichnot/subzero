@@ -105,7 +105,7 @@ uint32_t Liveness::getLiveIndex(const Variable *Var) const {
 void Liveness::addLiveRange(Variable *Var, int32_t Start, int32_t End,
                             uint32_t WeightDelta) {
   LiveRange &LiveRange = LiveRanges[Var->getIndex()];
-  assert(WeightDelta != IceRegWeight::Inf);
+  assert(WeightDelta != RegWeight::Inf);
   LiveRange.addSegment(Start, End);
   LiveRange.addWeight(WeightDelta);
 }

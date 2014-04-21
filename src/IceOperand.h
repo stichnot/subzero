@@ -182,13 +182,13 @@ private:
   bool SuppressMangling;
 };
 
-// IceRegWeight is a wrapper for a uint32_t weight value, with a
+// RegWeight is a wrapper for a uint32_t weight value, with a
 // special value that represents infinite weight, and an addWeight()
 // method that ensures that W+infinity=infinity.
-class IceRegWeight {
+class RegWeight {
 public:
-  IceRegWeight() : Weight(0) {}
-  IceRegWeight(uint32_t Weight) : Weight(Weight) {}
+  RegWeight() : Weight(0) {}
+  RegWeight(uint32_t Weight) : Weight(Weight) {}
   const static uint32_t Inf = ~0; // Force regalloc to give a register
   const static uint32_t Zero = 0; // Force regalloc NOT to give a register
   void addWeight(uint32_t Delta) {
@@ -197,7 +197,7 @@ public:
     else if (Weight != Inf)
       Weight += Delta;
   }
-  void addWeight(const IceRegWeight &Other) { addWeight(Other.Weight); }
+  void addWeight(const RegWeight &Other) { addWeight(Other.Weight); }
   void setWeight(uint32_t Val) { Weight = Val; }
   uint32_t getWeight() const { return Weight; }
   bool isInf() const { return Weight == Inf; }
@@ -205,10 +205,10 @@ public:
 private:
   uint32_t Weight;
 };
-IceOstream &operator<<(IceOstream &Str, const IceRegWeight &W);
-bool operator<(const IceRegWeight &A, const IceRegWeight &B);
-bool operator<=(const IceRegWeight &A, const IceRegWeight &B);
-bool operator==(const IceRegWeight &A, const IceRegWeight &B);
+IceOstream &operator<<(IceOstream &Str, const RegWeight &W);
+bool operator<(const RegWeight &A, const RegWeight &B);
+bool operator<=(const RegWeight &A, const RegWeight &B);
+bool operator==(const RegWeight &A, const RegWeight &B);
 
 // LiveRange is a set of instruction number intervals representing
 // a variable's live range.  Generally there is one interval per basic
@@ -232,8 +232,8 @@ public:
   bool isEmpty() const { return Range.empty(); }
   int32_t getStart() const { return Range.empty() ? -1 : Range.begin()->first; }
 
-  IceRegWeight getWeight() const { return Weight; }
-  void setWeight(const IceRegWeight &NewWeight) { Weight = NewWeight; }
+  RegWeight getWeight() const { return Weight; }
+  void setWeight(const RegWeight &NewWeight) { Weight = NewWeight; }
   void addWeight(uint32_t Delta) { Weight.addWeight(Delta); }
   void dump(IceOstream &Str) const;
 
@@ -251,7 +251,7 @@ private:
   typedef std::list<RangeElementType> RangeType;
 #endif
   RangeType Range;
-  IceRegWeight Weight;
+  RegWeight Weight;
 };
 
 IceOstream &operator<<(IceOstream &Str, const LiveRange &L);
@@ -295,9 +295,9 @@ public:
   int32_t getRegNumTmp() const { return RegNumTmp; }
   void setRegNumTmp(int32_t NewRegNum) { RegNumTmp = NewRegNum; }
 
-  IceRegWeight getWeight() const { return Weight; }
+  RegWeight getWeight() const { return Weight; }
   void setWeight(uint32_t NewWeight) { Weight = NewWeight; }
-  void setWeightInfinite() { Weight = IceRegWeight::Inf; }
+  void setWeightInfinite() { Weight = RegWeight::Inf; }
 
   Variable *getPreferredRegister() const { return RegisterPreference; }
   bool getRegisterOverlap() const { return AllowRegisterOverlap; }
@@ -310,14 +310,14 @@ public:
   void setLiveRange(const LiveRange &Range) { Live = Range; }
   void resetLiveRange() { Live.reset(); }
   void addLiveRange(int32_t Start, int32_t End, uint32_t WeightDelta) {
-    assert(WeightDelta != IceRegWeight::Inf);
+    assert(WeightDelta != RegWeight::Inf);
     Live.addSegment(Start, End);
     if (Weight.isInf())
-      Live.setWeight(IceRegWeight::Inf);
+      Live.setWeight(RegWeight::Inf);
     else
       Live.addWeight(WeightDelta * Weight.getWeight());
   }
-  void setLiveRangeInfiniteWeight() { Live.setWeight(IceRegWeight::Inf); }
+  void setLiveRangeInfiniteWeight() { Live.setWeight(RegWeight::Inf); }
 
   Variable *getLo() const { return LoVar; }
   Variable *getHi() const { return HiVar; }
@@ -373,7 +373,7 @@ private:
   int32_t RegNum;
   // RegNumTmp is the tentative assignment during register allocation.
   int32_t RegNumTmp;
-  IceRegWeight Weight; // Register allocation priority
+  RegWeight Weight; // Register allocation priority
   // RegisterPreference says that if possible, the register allocator
   // should prefer the register that was assigned to this linked
   // variable.  It also allows a spill slot to share its stack

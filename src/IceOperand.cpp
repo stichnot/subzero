@@ -20,13 +20,11 @@
 
 namespace Ice {
 
-bool operator<(const IceRegWeight &A, const IceRegWeight &B) {
+bool operator<(const RegWeight &A, const RegWeight &B) {
   return A.getWeight() < B.getWeight();
 }
-bool operator<=(const IceRegWeight &A, const IceRegWeight &B) {
-  return !(B < A);
-}
-bool operator==(const IceRegWeight &A, const IceRegWeight &B) {
+bool operator<=(const RegWeight &A, const RegWeight &B) { return !(B < A); }
+bool operator==(const RegWeight &A, const RegWeight &B) {
   return !(B < A) && !(A < B);
 }
 
@@ -274,8 +272,8 @@ IceOstream &operator<<(IceOstream &Str, const LiveRange &L) {
   return Str;
 }
 
-IceOstream &operator<<(IceOstream &Str, const IceRegWeight &W) {
-  if (W.getWeight() == IceRegWeight::Inf)
+IceOstream &operator<<(IceOstream &Str, const RegWeight &W) {
+  if (W.getWeight() == RegWeight::Inf)
     Str << "Inf";
   else
     Str << W.getWeight();

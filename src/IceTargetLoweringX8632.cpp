@@ -301,7 +301,7 @@ void IceTargetX8632::addProlog(CfgNode *Node) {
       continue;
     // A spill slot linked to a variable with a stack slot should reuse
     // that stack slot.
-    if (Var->getWeight() == IceRegWeight::Zero && Var->getRegisterOverlap()) {
+    if (Var->getWeight() == RegWeight::Zero && Var->getRegisterOverlap()) {
       if (Variable *Linked = Var->getPreferredRegister()) {
         if (!Linked->hasReg())
           continue;
@@ -386,7 +386,7 @@ void IceTargetX8632::addProlog(CfgNode *Node) {
       continue;
     if (ComputedLiveRanges && Var->getLiveRange().isEmpty())
       continue;
-    if (Var->getWeight() == IceRegWeight::Zero && Var->getRegisterOverlap()) {
+    if (Var->getWeight() == RegWeight::Zero && Var->getRegisterOverlap()) {
       if (Variable *Linked = Var->getPreferredRegister()) {
         if (!Linked->hasReg()) {
           // TODO: Make sure Linked has already been assigned a stack
@@ -1321,7 +1321,7 @@ void IceTargetX8632::lowerCast(const InstCast *Inst) {
       // TODO: Should be able to force a spill setup by calling legalize() with
       // Legal_Mem and not Legal_Reg or Legal_Imm.
       Variable *Spill = Cfg->makeVariable(SrcType, Context.getNode());
-      Spill->setWeight(IceRegWeight::Zero);
+      Spill->setWeight(RegWeight::Zero);
       Spill->setPreferredRegister(Dest, true);
       _mov(T, Src0RM);
       _mov(Spill, T);
@@ -1336,7 +1336,7 @@ void IceTargetX8632::lowerCast(const InstCast *Inst) {
       //   t_hi.i32 = hi(s.f64)
       //   a_hi.i32 = t_hi.i32
       Variable *Spill = Cfg->makeVariable(IceType_f64, Context.getNode());
-      Spill->setWeight(IceRegWeight::Zero);
+      Spill->setWeight(RegWeight::Zero);
       Spill->setPreferredRegister(llvm::dyn_cast<Variable>(Src0RM), true);
       _mov(Spill, Src0RM);
 
@@ -1364,7 +1364,7 @@ void IceTargetX8632::lowerCast(const InstCast *Inst) {
       //   hi(s.f64) = t_hi.i32
       //   a.f64 = s.f64
       Variable *Spill = Cfg->makeVariable(IceType_f64, Context.getNode());
-      Spill->setWeight(IceRegWeight::Zero);
+      Spill->setWeight(RegWeight::Zero);
       Spill->setPreferredRegister(Dest, true);
 
       Context.insert(InstFakeDef::create(Cfg, Spill));

@@ -54,7 +54,7 @@ void IceLinearScan::scan(const llvm::SmallBitVector &RegMaskFull) {
     Variable *Var = *I;
     // Explicitly don't consider zero-weight variables, which are
     // meant to be spill slots.
-    if (Var->getWeight() == IceRegWeight::Zero)
+    if (Var->getWeight() == RegWeight::Zero)
       continue;
     // Don't bother if the variable has a null live range, which means
     // it was never referenced.
@@ -258,7 +258,7 @@ void IceLinearScan::scan(const llvm::SmallBitVector &RegMaskFull) {
     } else {
       // Fallback: there are no free registers, so we look for the
       // lowest-weight register and see if Cur has higher weight.
-      std::vector<IceRegWeight> Weights(RegMask.size());
+      std::vector<RegWeight> Weights(RegMask.size());
       // Check Active ranges.
       for (UnorderedRanges::const_iterator I = Active.begin(), E = Active.end();
            I != E; ++I) {
@@ -288,7 +288,7 @@ void IceLinearScan::scan(const llvm::SmallBitVector &RegMaskFull) {
         if (RegNum < 0)
           continue;
         if (Item.overlaps(Cur))
-          Weights[RegNum].setWeight(IceRegWeight::Inf);
+          Weights[RegNum].setWeight(RegWeight::Inf);
       }
 
       // All the weights are now calculated.  Find the register with
