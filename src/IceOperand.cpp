@@ -239,7 +239,7 @@ void Variable::dump(const IceCfg *Cfg) const {
   }
 }
 
-void IceConstantRelocatable::emit(const IceCfg *Cfg, uint32_t Option) const {
+void ConstantRelocatable::emit(const IceCfg *Cfg, uint32_t Option) const {
   IceOstream &Str = Cfg->getContext()->StrEmit;
   if (SuppressMangling)
     Str << Name;
@@ -252,7 +252,7 @@ void IceConstantRelocatable::emit(const IceCfg *Cfg, uint32_t Option) const {
   }
 }
 
-void IceConstantRelocatable::dump(const IceCfg *Cfg) const {
+void ConstantRelocatable::dump(const IceCfg *Cfg) const {
   IceOstream &Str = Cfg->getContext()->StrDump;
   Str << "@" << Name;
   if (Offset)

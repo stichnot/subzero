@@ -10,7 +10,7 @@
 // This file declares the Operand class and its target-independent
 // subclasses.  The main classes are Variable, which represents an
 // LLVM variable that is either register- or stack-allocated, and the
-// IceConstant hierarchy, which represents integer, floating-point,
+// Constant hierarchy, which represents integer, floating-point,
 // and/or symbolic constants.
 //
 //===----------------------------------------------------------------------===//
@@ -68,9 +68,9 @@ private:
   Operand &operator=(const Operand &) LLVM_DELETED_FUNCTION;
 };
 
-// IceConstant is the abstract base class for constants.  All
+// Constant is the abstract base class for constants.  All
 // constants are allocated from a global arena and are pooled.
-class IceConstant : public Operand {
+class Constant : public Operand {
 public:
   virtual void emit(const IceCfg *Cfg, uint32_t Option) const = 0;
   virtual void dump(const IceCfg *Cfg) const = 0;
@@ -81,24 +81,23 @@ public:
   }
 
 protected:
-  IceConstant(OperandKind Kind, IceType Type) : Operand(Kind, Type) {
+  Constant(OperandKind Kind, IceType Type) : Operand(Kind, Type) {
     Vars = NULL;
     NumVars = 0;
   }
 
 private:
-  IceConstant(const IceConstant &) LLVM_DELETED_FUNCTION;
-  IceConstant &operator=(const IceConstant &) LLVM_DELETED_FUNCTION;
+  Constant(const Constant &) LLVM_DELETED_FUNCTION;
+  Constant &operator=(const Constant &) LLVM_DELETED_FUNCTION;
 };
 
-// IceConstantPrimitive<> wraps a primitive type.
+// ConstantPrimitive<> wraps a primitive type.
 template <typename T, Operand::OperandKind K>
-class IceConstantPrimitive : public IceConstant {
+class ConstantPrimitive : public Constant {
 public:
-  static IceConstantPrimitive *create(GlobalContext *Ctx, IceType Type,
-                                      T Value) {
-    return new (Ctx->allocate<IceConstantPrimitive>())
-        IceConstantPrimitive(Type, Value);
+  static ConstantPrimitive *create(GlobalContext *Ctx, IceType Type, T Value) {
+    return new (Ctx->allocate<ConstantPrimitive>())
+        ConstantPrimitive(Type, Value);
   }
   T getValue() const { return Value; }
   virtual void emit(const IceCfg *Cfg, uint32_t Option) const {
@@ -115,22 +114,19 @@ public:
   }
 
 private:
-  IceConstantPrimitive(IceType Type, T Value)
-      : IceConstant(K, Type), Value(Value) {}
-  IceConstantPrimitive(const IceConstantPrimitive &) LLVM_DELETED_FUNCTION;
-  IceConstantPrimitive &
-  operator=(const IceConstantPrimitive &) LLVM_DELETED_FUNCTION;
+  ConstantPrimitive(IceType Type, T Value) : Constant(K, Type), Value(Value) {}
+  ConstantPrimitive(const ConstantPrimitive &) LLVM_DELETED_FUNCTION;
+  ConstantPrimitive &operator=(const ConstantPrimitive &) LLVM_DELETED_FUNCTION;
   const T Value;
 };
 
-typedef IceConstantPrimitive<uint64_t, Operand::kConstInteger>
-IceConstantInteger;
-typedef IceConstantPrimitive<float, Operand::kConstFloat> IceConstantFloat;
-typedef IceConstantPrimitive<double, Operand::kConstDouble> IceConstantDouble;
+typedef ConstantPrimitive<uint64_t, Operand::kConstInteger> ConstantInteger;
+typedef ConstantPrimitive<float, Operand::kConstFloat> ConstantFloat;
+typedef ConstantPrimitive<double, Operand::kConstDouble> ConstantDouble;
 
 // IceRelocatableTuple bundles the parameters that are used to
-// construct an IceConstantRelocatable.  It is done this way so that
-// IceConstantRelocatable can fit into the global constant pool
+// construct an ConstantRelocatable.  It is done this way so that
+// ConstantRelocatable can fit into the global constant pool
 // template mechanism.
 class IceRelocatableTuple {
   IceRelocatableTuple &
@@ -151,13 +147,13 @@ public:
   bool SuppressMangling;
 };
 
-// IceConstantRelocatable represents a symbolic constant combined with
+// ConstantRelocatable represents a symbolic constant combined with
 // a fixed offset.
-class IceConstantRelocatable : public IceConstant {
+class ConstantRelocatable : public Constant {
 public:
-  static IceConstantRelocatable *create(GlobalContext *Ctx, IceType Type,
-                                        const IceRelocatableTuple &Tuple) {
-    return new (Ctx->allocate<IceConstantRelocatable>()) IceConstantRelocatable(
+  static ConstantRelocatable *create(GlobalContext *Ctx, IceType Type,
+                                     const IceRelocatableTuple &Tuple) {
+    return new (Ctx->allocate<ConstantRelocatable>()) ConstantRelocatable(
         Type, Tuple.Handle, Tuple.Offset, Tuple.Name, Tuple.SuppressMangling);
   }
   const void *getHandle() const { return Handle; }
@@ -174,13 +170,13 @@ public:
   }
 
 private:
-  IceConstantRelocatable(IceType Type, const void *Handle, int64_t Offset,
-                         const IceString &Name, bool SuppressMangling)
-      : IceConstant(kConstRelocatable, Type), Handle(Handle), Offset(Offset),
+  ConstantRelocatable(IceType Type, const void *Handle, int64_t Offset,
+                      const IceString &Name, bool SuppressMangling)
+      : Constant(kConstRelocatable, Type), Handle(Handle), Offset(Offset),
         Name(Name), SuppressMangling(SuppressMangling) {}
-  IceConstantRelocatable(const IceConstantRelocatable &) LLVM_DELETED_FUNCTION;
-  IceConstantRelocatable &
-  operator=(const IceConstantRelocatable &) LLVM_DELETED_FUNCTION;
+  ConstantRelocatable(const ConstantRelocatable &) LLVM_DELETED_FUNCTION;
+  ConstantRelocatable &
+  operator=(const ConstantRelocatable &) LLVM_DELETED_FUNCTION;
   const void *const Handle; // opaque handle e.g. to LLVM
   const int64_t Offset;     // fixed offset to add
   const IceString Name;     // optional for debug/dump

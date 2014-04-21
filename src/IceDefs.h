@@ -36,7 +36,7 @@ namespace Ice {
 
 class IceCfg;
 class CfgNode;
-class IceConstant;
+class Constant;
 class GlobalContext;
 class Inst;
 class InstPhi;

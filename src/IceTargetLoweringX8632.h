@@ -120,7 +120,7 @@ protected:
     bool SuppressMangling = true;
     bool Tailcall = false;
     IceType Type = Dest ? Dest->getType() : IceType_void;
-    IceConstant *CallTarget =
+    Constant *CallTarget =
         Ctx->getConstantSym(Type, NULL, 0, Name, SuppressMangling);
     InstCall *Call = InstCall::create(Cfg, MaxSrcs, Dest, CallTarget, Tailcall);
     return Call;

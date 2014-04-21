@@ -39,7 +39,7 @@ static const char *OpcodeTypeFromIceType(IceType type) {
 }
 
 OperandX8632Mem::OperandX8632Mem(IceCfg *Cfg, IceType Type, Variable *Base,
-                                 IceConstant *Offset, Variable *Index,
+                                 Constant *Offset, Variable *Index,
                                  uint32_t Shift)
     : OperandX8632(kMem, Type), Base(Base), Offset(Offset), Index(Index),
       Shift(Shift) {
@@ -436,7 +436,7 @@ template <> void InstX8632Imul::emit(const IceCfg *Cfg, uint32_t Option) const {
     Str << "\timul\t";
     getSrc(1)->emit(Cfg, Option);
     Str << "\n";
-  } else if (llvm::isa<IceConstant>(getSrc(1))) {
+  } else if (llvm::isa<Constant>(getSrc(1))) {
     Str << "\timul\t";
     getDest()->emit(Cfg, Option);
     Str << ", ";
@@ -899,8 +899,7 @@ void OperandX8632Mem::emit(const IceCfg *Cfg, uint32_t Option) const {
   bool OffsetIsNegative = false;
   if (Offset == NULL) {
     OffsetIsZero = true;
-  } else if (IceConstantInteger *CI =
-                 llvm::dyn_cast<IceConstantInteger>(Offset)) {
+  } else if (ConstantInteger *CI = llvm::dyn_cast<ConstantInteger>(Offset)) {
     OffsetIsZero = (CI->getValue() == 0);
     OffsetIsNegative = (static_cast<int64_t>(CI->getValue()) < 0);
   }
@@ -935,8 +934,7 @@ void OperandX8632Mem::dump(const IceCfg *Cfg) const {
   bool OffsetIsNegative = false;
   if (Offset == NULL) {
     OffsetIsZero = true;
-  } else if (IceConstantInteger *CI =
-                 llvm::dyn_cast<IceConstantInteger>(Offset)) {
+  } else if (ConstantInteger *CI = llvm::dyn_cast<ConstantInteger>(Offset)) {
     OffsetIsZero = (CI->getValue() == 0);
     OffsetIsNegative = (static_cast<int64_t>(CI->getValue()) < 0);
   }

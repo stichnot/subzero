@@ -22,7 +22,7 @@
 namespace Ice {
 
 // IceTypePool maps constants of type KeyType (e.g. float) to pointers
-// to type ValueType (e.g. IceConstantFloat).  KeyType values are
+// to type ValueType (e.g. ConstantFloat).  KeyType values are
 // compared using memcmp() because of potential NaN values in KeyType
 // values.  TODO: allow a custom KeyType comparator for a KeyType
 // containing e.g. a non-pooled string.
@@ -58,16 +58,16 @@ private:
 
 // The global constant pool bundles individual pools of each type of
 // interest.
-class IceConstantPool {
-  IceConstantPool(const IceConstantPool &) LLVM_DELETED_FUNCTION;
-  IceConstantPool &operator=(const IceConstantPool &) LLVM_DELETED_FUNCTION;
+class ConstantPool {
+  ConstantPool(const ConstantPool &) LLVM_DELETED_FUNCTION;
+  ConstantPool &operator=(const ConstantPool &) LLVM_DELETED_FUNCTION;
 
 public:
-  IceConstantPool() {}
-  IceTypePool<float, IceConstantFloat> Floats;
-  IceTypePool<double, IceConstantDouble> Doubles;
-  IceTypePool<uint64_t, IceConstantInteger> Integers;
-  IceTypePool<IceRelocatableTuple, IceConstantRelocatable> Relocatables;
+  ConstantPool() {}
+  IceTypePool<float, ConstantFloat> Floats;
+  IceTypePool<double, ConstantDouble> Doubles;
+  IceTypePool<uint64_t, ConstantInteger> Integers;
+  IceTypePool<IceRelocatableTuple, ConstantRelocatable> Relocatables;
 };
 
 GlobalContext::GlobalContext(llvm::raw_ostream *OsDump,
@@ -76,8 +76,8 @@ GlobalContext::GlobalContext(llvm::raw_ostream *OsDump,
                              IceTargetArch TargetArch, IceOptLevel OptLevel,
                              IceString TestPrefix)
     : StrDump(OsDump), StrEmit(OsEmit), VerboseMask(VerboseMask),
-      ConstantPool(new IceConstantPool()), TargetArch(TargetArch),
-      OptLevel(OptLevel), TestPrefix(TestPrefix) {}
+      ConstPool(new ConstantPool()), TargetArch(TargetArch), OptLevel(OptLevel),
+      TestPrefix(TestPrefix) {}
 
 // In this context, name mangling means to rewrite a symbol using a
 // given prefix.  For a C++ symbol, nest the original symbol inside
@@ -136,24 +136,22 @@ IceString GlobalContext::mangleName(const IceString &Name) const {
 
 GlobalContext::~GlobalContext() {}
 
-IceConstant *GlobalContext::getConstantInt(IceType Type,
-                                           uint64_t ConstantInt64) {
-  return ConstantPool->Integers.getOrAdd(this, Type, ConstantInt64);
+Constant *GlobalContext::getConstantInt(IceType Type, uint64_t ConstantInt64) {
+  return ConstPool->Integers.getOrAdd(this, Type, ConstantInt64);
 }
 
-IceConstant *GlobalContext::getConstantFloat(float ConstantFloat) {
-  return ConstantPool->Floats.getOrAdd(this, IceType_f32, ConstantFloat);
+Constant *GlobalContext::getConstantFloat(float ConstantFloat) {
+  return ConstPool->Floats.getOrAdd(this, IceType_f32, ConstantFloat);
 }
 
-IceConstant *GlobalContext::getConstantDouble(double ConstantDouble) {
-  return ConstantPool->Doubles.getOrAdd(this, IceType_f64, ConstantDouble);
+Constant *GlobalContext::getConstantDouble(double ConstantDouble) {
+  return ConstPool->Doubles.getOrAdd(this, IceType_f64, ConstantDouble);
 }
 
-IceConstant *GlobalContext::getConstantSym(IceType Type, const void *Handle,
-                                           int64_t Offset,
-                                           const IceString &Name,
-                                           bool SuppressMangling) {
-  return ConstantPool->Relocatables.getOrAdd(
+Constant *GlobalContext::getConstantSym(IceType Type, const void *Handle,
+                                        int64_t Offset, const IceString &Name,
+                                        bool SuppressMangling) {
+  return ConstPool->Relocatables.getOrAdd(
       this, Type, IceRelocatableTuple(Handle, Offset, Name, SuppressMangling));
 }
 

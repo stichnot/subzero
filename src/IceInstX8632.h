@@ -44,13 +44,13 @@ protected:
 class OperandX8632Mem : public OperandX8632 {
 public:
   static OperandX8632Mem *create(IceCfg *Cfg, IceType Type, Variable *Base,
-                                 IceConstant *Offset, Variable *Index = NULL,
+                                 Constant *Offset, Variable *Index = NULL,
                                  uint32_t Shift = 0) {
     return new (Cfg->allocate<OperandX8632Mem>())
         OperandX8632Mem(Cfg, Type, Base, Offset, Index, Shift);
   }
   Variable *getBase() const { return Base; }
-  IceConstant *getOffset() const { return Offset; }
+  Constant *getOffset() const { return Offset; }
   Variable *getIndex() const { return Index; }
   uint32_t getShift() const { return Shift; }
   virtual void setUse(const Inst *Inst, const CfgNode *Node);
@@ -62,12 +62,12 @@ public:
   }
 
 private:
-  OperandX8632Mem(IceCfg *Cfg, IceType Type, Variable *Base,
-                  IceConstant *Offset, Variable *Index, uint32_t Shift);
+  OperandX8632Mem(IceCfg *Cfg, IceType Type, Variable *Base, Constant *Offset,
+                  Variable *Index, uint32_t Shift);
   OperandX8632Mem(const OperandX8632Mem &) LLVM_DELETED_FUNCTION;
   OperandX8632Mem &operator=(const OperandX8632Mem &) LLVM_DELETED_FUNCTION;
   Variable *Base;
-  IceConstant *Offset;
+  Constant *Offset;
   Variable *Index;
   uint32_t Shift;
 };

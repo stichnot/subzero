@@ -56,17 +56,17 @@ public:
   IceString getTestPrefix() const { return TestPrefix; }
   IceString mangleName(const IceString &Name) const;
 
-  // Manage IceConstants.
+  // Manage Constants.
   // getConstant*() functions are not const because they might add
   // something to the constant pool.
-  IceConstant *getConstantInt(IceType Type, uint64_t ConstantInt64);
-  IceConstant *getConstantFloat(float Value);
-  IceConstant *getConstantDouble(double Value);
+  Constant *getConstantInt(IceType Type, uint64_t ConstantInt64);
+  Constant *getConstantFloat(float Value);
+  Constant *getConstantDouble(double Value);
   // Returns a symbolic constant.  Handle is currently unused but is
   // reserved to hold something LLVM-specific to facilitate linking.
-  IceConstant *getConstantSym(IceType Type, const void *Handle, int64_t Offset,
-                              const IceString &Name = "",
-                              bool SuppressMangling = false);
+  Constant *getConstantSym(IceType Type, const void *Handle, int64_t Offset,
+                           const IceString &Name = "",
+                           bool SuppressMangling = false);
 
   // Allocate data of type T using the global allocator.
   template <typename T> T *allocate() { return Allocator.Allocate<T>(); }
@@ -77,7 +77,7 @@ public:
 private:
   llvm::BumpPtrAllocator Allocator;
   IceVerboseMask VerboseMask;
-  llvm::OwningPtr<class IceConstantPool> ConstantPool;
+  llvm::OwningPtr<class ConstantPool> ConstPool;
   const IceTargetArch TargetArch;
   const IceOptLevel OptLevel;
   const IceString TestPrefix;

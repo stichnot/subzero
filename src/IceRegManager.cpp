@@ -64,7 +64,7 @@ bool IceRegManagerEntry::contains(const Operand *Operand) const {
        I != E; ++I) {
     if (*I == Operand)
       return true;
-    // TODO: Make it work for IceConstant pointers.
+    // TODO: Make it work for Constant pointers.
   }
   return false;
 }
