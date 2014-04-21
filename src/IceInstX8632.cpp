@@ -19,6 +19,8 @@
 #include "IceTargetLoweringX8632.h"
 #include "IceOperand.h"
 
+namespace Ice {
+
 // XXX kill this
 static const char *OpcodeTypeFromIceType(IceType type) {
   switch (type) {
@@ -998,3 +1000,5 @@ void IceVariableSplit::dump(const IceCfg *Cfg) const {
   Var->dump(Cfg);
   Str << ")";
 }
+
+} // end of namespace Ice

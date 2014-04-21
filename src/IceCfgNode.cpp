@@ -20,6 +20,8 @@
 #include "IceTargetLowering.h"
 #include "IceInstX8632.h"
 
+namespace Ice {
+
 IceCfgNode::IceCfgNode(IceCfg *Cfg, uint32_t LabelNumber, IceString Name)
     : Cfg(Cfg), Number(LabelNumber), Name(Name), HasReturn(false) {}
 
@@ -506,3 +508,5 @@ void IceCfgNode::dump(IceCfg *Cfg) const {
     Str << "\n";
   }
 }
+
+} // end of namespace Ice

@@ -19,6 +19,8 @@
 #include "IceDefs.h"
 #include "IceTypes.h"
 
+namespace Ice {
+
 class IceInst {
 public:
   enum InstKind {
@@ -663,5 +665,7 @@ protected:
   IceInstTarget(const IceInstTarget &) LLVM_DELETED_FUNCTION;
   IceInstTarget &operator=(const IceInstTarget &) LLVM_DELETED_FUNCTION;
 };
+
+} // end of namespace Ice
 
 #endif // SUBZERO_SRC_ICEINST_H

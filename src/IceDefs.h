@@ -32,6 +32,8 @@
 #include "llvm/Support/raw_ostream.h"
 #include "llvm/Support/Timer.h"
 
+namespace Ice {
+
 class IceCfg;
 class IceCfgNode;
 class IceConstant;
@@ -147,5 +149,7 @@ public:
 private:
   const llvm::TimeRecord Start;
 };
+
+} // end of namespace Ice
 
 #endif // SUBZERO_SRC_ICEDEFS_H

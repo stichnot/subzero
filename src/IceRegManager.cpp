@@ -24,6 +24,8 @@
 #include "IceTargetLowering.h"
 #include "IceTypes.h"
 
+namespace Ice {
+
 IceRegManagerEntry::IceRegManagerEntry(IceCfg *Cfg, IceVariable *Var,
                                        uint32_t NumReg)
     : Var(Var) {}
@@ -196,3 +198,5 @@ void IceRegManagerEntry::dump(const IceCfg *Cfg) const {
   }
   Str << "}";
 }
+
+} // end of namespace Ice

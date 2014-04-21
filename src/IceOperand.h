@@ -21,6 +21,8 @@
 #include "IceDefs.h"
 #include "IceTypes.h"
 
+namespace Ice {
+
 class IceOperand {
 public:
   enum OperandKind {
@@ -403,5 +405,7 @@ private:
   // this.
   IceVariable *VarsReal[1];
 };
+
+} // end of namespace Ice
 
 #endif // SUBZERO_SRC_ICEOPERAND_H

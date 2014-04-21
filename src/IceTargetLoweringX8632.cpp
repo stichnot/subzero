@@ -22,6 +22,8 @@
 #include "IceOperand.h"
 #include "IceTargetLoweringX8632.h"
 
+namespace Ice {
+
 IceTargetX8632::IceTargetX8632(IceCfg *Cfg)
     : IceTargetLowering(Cfg), IsEbpBasedFrame(false), FrameSizeLocals(0),
       LocalsSizeBytes(0), NextLabelNumber(0), ComputedLiveRanges(false),
@@ -2088,3 +2090,5 @@ void IceTargetX8632::postLower() {
     }
   }
 }
+
+} // end of namespace Ice

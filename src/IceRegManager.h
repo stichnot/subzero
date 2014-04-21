@@ -18,6 +18,8 @@
 #include "IceDefs.h"
 #include "IceTypes.h"
 
+namespace Ice {
+
 // Maintain LRU allocation order.
 // Track which variables are available in which registers.
 //   Each register has a bitmap of variables.
@@ -119,5 +121,7 @@ private:
   QueueType Queue;
   IceCfg *Cfg;
 };
+
+} // end of namespace Ice
 
 #endif // SUBZERO_SRC_ICEREGMANAGER_H

@@ -20,6 +20,8 @@
 #include "IceOperand.h"
 #include "IceTargetLowering.h"
 
+namespace Ice {
+
 IceOstream *GlobalStr = NULL;
 bool IceCfg::HasEmittedFirstMethod = false;
 
@@ -383,3 +385,5 @@ void IceCfg::dump() {
     Str << "}\n";
   }
 }
+
+} // end of namespace Ice

@@ -19,6 +19,8 @@
 #include "IceLiveness.h"
 #include "IceOperand.h"
 
+namespace Ice {
+
 IceInst::IceInst(IceCfg *Cfg, InstKind Kind, uint32_t MaxSrcs,
                  IceVariable *Dest)
     : Kind(Kind), Deleted(false), Dead(false), HasSideEffects(false),
@@ -900,3 +902,5 @@ void IceInstTarget::dump(const IceCfg *Cfg) const {
 void IceInstTarget::dumpExtras(const IceCfg *Cfg) const {
   IceInst::dumpExtras(Cfg);
 }
+
+} // end of namespace Ice

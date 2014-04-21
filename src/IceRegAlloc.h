@@ -20,6 +20,8 @@
 #include "IceDefs.h"
 #include "IceTypes.h"
 
+namespace Ice {
+
 // Currently this just wraps an IceVariable pointer, so in principle
 // we could use containers of IceVariable* instead of
 // IceLiveRangeWrapper.  But in the future, we may want to do more
@@ -72,5 +74,7 @@ private:
   IceLinearScan(const IceLinearScan &) LLVM_DELETED_FUNCTION;
   IceLinearScan &operator=(const IceLinearScan &) LLVM_DELETED_FUNCTION;
 };
+
+} // end of namespace Ice
 
 #endif // SUBZERO_SRC_ICEREGALLOC_H

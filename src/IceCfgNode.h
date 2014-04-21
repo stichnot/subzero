@@ -18,6 +18,8 @@
 
 #include "IceDefs.h"
 
+namespace Ice {
+
 class IceCfgNode {
 public:
   static IceCfgNode *create(IceCfg *Cfg, uint32_t LabelIndex,
@@ -74,5 +76,7 @@ private:
   IcePhiList Phis;       // unordered set of phi instructions
   IceInstList Insts;     // ordered list of non-phi instructions
 };
+
+} // end of namespace Ice
 
 #endif // SUBZERO_SRC_ICECFGNODE_H

@@ -19,6 +19,8 @@
 #include "IceOperand.h"
 #include "IceTargetLowering.h"
 
+namespace Ice {
+
 // IceTypePool maps constants of type KeyType (e.g. float) to pointers
 // to type ValueType (e.g. IceConstantFloat).  KeyType values are
 // compared using memcmp() because of potential NaN values in KeyType
@@ -163,3 +165,5 @@ void IceTimer::printElapsedUs(IceGlobalContext *Ctx,
     Ctx->StrDump << "# " << getElapsedUs() << " usec " << Tag << "\n";
   }
 }
+
+} // end of namespace Ice

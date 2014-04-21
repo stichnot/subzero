@@ -16,6 +16,8 @@
 #ifndef SUBZERO_SRC_ICETYPES_H
 #define SUBZERO_SRC_ICETYPES_H
 
+namespace Ice {
+
 enum IceType {
   IceType_void,
   IceType_i1,
@@ -45,5 +47,7 @@ enum IceOptLevel {
 size_t iceTypeWidthInBytes(IceType Type);
 
 template <> IceOstream &operator<<(class IceOstream &Str, const IceType &Type);
+
+} // end of namespace Ice
 
 #endif // SUBZERO_SRC_ICETYPES_H

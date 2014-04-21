@@ -14,6 +14,8 @@
 #include "IceDefs.h"
 #include "IceTypes.h"
 
+namespace Ice {
+
 namespace {
 
 const struct {
@@ -58,3 +60,5 @@ template <> IceOstream &operator<<(IceOstream &Str, const IceType &Type) {
 
   return Str;
 }
+
+} // end of namespace Ice

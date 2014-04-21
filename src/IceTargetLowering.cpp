@@ -22,6 +22,8 @@
 #include "IceTargetLowering.h"
 #include "IceTargetLoweringX8632.h"
 
+namespace Ice {
+
 void IceLoweringContext::init(IceCfgNode *N) {
   Node = N;
   Cur = getNode()->getInsts().begin();
@@ -169,3 +171,5 @@ void IceTargetLowering::regAlloc() {
   llvm::SmallBitVector RegMask = getRegisterSet(RegInclude, RegExclude);
   LinearScan.scan(RegMask);
 }
+
+} // end of namespace Ice

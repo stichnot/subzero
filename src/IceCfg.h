@@ -22,6 +22,8 @@
 #include "llvm/ADT/OwningPtr.h"
 #include "llvm/Support/Allocator.h"
 
+namespace Ice {
+
 class IceCfg {
 public:
   IceCfg(IceGlobalContext *Ctx);
@@ -147,5 +149,7 @@ private:
   IceCfg(const IceCfg &) LLVM_DELETED_FUNCTION;
   IceCfg &operator=(const IceCfg &) LLVM_DELETED_FUNCTION;
 };
+
+} // end of namespace Ice
 
 #endif // SUBZERO_SRC_ICECFG_H

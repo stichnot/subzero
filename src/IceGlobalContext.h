@@ -22,6 +22,8 @@
 #include "IceDefs.h"
 #include "IceTypes.h"
 
+namespace Ice {
+
 // TODO: Accesses to all non-const fields of IceGlobalContext need to
 // be synchronized, especially the constant pool, the allocator, and
 // the output streams.
@@ -82,5 +84,7 @@ private:
   IceGlobalContext(const IceGlobalContext &) LLVM_DELETED_FUNCTION;
   IceGlobalContext &operator=(const IceGlobalContext &) LLVM_DELETED_FUNCTION;
 };
+
+} // end of namespace Ice
 
 #endif // SUBZERO_SRC_ICEGLOBALCONTEXT_H

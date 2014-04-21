@@ -19,6 +19,8 @@
 #include "IceRegAlloc.h"
 #include "IceTargetLowering.h"
 
+namespace Ice {
+
 // Implements the linear-scan algorithm.  Based on "Linear Scan
 // Register Allocation in the Context of SSA Form and Register
 // Constraints" by Hanspeter Mössenböck and Michael Pfeiffer,
@@ -455,3 +457,5 @@ void IceLinearScan::dump(IceCfg *Cfg) const {
     Str << "\n";
   }
 }
+
+} // end of namespace Ice

@@ -27,6 +27,8 @@
 #include "IceLiveness.h"
 #include "IceOperand.h"
 
+namespace Ice {
+
 void IceLiveness::init() {
   // Initialize most of the container sizes.
   uint32_t NumVars = Cfg->getVariables().size();
@@ -112,3 +114,5 @@ void IceLiveness::addLiveRange(IceVariable *Var, int32_t Start, int32_t End,
 IceLiveRange &IceLiveness::getLiveRange(IceVariable *Var) {
   return LiveRanges[Var->getIndex()];
 }
+
+} // end of namespace Ice

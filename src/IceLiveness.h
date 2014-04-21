@@ -23,6 +23,8 @@
 #include "IceDefs.h"
 #include "IceTypes.h"
 
+namespace Ice {
+
 class IceLivenessNode {
 public:
   IceLivenessNode() : NumLocals(0) {}
@@ -92,5 +94,7 @@ private:
   IceLiveness(const IceLiveness &) LLVM_DELETED_FUNCTION;
   IceLiveness &operator=(const IceLiveness &) LLVM_DELETED_FUNCTION;
 };
+
+} // end of namespace Ice
 
 #endif // SUBZERO_SRC_ICELIVENESS_H

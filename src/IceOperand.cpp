@@ -18,6 +18,8 @@
 #include "IceOperand.h"
 #include "IceTargetLowering.h" // dumping stack/frame pointer register
 
+namespace Ice {
+
 bool operator<(const IceRegWeight &A, const IceRegWeight &B) {
   return A.getWeight() < B.getWeight();
 }
@@ -279,3 +281,5 @@ IceOstream &operator<<(IceOstream &Str, const IceRegWeight &W) {
     Str << W.getWeight();
   return Str;
 }
+
+} // end of namespace Ice

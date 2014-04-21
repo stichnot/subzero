@@ -23,6 +23,8 @@
 
 #include "IceInst.h" // for the names of the IceInst subtypes
 
+namespace Ice {
+
 // IceLoweringContext makes it easy to iterate through non-deleted
 // instructions in a node, and insert new (lowered) instructions at
 // the current point.  Along with the instruction list container and
@@ -193,5 +195,7 @@ private:
   IceTargetLowering(const IceTargetLowering &) LLVM_DELETED_FUNCTION;
   IceTargetLowering &operator=(const IceTargetLowering &) LLVM_DELETED_FUNCTION;
 };
+
+} // end of namespace Ice
 
 #endif // SUBZERO_SRC_ICETARGETLOWERING_H

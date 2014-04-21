@@ -20,6 +20,8 @@
 #include "IceInst.h"
 #include "IceOperand.h"
 
+namespace Ice {
+
 class IceTargetX8632;
 
 class IceOperandX8632 : public IceOperand {
@@ -671,5 +673,7 @@ private:
   IceInstX8632Ret(const IceInstX8632Ret &) LLVM_DELETED_FUNCTION;
   IceInstX8632Ret &operator=(const IceInstX8632Ret &) LLVM_DELETED_FUNCTION;
 };
+
+} // end of namespace Ice
 
 #endif // SUBZERO_SRC_ICEINSTX8632_H

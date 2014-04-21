@@ -20,6 +20,8 @@
 #include "IceTargetLowering.h"
 #include "IceInstX8632.h"
 
+namespace Ice {
+
 class IceTargetX8632 : public IceTargetLowering {
 public:
   static IceTargetX8632 *create(IceCfg *Cfg) { return new IceTargetX8632(Cfg); }
@@ -269,5 +271,7 @@ private:
   IceTargetX8632(const IceTargetX8632 &) LLVM_DELETED_FUNCTION;
   IceTargetX8632 &operator=(const IceTargetX8632 &) LLVM_DELETED_FUNCTION;
 };
+
+} // end of namespace Ice
 
 #endif // SUBZERO_SRC_ICETARGETLOWERINGX8632_H
