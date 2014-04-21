@@ -9,7 +9,7 @@
 //
 // This file implements the Operand class and its
 // target-independent subclasses, primarily for the methods of the
-// IceVariable class.
+// Variable class.
 //
 //===----------------------------------------------------------------------===//
 
@@ -127,14 +127,14 @@ bool LiveRange::containsValue(int32_t Value) const {
   return false;
 }
 
-void IceVariable::setUse(const Inst *Inst, const CfgNode *Node) {
+void Variable::setUse(const Inst *Inst, const CfgNode *Node) {
   if (DefNode == NULL)
     return;
   if (llvm::isa<InstPhi>(Inst) || Node != DefNode)
     DefNode = NULL;
 }
 
-void IceVariable::setDefinition(Inst *Inst, const CfgNode *Node) {
+void Variable::setDefinition(Inst *Inst, const CfgNode *Node) {
   if (DefNode == NULL)
     return;
   // Can first check preexisting DefInst if we care about multi-def vars.
@@ -143,12 +143,12 @@ void IceVariable::setDefinition(Inst *Inst, const CfgNode *Node) {
     DefNode = NULL;
 }
 
-void IceVariable::replaceDefinition(Inst *Inst, const CfgNode *Node) {
+void Variable::replaceDefinition(Inst *Inst, const CfgNode *Node) {
   DefInst = NULL;
   setDefinition(Inst, Node);
 }
 
-void IceVariable::setIsArg(IceCfg *Cfg) {
+void Variable::setIsArg(IceCfg *Cfg) {
   IsArgument = true;
   if (DefNode == NULL)
     return;
@@ -158,7 +158,7 @@ void IceVariable::setIsArg(IceCfg *Cfg) {
   DefNode = NULL;
 }
 
-IceString IceVariable::getName() const {
+IceString Variable::getName() const {
   if (Name != "")
     return Name;
   const static size_t BufLen = 30;
@@ -167,8 +167,8 @@ IceString IceVariable::getName() const {
   return buf;
 }
 
-IceVariable IceVariable::asType(IceType Type) {
-  IceVariable V(Type, DefNode, Number, Name);
+Variable Variable::asType(IceType Type) {
+  Variable V(Type, DefNode, Number, Name);
   V.RegNum = RegNum;
   V.StackOffset = StackOffset;
   return V;
@@ -177,7 +177,7 @@ IceVariable IceVariable::asType(IceType Type) {
 // ======================== dump routines ======================== //
 
 // TODO: This should be handed by the IceTargetLowering subclass.
-void IceVariable::emit(const IceCfg *Cfg, uint32_t Option) const {
+void Variable::emit(const IceCfg *Cfg, uint32_t Option) const {
   IceOstream &Str = Cfg->getContext()->StrEmit;
   assert(DefNode == NULL || DefNode == Cfg->getCurrentNode());
   if (hasReg()) {
@@ -212,7 +212,7 @@ void IceVariable::emit(const IceCfg *Cfg, uint32_t Option) const {
   Str << "]";
 }
 
-void IceVariable::dump(const IceCfg *Cfg) const {
+void Variable::dump(const IceCfg *Cfg) const {
   IceOstream &Str = Cfg->getContext()->StrDump;
   const CfgNode *CurrentNode = Cfg->getCurrentNode();
   (void)CurrentNode; // used only in assert()

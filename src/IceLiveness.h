@@ -9,7 +9,7 @@
 //
 // This file declares the Liveness and LivenessNode classes,
 // which are used for liveness analysis.  The node-specific
-// information tracked for each IceVariable includes whether it is
+// information tracked for each Variable includes whether it is
 // live on entry, whether it is live on exit, the instruction number
 // that starts its live range, and the instruction number that ends
 // its live range.  At the Cfg level, the actual live intervals are
@@ -28,12 +28,12 @@ namespace Ice {
 class LivenessNode {
 public:
   LivenessNode() : NumLocals(0) {}
-  // NumLocals is the number of IceVariables local to this block.
+  // NumLocals is the number of Variables local to this block.
   uint32_t NumLocals;
-  // LiveToVarMap maps a liveness bitvector index to an IceVariable.
+  // LiveToVarMap maps a liveness bitvector index to an Variable.
   // This is generally just for printing/dumping.  The index should be
   // less than NumLocals + Liveness::NumGlobals.
-  std::vector<IceVariable *> LiveToVarMap;
+  std::vector<Variable *> LiveToVarMap;
   // LiveIn and LiveOut track the in- and out-liveness of the global
   // variables.  The size of each vector is
   // LivenessNode::NumGlobals.
@@ -55,8 +55,8 @@ public:
   Liveness(IceCfg *Cfg, LivenessMode Mode)
       : Cfg(Cfg), Mode(Mode), NumGlobals(0) {}
   void init();
-  IceVariable *getVariable(uint32_t LiveIndex, const CfgNode *Node) const;
-  uint32_t getLiveIndex(const IceVariable *Var) const;
+  Variable *getVariable(uint32_t LiveIndex, const CfgNode *Node) const;
+  uint32_t getLiveIndex(const Variable *Var) const;
   uint32_t getGlobalSize() const { return NumGlobals; }
   uint32_t getLocalSize(const CfgNode *Node) const {
     return NumGlobals + Nodes[Node->getIndex()].NumLocals;
@@ -73,8 +73,8 @@ public:
   std::vector<int> &getLiveEnd(const CfgNode *Node) {
     return Nodes[Node->getIndex()].LiveEnd;
   }
-  LiveRange &getLiveRange(IceVariable *Var);
-  void addLiveRange(IceVariable *Var, int32_t Start, int32_t End,
+  LiveRange &getLiveRange(Variable *Var);
+  void addLiveRange(Variable *Var, int32_t Start, int32_t End,
                     uint32_t WeightDelta);
 
 private:
@@ -83,13 +83,13 @@ private:
   uint32_t NumGlobals;
   // Size of Nodes is IceCfg::Nodes.size().
   std::vector<LivenessNode> Nodes;
-  // VarToLiveMap maps an IceVariable's IceVariable::Number to its
+  // VarToLiveMap maps an Variable's Variable::Number to its
   // live index within its basic block.
   std::vector<uint32_t> VarToLiveMap;
   // LiveToVarMap is analogous to LivenessNode::LiveToVarMap, but
   // for non-local variables.
-  std::vector<IceVariable *> LiveToVarMap;
-  // LiveRanges maps an IceVariable::Number to its live range.
+  std::vector<Variable *> LiveToVarMap;
+  // LiveRanges maps an Variable::Number to its live range.
   std::vector<LiveRange> LiveRanges;
   Liveness(const Liveness &) LLVM_DELETED_FUNCTION;
   Liveness &operator=(const Liveness &) LLVM_DELETED_FUNCTION;

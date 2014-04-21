@@ -102,7 +102,7 @@ private:
   // LLVM values (instructions, etc.) are mapped directly to ICE variables.
   // mapValueToIceVar has a version that forces an ICE type on the variable,
   // and a version that just uses convertType on V.
-  Ice::IceVariable *mapValueToIceVar(const Value *V, Ice::IceType IceTy) {
+  Ice::Variable *mapValueToIceVar(const Value *V, Ice::IceType IceTy) {
     if (IceTy == Ice::IceType_void)
       return NULL;
     if (VarMap.find(V) == VarMap.end()) {
@@ -112,7 +112,7 @@ private:
     return VarMap[V];
   }
 
-  Ice::IceVariable *mapValueToIceVar(const Value *V) {
+  Ice::Variable *mapValueToIceVar(const Value *V) {
     return mapValueToIceVar(V, convertType(V->getType()));
   }
 
@@ -308,7 +308,7 @@ private:
 
   Ice::Inst *convertLoadInstruction(const LoadInst *Inst) {
     Ice::Operand *Src = convertOperand(Inst, 0);
-    Ice::IceVariable *Dest = mapValueToIceVar(Inst);
+    Ice::Variable *Dest = mapValueToIceVar(Inst);
     return Ice::InstLoad::create(Cfg, Dest, Src);
   }
 
@@ -323,7 +323,7 @@ private:
     const BinaryOperator *BinOp = cast<BinaryOperator>(Inst);
     Ice::Operand *Src0 = convertOperand(Inst, 0);
     Ice::Operand *Src1 = convertOperand(Inst, 1);
-    Ice::IceVariable *Dest = mapValueToIceVar(BinOp);
+    Ice::Variable *Dest = mapValueToIceVar(BinOp);
     return Ice::InstArithmetic::create(Cfg, Opcode, Dest, Src0, Src1);
   }
 
@@ -354,13 +354,13 @@ private:
 
   Ice::Inst *convertIntToPtrInstruction(const IntToPtrInst *Inst) {
     Ice::Operand *Src = convertOperand(Inst, 0);
-    Ice::IceVariable *Dest = mapValueToIceVar(Inst, SubzeroPointerType);
+    Ice::Variable *Dest = mapValueToIceVar(Inst, SubzeroPointerType);
     return Ice::InstAssign::create(Cfg, Dest, Src);
   }
 
   Ice::Inst *convertPtrToIntInstruction(const PtrToIntInst *Inst) {
     Ice::Operand *Src = convertOperand(Inst, 0);
-    Ice::IceVariable *Dest = mapValueToIceVar(Inst);
+    Ice::Variable *Dest = mapValueToIceVar(Inst);
     return Ice::InstAssign::create(Cfg, Dest, Src);
   }
 
@@ -376,14 +376,14 @@ private:
   Ice::Inst *convertCastInstruction(const Instruction *Inst,
                                     Ice::InstCast::OpKind CastKind) {
     Ice::Operand *Src = convertOperand(Inst, 0);
-    Ice::IceVariable *Dest = mapValueToIceVar(Inst);
+    Ice::Variable *Dest = mapValueToIceVar(Inst);
     return Ice::InstCast::create(Cfg, CastKind, Dest, Src);
   }
 
   Ice::Inst *convertICmpInstruction(const ICmpInst *Inst) {
     Ice::Operand *Src0 = convertOperand(Inst, 0);
     Ice::Operand *Src1 = convertOperand(Inst, 1);
-    Ice::IceVariable *Dest = mapValueToIceVar(Inst);
+    Ice::Variable *Dest = mapValueToIceVar(Inst);
 
     Ice::InstIcmp::ICond Cond;
     switch (Inst->getPredicate()) {
@@ -427,7 +427,7 @@ private:
   Ice::Inst *convertFCmpInstruction(const FCmpInst *Inst) {
     Ice::Operand *Src0 = convertOperand(Inst, 0);
     Ice::Operand *Src1 = convertOperand(Inst, 1);
-    Ice::IceVariable *Dest = mapValueToIceVar(Inst);
+    Ice::Variable *Dest = mapValueToIceVar(Inst);
 
     Ice::InstFcmp::FCond Cond;
     switch (Inst->getPredicate()) {
@@ -489,7 +489,7 @@ private:
   }
 
   Ice::Inst *convertSelectInstruction(const SelectInst *Inst) {
-    Ice::IceVariable *Dest = mapValueToIceVar(Inst);
+    Ice::Variable *Dest = mapValueToIceVar(Inst);
     Ice::Operand *Cond = convertValue(Inst->getCondition());
     Ice::Operand *Source1 = convertValue(Inst->getTrueValue());
     Ice::Operand *Source2 = convertValue(Inst->getFalseValue());
@@ -513,7 +513,7 @@ private:
   }
 
   Ice::Inst *convertCallInstruction(const CallInst *Inst) {
-    Ice::IceVariable *Dest = mapValueToIceVar(Inst);
+    Ice::Variable *Dest = mapValueToIceVar(Inst);
     Ice::Operand *CallTarget = convertValue(Inst->getCalledValue());
     unsigned NumArgs = Inst->getNumArgOperands();
     Ice::InstCall *NewInst = Ice::InstCall::create(
@@ -528,7 +528,7 @@ private:
     // PNaCl bitcode only contains allocas of byte-granular objects.
     Ice::Operand *ByteCount = convertValue(Inst->getArraySize());
     uint32_t Align = Inst->getAlignment();
-    Ice::IceVariable *Dest = mapValueToIceVar(Inst, SubzeroPointerType);
+    Ice::Variable *Dest = mapValueToIceVar(Inst, SubzeroPointerType);
 
     return Ice::InstAlloca::create(Cfg, ByteCount, Align, Dest);
   }
@@ -553,7 +553,7 @@ private:
   Ice::IceCfg *Cfg;
   Ice::CfgNode *CurrentNode;
   Ice::IceType SubzeroPointerType;
-  std::map<const Value *, Ice::IceVariable *> VarMap;
+  std::map<const Value *, Ice::Variable *> VarMap;
   std::map<const BasicBlock *, Ice::CfgNode *> NodeMap;
 };
 

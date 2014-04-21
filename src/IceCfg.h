@@ -61,14 +61,14 @@ public:
   // Manage instruction numbering.
   int32_t newInstNumber() { return NextInstNumber++; }
 
-  // Manage IceVariables.
-  IceVariable *makeVariable(IceType Type, const CfgNode *Node,
-                            const IceString &Name = "");
+  // Manage Variables.
+  Variable *makeVariable(IceType Type, const CfgNode *Node,
+                         const IceString &Name = "");
   uint32_t getNumVariables() const { return Variables.size(); }
   const IceVarList &getVariables() const { return Variables; }
 
   // Manage arguments to the function.
-  void addArg(IceVariable *Arg);
+  void addArg(Variable *Arg);
   const IceVarList &getArgs() const { return Args; }
 
   // Miscellaneous accessors.
@@ -134,7 +134,7 @@ private:
   llvm::OwningPtr<IceTargetLowering> Target;
 
   // CurrentNode is maintained during dumping/emitting just for
-  // validating IceVariable::DefNode.  Normally, a traversal over
+  // validating Variable::DefNode.  Normally, a traversal over
   // CfgNodes maintains this, but before global operations like
   // register allocation, setCurrentNode(NULL) should be called to
   // avoid spurious validation failures.

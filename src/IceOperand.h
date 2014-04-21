@@ -8,7 +8,7 @@
 //===----------------------------------------------------------------------===//
 //
 // This file declares the Operand class and its target-independent
-// subclasses.  The main classes are IceVariable, which represents an
+// subclasses.  The main classes are Variable, which represents an
 // LLVM variable that is either register- or stack-allocated, and the
 // IceConstant hierarchy, which represents integer, floating-point,
 // and/or symbolic constants.
@@ -26,26 +26,26 @@ namespace Ice {
 class Operand {
 public:
   enum OperandKind {
-    Constant,
-    ConstantInteger,
-    ConstantFloat,
-    ConstantDouble,
-    ConstantRelocatable,
-    Constant_Num,
-    Variable,
-    // Target-specific operand classes use Target as the starting
+    kConst_Base,
+    kConstInteger,
+    kConstFloat,
+    kConstDouble,
+    kConstRelocatable,
+    kConst_Num,
+    kVariable,
+    // Target-specific operand classes use kTarget as the starting
     // point for their Kind enum space.
-    Target
+    kTarget
   };
   OperandKind getKind() const { return Kind; }
   IceType getType() const { return Type; }
 
-  // Every Operand keeps an array of the IceVariables referenced in
+  // Every Operand keeps an array of the Variables referenced in
   // the operand.  This is so that the liveness operations can get
   // quick access to the variables of interest, without having to dig
   // so far into the operand.
   uint32_t getNumVars() const { return NumVars; }
-  IceVariable *getVar(uint32_t I) const {
+  Variable *getVar(uint32_t I) const {
     assert(I < getNumVars());
     return Vars[I];
   }
@@ -61,7 +61,7 @@ protected:
   const OperandKind Kind;
   // Vars and NumVars are initialized by the derived class.
   uint32_t NumVars;
-  IceVariable **Vars;
+  Variable **Vars;
 
 private:
   Operand(const Operand &) LLVM_DELETED_FUNCTION;
@@ -77,7 +77,7 @@ public:
 
   static bool classof(const Operand *Operand) {
     OperandKind Kind = Operand->getKind();
-    return Kind >= Constant && Kind <= Constant_Num;
+    return Kind >= kConst_Base && Kind <= kConst_Num;
   }
 
 protected:
@@ -123,10 +123,10 @@ private:
   const T Value;
 };
 
-typedef IceConstantPrimitive<uint64_t, Operand::ConstantInteger>
+typedef IceConstantPrimitive<uint64_t, Operand::kConstInteger>
 IceConstantInteger;
-typedef IceConstantPrimitive<float, Operand::ConstantFloat> IceConstantFloat;
-typedef IceConstantPrimitive<double, Operand::ConstantDouble> IceConstantDouble;
+typedef IceConstantPrimitive<float, Operand::kConstFloat> IceConstantFloat;
+typedef IceConstantPrimitive<double, Operand::kConstDouble> IceConstantDouble;
 
 // IceRelocatableTuple bundles the parameters that are used to
 // construct an IceConstantRelocatable.  It is done this way so that
@@ -170,13 +170,13 @@ public:
 
   static bool classof(const Operand *Operand) {
     OperandKind Kind = Operand->getKind();
-    return Kind == ConstantRelocatable;
+    return Kind == kConstRelocatable;
   }
 
 private:
   IceConstantRelocatable(IceType Type, const void *Handle, int64_t Offset,
                          const IceString &Name, bool SuppressMangling)
-      : IceConstant(ConstantRelocatable, Type), Handle(Handle), Offset(Offset),
+      : IceConstant(kConstRelocatable, Type), Handle(Handle), Offset(Offset),
         Name(Name), SuppressMangling(SuppressMangling) {}
   IceConstantRelocatable(const IceConstantRelocatable &) LLVM_DELETED_FUNCTION;
   IceConstantRelocatable &
@@ -261,15 +261,14 @@ private:
 
 IceOstream &operator<<(IceOstream &Str, const LiveRange &L);
 
-// IceVariable represents an operand that is register-allocated or
+// Variable represents an operand that is register-allocated or
 // stack-allocated.  If it is register-allocated, it will ultimately
 // have a non-negative RegNum field.
-class IceVariable : public Operand {
+class Variable : public Operand {
 public:
-  static IceVariable *create(IceCfg *Cfg, IceType Type, const CfgNode *Node,
-                             uint32_t Index, const IceString &Name) {
-    return new (Cfg->allocate<IceVariable>())
-        IceVariable(Type, Node, Index, Name);
+  static Variable *create(IceCfg *Cfg, IceType Type, const CfgNode *Node,
+                          uint32_t Index, const IceString &Name) {
+    return new (Cfg->allocate<Variable>()) Variable(Type, Node, Index, Name);
   }
 
   uint32_t getIndex() const { return Number; }
@@ -305,9 +304,9 @@ public:
   void setWeight(uint32_t NewWeight) { Weight = NewWeight; }
   void setWeightInfinite() { Weight = IceRegWeight::Inf; }
 
-  IceVariable *getPreferredRegister() const { return RegisterPreference; }
+  Variable *getPreferredRegister() const { return RegisterPreference; }
   bool getRegisterOverlap() const { return AllowRegisterOverlap; }
-  void setPreferredRegister(IceVariable *Prefer, bool Overlap) {
+  void setPreferredRegister(Variable *Prefer, bool Overlap) {
     RegisterPreference = Prefer;
     AllowRegisterOverlap = Overlap;
   }
@@ -325,9 +324,9 @@ public:
   }
   void setLiveRangeInfiniteWeight() { Live.setWeight(IceRegWeight::Inf); }
 
-  IceVariable *getLo() const { return LoVar; }
-  IceVariable *getHi() const { return HiVar; }
-  void setLoHi(IceVariable *Lo, IceVariable *Hi) {
+  Variable *getLo() const { return LoVar; }
+  Variable *getHi() const { return HiVar; }
+  void setLoHi(Variable *Lo, Variable *Hi) {
     assert(LoVar == NULL);
     assert(HiVar == NULL);
     LoVar = Lo;
@@ -336,19 +335,19 @@ public:
   // Creates a temporary copy of the variable with a different type.
   // Used primarily for syntactic correctness of textual assembly
   // emission.
-  IceVariable asType(IceType Type);
+  Variable asType(IceType Type);
 
   virtual void emit(const IceCfg *Cfg, uint32_t Option) const;
   virtual void dump(const IceCfg *Cfg) const;
 
   static bool classof(const Operand *Operand) {
-    return Operand->getKind() == Variable;
+    return Operand->getKind() == kVariable;
   }
 
 private:
-  IceVariable(IceType Type, const CfgNode *Node, uint32_t Index,
-              const IceString &Name)
-      : Operand(Variable, Type), Number(Index), Name(Name), DefInst(NULL),
+  Variable(IceType Type, const CfgNode *Node, uint32_t Index,
+           const IceString &Name)
+      : Operand(kVariable, Type), Number(Index), Name(Name), DefInst(NULL),
         DefNode(Node), IsArgument(false), StackOffset(0), RegNum(NoRegister),
         RegNumTmp(NoRegister), Weight(1), RegisterPreference(NULL),
         AllowRegisterOverlap(false), LoVar(NULL), HiVar(NULL) {
@@ -356,8 +355,8 @@ private:
     Vars[0] = this;
     NumVars = 1;
   }
-  IceVariable(const IceVariable &) LLVM_DELETED_FUNCTION;
-  IceVariable &operator=(const IceVariable &) LLVM_DELETED_FUNCTION;
+  Variable(const Variable &) LLVM_DELETED_FUNCTION;
+  Variable &operator=(const Variable &) LLVM_DELETED_FUNCTION;
   // Number is unique across all variables, and is used as a
   // (bit)vector index for liveness analysis.
   const uint32_t Number;
@@ -385,7 +384,7 @@ private:
   // variable.  It also allows a spill slot to share its stack
   // location with another variable, if that variable does not get
   // register-allocated and therefore has a stack location.
-  IceVariable *RegisterPreference;
+  Variable *RegisterPreference;
   // AllowRegisterOverlap says that it is OK to honor
   // RegisterPreference and "share" a register even if the two live
   // ranges overlap.
@@ -398,11 +397,11 @@ private:
   // portion.  TODO: It's wasteful to penalize all variables on all
   // targets this way; use a sparser representation.  It's also
   // wasteful for a 64-bit target.
-  IceVariable *LoVar;
-  IceVariable *HiVar;
+  Variable *LoVar;
+  Variable *HiVar;
   // VarsReal (and Operand::Vars) are set up such that Vars[0] ==
   // this.
-  IceVariable *VarsReal[1];
+  Variable *VarsReal[1];
 };
 
 } // end of namespace Ice

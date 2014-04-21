@@ -181,12 +181,12 @@ void CfgNode::placePhiStores() {
       assert(Operand);
       if (Operand == NULL)
         continue;
-      IceVariable *Dest = (*I2)->getDest();
+      Variable *Dest = (*I2)->getDest();
       assert(Dest);
       InstAssign *NewInst = InstAssign::create(Cfg, Dest, Operand);
       // If Src is a variable, set the Src and Dest variables to
       // prefer each other for register allocation.
-      if (IceVariable *Src = llvm::dyn_cast<IceVariable>(Operand)) {
+      if (Variable *Src = llvm::dyn_cast<Variable>(Operand)) {
         bool AllowOverlap = false;
         Dest->setPreferredRegister(Src, AllowOverlap);
         Src->setPreferredRegister(Dest, AllowOverlap);
@@ -365,7 +365,7 @@ void CfgNode::livenessPostprocess(LivenessMode Mode, Liveness *Liveness) {
         if (!Kill->getLinked()->isDeleted()) {
           uint32_t NumSrcs = Inst->getSrcSize();
           for (uint32_t i = 0; i < NumSrcs; ++i) {
-            IceVariable *Var = llvm::cast<IceVariable>(Inst->getSrc(i));
+            Variable *Var = llvm::cast<Variable>(Inst->getSrc(i));
             int32_t InstNumber = Inst->getNumber();
             Liveness->addLiveRange(Var, InstNumber, InstNumber, 1);
           }
@@ -390,7 +390,7 @@ void CfgNode::livenessPostprocess(LivenessMode Mode, Liveness *Liveness) {
     // phi lowering in the presence of loopback edges.
     bool IsGlobal = (i < NumGlobals);
     if (IsGlobal && LiveIn[i] && LiveOut[i] && LiveBegin[i] > LiveEnd[i]) {
-      IceVariable *Var = Liveness->getVariable(i, this);
+      Variable *Var = Liveness->getVariable(i, this);
       Liveness->addLiveRange(Var, FirstInstNum, LiveEnd[i], 1);
       Liveness->addLiveRange(Var, LiveBegin[i], LastInstNum + 1, 1);
       continue;
@@ -403,7 +403,7 @@ void CfgNode::livenessPostprocess(LivenessMode Mode, Liveness *Liveness) {
       Begin = FirstInstNum;
     if (End <= 0)
       End = LastInstNum + 1;
-    IceVariable *Var = Liveness->getVariable(i, this);
+    Variable *Var = Liveness->getVariable(i, this);
     Liveness->addLiveRange(Var, Begin, End, 1);
   }
 }

@@ -38,10 +38,10 @@ static const char *OpcodeTypeFromIceType(IceType type) {
   }
 }
 
-OperandX8632Mem::OperandX8632Mem(IceCfg *Cfg, IceType Type, IceVariable *Base,
-                                 IceConstant *Offset, IceVariable *Index,
+OperandX8632Mem::OperandX8632Mem(IceCfg *Cfg, IceType Type, Variable *Base,
+                                 IceConstant *Offset, Variable *Index,
                                  uint32_t Shift)
-    : OperandX8632(Mem, Type), Base(Base), Offset(Offset), Index(Index),
+    : OperandX8632(kMem, Type), Base(Base), Offset(Offset), Index(Index),
       Shift(Shift) {
   Vars = NULL;
   NumVars = 0;
@@ -50,7 +50,7 @@ OperandX8632Mem::OperandX8632Mem(IceCfg *Cfg, IceType Type, IceVariable *Base,
   if (Index)
     ++NumVars;
   if (NumVars) {
-    Vars = Cfg->allocateArrayOf<IceVariable *>(NumVars);
+    Vars = Cfg->allocateArrayOf<Variable *>(NumVars);
     uint32_t I = 0;
     if (Base)
       Vars[I++] = Base;
@@ -69,23 +69,23 @@ void OperandX8632Mem::setUse(const Inst *Inst, const CfgNode *Node) {
     getIndex()->setUse(Inst, Node);
 }
 
-InstX8632Mul::InstX8632Mul(IceCfg *Cfg, IceVariable *Dest, IceVariable *Source1,
+InstX8632Mul::InstX8632Mul(IceCfg *Cfg, Variable *Dest, Variable *Source1,
                            Operand *Source2)
     : InstX8632(Cfg, InstX8632::Mul, 2, Dest) {
   addSource(Source1);
   addSource(Source2);
 }
 
-InstX8632Shld::InstX8632Shld(IceCfg *Cfg, IceVariable *Dest,
-                             IceVariable *Source1, IceVariable *Source2)
+InstX8632Shld::InstX8632Shld(IceCfg *Cfg, Variable *Dest, Variable *Source1,
+                             Variable *Source2)
     : InstX8632(Cfg, InstX8632::Shld, 3, Dest) {
   addSource(Dest);
   addSource(Source1);
   addSource(Source2);
 }
 
-InstX8632Shrd::InstX8632Shrd(IceCfg *Cfg, IceVariable *Dest,
-                             IceVariable *Source1, IceVariable *Source2)
+InstX8632Shrd::InstX8632Shrd(IceCfg *Cfg, Variable *Dest, Variable *Source1,
+                             Variable *Source2)
     : InstX8632(Cfg, InstX8632::Shrd, 3, Dest) {
   addSource(Dest);
   addSource(Source1);
@@ -108,23 +108,23 @@ InstX8632Br::InstX8632Br(IceCfg *Cfg, CfgNode *TargetTrue, CfgNode *TargetFalse,
     : InstX8632(Cfg, InstX8632::Br, 0, NULL), Condition(Condition),
       TargetTrue(TargetTrue), TargetFalse(TargetFalse), Label(Label) {}
 
-InstX8632Call::InstX8632Call(IceCfg *Cfg, IceVariable *Dest,
-                             Operand *CallTarget, bool Tail)
+InstX8632Call::InstX8632Call(IceCfg *Cfg, Variable *Dest, Operand *CallTarget,
+                             bool Tail)
     : InstX8632(Cfg, InstX8632::Call, 1, Dest), Tail(Tail) {
   HasSideEffects = true;
   addSource(CallTarget);
 }
 
-InstX8632Cdq::InstX8632Cdq(IceCfg *Cfg, IceVariable *Dest, Operand *Source)
+InstX8632Cdq::InstX8632Cdq(IceCfg *Cfg, Variable *Dest, Operand *Source)
     : InstX8632(Cfg, InstX8632::Cdq, 1, Dest) {
   assert(Dest->getRegNum() == IceTargetX8632::Reg_edx);
-  assert(llvm::isa<IceVariable>(Source));
-  assert(llvm::dyn_cast<IceVariable>(Source)->getRegNum() ==
+  assert(llvm::isa<Variable>(Source));
+  assert(llvm::dyn_cast<Variable>(Source)->getRegNum() ==
          IceTargetX8632::Reg_eax);
   addSource(Source);
 }
 
-InstX8632Cvt::InstX8632Cvt(IceCfg *Cfg, IceVariable *Dest, Operand *Source)
+InstX8632Cvt::InstX8632Cvt(IceCfg *Cfg, Variable *Dest, Operand *Source)
     : InstX8632(Cfg, InstX8632::Cvt, 1, Dest) {
   addSource(Source);
 }
@@ -153,17 +153,17 @@ InstX8632Store::InstX8632Store(IceCfg *Cfg, Operand *Value, OperandX8632 *Mem)
   addSource(Mem);
 }
 
-InstX8632Mov::InstX8632Mov(IceCfg *Cfg, IceVariable *Dest, Operand *Source)
+InstX8632Mov::InstX8632Mov(IceCfg *Cfg, Variable *Dest, Operand *Source)
     : InstX8632(Cfg, InstX8632::Mov, 1, Dest) {
   addSource(Source);
 }
 
-InstX8632Movsx::InstX8632Movsx(IceCfg *Cfg, IceVariable *Dest, Operand *Source)
+InstX8632Movsx::InstX8632Movsx(IceCfg *Cfg, Variable *Dest, Operand *Source)
     : InstX8632(Cfg, InstX8632::Movsx, 1, Dest) {
   addSource(Source);
 }
 
-InstX8632Movzx::InstX8632Movzx(IceCfg *Cfg, IceVariable *Dest, Operand *Source)
+InstX8632Movzx::InstX8632Movzx(IceCfg *Cfg, Variable *Dest, Operand *Source)
     : InstX8632(Cfg, InstX8632::Movzx, 1, Dest) {
   addSource(Source);
 }
@@ -173,10 +173,10 @@ InstX8632Fld::InstX8632Fld(IceCfg *Cfg, Operand *Src)
   addSource(Src);
 }
 
-InstX8632Fstp::InstX8632Fstp(IceCfg *Cfg, IceVariable *Dest)
+InstX8632Fstp::InstX8632Fstp(IceCfg *Cfg, Variable *Dest)
     : InstX8632(Cfg, InstX8632::Fstp, 0, Dest) {}
 
-InstX8632Pop::InstX8632Pop(IceCfg *Cfg, IceVariable *Dest)
+InstX8632Pop::InstX8632Pop(IceCfg *Cfg, Variable *Dest)
     : InstX8632(Cfg, InstX8632::Pop, 1, Dest) {}
 
 InstX8632Push::InstX8632Push(IceCfg *Cfg, Operand *Source,
@@ -187,7 +187,7 @@ InstX8632Push::InstX8632Push(IceCfg *Cfg, Operand *Source,
 }
 
 bool InstX8632Mov::isRedundantAssign() const {
-  IceVariable *Src = llvm::dyn_cast<IceVariable>(getSrc(0));
+  Variable *Src = llvm::dyn_cast<Variable>(getSrc(0));
   if (Src == NULL)
     return false;
   if (getDest()->hasReg() && getDest()->getRegNum() == Src->getRegNum()) {
@@ -202,7 +202,7 @@ bool InstX8632Mov::isRedundantAssign() const {
   return false;
 }
 
-InstX8632Ret::InstX8632Ret(IceCfg *Cfg, IceVariable *Source)
+InstX8632Ret::InstX8632Ret(IceCfg *Cfg, Variable *Source)
     : InstX8632(Cfg, InstX8632::Ret, Source ? 1 : 0, NULL) {
   if (Source)
     addSource(Source);
@@ -373,7 +373,7 @@ void IceEmitTwoAddress(const char *Opcode, const Inst *Inst, const IceCfg *Cfg,
   Str << ", ";
   bool EmittedSrc1 = false;
   if (ShiftHack) {
-    IceVariable *ShiftReg = llvm::dyn_cast<IceVariable>(Inst->getSrc(1));
+    Variable *ShiftReg = llvm::dyn_cast<Variable>(Inst->getSrc(1));
     if (ShiftReg && ShiftReg->getRegNum() == IceTargetX8632::Reg_ecx) {
       Str << "cl";
       EmittedSrc1 = true;
@@ -431,7 +431,7 @@ template <> void InstX8632Imul::emit(const IceCfg *Cfg, uint32_t Option) const {
   assert(getSrcSize() == 2);
   if (getDest()->getType() == IceType_i8) {
     // The 8-bit version of imul only allows the form "imul r/m8".
-    IceVariable *Src0 = llvm::dyn_cast<IceVariable>(getSrc(0));
+    Variable *Src0 = llvm::dyn_cast<Variable>(getSrc(0));
     assert(Src0 && Src0->getRegNum() == IceTargetX8632::Reg_eax);
     Str << "\timul\t";
     getSrc(1)->emit(Cfg, Option);
@@ -452,8 +452,8 @@ template <> void InstX8632Imul::emit(const IceCfg *Cfg, uint32_t Option) const {
 void InstX8632Mul::emit(const IceCfg *Cfg, uint32_t Option) const {
   IceOstream &Str = Cfg->getContext()->StrEmit;
   assert(getSrcSize() == 2);
-  assert(llvm::isa<IceVariable>(getSrc(0)));
-  assert(llvm::dyn_cast<IceVariable>(getSrc(0))->getRegNum() ==
+  assert(llvm::isa<Variable>(getSrc(0)));
+  assert(llvm::dyn_cast<Variable>(getSrc(0))->getRegNum() ==
          IceTargetX8632::Reg_eax);
   assert(getDest()->getRegNum() == IceTargetX8632::Reg_eax); // TODO: allow edx?
   Str << "\tmul\t";
@@ -480,7 +480,7 @@ void InstX8632Shld::emit(const IceCfg *Cfg, uint32_t Option) const {
   bool ShiftHack = true;
   bool EmittedSrc1 = false;
   if (ShiftHack) {
-    IceVariable *ShiftReg = llvm::dyn_cast<IceVariable>(getSrc(2));
+    Variable *ShiftReg = llvm::dyn_cast<Variable>(getSrc(2));
     if (ShiftReg && ShiftReg->getRegNum() == IceTargetX8632::Reg_ecx) {
       Str << "cl";
       EmittedSrc1 = true;
@@ -510,7 +510,7 @@ void InstX8632Shrd::emit(const IceCfg *Cfg, uint32_t Option) const {
   bool ShiftHack = true;
   bool EmittedSrc1 = false;
   if (ShiftHack) {
-    IceVariable *ShiftReg = llvm::dyn_cast<IceVariable>(getSrc(2));
+    Variable *ShiftReg = llvm::dyn_cast<Variable>(getSrc(2));
     if (ShiftReg && ShiftReg->getRegNum() == IceTargetX8632::Reg_ecx) {
       Str << "cl";
       EmittedSrc1 = true;
@@ -734,7 +734,7 @@ void InstX8632Fld::emit(const IceCfg *Cfg, uint32_t Option) const {
   IceOstream &Str = Cfg->getContext()->StrEmit;
   assert(getSrcSize() == 1);
   bool isDouble = (getSrc(0)->getType() == IceType_f64);
-  IceVariable *Var = llvm::dyn_cast<IceVariable>(getSrc(0));
+  Variable *Var = llvm::dyn_cast<Variable>(getSrc(0));
   if (Var && Var->hasReg()) {
     // This is a physical xmm register, so we need to spill it to a
     // temporary stack slot.
@@ -809,7 +809,7 @@ void InstX8632Push::emit(const IceCfg *Cfg, uint32_t Option) const {
   IceOstream &Str = Cfg->getContext()->StrEmit;
   assert(getSrcSize() == 1);
   IceType Type = getSrc(0)->getType();
-  IceVariable *Var = llvm::dyn_cast<IceVariable>(getSrc(0));
+  Variable *Var = llvm::dyn_cast<Variable>(getSrc(0));
   if ((Type == IceType_f32 || Type == IceType_f64) && Var && Var->hasReg()) {
     // The xmm registers can't be directly pushed, so we fake it by
     // decrementing esp and then storing to [esp].
@@ -950,12 +950,12 @@ void OperandX8632Mem::dump(const IceCfg *Cfg) const {
   Str << "]";
 }
 
-void IceVariableSplit::emit(const IceCfg *Cfg, uint32_t Option) const {
+void VariableSplit::emit(const IceCfg *Cfg, uint32_t Option) const {
   IceOstream &Str = Cfg->getContext()->StrEmit;
   assert(Var->getLocalUseNode() == NULL ||
          Var->getLocalUseNode() == Cfg->getCurrentNode());
   assert(!Var->hasReg());
-  // The following is copied/adapted from IceVariable::emit().
+  // The following is copied/adapted from Variable::emit().
   Str << "dword ptr ["
       << Cfg->getTarget()->getRegName(Cfg->getTarget()->getFrameOrStackReg(),
                                       IceType_i32);
@@ -971,7 +971,7 @@ void IceVariableSplit::emit(const IceCfg *Cfg, uint32_t Option) const {
   Str << "]";
 }
 
-void IceVariableSplit::dump(const IceCfg *Cfg) const {
+void VariableSplit::dump(const IceCfg *Cfg) const {
   IceOstream &Str = Cfg->getContext()->StrDump;
   switch (Part) {
   case Low:

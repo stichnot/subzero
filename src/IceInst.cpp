@@ -21,7 +21,7 @@
 
 namespace Ice {
 
-Inst::Inst(IceCfg *Cfg, InstKind Kind, uint32_t MaxSrcs, IceVariable *Dest)
+Inst::Inst(IceCfg *Cfg, InstKind Kind, uint32_t MaxSrcs, Variable *Dest)
     : Kind(Kind), Deleted(false), Dead(false), HasSideEffects(false),
       Dest(Dest), MaxSrcs(MaxSrcs), NumSrcs(0), LiveRangesEnded(0) {
   Number = Cfg->newInstNumber();
@@ -40,19 +40,19 @@ void Inst::deleteIfDead() {
     setDeleted();
 }
 
-// If Src is an IceVariable, it returns true if this instruction ends
+// If Src is an Variable, it returns true if this instruction ends
 // Src's live range.  Otherwise, returns false.
 bool Inst::isLastUse(const Operand *TestSrc) const {
   if (LiveRangesEnded == 0)
     return false; // early-exit optimization
-  if (const IceVariable *TestVar = llvm::dyn_cast<const IceVariable>(TestSrc)) {
+  if (const Variable *TestVar = llvm::dyn_cast<const Variable>(TestSrc)) {
     uint32_t VarIndex = 0;
     uint32_t Mask = LiveRangesEnded;
     for (uint32_t I = 0; I < getSrcSize(); ++I) {
       Operand *Src = getSrc(I);
       uint32_t NumVars = Src->getNumVars();
       for (uint32_t J = 0; J < NumVars; ++J, ++VarIndex) {
-        const IceVariable *Var = Src->getVar(J);
+        const Variable *Var = Src->getVar(J);
         if (Var == TestVar) {
           // We've found where the variable is used in the instruction.
           return Mask & 1;
@@ -90,7 +90,7 @@ void Inst::liveness(LivenessMode Mode, int32_t InstNumber,
       Operand *Src = getSrc(I);
       uint32_t NumVars = Src->getNumVars();
       for (uint32_t J = 0; J < NumVars; ++J, ++VarIndex) {
-        const IceVariable *Var = Src->getVar(J);
+        const Variable *Var = Src->getVar(J);
         if (Var->isMultiblockLife())
           continue;
         uint32_t Index = Var->getIndex();
@@ -127,7 +127,7 @@ void Inst::liveness(LivenessMode Mode, int32_t InstNumber,
     Operand *Src = getSrc(I);
     uint32_t NumVars = Src->getNumVars();
     for (uint32_t J = 0; J < NumVars; ++J, ++VarIndex) {
-      const IceVariable *Var = Src->getVar(J);
+      const Variable *Var = Src->getVar(J);
       uint32_t VarNum = Liveness->getLiveIndex(Var);
       if (!Live[VarNum]) {
         setLastUse(VarIndex);
@@ -159,12 +159,12 @@ void Inst::liveness(LivenessMode Mode, int32_t InstNumber,
 }
 
 InstAlloca::InstAlloca(IceCfg *Cfg, Operand *ByteCount, uint32_t Align,
-                       IceVariable *Dest)
+                       Variable *Dest)
     : Inst(Cfg, Inst::Alloca, 1, Dest), Align(Align) {
   addSource(ByteCount);
 }
 
-InstArithmetic::InstArithmetic(IceCfg *Cfg, OpKind Op, IceVariable *Dest,
+InstArithmetic::InstArithmetic(IceCfg *Cfg, OpKind Op, Variable *Dest,
                                Operand *Source1, Operand *Source2)
     : Inst(Cfg, Inst::Arithmetic, 2, Dest), Op(Op) {
   addSource(Source1);
@@ -186,7 +186,7 @@ bool InstArithmetic::isCommutative() const {
   }
 }
 
-InstAssign::InstAssign(IceCfg *Cfg, IceVariable *Dest, Operand *Source)
+InstAssign::InstAssign(IceCfg *Cfg, Variable *Dest, Operand *Source)
     : Inst(Cfg, Inst::Assign, 1, Dest) {
   addSource(Source);
 }
@@ -216,32 +216,32 @@ IceNodeList InstBr::getTerminatorEdges() const {
   return OutEdges;
 }
 
-InstCast::InstCast(IceCfg *Cfg, OpKind CastKind, IceVariable *Dest,
+InstCast::InstCast(IceCfg *Cfg, OpKind CastKind, Variable *Dest,
                    Operand *Source)
     : Inst(Cfg, Inst::Cast, 1, Dest), CastKind(CastKind) {
   addSource(Source);
 }
 
-InstFcmp::InstFcmp(IceCfg *Cfg, FCond Condition, IceVariable *Dest,
+InstFcmp::InstFcmp(IceCfg *Cfg, FCond Condition, Variable *Dest,
                    Operand *Source1, Operand *Source2)
     : Inst(Cfg, Inst::Fcmp, 2, Dest), Condition(Condition) {
   addSource(Source1);
   addSource(Source2);
 }
 
-InstIcmp::InstIcmp(IceCfg *Cfg, ICond Condition, IceVariable *Dest,
+InstIcmp::InstIcmp(IceCfg *Cfg, ICond Condition, Variable *Dest,
                    Operand *Source1, Operand *Source2)
     : Inst(Cfg, Inst::Icmp, 2, Dest), Condition(Condition) {
   addSource(Source1);
   addSource(Source2);
 }
 
-InstLoad::InstLoad(IceCfg *Cfg, IceVariable *Dest, Operand *SourceAddr)
+InstLoad::InstLoad(IceCfg *Cfg, Variable *Dest, Operand *SourceAddr)
     : Inst(Cfg, Inst::Load, 1, Dest) {
   addSource(SourceAddr);
 }
 
-InstPhi::InstPhi(IceCfg *Cfg, uint32_t MaxSrcs, IceVariable *Dest)
+InstPhi::InstPhi(IceCfg *Cfg, uint32_t MaxSrcs, Variable *Dest)
     : Inst(Cfg, Phi, MaxSrcs, Dest) {
   Labels = Cfg->allocateArrayOf<CfgNode *>(MaxSrcs);
 }
@@ -276,7 +276,7 @@ void InstPhi::livenessPhiOperand(llvm::BitVector &Live, CfgNode *Target,
     return;
   for (uint32_t I = 0; I < getSrcSize(); ++I) {
     if (Labels[I] == Target) {
-      if (IceVariable *Var = llvm::dyn_cast<IceVariable>(getSrc(I))) {
+      if (Variable *Var = llvm::dyn_cast<Variable>(getSrc(I))) {
         uint32_t SrcIndex = Liveness->getLiveIndex(Var);
         if (!Live[SrcIndex]) {
           setLastUse(I);
@@ -292,10 +292,10 @@ void InstPhi::livenessPhiOperand(llvm::BitVector &Live, CfgNode *Target,
 // Change "a=phi(...)" to "a_phi=phi(...)" and return a new
 // instruction "a=a_phi".
 Inst *InstPhi::lower(IceCfg *Cfg, CfgNode *Node) {
-  IceVariable *Dest = getDest();
+  Variable *Dest = getDest();
   assert(Dest);
   IceString PhiName = Dest->getName() + "_phi";
-  IceVariable *NewSrc = Cfg->makeVariable(Dest->getType(), Node, PhiName);
+  Variable *NewSrc = Cfg->makeVariable(Dest->getType(), Node, PhiName);
   this->Dest = NewSrc;
   InstAssign *NewInst = InstAssign::create(Cfg, Dest, NewSrc);
   // Set Dest and NewSrc to have affinity with each other, as a hint
@@ -312,7 +312,7 @@ InstRet::InstRet(IceCfg *Cfg, Operand *Source)
     addSource(Source);
 }
 
-InstSelect::InstSelect(IceCfg *Cfg, IceVariable *Dest, Operand *Condition,
+InstSelect::InstSelect(IceCfg *Cfg, Variable *Dest, Operand *Condition,
                        Operand *SourceTrue, Operand *SourceFalse)
     : Inst(Cfg, Inst::Select, 3, Dest) {
   assert(Condition->getType() == IceType_i1);
@@ -359,14 +359,14 @@ IceNodeList InstSwitch::getTerminatorEdges() const {
 InstUnreachable::InstUnreachable(IceCfg *Cfg)
     : Inst(Cfg, Inst::Unreachable, 0, NULL) {}
 
-InstFakeDef::InstFakeDef(IceCfg *Cfg, IceVariable *Dest, IceVariable *Src)
+InstFakeDef::InstFakeDef(IceCfg *Cfg, Variable *Dest, Variable *Src)
     : Inst(Cfg, Inst::FakeDef, Src ? 1 : 0, Dest) {
   assert(Dest);
   if (Src)
     addSource(Src);
 }
 
-InstFakeUse::InstFakeUse(IceCfg *Cfg, IceVariable *Src)
+InstFakeUse::InstFakeUse(IceCfg *Cfg, Variable *Src)
     : Inst(Cfg, Inst::FakeUse, 1, NULL) {
   assert(Src);
   addSource(Src);
@@ -377,7 +377,7 @@ InstFakeKill::InstFakeKill(IceCfg *Cfg, const IceVarList &KilledRegs,
     : Inst(Cfg, Inst::FakeKill, KilledRegs.size(), NULL), Linked(Linked) {
   for (IceVarList::const_iterator I = KilledRegs.begin(), E = KilledRegs.end();
        I != E; ++I) {
-    IceVariable *Var = *I;
+    Variable *Var = *I;
     addSource(Var);
   }
 }
@@ -436,7 +436,7 @@ void Inst::dumpExtras(const IceCfg *Cfg) const {
       Operand *Src = getSrc(I);
       uint32_t NumVars = Src->getNumVars();
       for (uint32_t J = 0; J < NumVars; ++J, ++VarIndex) {
-        const IceVariable *Var = Src->getVar(J);
+        const Variable *Var = Src->getVar(J);
         if (isLastUse(Var)) {
           if (First)
             Str << " // LIVEEND={";

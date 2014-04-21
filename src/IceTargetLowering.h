@@ -119,7 +119,7 @@ public:
   // register.  This is generally used to get very direct access to
   // the register such as in the prolog or epilog or for marking
   // scratch registers as killed by a call.
-  virtual IceVariable *getPhysicalRegister(uint32_t RegNum) = 0;
+  virtual Variable *getPhysicalRegister(uint32_t RegNum) = 0;
   // Returns a printable name for the register.
   virtual IceString getRegName(uint32_t RegNum, IceType Type) const = 0;
 

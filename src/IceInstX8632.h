@@ -27,9 +27,9 @@ class IceTargetX8632;
 class OperandX8632 : public Operand {
 public:
   enum OperandTypeX8632 {
-    __Start = Operand::Target,
-    Mem,
-    Split
+    __Start = Operand::kTarget,
+    kMem,
+    kSplit
   };
   virtual void emit(const IceCfg *Cfg, uint32_t Option) const = 0;
   void dump(const IceCfg *Cfg) const;
@@ -43,62 +43,61 @@ protected:
 
 class OperandX8632Mem : public OperandX8632 {
 public:
-  static OperandX8632Mem *create(IceCfg *Cfg, IceType Type, IceVariable *Base,
-                                 IceConstant *Offset, IceVariable *Index = NULL,
+  static OperandX8632Mem *create(IceCfg *Cfg, IceType Type, Variable *Base,
+                                 IceConstant *Offset, Variable *Index = NULL,
                                  uint32_t Shift = 0) {
     return new (Cfg->allocate<OperandX8632Mem>())
         OperandX8632Mem(Cfg, Type, Base, Offset, Index, Shift);
   }
-  IceVariable *getBase() const { return Base; }
+  Variable *getBase() const { return Base; }
   IceConstant *getOffset() const { return Offset; }
-  IceVariable *getIndex() const { return Index; }
+  Variable *getIndex() const { return Index; }
   uint32_t getShift() const { return Shift; }
   virtual void setUse(const Inst *Inst, const CfgNode *Node);
   virtual void emit(const IceCfg *Cfg, uint32_t Option) const;
   virtual void dump(const IceCfg *Cfg) const;
 
   static bool classof(const Operand *Operand) {
-    return Operand->getKind() == static_cast<OperandKind>(Mem);
+    return Operand->getKind() == static_cast<OperandKind>(kMem);
   }
 
 private:
-  OperandX8632Mem(IceCfg *Cfg, IceType Type, IceVariable *Base,
-                  IceConstant *Offset, IceVariable *Index, uint32_t Shift);
+  OperandX8632Mem(IceCfg *Cfg, IceType Type, Variable *Base,
+                  IceConstant *Offset, Variable *Index, uint32_t Shift);
   OperandX8632Mem(const OperandX8632Mem &) LLVM_DELETED_FUNCTION;
   OperandX8632Mem &operator=(const OperandX8632Mem &) LLVM_DELETED_FUNCTION;
-  IceVariable *Base;
+  Variable *Base;
   IceConstant *Offset;
-  IceVariable *Index;
+  Variable *Index;
   uint32_t Shift;
 };
 
-class IceVariableSplit : public OperandX8632 {
+class VariableSplit : public OperandX8632 {
 public:
   enum Portion {
     Low,
     High
   };
-  static IceVariableSplit *create(IceCfg *Cfg, IceVariable *Var, Portion Part) {
-    return new (Cfg->allocate<IceVariableSplit>())
-        IceVariableSplit(Cfg, Var, Part);
+  static VariableSplit *create(IceCfg *Cfg, Variable *Var, Portion Part) {
+    return new (Cfg->allocate<VariableSplit>()) VariableSplit(Cfg, Var, Part);
   }
   virtual void emit(const IceCfg *Cfg, uint32_t Option) const;
   virtual void dump(const IceCfg *Cfg) const;
 
   static bool classof(const Operand *Operand) {
-    return Operand->getKind() == static_cast<OperandKind>(Split);
+    return Operand->getKind() == static_cast<OperandKind>(kSplit);
   }
 
 private:
-  IceVariableSplit(IceCfg *Cfg, IceVariable *Var, Portion Part)
-      : OperandX8632(Split, IceType_i32), Var(Var), Part(Part) {
-    Vars = Cfg->allocateArrayOf<IceVariable *>(1);
+  VariableSplit(IceCfg *Cfg, Variable *Var, Portion Part)
+      : OperandX8632(kSplit, IceType_i32), Var(Var), Part(Part) {
+    Vars = Cfg->allocateArrayOf<Variable *>(1);
     Vars[0] = Var;
     NumVars = 1;
   }
-  IceVariableSplit(const IceVariableSplit &) LLVM_DELETED_FUNCTION;
-  IceVariableSplit &operator=(const IceVariableSplit &) LLVM_DELETED_FUNCTION;
-  IceVariable *Var;
+  VariableSplit(const VariableSplit &) LLVM_DELETED_FUNCTION;
+  VariableSplit &operator=(const VariableSplit &) LLVM_DELETED_FUNCTION;
+  Variable *Var;
   Portion Part;
 };
 
@@ -149,8 +148,7 @@ public:
   virtual void dump(const IceCfg *Cfg) const;
 
 protected:
-  InstX8632(IceCfg *Cfg, InstKindX8632 Kind, uint32_t Maxsrcs,
-            IceVariable *Dest)
+  InstX8632(IceCfg *Cfg, InstKindX8632 Kind, uint32_t Maxsrcs, Variable *Dest)
       : InstTarget(Cfg, static_cast<InstKind>(Kind), Maxsrcs, Dest) {}
   static bool isClassof(const Inst *Inst, InstKindX8632 MyKind) {
     return Inst->getKind() == static_cast<InstKind>(MyKind);
@@ -267,8 +265,8 @@ private:
 
 class InstX8632Call : public InstX8632 {
 public:
-  static InstX8632Call *create(IceCfg *Cfg, IceVariable *Dest,
-                               Operand *CallTarget, bool Tail) {
+  static InstX8632Call *create(IceCfg *Cfg, Variable *Dest, Operand *CallTarget,
+                               bool Tail) {
     return new (Cfg->allocate<InstX8632Call>())
         InstX8632Call(Cfg, Dest, CallTarget, Tail);
   }
@@ -278,7 +276,7 @@ public:
   static bool classof(const Inst *Inst) { return isClassof(Inst, Call); }
 
 private:
-  InstX8632Call(IceCfg *Cfg, IceVariable *Dest, Operand *CallTarget, bool Tail);
+  InstX8632Call(IceCfg *Cfg, Variable *Dest, Operand *CallTarget, bool Tail);
   InstX8632Call(const InstX8632Call &) LLVM_DELETED_FUNCTION;
   InstX8632Call &operator=(const InstX8632Call &) LLVM_DELETED_FUNCTION;
   const bool Tail;
@@ -290,8 +288,7 @@ void IceEmitTwoAddress(const char *Opcode, const Inst *Inst, const IceCfg *Cfg,
 template <bool ShiftHack, InstX8632::InstKindX8632 K>
 class InstX8632Binop : public InstX8632 {
 public:
-  static InstX8632Binop *create(IceCfg *Cfg, IceVariable *Dest,
-                                Operand *Source) {
+  static InstX8632Binop *create(IceCfg *Cfg, Variable *Dest, Operand *Source) {
     return new (Cfg->allocate<InstX8632Binop>())
         InstX8632Binop(Cfg, Dest, Source);
   }
@@ -307,7 +304,7 @@ public:
   static bool classof(const Inst *Inst) { return isClassof(Inst, K); }
 
 private:
-  InstX8632Binop(IceCfg *Cfg, IceVariable *Dest, Operand *Source)
+  InstX8632Binop(IceCfg *Cfg, Variable *Dest, Operand *Source)
       : InstX8632(Cfg, K, 2, Dest) {
     addSource(Dest);
     addSource(Source);
@@ -319,8 +316,8 @@ private:
 
 template <InstX8632::InstKindX8632 K> class InstX8632Ternop : public InstX8632 {
 public:
-  static InstX8632Ternop *create(IceCfg *Cfg, IceVariable *Dest,
-                                 Operand *Source1, Operand *Source2) {
+  static InstX8632Ternop *create(IceCfg *Cfg, Variable *Dest, Operand *Source1,
+                                 Operand *Source2) {
     return new (Cfg->allocate<InstX8632Ternop>())
         InstX8632Ternop(Cfg, Dest, Source1, Source2);
   }
@@ -340,7 +337,7 @@ public:
   static bool classof(const Inst *Inst) { return isClassof(Inst, K); }
 
 private:
-  InstX8632Ternop(IceCfg *Cfg, IceVariable *Dest, Operand *Source1,
+  InstX8632Ternop(IceCfg *Cfg, Variable *Dest, Operand *Source1,
                   Operand *Source2)
       : InstX8632(Cfg, K, 3, Dest) {
     addSource(Dest);
@@ -372,8 +369,8 @@ typedef InstX8632Ternop<InstX8632::Div> InstX8632Div;
 
 class InstX8632Mul : public InstX8632 {
 public:
-  static InstX8632Mul *create(IceCfg *Cfg, IceVariable *Dest,
-                              IceVariable *Source1, Operand *Source2) {
+  static InstX8632Mul *create(IceCfg *Cfg, Variable *Dest, Variable *Source1,
+                              Operand *Source2) {
     return new (Cfg->allocate<InstX8632Mul>())
         InstX8632Mul(Cfg, Dest, Source1, Source2);
   }
@@ -382,7 +379,7 @@ public:
   static bool classof(const Inst *Inst) { return isClassof(Inst, Mul); }
 
 private:
-  InstX8632Mul(IceCfg *Cfg, IceVariable *Dest, IceVariable *Source1,
+  InstX8632Mul(IceCfg *Cfg, Variable *Dest, Variable *Source1,
                Operand *Source2);
   InstX8632Mul(const InstX8632Mul &) LLVM_DELETED_FUNCTION;
   InstX8632Mul &operator=(const InstX8632Mul &) LLVM_DELETED_FUNCTION;
@@ -390,8 +387,8 @@ private:
 
 class InstX8632Shld : public InstX8632 {
 public:
-  static InstX8632Shld *create(IceCfg *Cfg, IceVariable *Dest,
-                               IceVariable *Source1, IceVariable *Source2) {
+  static InstX8632Shld *create(IceCfg *Cfg, Variable *Dest, Variable *Source1,
+                               Variable *Source2) {
     return new (Cfg->allocate<InstX8632Shld>())
         InstX8632Shld(Cfg, Dest, Source1, Source2);
   }
@@ -400,16 +397,16 @@ public:
   static bool classof(const Inst *Inst) { return isClassof(Inst, Shld); }
 
 private:
-  InstX8632Shld(IceCfg *Cfg, IceVariable *Dest, IceVariable *Source1,
-                IceVariable *Source2);
+  InstX8632Shld(IceCfg *Cfg, Variable *Dest, Variable *Source1,
+                Variable *Source2);
   InstX8632Shld(const InstX8632Shld &) LLVM_DELETED_FUNCTION;
   InstX8632Shld &operator=(const InstX8632Shld &) LLVM_DELETED_FUNCTION;
 };
 
 class InstX8632Shrd : public InstX8632 {
 public:
-  static InstX8632Shrd *create(IceCfg *Cfg, IceVariable *Dest,
-                               IceVariable *Source1, IceVariable *Source2) {
+  static InstX8632Shrd *create(IceCfg *Cfg, Variable *Dest, Variable *Source1,
+                               Variable *Source2) {
     return new (Cfg->allocate<InstX8632Shrd>())
         InstX8632Shrd(Cfg, Dest, Source1, Source2);
   }
@@ -418,8 +415,8 @@ public:
   static bool classof(const Inst *Inst) { return isClassof(Inst, Shrd); }
 
 private:
-  InstX8632Shrd(IceCfg *Cfg, IceVariable *Dest, IceVariable *Source1,
-                IceVariable *Source2);
+  InstX8632Shrd(IceCfg *Cfg, Variable *Dest, Variable *Source1,
+                Variable *Source2);
   InstX8632Shrd(const InstX8632Shrd &) LLVM_DELETED_FUNCTION;
   InstX8632Shrd &operator=(const InstX8632Shrd &) LLVM_DELETED_FUNCTION;
 };
@@ -427,7 +424,7 @@ private:
 // Sign-extend eax into edx
 class InstX8632Cdq : public InstX8632 {
 public:
-  static InstX8632Cdq *create(IceCfg *Cfg, IceVariable *Dest, Operand *Source) {
+  static InstX8632Cdq *create(IceCfg *Cfg, Variable *Dest, Operand *Source) {
     return new (Cfg->allocate<InstX8632Cdq>()) InstX8632Cdq(Cfg, Dest, Source);
   }
   virtual void emit(const IceCfg *Cfg, uint32_t Option) const;
@@ -435,7 +432,7 @@ public:
   static bool classof(const Inst *Inst) { return isClassof(Inst, Cdq); }
 
 private:
-  InstX8632Cdq(IceCfg *Cfg, IceVariable *Dest, Operand *Source);
+  InstX8632Cdq(IceCfg *Cfg, Variable *Dest, Operand *Source);
   InstX8632Cdq(const InstX8632Cdq &) LLVM_DELETED_FUNCTION;
   InstX8632Cdq &operator=(const InstX8632Cdq &) LLVM_DELETED_FUNCTION;
 };
@@ -446,7 +443,7 @@ private:
 // operand needs to be done separately.
 class InstX8632Cvt : public InstX8632 {
 public:
-  static InstX8632Cvt *create(IceCfg *Cfg, IceVariable *Dest, Operand *Source) {
+  static InstX8632Cvt *create(IceCfg *Cfg, Variable *Dest, Operand *Source) {
     return new (Cfg->allocate<InstX8632Cvt>()) InstX8632Cvt(Cfg, Dest, Source);
   }
   virtual void emit(const IceCfg *Cfg, uint32_t Option) const;
@@ -454,7 +451,7 @@ public:
   static bool classof(const Inst *Inst) { return isClassof(Inst, Cvt); }
 
 private:
-  InstX8632Cvt(IceCfg *Cfg, IceVariable *Dest, Operand *Source);
+  InstX8632Cvt(IceCfg *Cfg, Variable *Dest, Operand *Source);
   InstX8632Cvt(const InstX8632Cvt &) LLVM_DELETED_FUNCTION;
   InstX8632Cvt &operator=(const InstX8632Cvt &) LLVM_DELETED_FUNCTION;
 };
@@ -508,7 +505,7 @@ private:
 };
 
 // This is essentially a "mov" instruction with an OperandX8632Mem
-// operand instead of IceVariable as the destination.  It's important
+// operand instead of Variable as the destination.  It's important
 // for liveness that there is no Dest operand.
 class InstX8632Store : public InstX8632 {
 public:
@@ -529,7 +526,7 @@ private:
 
 class InstX8632Mov : public InstX8632 {
 public:
-  static InstX8632Mov *create(IceCfg *Cfg, IceVariable *Dest, Operand *Source) {
+  static InstX8632Mov *create(IceCfg *Cfg, Variable *Dest, Operand *Source) {
     return new (Cfg->allocate<InstX8632Mov>()) InstX8632Mov(Cfg, Dest, Source);
   }
   virtual bool isRedundantAssign() const;
@@ -538,15 +535,14 @@ public:
   static bool classof(const Inst *Inst) { return isClassof(Inst, Mov); }
 
 private:
-  InstX8632Mov(IceCfg *Cfg, IceVariable *Dest, Operand *Source);
+  InstX8632Mov(IceCfg *Cfg, Variable *Dest, Operand *Source);
   InstX8632Mov(const InstX8632Mov &) LLVM_DELETED_FUNCTION;
   InstX8632Mov &operator=(const InstX8632Mov &) LLVM_DELETED_FUNCTION;
 };
 
 class InstX8632Movsx : public InstX8632 {
 public:
-  static InstX8632Movsx *create(IceCfg *Cfg, IceVariable *Dest,
-                                Operand *Source) {
+  static InstX8632Movsx *create(IceCfg *Cfg, Variable *Dest, Operand *Source) {
     return new (Cfg->allocate<InstX8632Movsx>())
         InstX8632Movsx(Cfg, Dest, Source);
   }
@@ -555,15 +551,14 @@ public:
   static bool classof(const Inst *Inst) { return isClassof(Inst, Movsx); }
 
 private:
-  InstX8632Movsx(IceCfg *Cfg, IceVariable *Dest, Operand *Source);
+  InstX8632Movsx(IceCfg *Cfg, Variable *Dest, Operand *Source);
   InstX8632Movsx(const InstX8632Movsx &) LLVM_DELETED_FUNCTION;
   InstX8632Movsx &operator=(const InstX8632Movsx &) LLVM_DELETED_FUNCTION;
 };
 
 class InstX8632Movzx : public InstX8632 {
 public:
-  static InstX8632Movzx *create(IceCfg *Cfg, IceVariable *Dest,
-                                Operand *Source) {
+  static InstX8632Movzx *create(IceCfg *Cfg, Variable *Dest, Operand *Source) {
     return new (Cfg->allocate<InstX8632Movzx>())
         InstX8632Movzx(Cfg, Dest, Source);
   }
@@ -572,7 +567,7 @@ public:
   static bool classof(const Inst *Inst) { return isClassof(Inst, Movzx); }
 
 private:
-  InstX8632Movzx(IceCfg *Cfg, IceVariable *Dest, Operand *Source);
+  InstX8632Movzx(IceCfg *Cfg, Variable *Dest, Operand *Source);
   InstX8632Movzx(const InstX8632Movzx &) LLVM_DELETED_FUNCTION;
   InstX8632Movzx &operator=(const InstX8632Movzx &) LLVM_DELETED_FUNCTION;
 };
@@ -594,7 +589,7 @@ private:
 
 class InstX8632Fstp : public InstX8632 {
 public:
-  static InstX8632Fstp *create(IceCfg *Cfg, IceVariable *Dest) {
+  static InstX8632Fstp *create(IceCfg *Cfg, Variable *Dest) {
     return new (Cfg->allocate<InstX8632Fstp>()) InstX8632Fstp(Cfg, Dest);
   }
   virtual void emit(const IceCfg *Cfg, uint32_t Option) const;
@@ -602,14 +597,14 @@ public:
   static bool classof(const Inst *Inst) { return isClassof(Inst, Fstp); }
 
 private:
-  InstX8632Fstp(IceCfg *Cfg, IceVariable *Dest);
+  InstX8632Fstp(IceCfg *Cfg, Variable *Dest);
   InstX8632Fstp(const InstX8632Fstp &) LLVM_DELETED_FUNCTION;
   InstX8632Fstp &operator=(const InstX8632Fstp &) LLVM_DELETED_FUNCTION;
 };
 
 class InstX8632Pop : public InstX8632 {
 public:
-  static InstX8632Pop *create(IceCfg *Cfg, IceVariable *Dest) {
+  static InstX8632Pop *create(IceCfg *Cfg, Variable *Dest) {
     return new (Cfg->allocate<InstX8632Pop>()) InstX8632Pop(Cfg, Dest);
   }
   virtual void emit(const IceCfg *Cfg, uint32_t Option) const;
@@ -617,7 +612,7 @@ public:
   static bool classof(const Inst *Inst) { return isClassof(Inst, Pop); }
 
 private:
-  InstX8632Pop(IceCfg *Cfg, IceVariable *Dest);
+  InstX8632Pop(IceCfg *Cfg, Variable *Dest);
   InstX8632Pop(const InstX8632Pop &) LLVM_DELETED_FUNCTION;
   InstX8632Pop &operator=(const InstX8632Pop &) LLVM_DELETED_FUNCTION;
 };
@@ -642,7 +637,7 @@ private:
 
 class InstX8632Ret : public InstX8632 {
 public:
-  static InstX8632Ret *create(IceCfg *Cfg, IceVariable *Source = NULL) {
+  static InstX8632Ret *create(IceCfg *Cfg, Variable *Source = NULL) {
     return new (Cfg->allocate<InstX8632Ret>()) InstX8632Ret(Cfg, Source);
   }
   virtual void emit(const IceCfg *Cfg, uint32_t Option) const;
@@ -650,7 +645,7 @@ public:
   static bool classof(const Inst *Inst) { return isClassof(Inst, Ret); }
 
 private:
-  InstX8632Ret(IceCfg *Cfg, IceVariable *Source);
+  InstX8632Ret(IceCfg *Cfg, Variable *Source);
   InstX8632Ret(const InstX8632Ret &) LLVM_DELETED_FUNCTION;
   InstX8632Ret &operator=(const InstX8632Ret &) LLVM_DELETED_FUNCTION;
 };

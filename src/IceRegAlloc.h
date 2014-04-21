@@ -22,14 +22,14 @@
 
 namespace Ice {
 
-// Currently this just wraps an IceVariable pointer, so in principle
-// we could use containers of IceVariable* instead of
+// Currently this just wraps an Variable pointer, so in principle
+// we could use containers of Variable* instead of
 // LiveRangeWrapper.  But in the future, we may want to do more
 // complex things such as live range splitting, and keeping a wrapper
 // should make that simpler.
 class LiveRangeWrapper {
 public:
-  LiveRangeWrapper(IceVariable *Var) : Var(Var) {}
+  LiveRangeWrapper(Variable *Var) : Var(Var) {}
   const LiveRange &range() const { return Var->getLiveRange(); }
   bool endsBefore(const LiveRangeWrapper &Other) const {
     return range().endsBefore(Other.range());
@@ -37,7 +37,7 @@ public:
   bool overlaps(const LiveRangeWrapper &Other) const {
     return range().overlaps(Other.range());
   }
-  IceVariable *const Var;
+  Variable *const Var;
   void dump(const IceCfg *Cfg) const;
 
 private:

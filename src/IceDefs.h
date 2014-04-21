@@ -45,7 +45,7 @@ class LiveRange;
 class Liveness;
 class Operand;
 class IceTargetLowering;
-class IceVariable;
+class Variable;
 
 // TODO: Switch over to LLVM's ADT container classes.
 // http://llvm.org/docs/ProgrammersManual.html#picking-the-right-data-structure-for-a-task
@@ -53,7 +53,7 @@ typedef std::string IceString;
 typedef std::list<Inst *> InstList;
 typedef std::list<InstPhi *> IcePhiList;
 typedef std::vector<Operand *> IceOpList;
-typedef std::vector<IceVariable *> IceVarList;
+typedef std::vector<Variable *> IceVarList;
 typedef std::vector<CfgNode *> IceNodeList;
 
 enum LivenessMode {

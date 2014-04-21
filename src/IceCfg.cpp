@@ -72,22 +72,22 @@ CfgNode *IceCfg::splitEdge(CfgNode *From, CfgNode *To) {
   return NewNode;
 }
 
-// Create a new IceVariable with a particular type and an optional
+// Create a new Variable with a particular type and an optional
 // name.  The Node argument is the node where the variable is defined.
-IceVariable *IceCfg::makeVariable(IceType Type, const CfgNode *Node,
-                                  const IceString &Name) {
+Variable *IceCfg::makeVariable(IceType Type, const CfgNode *Node,
+                               const IceString &Name) {
   uint32_t Index = Variables.size();
-  Variables.push_back(IceVariable::create(this, Type, Node, Index, Name));
+  Variables.push_back(Variable::create(this, Type, Node, Index, Name));
   return Variables[Index];
 }
 
-void IceCfg::addArg(IceVariable *Arg) {
+void IceCfg::addArg(Variable *Arg) {
   Arg->setIsArg(this);
   Args.push_back(Arg);
 }
 
 // Returns whether the stack frame layout has been computed yet.  This
-// is used for dumping the stack frame location of IceVariables.
+// is used for dumping the stack frame location of Variables.
 bool IceCfg::hasComputedFrame() const {
   return getTarget() && getTarget()->hasComputedFrame();
 }
@@ -218,13 +218,13 @@ void IceCfg::liveness(LivenessMode Mode) {
     // Reset each variable's live range.
     for (IceVarList::const_iterator I = Variables.begin(), E = Variables.end();
          I != E; ++I) {
-      if (IceVariable *Var = *I)
+      if (Variable *Var = *I)
         Var->resetLiveRange();
     }
   }
   IceTimer T_liveRange;
   // Make a final pass over instructions to delete dead instructions
-  // and build each IceVariable's live range.
+  // and build each Variable's live range.
   for (IceNodeList::iterator I = Nodes.begin(), E = Nodes.end(); I != E; ++I) {
     (*I)->livenessPostprocess(Mode, getLiveness());
   }
@@ -236,25 +236,25 @@ void IceCfg::liveness(LivenessMode Mode) {
     // other arguments.  So if the first instruction of the method is
     // "r=arg1+arg2", both args may be assigned the same register.
     for (uint32_t I = 0; I < Args.size(); ++I) {
-      IceVariable *Arg = Args[I];
+      Variable *Arg = Args[I];
       if (!Live->getLiveRange(Arg).isEmpty()) {
         // Add live range [-1,0) with weight 0.
         Live->addLiveRange(Arg, -1, 0, 0);
       }
-      IceVariable *Lo = Arg->getLo();
+      Variable *Lo = Arg->getLo();
       if (Lo && !Live->getLiveRange(Lo).isEmpty())
         Live->addLiveRange(Lo, -1, 0, 0);
-      IceVariable *Hi = Arg->getHi();
+      Variable *Hi = Arg->getHi();
       if (Hi && !Live->getLiveRange(Hi).isEmpty())
         Live->addLiveRange(Hi, -1, 0, 0);
     }
     // Copy Liveness::LiveRanges into individual variables.  TODO:
-    // Remove IceVariable::LiveRange and redirect to
-    // Liveness::LiveRanges.  TODO: make sure IceVariable weights
+    // Remove Variable::LiveRange and redirect to
+    // Liveness::LiveRanges.  TODO: make sure Variable weights
     // are applied properly.
     uint32_t NumVars = Variables.size();
     for (uint32_t i = 0; i < NumVars; ++i) {
-      IceVariable *Var = Variables[i];
+      Variable *Var = Variables[i];
       Var->setLiveRange(Live->getLiveRange(Var));
       if (Var->getWeight().isInf())
         Var->setLiveRangeInfiniteWeight();
@@ -269,8 +269,8 @@ void IceCfg::liveness(LivenessMode Mode) {
   }
 }
 
-// Traverse every IceVariable of every Inst and verify that it
-// appears within the IceVariable's computed live range.
+// Traverse every Variable of every Inst and verify that it
+// appears within the Variable's computed live range.
 bool IceCfg::validateLiveness() const {
   bool Valid = true;
   for (IceNodeList::const_iterator I1 = Nodes.begin(), E1 = Nodes.end();
@@ -285,7 +285,7 @@ bool IceCfg::validateLiveness() const {
       if (llvm::isa<InstFakeKill>(Inst))
         continue;
       int32_t InstNumber = Inst->getNumber();
-      IceVariable *Dest = Inst->getDest();
+      Variable *Dest = Inst->getDest();
       if (Dest) {
         // TODO: This instruction should actually begin Dest's live
         // range, so we could probably test that this instruction is
@@ -302,7 +302,7 @@ bool IceCfg::validateLiveness() const {
         Operand *Src = Inst->getSrc(I);
         uint32_t NumVars = Src->getNumVars();
         for (uint32_t J = 0; J < NumVars; ++J, ++VarIndex) {
-          const IceVariable *Var = Src->getVar(J);
+          const Variable *Var = Src->getVar(J);
           if (!Var->getLiveRange().containsValue(InstNumber)) {
             Valid = false;
             assert(Valid);
@@ -368,7 +368,7 @@ void IceCfg::dump() {
     // Print summary info about variables
     for (IceVarList::const_iterator I = Variables.begin(), E = Variables.end();
          I != E; ++I) {
-      IceVariable *Var = *I;
+      Variable *Var = *I;
       Str << "//"
           << " multiblock=" << Var->isMultiblockLife() << " "
           << " weight=" << Var->getWeight() << " ";

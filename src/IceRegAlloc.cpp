@@ -30,8 +30,8 @@ namespace Ice {
 // cases.
 //
 // Requires running IceCfg::liveness(Liveness_RangesFull) in
-// preparation.  Results are assigned to IceVariable::RegNum for each
-// IceVariable.
+// preparation.  Results are assigned to Variable::RegNum for each
+// Variable.
 void IceLinearScan::scan(const llvm::SmallBitVector &RegMaskFull) {
   if (!RegMaskFull.any())
     return;
@@ -52,7 +52,7 @@ void IceLinearScan::scan(const llvm::SmallBitVector &RegMaskFull) {
   const IceVarList &Vars = Cfg->getVariables();
   for (IceVarList::const_iterator I = Vars.begin(), E = Vars.end(); I != E;
        ++I) {
-    IceVariable *Var = *I;
+    Variable *Var = *I;
     // Explicitly don't consider zero-weight variables, which are
     // meant to be spill slots.
     if (Var->getWeight() == IceRegWeight::Zero)
@@ -70,7 +70,7 @@ void IceLinearScan::scan(const llvm::SmallBitVector &RegMaskFull) {
 
   // RegUses[I] is the number of live ranges (variables) that register
   // I is currently assigned to.  It can be greater than 1 as a result
-  // of IceVariable::AllowRegisterOverlap.
+  // of Variable::AllowRegisterOverlap.
   std::vector<int> RegUses(RegMaskFull.size());
   // Unhandled is already set to all ranges in increasing order of
   // start points.
@@ -226,10 +226,10 @@ void IceLinearScan::scan(const llvm::SmallBitVector &RegMaskFull) {
       Str << "\n";
     }
 
-    IceVariable *Prefer = Cur.Var->getPreferredRegister();
+    Variable *Prefer = Cur.Var->getPreferredRegister();
     int32_t PreferReg = Prefer && Prefer->hasRegTmp() ? Prefer->getRegNumTmp()
-                                                      : IceVariable::NoRegister;
-    if (PreferReg != IceVariable::NoRegister &&
+                                                      : Variable::NoRegister;
+    if (PreferReg != Variable::NoRegister &&
         (Cur.Var->getRegisterOverlap() || Free[PreferReg])) {
       // First choice: a preferred register that is either free or is
       // allowed to overlap with its linked variable.
@@ -381,7 +381,7 @@ void IceLinearScan::scan(const llvm::SmallBitVector &RegMaskFull) {
   }
   dump(Cfg);
 
-  // Finish up by assigning RegNumTmp->RegNum for each IceVariable.
+  // Finish up by assigning RegNumTmp->RegNum for each Variable.
   for (UnorderedRanges::const_iterator I = Handled.begin(), E = Handled.end();
        I != E; ++I) {
     LiveRangeWrapper Item = *I;

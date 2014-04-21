@@ -26,7 +26,7 @@
 
 namespace Ice {
 
-IceRegManagerEntry::IceRegManagerEntry(IceCfg *Cfg, IceVariable *Var,
+IceRegManagerEntry::IceRegManagerEntry(IceCfg *Cfg, Variable *Var,
                                        uint32_t NumReg)
     : Var(Var) {}
 
@@ -52,7 +52,7 @@ void IceRegManagerEntry::load(Inst *Inst) {
 // Available sets must be killed.
 void IceRegManagerEntry::store(Inst *Inst) {
   // TODO: Kill all Available sets when necessary.
-  IceVariable *Variable = Inst->getDest();
+  Variable *Variable = Inst->getDest();
   assert(Variable);
   Available.push_back(Variable);
 }
@@ -76,7 +76,7 @@ IceRegManager::IceRegManager(IceCfg *Cfg, CfgNode *Node, uint32_t NumReg)
     const static size_t BufLen = 100;
     char Buf[BufLen];
     snprintf(Buf, BufLen, "r%u_%u", i + 1, Node->getIndex());
-    IceVariable *Reg = Cfg->makeVariable(IceType_i32, Node, Buf);
+    Variable *Reg = Cfg->makeVariable(IceType_i32, Node, Buf);
     Queue.push_back(IceRegManagerEntry::create(Cfg, Reg, NumReg));
   }
 }
@@ -90,8 +90,8 @@ IceRegManager::IceRegManager(const IceRegManager &Other)
 }
 
 // Prefer[0] is highest preference, Prefer[1] is second, etc.
-IceVariable *IceRegManager::getRegister(IceType Type, const IceOpList &Prefer,
-                                        const IceVarList &Avoid)
+Variable *IceRegManager::getRegister(IceType Type, const IceOpList &Prefer,
+                                     const IceVarList &Avoid)
     // TODO: "Avoid" is actually a set of virtual or physical registers.
     // Wait - no it's not.  For an Arithmetic instruction, the load of the
     // first operand should avoid using a register that contains the
@@ -134,7 +134,7 @@ IceVariable *IceRegManager::getRegister(IceType Type, const IceOpList &Prefer,
   return Best->getVar();
 }
 
-bool IceRegManager::registerContains(const IceVariable *Reg,
+bool IceRegManager::registerContains(const Variable *Reg,
                                      const Operand *Op) const {
   for (QueueType::const_iterator I = Queue.begin(), E = Queue.end(); I != E;
        ++I) {
@@ -146,7 +146,7 @@ bool IceRegManager::registerContains(const IceVariable *Reg,
 }
 
 void IceRegManager::notifyLoad(Inst *Inst, bool IsAssign) {
-  IceVariable *Reg = Inst->getDest();
+  Variable *Reg = Inst->getDest();
   IceRegManagerEntry *Entry = NULL;
   for (QueueType::iterator I = Queue.begin(), E = Queue.end(); I != E; ++I) {
     if ((*I)->getVar() == Reg) {
@@ -161,7 +161,7 @@ void IceRegManager::notifyLoad(Inst *Inst, bool IsAssign) {
 }
 
 void IceRegManager::notifyStore(Inst *Inst) {
-  IceVariable *Reg = llvm::cast<IceVariable>(Inst->getSrc(0));
+  Variable *Reg = llvm::cast<Variable>(Inst->getSrc(0));
   IceRegManagerEntry *Entry = NULL;
   for (QueueType::iterator I = Queue.begin(), E = Queue.end(); I != E; ++I) {
     if ((*I)->getVar() == Reg) {

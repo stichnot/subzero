@@ -9,11 +9,11 @@
 //
 // This file provides some of the support for the Liveness class.
 // In particular, it handles the sparsity representation of the
-// mapping between IceVariables and CfgNodes.  The idea is that
+// mapping between Variables and CfgNodes.  The idea is that
 // since most variables are used only within a single basic block, we
 // can partition the variables into "local" and "global" sets.
 // Instead of sizing and indexing vectors according to
-// IceVariable::Number, we create a mapping such that global variables
+// Variable::Number, we create a mapping such that global variables
 // are mapped to low indexes that are common across nodes, and local
 // variables are mapped to a higher index space that is shared across
 // nodes.
@@ -41,7 +41,7 @@ void Liveness::init() {
   // Count the number of globals, and the number of locals for each
   // block.
   for (uint32_t i = 0; i < NumVars; ++i) {
-    IceVariable *Var = Cfg->getVariables()[i];
+    Variable *Var = Cfg->getVariables()[i];
     if (Var->isMultiblockLife()) {
       ++NumGlobals;
     } else {
@@ -62,7 +62,7 @@ void Liveness::init() {
   // VarToLiveMap.
   uint32_t TmpNumGlobals = 0;
   for (uint32_t i = 0; i < NumVars; ++i) {
-    IceVariable *Var = Cfg->getVariables()[i];
+    Variable *Var = Cfg->getVariables()[i];
     uint32_t VarIndex = Var->getIndex();
     uint32_t LiveIndex;
     if (Var->isMultiblockLife()) {
@@ -91,19 +91,18 @@ void Liveness::init() {
   }
 }
 
-IceVariable *Liveness::getVariable(uint32_t LiveIndex,
-                                   const CfgNode *Node) const {
+Variable *Liveness::getVariable(uint32_t LiveIndex, const CfgNode *Node) const {
   if (LiveIndex < NumGlobals)
     return LiveToVarMap[LiveIndex];
   uint32_t NodeIndex = Node->getIndex();
   return Nodes[NodeIndex].LiveToVarMap[LiveIndex - NumGlobals];
 }
 
-uint32_t Liveness::getLiveIndex(const IceVariable *Var) const {
+uint32_t Liveness::getLiveIndex(const Variable *Var) const {
   return VarToLiveMap[Var->getIndex()];
 }
 
-void Liveness::addLiveRange(IceVariable *Var, int32_t Start, int32_t End,
+void Liveness::addLiveRange(Variable *Var, int32_t Start, int32_t End,
                             uint32_t WeightDelta) {
   LiveRange &LiveRange = LiveRanges[Var->getIndex()];
   assert(WeightDelta != IceRegWeight::Inf);
@@ -111,7 +110,7 @@ void Liveness::addLiveRange(IceVariable *Var, int32_t Start, int32_t End,
   LiveRange.addWeight(WeightDelta);
 }
 
-LiveRange &Liveness::getLiveRange(IceVariable *Var) {
+LiveRange &Liveness::getLiveRange(Variable *Var) {
   return LiveRanges[Var->getIndex()];
 }
 

@@ -63,7 +63,7 @@ namespace Ice {
 
 class IceRegManagerEntry {
 public:
-  static IceRegManagerEntry *create(IceCfg *Cfg, IceVariable *Var,
+  static IceRegManagerEntry *create(IceCfg *Cfg, Variable *Var,
                                     uint32_t NumReg) {
     return new IceRegManagerEntry(Cfg, Var, NumReg);
   }
@@ -74,22 +74,22 @@ public:
   void load(Inst *Inst);
   void store(Inst *Inst);
   bool contains(const Operand *Operand) const;
-  IceVariable *getVar() const { return Var; }
+  Variable *getVar() const { return Var; }
   void dump(const IceCfg *Cfg) const;
 
 private:
-  IceRegManagerEntry(IceCfg *Cfg, IceVariable *Var, uint32_t NumReg);
+  IceRegManagerEntry(IceCfg *Cfg, Variable *Var, uint32_t NumReg);
   IceRegManagerEntry(IceCfg *Cfg, const IceRegManagerEntry &Other,
                      uint32_t NumReg);
 
   // Virtual register.
-  IceVariable *const Var;
+  Variable *const Var;
 
   // Set of operands currently available in the virtual register.
   IceOpList Available;
 };
 
-// TODO: Use some "virtual register" subclass of IceVariable.
+// TODO: Use some "virtual register" subclass of Variable.
 class IceRegManager {
 public:
   typedef std::vector<IceRegManagerEntry *> QueueType;
@@ -102,11 +102,11 @@ public:
   static IceRegManager *create(const IceRegManager &Other) {
     return new IceRegManager(Other);
   }
-  // TODO: Are these IceVariable instances duplicated across
+  // TODO: Are these Variable instances duplicated across
   // IceRegManager objects?
-  IceVariable *getRegister(IceType Type, const IceOpList &Prefer,
-                           const IceVarList &Avoid) const;
-  bool registerContains(const IceVariable *Reg, const Operand *Op) const;
+  Variable *getRegister(IceType Type, const IceOpList &Prefer,
+                        const IceVarList &Avoid) const;
+  bool registerContains(const Variable *Reg, const Operand *Op) const;
   void notifyLoad(Inst *Inst, bool IsAssign = true);
   void notifyStore(Inst *Inst);
   void dump(const IceCfg *Cfg) const;
