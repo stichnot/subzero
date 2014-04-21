@@ -1,4 +1,4 @@
-//===- subzero/src/IceInst.cpp - High-level instruction implementation ----===//
+//===- subzero/src/Inst.cpp - High-level instruction implementation ----===//
 //
 //                        The Subzero Code Generator
 //
@@ -7,7 +7,7 @@
 //
 //===----------------------------------------------------------------------===//
 //
-// This file implements the IceInst class, primarily the various
+// This file implements the Inst class, primarily the various
 // subclass constructors and dump routines.
 //
 //===----------------------------------------------------------------------===//
@@ -21,8 +21,7 @@
 
 namespace Ice {
 
-IceInst::IceInst(IceCfg *Cfg, InstKind Kind, uint32_t MaxSrcs,
-                 IceVariable *Dest)
+Inst::Inst(IceCfg *Cfg, InstKind Kind, uint32_t MaxSrcs, IceVariable *Dest)
     : Kind(Kind), Deleted(false), Dead(false), HasSideEffects(false),
       Dest(Dest), MaxSrcs(MaxSrcs), NumSrcs(0), LiveRangesEnded(0) {
   Number = Cfg->newInstNumber();
@@ -30,20 +29,20 @@ IceInst::IceInst(IceCfg *Cfg, InstKind Kind, uint32_t MaxSrcs,
 }
 
 // Assign the instruction a new number.
-void IceInst::renumber(IceCfg *Cfg) {
+void Inst::renumber(IceCfg *Cfg) {
   Number = isDeleted() ? -1 : Cfg->newInstNumber();
 }
 
 // Delete the instruction if its tentative Dead flag is still set
 // after liveness analysis.
-void IceInst::deleteIfDead() {
+void Inst::deleteIfDead() {
   if (Dead)
     setDeleted();
 }
 
 // If Src is an IceVariable, it returns true if this instruction ends
 // Src's live range.  Otherwise, returns false.
-bool IceInst::isLastUse(const IceOperand *TestSrc) const {
+bool Inst::isLastUse(const IceOperand *TestSrc) const {
   if (LiveRangesEnded == 0)
     return false; // early-exit optimization
   if (const IceVariable *TestVar = llvm::dyn_cast<const IceVariable>(TestSrc)) {
@@ -67,7 +66,7 @@ bool IceInst::isLastUse(const IceOperand *TestSrc) const {
   return false;
 }
 
-void IceInst::updateVars(CfgNode *Node) {
+void Inst::updateVars(CfgNode *Node) {
   if (Dest)
     Dest->setDefinition(this, Node);
   for (uint32_t I = 0; I < getSrcSize(); ++I) {
@@ -75,12 +74,12 @@ void IceInst::updateVars(CfgNode *Node) {
   }
 }
 
-void IceInst::liveness(IceLivenessMode Mode, int32_t InstNumber,
-                       llvm::BitVector &Live, IceLiveness *Liveness,
-                       const CfgNode *Node) {
+void Inst::liveness(IceLivenessMode Mode, int32_t InstNumber,
+                    llvm::BitVector &Live, IceLiveness *Liveness,
+                    const CfgNode *Node) {
   if (isDeleted())
     return;
-  if (llvm::isa<IceInstFakeKill>(this))
+  if (llvm::isa<InstFakeKill>(this))
     return;
 
   // For lightweight liveness, do the simple calculation and return.
@@ -121,7 +120,7 @@ void IceInst::liveness(IceLivenessMode Mode, int32_t InstNumber,
     return;
   // Phi arguments only get added to Live in the predecessor node, but
   // we still need to update LiveRangesEnded.
-  bool IsPhi = llvm::isa<IceInstPhi>(this);
+  bool IsPhi = llvm::isa<InstPhi>(this);
   resetLastUses();
   uint32_t VarIndex = 0;
   for (uint32_t I = 0; I < getSrcSize(); ++I) {
@@ -142,7 +141,7 @@ void IceInst::liveness(IceLivenessMode Mode, int32_t InstNumber,
           // liveness interval in a basic block (except for blocks
           // where a variable is live-in and live-out but there is a
           // gap in the middle, and except for the special
-          // IceInstFakeKill instruction that can appear multiple
+          // InstFakeKill instruction that can appear multiple
           // times in the same block).  Therefore, this lowered
           // sequence needs to represent a single conservative live
           // range for t.  Since the instructions are being traversed
@@ -159,20 +158,20 @@ void IceInst::liveness(IceLivenessMode Mode, int32_t InstNumber,
   }
 }
 
-IceInstAlloca::IceInstAlloca(IceCfg *Cfg, IceOperand *ByteCount, uint32_t Align,
-                             IceVariable *Dest)
-    : IceInst(Cfg, IceInst::Alloca, 1, Dest), Align(Align) {
+InstAlloca::InstAlloca(IceCfg *Cfg, IceOperand *ByteCount, uint32_t Align,
+                       IceVariable *Dest)
+    : Inst(Cfg, Inst::Alloca, 1, Dest), Align(Align) {
   addSource(ByteCount);
 }
 
-IceInstArithmetic::IceInstArithmetic(IceCfg *Cfg, OpKind Op, IceVariable *Dest,
-                                     IceOperand *Source1, IceOperand *Source2)
-    : IceInst(Cfg, IceInst::Arithmetic, 2, Dest), Op(Op) {
+InstArithmetic::InstArithmetic(IceCfg *Cfg, OpKind Op, IceVariable *Dest,
+                               IceOperand *Source1, IceOperand *Source2)
+    : Inst(Cfg, Inst::Arithmetic, 2, Dest), Op(Op) {
   addSource(Source1);
   addSource(Source2);
 }
 
-bool IceInstArithmetic::isCommutative() const {
+bool InstArithmetic::isCommutative() const {
   switch (getOp()) {
   case Add:
   case Fadd:
@@ -187,17 +186,17 @@ bool IceInstArithmetic::isCommutative() const {
   }
 }
 
-IceInstAssign::IceInstAssign(IceCfg *Cfg, IceVariable *Dest, IceOperand *Source)
-    : IceInst(Cfg, IceInst::Assign, 1, Dest) {
+InstAssign::InstAssign(IceCfg *Cfg, IceVariable *Dest, IceOperand *Source)
+    : Inst(Cfg, Inst::Assign, 1, Dest) {
   addSource(Source);
 }
 
 // If TargetTrue==TargetFalse, we turn it into an unconditional
 // branch.  This ensures that, along with the 'switch' instruction
 // semantics, there is at most one edge from one node to another.
-IceInstBr::IceInstBr(IceCfg *Cfg, IceOperand *Source, CfgNode *TargetTrue,
-                     CfgNode *TargetFalse)
-    : IceInst(Cfg, IceInst::Br, 1, NULL), TargetFalse(TargetFalse),
+InstBr::InstBr(IceCfg *Cfg, IceOperand *Source, CfgNode *TargetTrue,
+               CfgNode *TargetFalse)
+    : Inst(Cfg, Inst::Br, 1, NULL), TargetFalse(TargetFalse),
       TargetTrue(TargetTrue) {
   if (TargetTrue == TargetFalse) {
     TargetTrue = NULL; // turn into unconditional version
@@ -206,11 +205,10 @@ IceInstBr::IceInstBr(IceCfg *Cfg, IceOperand *Source, CfgNode *TargetTrue,
   }
 }
 
-IceInstBr::IceInstBr(IceCfg *Cfg, CfgNode *Target)
-    : IceInst(Cfg, IceInst::Br, 0, NULL), TargetFalse(Target),
-      TargetTrue(NULL) {}
+InstBr::InstBr(IceCfg *Cfg, CfgNode *Target)
+    : Inst(Cfg, Inst::Br, 0, NULL), TargetFalse(Target), TargetTrue(NULL) {}
 
-IceNodeList IceInstBr::getTerminatorEdges() const {
+IceNodeList InstBr::getTerminatorEdges() const {
   IceNodeList OutEdges;
   OutEdges.push_back(TargetFalse);
   if (TargetTrue)
@@ -218,33 +216,33 @@ IceNodeList IceInstBr::getTerminatorEdges() const {
   return OutEdges;
 }
 
-IceInstCast::IceInstCast(IceCfg *Cfg, OpKind CastKind, IceVariable *Dest,
-                         IceOperand *Source)
-    : IceInst(Cfg, IceInst::Cast, 1, Dest), CastKind(CastKind) {
+InstCast::InstCast(IceCfg *Cfg, OpKind CastKind, IceVariable *Dest,
+                   IceOperand *Source)
+    : Inst(Cfg, Inst::Cast, 1, Dest), CastKind(CastKind) {
   addSource(Source);
 }
 
-IceInstFcmp::IceInstFcmp(IceCfg *Cfg, FCond Condition, IceVariable *Dest,
-                         IceOperand *Source1, IceOperand *Source2)
-    : IceInst(Cfg, IceInst::Fcmp, 2, Dest), Condition(Condition) {
+InstFcmp::InstFcmp(IceCfg *Cfg, FCond Condition, IceVariable *Dest,
+                   IceOperand *Source1, IceOperand *Source2)
+    : Inst(Cfg, Inst::Fcmp, 2, Dest), Condition(Condition) {
   addSource(Source1);
   addSource(Source2);
 }
 
-IceInstIcmp::IceInstIcmp(IceCfg *Cfg, ICond Condition, IceVariable *Dest,
-                         IceOperand *Source1, IceOperand *Source2)
-    : IceInst(Cfg, IceInst::Icmp, 2, Dest), Condition(Condition) {
+InstIcmp::InstIcmp(IceCfg *Cfg, ICond Condition, IceVariable *Dest,
+                   IceOperand *Source1, IceOperand *Source2)
+    : Inst(Cfg, Inst::Icmp, 2, Dest), Condition(Condition) {
   addSource(Source1);
   addSource(Source2);
 }
 
-IceInstLoad::IceInstLoad(IceCfg *Cfg, IceVariable *Dest, IceOperand *SourceAddr)
-    : IceInst(Cfg, IceInst::Load, 1, Dest) {
+InstLoad::InstLoad(IceCfg *Cfg, IceVariable *Dest, IceOperand *SourceAddr)
+    : Inst(Cfg, Inst::Load, 1, Dest) {
   addSource(SourceAddr);
 }
 
-IceInstPhi::IceInstPhi(IceCfg *Cfg, uint32_t MaxSrcs, IceVariable *Dest)
-    : IceInst(Cfg, Phi, MaxSrcs, Dest) {
+InstPhi::InstPhi(IceCfg *Cfg, uint32_t MaxSrcs, IceVariable *Dest)
+    : Inst(Cfg, Phi, MaxSrcs, Dest) {
   Labels = Cfg->allocateArrayOf<CfgNode *>(MaxSrcs);
 }
 
@@ -252,7 +250,7 @@ IceInstPhi::IceInstPhi(IceCfg *Cfg, uint32_t MaxSrcs, IceVariable *Dest)
 // edges.  We may want to de-dup Phis and validate consistency (i.e.,
 // the source operands are the same for duplicate edges), though it
 // seems the current lowering code is OK with this situation.
-void IceInstPhi::addArgument(IceOperand *Source, CfgNode *Label) {
+void InstPhi::addArgument(IceOperand *Source, CfgNode *Label) {
   Labels[getSrcSize()] = Label;
   addSource(Source);
 }
@@ -260,7 +258,7 @@ void IceInstPhi::addArgument(IceOperand *Source, CfgNode *Label) {
 // Find the source operand corresponding to the incoming edge for the
 // given node.  TODO: This uses a linear-time search, which could be
 // improved if it becomes a problem.
-IceOperand *IceInstPhi::getOperandForTarget(CfgNode *Target) const {
+IceOperand *InstPhi::getOperandForTarget(CfgNode *Target) const {
   for (uint32_t I = 0; I < getSrcSize(); ++I) {
     if (Labels[I] == Target)
       return getSrc(I);
@@ -272,8 +270,8 @@ IceOperand *IceInstPhi::getOperandForTarget(CfgNode *Target) const {
 // Updates liveness for a particular operand based on the given
 // predecessor edge.  Doesn't mark the operand as live if the Phi
 // instruction is dead or deleted.
-void IceInstPhi::livenessPhiOperand(llvm::BitVector &Live, CfgNode *Target,
-                                    IceLiveness *Liveness) {
+void InstPhi::livenessPhiOperand(llvm::BitVector &Live, CfgNode *Target,
+                                 IceLiveness *Liveness) {
   if (isDeleted() || Dead)
     return;
   for (uint32_t I = 0; I < getSrcSize(); ++I) {
@@ -293,13 +291,13 @@ void IceInstPhi::livenessPhiOperand(llvm::BitVector &Live, CfgNode *Target,
 
 // Change "a=phi(...)" to "a_phi=phi(...)" and return a new
 // instruction "a=a_phi".
-IceInst *IceInstPhi::lower(IceCfg *Cfg, CfgNode *Node) {
+Inst *InstPhi::lower(IceCfg *Cfg, CfgNode *Node) {
   IceVariable *Dest = getDest();
   assert(Dest);
   IceString PhiName = Dest->getName() + "_phi";
   IceVariable *NewSrc = Cfg->makeVariable(Dest->getType(), Node, PhiName);
   this->Dest = NewSrc;
-  IceInstAssign *NewInst = IceInstAssign::create(Cfg, Dest, NewSrc);
+  InstAssign *NewInst = InstAssign::create(Cfg, Dest, NewSrc);
   // Set Dest and NewSrc to have affinity with each other, as a hint
   // for register allocation.
   Dest->setPreferredRegister(NewSrc, false);
@@ -308,31 +306,30 @@ IceInst *IceInstPhi::lower(IceCfg *Cfg, CfgNode *Node) {
   return NewInst;
 }
 
-IceInstRet::IceInstRet(IceCfg *Cfg, IceOperand *Source)
-    : IceInst(Cfg, Ret, Source ? 1 : 0, NULL) {
+InstRet::InstRet(IceCfg *Cfg, IceOperand *Source)
+    : Inst(Cfg, Ret, Source ? 1 : 0, NULL) {
   if (Source)
     addSource(Source);
 }
 
-IceInstSelect::IceInstSelect(IceCfg *Cfg, IceVariable *Dest,
-                             IceOperand *Condition, IceOperand *SourceTrue,
-                             IceOperand *SourceFalse)
-    : IceInst(Cfg, IceInst::Select, 3, Dest) {
+InstSelect::InstSelect(IceCfg *Cfg, IceVariable *Dest, IceOperand *Condition,
+                       IceOperand *SourceTrue, IceOperand *SourceFalse)
+    : Inst(Cfg, Inst::Select, 3, Dest) {
   assert(Condition->getType() == IceType_i1);
   addSource(Condition);
   addSource(SourceTrue);
   addSource(SourceFalse);
 }
 
-IceInstStore::IceInstStore(IceCfg *Cfg, IceOperand *Data, IceOperand *Addr)
-    : IceInst(Cfg, IceInst::Store, 2, NULL) {
+InstStore::InstStore(IceCfg *Cfg, IceOperand *Data, IceOperand *Addr)
+    : Inst(Cfg, Inst::Store, 2, NULL) {
   addSource(Data);
   addSource(Addr);
 }
 
-IceInstSwitch::IceInstSwitch(IceCfg *Cfg, uint32_t NumCases, IceOperand *Source,
-                             CfgNode *LabelDefault)
-    : IceInst(Cfg, IceInst::Switch, 1, NULL), LabelDefault(LabelDefault),
+InstSwitch::InstSwitch(IceCfg *Cfg, uint32_t NumCases, IceOperand *Source,
+                       CfgNode *LabelDefault)
+    : Inst(Cfg, Inst::Switch, 1, NULL), LabelDefault(LabelDefault),
       NumCases(NumCases) {
   addSource(Source);
   Values = Cfg->allocateArrayOf<uint64_t>(NumCases);
@@ -344,14 +341,13 @@ IceInstSwitch::IceInstSwitch(IceCfg *Cfg, uint32_t NumCases, IceOperand *Source,
   }
 }
 
-void IceInstSwitch::addBranch(uint32_t CaseIndex, uint64_t Value,
-                              CfgNode *Label) {
+void InstSwitch::addBranch(uint32_t CaseIndex, uint64_t Value, CfgNode *Label) {
   assert(CaseIndex < NumCases);
   Values[CaseIndex] = Value;
   Labels[CaseIndex] = Label;
 }
 
-IceNodeList IceInstSwitch::getTerminatorEdges() const {
+IceNodeList InstSwitch::getTerminatorEdges() const {
   IceNodeList OutEdges;
   OutEdges.push_back(LabelDefault);
   for (uint32_t I = 0; I < NumCases; ++I) {
@@ -360,25 +356,25 @@ IceNodeList IceInstSwitch::getTerminatorEdges() const {
   return OutEdges;
 }
 
-IceInstUnreachable::IceInstUnreachable(IceCfg *Cfg)
-    : IceInst(Cfg, IceInst::Unreachable, 0, NULL) {}
+InstUnreachable::InstUnreachable(IceCfg *Cfg)
+    : Inst(Cfg, Inst::Unreachable, 0, NULL) {}
 
-IceInstFakeDef::IceInstFakeDef(IceCfg *Cfg, IceVariable *Dest, IceVariable *Src)
-    : IceInst(Cfg, IceInst::FakeDef, Src ? 1 : 0, Dest) {
+InstFakeDef::InstFakeDef(IceCfg *Cfg, IceVariable *Dest, IceVariable *Src)
+    : Inst(Cfg, Inst::FakeDef, Src ? 1 : 0, Dest) {
   assert(Dest);
   if (Src)
     addSource(Src);
 }
 
-IceInstFakeUse::IceInstFakeUse(IceCfg *Cfg, IceVariable *Src)
-    : IceInst(Cfg, IceInst::FakeUse, 1, NULL) {
+InstFakeUse::InstFakeUse(IceCfg *Cfg, IceVariable *Src)
+    : Inst(Cfg, Inst::FakeUse, 1, NULL) {
   assert(Src);
   addSource(Src);
 }
 
-IceInstFakeKill::IceInstFakeKill(IceCfg *Cfg, const IceVarList &KilledRegs,
-                                 const IceInst *Linked)
-    : IceInst(Cfg, IceInst::FakeKill, KilledRegs.size(), NULL), Linked(Linked) {
+InstFakeKill::InstFakeKill(IceCfg *Cfg, const IceVarList &KilledRegs,
+                           const Inst *Linked)
+    : Inst(Cfg, Inst::FakeKill, KilledRegs.size(), NULL), Linked(Linked) {
   for (IceVarList::const_iterator I = KilledRegs.begin(), E = KilledRegs.end();
        I != E; ++I) {
     IceVariable *Var = *I;
@@ -388,7 +384,7 @@ IceInstFakeKill::IceInstFakeKill(IceCfg *Cfg, const IceVarList &KilledRegs,
 
 // ======================== Dump routines ======================== //
 
-void IceInst::dumpDecorated(const IceCfg *Cfg) const {
+void Inst::dumpDecorated(const IceCfg *Cfg) const {
   IceOstream &Str = Cfg->getContext()->StrDump;
   if (!Cfg->getContext()->isVerbose(IceV_Deleted) &&
       (isDeleted() || isRedundantAssign()))
@@ -411,7 +407,7 @@ void IceInst::dumpDecorated(const IceCfg *Cfg) const {
   Str << "\n";
 }
 
-void IceInst::emit(const IceCfg *Cfg, uint32_t Option) const {
+void Inst::emit(const IceCfg *Cfg, uint32_t Option) const {
   IceOstream &Str = Cfg->getContext()->StrEmit;
   Str << "??? ";
   dump(Cfg);
@@ -422,14 +418,14 @@ void IceInst::emit(const IceCfg *Cfg, uint32_t Option) const {
   // Cfg->setError("emit() called on a non-lowered instruction");
 }
 
-void IceInst::dump(const IceCfg *Cfg) const {
+void Inst::dump(const IceCfg *Cfg) const {
   IceOstream &Str = Cfg->getContext()->StrDump;
   dumpDest(Cfg);
   Str << " =~ ";
   dumpSources(Cfg);
 }
 
-void IceInst::dumpExtras(const IceCfg *Cfg) const {
+void Inst::dumpExtras(const IceCfg *Cfg) const {
   IceOstream &Str = Cfg->getContext()->StrDump;
   bool First = true;
   // Print "LIVEEND={a,b,c}" for all source operands whose live ranges
@@ -456,7 +452,7 @@ void IceInst::dumpExtras(const IceCfg *Cfg) const {
   }
 }
 
-void IceInst::dumpSources(const IceCfg *Cfg) const {
+void Inst::dumpSources(const IceCfg *Cfg) const {
   IceOstream &Str = Cfg->getContext()->StrDump;
   for (uint32_t I = 0; I < getSrcSize(); ++I) {
     if (I > 0)
@@ -465,7 +461,7 @@ void IceInst::dumpSources(const IceCfg *Cfg) const {
   }
 }
 
-void IceInst::emitSources(const IceCfg *Cfg, uint32_t Option) const {
+void Inst::emitSources(const IceCfg *Cfg, uint32_t Option) const {
   IceOstream &Str = Cfg->getContext()->StrEmit;
   for (uint32_t I = 0; I < getSrcSize(); ++I) {
     if (I > 0)
@@ -474,12 +470,12 @@ void IceInst::emitSources(const IceCfg *Cfg, uint32_t Option) const {
   }
 }
 
-void IceInst::dumpDest(const IceCfg *Cfg) const {
+void Inst::dumpDest(const IceCfg *Cfg) const {
   if (getDest())
     getDest()->dump(Cfg);
 }
 
-void IceInstAlloca::dump(const IceCfg *Cfg) const {
+void InstAlloca::dump(const IceCfg *Cfg) const {
   IceOstream &Str = Cfg->getContext()->StrDump;
   dumpDest(Cfg);
   Str << " = alloca i8, i32 ";
@@ -487,7 +483,7 @@ void IceInstAlloca::dump(const IceCfg *Cfg) const {
   Str << ", align " << Align;
 }
 
-void IceInstArithmetic::dump(const IceCfg *Cfg) const {
+void InstArithmetic::dump(const IceCfg *Cfg) const {
   IceOstream &Str = Cfg->getContext()->StrDump;
   dumpDest(Cfg);
   Str << " = ";
@@ -554,14 +550,14 @@ void IceInstArithmetic::dump(const IceCfg *Cfg) const {
   dumpSources(Cfg);
 }
 
-void IceInstAssign::dump(const IceCfg *Cfg) const {
+void InstAssign::dump(const IceCfg *Cfg) const {
   IceOstream &Str = Cfg->getContext()->StrDump;
   dumpDest(Cfg);
   Str << " = " << getDest()->getType() << " ";
   dumpSources(Cfg);
 }
 
-void IceInstBr::dump(const IceCfg *Cfg) const {
+void InstBr::dump(const IceCfg *Cfg) const {
   IceOstream &Str = Cfg->getContext()->StrDump;
   dumpDest(Cfg);
   Str << "br ";
@@ -573,7 +569,7 @@ void IceInstBr::dump(const IceCfg *Cfg) const {
   Str << "label %" << getTargetFalse()->getName();
 }
 
-void IceInstCall::dump(const IceCfg *Cfg) const {
+void InstCall::dump(const IceCfg *Cfg) const {
   IceOstream &Str = Cfg->getContext()->StrDump;
   if (getDest()) {
     dumpDest(Cfg);
@@ -598,7 +594,7 @@ void IceInstCall::dump(const IceCfg *Cfg) const {
   Str << ")";
 }
 
-void IceInstCast::dump(const IceCfg *Cfg) const {
+void InstCast::dump(const IceCfg *Cfg) const {
   IceOstream &Str = Cfg->getContext()->StrDump;
   dumpDest(Cfg);
   Str << " = ";
@@ -648,7 +644,7 @@ void IceInstCast::dump(const IceCfg *Cfg) const {
     Str << "*";
 }
 
-void IceInstIcmp::dump(const IceCfg *Cfg) const {
+void InstIcmp::dump(const IceCfg *Cfg) const {
   IceOstream &Str = Cfg->getContext()->StrDump;
   dumpDest(Cfg);
   Str << " = icmp ";
@@ -691,7 +687,7 @@ void IceInstIcmp::dump(const IceCfg *Cfg) const {
   dumpSources(Cfg);
 }
 
-void IceInstFcmp::dump(const IceCfg *Cfg) const {
+void InstFcmp::dump(const IceCfg *Cfg) const {
   IceOstream &Str = Cfg->getContext()->StrDump;
   dumpDest(Cfg);
   Str << " = fcmp ";
@@ -750,7 +746,7 @@ void IceInstFcmp::dump(const IceCfg *Cfg) const {
   dumpSources(Cfg);
 }
 
-void IceInstLoad::dump(const IceCfg *Cfg) const {
+void InstLoad::dump(const IceCfg *Cfg) const {
   IceOstream &Str = Cfg->getContext()->StrDump;
   dumpDest(Cfg);
   IceType Type = getDest()->getType();
@@ -769,7 +765,7 @@ void IceInstLoad::dump(const IceCfg *Cfg) const {
   }
 }
 
-void IceInstStore::dump(const IceCfg *Cfg) const {
+void InstStore::dump(const IceCfg *Cfg) const {
   IceOstream &Str = Cfg->getContext()->StrDump;
   IceType Type = getData()->getType();
   Str << "store " << Type << " ";
@@ -790,7 +786,7 @@ void IceInstStore::dump(const IceCfg *Cfg) const {
   }
 }
 
-void IceInstSwitch::dump(const IceCfg *Cfg) const {
+void InstSwitch::dump(const IceCfg *Cfg) const {
   IceOstream &Str = Cfg->getContext()->StrDump;
   IceType Type = getSrc(0)->getType();
   Str << "switch " << Type << " ";
@@ -803,7 +799,7 @@ void IceInstSwitch::dump(const IceCfg *Cfg) const {
   Str << "  ]";
 }
 
-void IceInstPhi::dump(const IceCfg *Cfg) const {
+void InstPhi::dump(const IceCfg *Cfg) const {
   IceOstream &Str = Cfg->getContext()->StrDump;
   dumpDest(Cfg);
   Str << " = phi " << getDest()->getType() << " ";
@@ -816,7 +812,7 @@ void IceInstPhi::dump(const IceCfg *Cfg) const {
   }
 }
 
-void IceInstRet::dump(const IceCfg *Cfg) const {
+void InstRet::dump(const IceCfg *Cfg) const {
   IceOstream &Str = Cfg->getContext()->StrDump;
   IceType Type = getSrcSize() == 0 ? IceType_void : getSrc(0)->getType();
   Str << "ret " << Type;
@@ -826,7 +822,7 @@ void IceInstRet::dump(const IceCfg *Cfg) const {
   }
 }
 
-void IceInstSelect::dump(const IceCfg *Cfg) const {
+void InstSelect::dump(const IceCfg *Cfg) const {
   IceOstream &Str = Cfg->getContext()->StrDump;
   dumpDest(Cfg);
   IceOperand *Condition = getCondition();
@@ -840,12 +836,12 @@ void IceInstSelect::dump(const IceCfg *Cfg) const {
   FalseOp->dump(Cfg);
 }
 
-void IceInstUnreachable::dump(const IceCfg *Cfg) const {
+void InstUnreachable::dump(const IceCfg *Cfg) const {
   IceOstream &Str = Cfg->getContext()->StrDump;
   Str << "unreachable";
 }
 
-void IceInstFakeDef::emit(const IceCfg *Cfg, uint32_t Option) const {
+void InstFakeDef::emit(const IceCfg *Cfg, uint32_t Option) const {
   IceOstream &Str = Cfg->getContext()->StrEmit;
   Str << "\t# ";
   getDest()->emit(Cfg, Option);
@@ -854,14 +850,14 @@ void IceInstFakeDef::emit(const IceCfg *Cfg, uint32_t Option) const {
   Str << "\n";
 }
 
-void IceInstFakeDef::dump(const IceCfg *Cfg) const {
+void InstFakeDef::dump(const IceCfg *Cfg) const {
   IceOstream &Str = Cfg->getContext()->StrDump;
   dumpDest(Cfg);
   Str << " = def.pseudo ";
   dumpSources(Cfg);
 }
 
-void IceInstFakeUse::emit(const IceCfg *Cfg, uint32_t Option) const {
+void InstFakeUse::emit(const IceCfg *Cfg, uint32_t Option) const {
   IceOstream &Str = Cfg->getContext()->StrEmit;
   Str << "\t# ";
   Str << "use.pseudo ";
@@ -869,13 +865,13 @@ void IceInstFakeUse::emit(const IceCfg *Cfg, uint32_t Option) const {
   Str << "\n";
 }
 
-void IceInstFakeUse::dump(const IceCfg *Cfg) const {
+void InstFakeUse::dump(const IceCfg *Cfg) const {
   IceOstream &Str = Cfg->getContext()->StrDump;
   Str << "use.pseudo ";
   dumpSources(Cfg);
 }
 
-void IceInstFakeKill::emit(const IceCfg *Cfg, uint32_t Option) const {
+void InstFakeKill::emit(const IceCfg *Cfg, uint32_t Option) const {
   IceOstream &Str = Cfg->getContext()->StrEmit;
   Str << "\t# ";
   if (Linked->isDeleted())
@@ -885,7 +881,7 @@ void IceInstFakeKill::emit(const IceCfg *Cfg, uint32_t Option) const {
   Str << "\n";
 }
 
-void IceInstFakeKill::dump(const IceCfg *Cfg) const {
+void InstFakeKill::dump(const IceCfg *Cfg) const {
   IceOstream &Str = Cfg->getContext()->StrDump;
   if (Linked->isDeleted())
     Str << "// ";
@@ -893,14 +889,12 @@ void IceInstFakeKill::dump(const IceCfg *Cfg) const {
   dumpSources(Cfg);
 }
 
-void IceInstTarget::dump(const IceCfg *Cfg) const {
+void InstTarget::dump(const IceCfg *Cfg) const {
   IceOstream &Str = Cfg->getContext()->StrDump;
   Str << "[TARGET] ";
-  IceInst::dump(Cfg);
+  Inst::dump(Cfg);
 }
 
-void IceInstTarget::dumpExtras(const IceCfg *Cfg) const {
-  IceInst::dumpExtras(Cfg);
-}
+void InstTarget::dumpExtras(const IceCfg *Cfg) const { Inst::dumpExtras(Cfg); }
 
 } // end of namespace Ice

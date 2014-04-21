@@ -44,8 +44,8 @@ public:
   const IceNodeList &getOutEdges() const { return OutEdges; }
 
   // Manage the instruction list.
-  IceInstList &getInsts() { return Insts; }
-  void appendInst(IceInst *Inst);
+  InstList &getInsts() { return Insts; }
+  void appendInst(Inst *Inst);
   void renumberInstructions();
 
   void splitEdge(CfgNode *From, CfgNode *To);
@@ -74,7 +74,7 @@ private:
   IceNodeList InEdges;   // in no particular order
   IceNodeList OutEdges;  // in no particular order
   IcePhiList Phis;       // unordered set of phi instructions
-  IceInstList Insts;     // ordered list of non-phi instructions
+  InstList Insts;        // ordered list of non-phi instructions
 };
 
 } // end of namespace Ice

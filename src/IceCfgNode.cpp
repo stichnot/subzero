@@ -39,8 +39,8 @@ IceString CfgNode::getName() const {
 // Adds an instruction to either the Phi list or the regular
 // instruction list.  Validates that all Phis are added before all
 // regular instructions.
-void CfgNode::appendInst(IceInst *Inst) {
-  if (IceInstPhi *Phi = llvm::dyn_cast<IceInstPhi>(Inst)) {
+void CfgNode::appendInst(Inst *Inst) {
+  if (InstPhi *Phi = llvm::dyn_cast<InstPhi>(Inst)) {
     if (!Insts.empty()) {
       Cfg->setError("Phi instruction added to the middle of a block");
       return;
@@ -62,9 +62,9 @@ void CfgNode::renumberInstructions() {
        ++I) {
     (*I)->renumber(Cfg);
   }
-  IceInstList::const_iterator I = Insts.begin(), E = Insts.end();
+  InstList::const_iterator I = Insts.begin(), E = Insts.end();
   while (I != E) {
-    IceInst *Inst = *I++;
+    Inst *Inst = *I++;
     Inst->renumber(Cfg);
   }
 }
@@ -125,7 +125,7 @@ void CfgNode::registerEdges() {
 // blocks.  Note that this transformation preserves SSA form.
 void CfgNode::placePhiLoads() {
   for (IcePhiList::iterator I = Phis.begin(), E = Phis.end(); I != E; ++I) {
-    IceInst *Inst = (*I)->lower(Cfg, this);
+    Inst *Inst = (*I)->lower(Cfg, this);
     Insts.insert(Insts.begin(), Inst);
     Inst->updateVars(this);
   }
@@ -155,14 +155,14 @@ void CfgNode::placePhiStores() {
   // result is read (by the assignment) before it is written (by the
   // compare).  However, this problem should go away with the edge
   // splitting approach described above.
-  IceInstList::iterator InsertionPoint = Insts.end();
+  InstList::iterator InsertionPoint = Insts.end();
   if (InsertionPoint != Insts.begin()) {
     --InsertionPoint;
-    if (llvm::isa<IceInstBr>(*InsertionPoint)) {
+    if (llvm::isa<InstBr>(*InsertionPoint)) {
       if (InsertionPoint != Insts.begin()) {
         --InsertionPoint;
-        if (!llvm::isa<IceInstIcmp>(*InsertionPoint) &&
-            !llvm::isa<IceInstFcmp>(*InsertionPoint)) {
+        if (!llvm::isa<InstIcmp>(*InsertionPoint) &&
+            !llvm::isa<InstFcmp>(*InsertionPoint)) {
           ++InsertionPoint;
         }
       }
@@ -183,7 +183,7 @@ void CfgNode::placePhiStores() {
         continue;
       IceVariable *Dest = (*I2)->getDest();
       assert(Dest);
-      IceInstAssign *NewInst = IceInstAssign::create(Cfg, Dest, Operand);
+      InstAssign *NewInst = InstAssign::create(Cfg, Dest, Operand);
       // If Src is a variable, set the Src and Dest variables to
       // prefer each other for register allocation.
       if (IceVariable *Src = llvm::dyn_cast<IceVariable>(Operand)) {
@@ -225,8 +225,8 @@ void CfgNode::genCode() {
   // Lower only the regular instructions.  Defer the Phi instructions.
   Context.init(this);
   while (!Context.atEnd()) {
-    IceInstList::iterator Orig = Context.getCur();
-    if (llvm::isa<IceInstRet>(*Orig))
+    InstList::iterator Orig = Context.getCur();
+    if (llvm::isa<InstRet>(*Orig))
       setHasReturn();
     Target->lower();
     assert(Context.getCur() != Orig);
@@ -267,7 +267,7 @@ bool CfgNode::liveness(IceLivenessMode Mode, IceLiveness *Liveness) {
   }
 
   // Process regular instructions in reverse order.
-  for (IceInstList::const_reverse_iterator I = Insts.rbegin(), E = Insts.rend();
+  for (InstList::const_reverse_iterator I = Insts.rbegin(), E = Insts.rend();
        I != E; ++I) {
     (*I)->liveness(Mode, (*I)->getNumber(), Live, Liveness, this);
   }
@@ -338,7 +338,7 @@ void CfgNode::livenessPostprocess(IceLivenessMode Mode, IceLiveness *Liveness) {
   // Process phis in any order.  Process only Dest operands.
   for (IcePhiList::const_iterator I = Phis.begin(), E = Phis.end(); I != E;
        ++I) {
-    IceInstPhi *Inst = *I;
+    InstPhi *Inst = *I;
     Inst->deleteIfDead();
     if (Inst->isDeleted())
       continue;
@@ -348,9 +348,9 @@ void CfgNode::livenessPostprocess(IceLivenessMode Mode, IceLiveness *Liveness) {
     LastInstNum = Inst->getNumber();
   }
   // Process instructions
-  for (IceInstList::const_iterator I = Insts.begin(), E = Insts.end(); I != E;
+  for (InstList::const_iterator I = Insts.begin(), E = Insts.end(); I != E;
        ++I) {
-    IceInst *Inst = *I;
+    Inst *Inst = *I;
     Inst->deleteIfDead();
     if (Inst->isDeleted())
       continue;
@@ -361,7 +361,7 @@ void CfgNode::livenessPostprocess(IceLivenessMode Mode, IceLiveness *Liveness) {
     // Create fake live ranges for a Kill instruction, but only if the
     // linked instruction is still alive.
     if (Mode == IceLiveness_RangesFull) {
-      if (IceInstFakeKill *Kill = llvm::dyn_cast<IceInstFakeKill>(Inst)) {
+      if (InstFakeKill *Kill = llvm::dyn_cast<InstFakeKill>(Inst)) {
         if (!Kill->getLinked()->isDeleted()) {
           uint32_t NumSrcs = Inst->getSrcSize();
           for (uint32_t i = 0; i < NumSrcs; ++i) {
@@ -419,15 +419,15 @@ void CfgNode::emit(IceCfg *Cfg, uint32_t Option) const {
   Str << getAsmName() << ":\n";
   for (IcePhiList::const_iterator I = Phis.begin(), E = Phis.end(); I != E;
        ++I) {
-    IceInstPhi *Inst = *I;
+    InstPhi *Inst = *I;
     if (Inst->isDeleted())
       continue;
     // Emitting a Phi instruction should cause an error.
     Inst->emit(Cfg, Option);
   }
-  for (IceInstList::const_iterator I = Insts.begin(), E = Insts.end(); I != E;
+  for (InstList::const_iterator I = Insts.begin(), E = Insts.end(); I != E;
        ++I) {
-    IceInst *Inst = *I;
+    Inst *Inst = *I;
     if (Inst->isDeleted())
       continue;
     // Here we detect redundant assignments like "mov eax, eax" and
@@ -473,12 +473,12 @@ void CfgNode::dump(IceCfg *Cfg) const {
   if (Cfg->getContext()->isVerbose(IceV_Instructions)) {
     for (IcePhiList::const_iterator I = Phis.begin(), E = Phis.end(); I != E;
          ++I) {
-      const IceInst *Inst = *I;
+      const Inst *Inst = *I;
       Inst->dumpDecorated(Cfg);
     }
-    IceInstList::const_iterator I = Insts.begin(), E = Insts.end();
+    InstList::const_iterator I = Insts.begin(), E = Insts.end();
     while (I != E) {
-      IceInst *Inst = *I++;
+      Inst *Inst = *I++;
       Inst->dumpDecorated(Cfg);
     }
   }

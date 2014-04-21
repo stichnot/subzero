@@ -71,8 +71,8 @@ public:
   create(IceCfg *Cfg, const IceRegManagerEntry &Other, uint32_t NumReg) {
     return new IceRegManagerEntry(Cfg, Other, NumReg);
   }
-  void load(IceInst *Inst);
-  void store(IceInst *Inst);
+  void load(Inst *Inst);
+  void store(Inst *Inst);
   bool contains(const IceOperand *Operand) const;
   IceVariable *getVar() const { return Var; }
   void dump(const IceCfg *Cfg) const;
@@ -107,8 +107,8 @@ public:
   IceVariable *getRegister(IceType Type, const IceOpList &Prefer,
                            const IceVarList &Avoid) const;
   bool registerContains(const IceVariable *Reg, const IceOperand *Op) const;
-  void notifyLoad(IceInst *Inst, bool IsAssign = true);
-  void notifyStore(IceInst *Inst);
+  void notifyLoad(Inst *Inst, bool IsAssign = true);
+  void notifyStore(Inst *Inst);
   void dump(const IceCfg *Cfg) const;
 
 private:

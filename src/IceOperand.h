@@ -49,7 +49,7 @@ public:
     assert(I < getNumVars());
     return Vars[I];
   }
-  virtual void setUse(const IceInst *Inst, const CfgNode *Node) {}
+  virtual void setUse(const Inst *Inst, const CfgNode *Node) {}
   virtual void emit(const IceCfg *Cfg, uint32_t Option) const = 0;
   virtual void dump(const IceCfg *Cfg) const = 0;
 
@@ -276,13 +276,13 @@ public:
   uint32_t getIndex() const { return Number; }
   IceString getName() const;
 
-  IceInst *getDefinition() const { return DefInst; }
-  void setDefinition(IceInst *Inst, const CfgNode *Node);
-  void replaceDefinition(IceInst *Inst, const CfgNode *Node);
+  Inst *getDefinition() const { return DefInst; }
+  void setDefinition(Inst *Inst, const CfgNode *Node);
+  void replaceDefinition(Inst *Inst, const CfgNode *Node);
 
   const CfgNode *getLocalUseNode() const { return DefNode; }
   bool isMultiblockLife() const { return (DefNode == NULL); }
-  void setUse(const IceInst *Inst, const CfgNode *Node);
+  void setUse(const Inst *Inst, const CfgNode *Node);
 
   bool getIsArg() const { return IsArgument; }
   void setIsArg(IceCfg *Cfg);
@@ -366,7 +366,7 @@ private:
   const IceString Name;
   // DefInst is the instruction that produces this variable as its
   // dest.
-  IceInst *DefInst;
+  Inst *DefInst;
   // DefNode is the node where this variable was produced, and is
   // reset to NULL if it is used outside that node.  This is used for
   // detecting isMultiblockLife().

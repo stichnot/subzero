@@ -127,14 +127,14 @@ bool IceLiveRange::containsValue(int32_t Value) const {
   return false;
 }
 
-void IceVariable::setUse(const IceInst *Inst, const CfgNode *Node) {
+void IceVariable::setUse(const Inst *Inst, const CfgNode *Node) {
   if (DefNode == NULL)
     return;
-  if (llvm::isa<IceInstPhi>(Inst) || Node != DefNode)
+  if (llvm::isa<InstPhi>(Inst) || Node != DefNode)
     DefNode = NULL;
 }
 
-void IceVariable::setDefinition(IceInst *Inst, const CfgNode *Node) {
+void IceVariable::setDefinition(Inst *Inst, const CfgNode *Node) {
   if (DefNode == NULL)
     return;
   // Can first check preexisting DefInst if we care about multi-def vars.
@@ -143,7 +143,7 @@ void IceVariable::setDefinition(IceInst *Inst, const CfgNode *Node) {
     DefNode = NULL;
 }
 
-void IceVariable::replaceDefinition(IceInst *Inst, const CfgNode *Node) {
+void IceVariable::replaceDefinition(Inst *Inst, const CfgNode *Node) {
   DefInst = NULL;
   setDefinition(Inst, Node);
 }

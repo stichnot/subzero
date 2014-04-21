@@ -38,9 +38,9 @@ class IceCfg;
 class CfgNode;
 class IceConstant;
 class IceGlobalContext;
-class IceInst;
-class IceInstPhi;
-class IceInstTarget;
+class Inst;
+class InstPhi;
+class InstTarget;
 class IceLiveRange;
 class IceLiveness;
 class IceOperand;
@@ -50,8 +50,8 @@ class IceVariable;
 // TODO: Switch over to LLVM's ADT container classes.
 // http://llvm.org/docs/ProgrammersManual.html#picking-the-right-data-structure-for-a-task
 typedef std::string IceString;
-typedef std::list<IceInst *> IceInstList;
-typedef std::list<IceInstPhi *> IcePhiList;
+typedef std::list<Inst *> InstList;
+typedef std::list<InstPhi *> IcePhiList;
 typedef std::vector<IceOperand *> IceOpList;
 typedef std::vector<IceVariable *> IceVarList;
 typedef std::vector<CfgNode *> IceNodeList;

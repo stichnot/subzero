@@ -427,10 +427,10 @@ void IceTargetX8632::addProlog(CfgNode *Node) {
 }
 
 void IceTargetX8632::addEpilog(CfgNode *Node) {
-  IceInstList &Insts = Node->getInsts();
-  IceInstList::reverse_iterator RI, E;
+  InstList &Insts = Node->getInsts();
+  InstList::reverse_iterator RI, E;
   for (RI = Insts.rbegin(), E = Insts.rend(); RI != E; ++RI) {
-    if (llvm::isa<IceInstX8632Ret>(*RI))
+    if (llvm::isa<InstX8632Ret>(*RI))
       break;
   }
   if (RI == E)
@@ -438,7 +438,7 @@ void IceTargetX8632::addEpilog(CfgNode *Node) {
 
   // Convert the reverse_iterator position into its corresponding
   // (forward) iterator position.
-  IceInstList::iterator InsertPoint = RI.base();
+  InstList::iterator InsertPoint = RI.base();
   --InsertPoint;
   Context.init(Node);
   Context.Next = InsertPoint;
@@ -577,7 +577,7 @@ llvm::SmallBitVector IceTargetX8632::getRegisterSet(RegSetMask Include,
   return Registers;
 }
 
-void IceTargetX8632::lowerAlloca(const IceInstAlloca *Inst) {
+void IceTargetX8632::lowerAlloca(const InstAlloca *Inst) {
   IsEbpBasedFrame = true;
   // TODO(sehr,stichnot): align allocated memory, keep stack aligned, minimize
   // the number of adjustments of esp, etc.
@@ -588,7 +588,7 @@ void IceTargetX8632::lowerAlloca(const IceInstAlloca *Inst) {
   _mov(Dest, esp);
 }
 
-void IceTargetX8632::lowerArithmetic(const IceInstArithmetic *Inst) {
+void IceTargetX8632::lowerArithmetic(const InstArithmetic *Inst) {
   IceVariable *Dest = Inst->getDest();
   IceOperand *Src0 = legalize(Inst->getSrc(0));
   IceOperand *Src1 = legalize(Inst->getSrc(1));
@@ -601,7 +601,7 @@ void IceTargetX8632::lowerArithmetic(const IceInstArithmetic *Inst) {
     IceOperand *Src1Hi = hiOperand(Src1);
     IceVariable *T_Lo = NULL, *T_Hi = NULL;
     switch (Inst->getOp()) {
-    case IceInstArithmetic::Add:
+    case InstArithmetic::Add:
       _mov(T_Lo, Src0Lo);
       _add(T_Lo, Src1Lo);
       _mov(DestLo, T_Lo);
@@ -609,7 +609,7 @@ void IceTargetX8632::lowerArithmetic(const IceInstArithmetic *Inst) {
       _adc(T_Hi, Src1Hi);
       _mov(DestHi, T_Hi);
       break;
-    case IceInstArithmetic::And:
+    case InstArithmetic::And:
       _mov(T_Lo, Src0Lo);
       _and(T_Lo, Src1Lo);
       _mov(DestLo, T_Lo);
@@ -617,7 +617,7 @@ void IceTargetX8632::lowerArithmetic(const IceInstArithmetic *Inst) {
       _and(T_Hi, Src1Hi);
       _mov(DestHi, T_Hi);
       break;
-    case IceInstArithmetic::Or:
+    case InstArithmetic::Or:
       _mov(T_Lo, Src0Lo);
       _or(T_Lo, Src1Lo);
       _mov(DestLo, T_Lo);
@@ -625,7 +625,7 @@ void IceTargetX8632::lowerArithmetic(const IceInstArithmetic *Inst) {
       _or(T_Hi, Src1Hi);
       _mov(DestHi, T_Hi);
       break;
-    case IceInstArithmetic::Xor:
+    case InstArithmetic::Xor:
       _mov(T_Lo, Src0Lo);
       _xor(T_Lo, Src1Lo);
       _mov(DestLo, T_Lo);
@@ -633,7 +633,7 @@ void IceTargetX8632::lowerArithmetic(const IceInstArithmetic *Inst) {
       _xor(T_Hi, Src1Hi);
       _mov(DestHi, T_Hi);
       break;
-    case IceInstArithmetic::Sub:
+    case InstArithmetic::Sub:
       _mov(T_Lo, Src0Lo);
       _sub(T_Lo, Src1Lo);
       _mov(DestLo, T_Lo);
@@ -641,7 +641,7 @@ void IceTargetX8632::lowerArithmetic(const IceInstArithmetic *Inst) {
       _sbb(T_Hi, Src1Hi);
       _mov(DestHi, T_Hi);
       break;
-    case IceInstArithmetic::Mul: {
+    case InstArithmetic::Mul: {
       IceVariable *T_1 = NULL, *T_2 = NULL, *T_3 = NULL;
       IceVariable *T_4Lo = makeReg(IceType_i32, Reg_eax);
       IceVariable *T_4Hi = makeReg(IceType_i32, Reg_edx);
@@ -663,13 +663,13 @@ void IceTargetX8632::lowerArithmetic(const IceInstArithmetic *Inst) {
       _mul(T_4Lo, T_3, Src1Lo);
       // The mul instruction produces two dest variables, edx:eax.  We
       // create a fake definition of edx to account for this.
-      Context.insert(IceInstFakeDef::create(Cfg, T_4Hi, T_4Lo));
+      Context.insert(InstFakeDef::create(Cfg, T_4Hi, T_4Lo));
       _mov(DestLo, T_4Lo);
       _add(T_4Hi, T_1);
       _add(T_4Hi, T_2);
       _mov(DestHi, T_4Hi);
     } break;
-    case IceInstArithmetic::Shl: {
+    case InstArithmetic::Shl: {
       // TODO: Refactor the similarities between Shl, Lshr, and Ashr.
       // gcc does the following:
       // a=b<<c ==>
@@ -689,25 +689,25 @@ void IceTargetX8632::lowerArithmetic(const IceInstArithmetic *Inst) {
       IceVariable *T_1 = NULL, *T_2 = NULL, *T_3 = NULL;
       IceConstant *BitTest = Ctx->getConstantInt(IceType_i32, 0x20);
       IceConstant *Zero = Ctx->getConstantInt(IceType_i32, 0);
-      IceInstX8632Label *Label = IceInstX8632Label::create(Cfg, this);
+      InstX8632Label *Label = InstX8632Label::create(Cfg, this);
       _mov(T_1, Src1Lo, Reg_ecx);
       _mov(T_2, Src0Lo);
       _mov(T_3, Src0Hi);
       _shld(T_3, T_2, T_1);
       _shl(T_2, T_1);
       _test(T_1, BitTest);
-      _br(IceInstX8632Br::Br_e, Label);
+      _br(InstX8632Br::Br_e, Label);
       // Because of the intra-block control flow, we need to fake a use
       // of T_3 to prevent its earlier definition from being dead-code
       // eliminated in the presence of its later definition.
-      Context.insert(IceInstFakeUse::create(Cfg, T_3));
+      Context.insert(InstFakeUse::create(Cfg, T_3));
       _mov(T_3, T_2);
       _mov(T_2, Zero);
       Context.insert(Label);
       _mov(DestLo, T_2);
       _mov(DestHi, T_3);
     } break;
-    case IceInstArithmetic::Lshr: {
+    case InstArithmetic::Lshr: {
       // a=b>>c (unsigned) ==>
       //   t1:ecx = c.lo & 0xff
       //   t2 = b.lo
@@ -725,25 +725,25 @@ void IceTargetX8632::lowerArithmetic(const IceInstArithmetic *Inst) {
       IceVariable *T_1 = NULL, *T_2 = NULL, *T_3 = NULL;
       IceConstant *BitTest = Ctx->getConstantInt(IceType_i32, 0x20);
       IceConstant *Zero = Ctx->getConstantInt(IceType_i32, 0);
-      IceInstX8632Label *Label = IceInstX8632Label::create(Cfg, this);
+      InstX8632Label *Label = InstX8632Label::create(Cfg, this);
       _mov(T_1, Src1Lo, Reg_ecx);
       _mov(T_2, Src0Lo);
       _mov(T_3, Src0Hi);
       _shrd(T_2, T_3, T_1);
       _shr(T_3, T_1);
       _test(T_1, BitTest);
-      _br(IceInstX8632Br::Br_e, Label);
+      _br(InstX8632Br::Br_e, Label);
       // Because of the intra-block control flow, we need to fake a use
       // of T_3 to prevent its earlier definition from being dead-code
       // eliminated in the presence of its later definition.
-      Context.insert(IceInstFakeUse::create(Cfg, T_2));
+      Context.insert(InstFakeUse::create(Cfg, T_2));
       _mov(T_2, T_3);
       _mov(T_3, Zero);
       Context.insert(Label);
       _mov(DestLo, T_2);
       _mov(DestHi, T_3);
     } break;
-    case IceInstArithmetic::Ashr: {
+    case InstArithmetic::Ashr: {
       // a=b>>c (signed) ==>
       //   t1:ecx = c.lo & 0xff
       //   t2 = b.lo
@@ -761,58 +761,58 @@ void IceTargetX8632::lowerArithmetic(const IceInstArithmetic *Inst) {
       IceVariable *T_1 = NULL, *T_2 = NULL, *T_3 = NULL;
       IceConstant *BitTest = Ctx->getConstantInt(IceType_i32, 0x20);
       IceConstant *SignExtend = Ctx->getConstantInt(IceType_i32, 0x1f);
-      IceInstX8632Label *Label = IceInstX8632Label::create(Cfg, this);
+      InstX8632Label *Label = InstX8632Label::create(Cfg, this);
       _mov(T_1, Src1Lo, Reg_ecx);
       _mov(T_2, Src0Lo);
       _mov(T_3, Src0Hi);
       _shrd(T_2, T_3, T_1);
       _sar(T_3, T_1);
       _test(T_1, BitTest);
-      _br(IceInstX8632Br::Br_e, Label);
+      _br(InstX8632Br::Br_e, Label);
       // Because of the intra-block control flow, we need to fake a use
       // of T_3 to prevent its earlier definition from being dead-code
       // eliminated in the presence of its later definition.
-      Context.insert(IceInstFakeUse::create(Cfg, T_2));
+      Context.insert(InstFakeUse::create(Cfg, T_2));
       _mov(T_2, T_3);
       _sar(T_3, SignExtend);
       Context.insert(Label);
       _mov(DestLo, T_2);
       _mov(DestHi, T_3);
     } break;
-    case IceInstArithmetic::Udiv: {
+    case InstArithmetic::Udiv: {
       uint32_t MaxSrcs = 2;
-      IceInstCall *Call = makeHelperCall("__udivdi3", Dest, MaxSrcs);
+      InstCall *Call = makeHelperCall("__udivdi3", Dest, MaxSrcs);
       Call->addArg(Inst->getSrc(0));
       Call->addArg(Inst->getSrc(1));
       lowerCall(Call);
     } break;
-    case IceInstArithmetic::Sdiv: {
+    case InstArithmetic::Sdiv: {
       uint32_t MaxSrcs = 2;
-      IceInstCall *Call = makeHelperCall("__divdi3", Dest, MaxSrcs);
+      InstCall *Call = makeHelperCall("__divdi3", Dest, MaxSrcs);
       Call->addArg(Inst->getSrc(0));
       Call->addArg(Inst->getSrc(1));
       lowerCall(Call);
     } break;
-    case IceInstArithmetic::Urem: {
+    case InstArithmetic::Urem: {
       uint32_t MaxSrcs = 2;
-      IceInstCall *Call = makeHelperCall("__umoddi3", Dest, MaxSrcs);
+      InstCall *Call = makeHelperCall("__umoddi3", Dest, MaxSrcs);
       Call->addArg(Inst->getSrc(0));
       Call->addArg(Inst->getSrc(1));
       lowerCall(Call);
     } break;
-    case IceInstArithmetic::Srem: {
+    case InstArithmetic::Srem: {
       uint32_t MaxSrcs = 2;
-      IceInstCall *Call = makeHelperCall("__moddi3", Dest, MaxSrcs);
+      InstCall *Call = makeHelperCall("__moddi3", Dest, MaxSrcs);
       Call->addArg(Inst->getSrc(0));
       Call->addArg(Inst->getSrc(1));
       lowerCall(Call);
     } break;
-    case IceInstArithmetic::Fadd:
-    case IceInstArithmetic::Fsub:
-    case IceInstArithmetic::Fmul:
-    case IceInstArithmetic::Fdiv:
-    case IceInstArithmetic::Frem:
-    case IceInstArithmetic::OpKind_NUM:
+    case InstArithmetic::Fadd:
+    case InstArithmetic::Fsub:
+    case InstArithmetic::Fmul:
+    case InstArithmetic::Fdiv:
+    case InstArithmetic::Frem:
+    case InstArithmetic::OpKind_NUM:
       assert(0);
       break;
     }
@@ -820,32 +820,32 @@ void IceTargetX8632::lowerArithmetic(const IceInstArithmetic *Inst) {
     IceVariable *T_edx = NULL;
     IceVariable *T = NULL;
     switch (Inst->getOp()) {
-    case IceInstArithmetic::Add:
+    case InstArithmetic::Add:
       _mov(T, Src0);
       _add(T, Src1);
       _mov(Dest, T);
       break;
-    case IceInstArithmetic::And:
+    case InstArithmetic::And:
       _mov(T, Src0);
       _and(T, Src1);
       _mov(Dest, T);
       break;
-    case IceInstArithmetic::Or:
+    case InstArithmetic::Or:
       _mov(T, Src0);
       _or(T, Src1);
       _mov(Dest, T);
       break;
-    case IceInstArithmetic::Xor:
+    case InstArithmetic::Xor:
       _mov(T, Src0);
       _xor(T, Src1);
       _mov(Dest, T);
       break;
-    case IceInstArithmetic::Sub:
+    case InstArithmetic::Sub:
       _mov(T, Src0);
       _sub(T, Src1);
       _mov(Dest, T);
       break;
-    case IceInstArithmetic::Mul:
+    case InstArithmetic::Mul:
       // TODO: Optimize for llvm::isa<IceConstant>(Src1)
       // TODO: Strength-reduce multiplications by a constant,
       // particularly -1 and powers of 2.  Advanced: use lea to
@@ -860,35 +860,35 @@ void IceTargetX8632::lowerArithmetic(const IceInstArithmetic *Inst) {
       _imul(T, Src1);
       _mov(Dest, T);
       break;
-    case IceInstArithmetic::Shl:
+    case InstArithmetic::Shl:
       _mov(T, Src0);
       if (!llvm::isa<IceConstant>(Src1))
         Src1 = legalizeToVar(Src1, false, Reg_ecx);
       _shl(T, Src1);
       _mov(Dest, T);
       break;
-    case IceInstArithmetic::Lshr:
+    case InstArithmetic::Lshr:
       _mov(T, Src0);
       if (!llvm::isa<IceConstant>(Src1))
         Src1 = legalizeToVar(Src1, false, Reg_ecx);
       _shr(T, Src1);
       _mov(Dest, T);
       break;
-    case IceInstArithmetic::Ashr:
+    case InstArithmetic::Ashr:
       _mov(T, Src0);
       if (!llvm::isa<IceConstant>(Src1))
         Src1 = legalizeToVar(Src1, false, Reg_ecx);
       _sar(T, Src1);
       _mov(Dest, T);
       break;
-    case IceInstArithmetic::Udiv:
+    case InstArithmetic::Udiv:
       if (Dest->getType() == IceType_i8) {
         IceVariable *T_ah = NULL;
         IceConstant *Zero = Ctx->getConstantInt(IceType_i8, 0);
         _mov(T, Src0, Reg_eax);
         _mov(T_ah, Zero, Reg_ah);
         _div(T_ah, Src1, T);
-        Context.insert(IceInstFakeUse::create(Cfg, T_ah));
+        Context.insert(InstFakeUse::create(Cfg, T_ah));
         _mov(Dest, T);
       } else {
         // TODO: fix for 8-bit, see Urem
@@ -899,14 +899,14 @@ void IceTargetX8632::lowerArithmetic(const IceInstArithmetic *Inst) {
         _mov(Dest, T);
       }
       break;
-    case IceInstArithmetic::Sdiv:
+    case InstArithmetic::Sdiv:
       T_edx = makeReg(IceType_i32, Reg_edx);
       _mov(T, Src0, Reg_eax);
       _cdq(T_edx, T);
       _idiv(T, Src1, T_edx);
       _mov(Dest, T);
       break;
-    case IceInstArithmetic::Urem:
+    case InstArithmetic::Urem:
       if (Dest->getType() == IceType_i8) {
         IceVariable *T_ah = NULL;
         IceConstant *Zero = Ctx->getConstantInt(IceType_i8, 0);
@@ -922,50 +922,50 @@ void IceTargetX8632::lowerArithmetic(const IceInstArithmetic *Inst) {
         _mov(Dest, T_edx);
       }
       break;
-    case IceInstArithmetic::Srem:
+    case InstArithmetic::Srem:
       T_edx = makeReg(IceType_i32, Reg_edx);
       _mov(T, Src0, Reg_eax);
       _cdq(T_edx, T);
       _idiv(T_edx, Src1, T);
       _mov(Dest, T_edx);
       break;
-    case IceInstArithmetic::Fadd:
+    case InstArithmetic::Fadd:
       _mov(T, Src0);
       _addss(T, Src1);
       _mov(Dest, T);
       break;
-    case IceInstArithmetic::Fsub:
+    case InstArithmetic::Fsub:
       _mov(T, Src0);
       _subss(T, Src1);
       _mov(Dest, T);
       break;
-    case IceInstArithmetic::Fmul:
+    case InstArithmetic::Fmul:
       _mov(T, Src0);
       _mulss(T, Src1);
       _mov(Dest, T);
       break;
-    case IceInstArithmetic::Fdiv:
+    case InstArithmetic::Fdiv:
       _mov(T, Src0);
       _divss(T, Src1);
       _mov(Dest, T);
       break;
-    case IceInstArithmetic::Frem: {
+    case InstArithmetic::Frem: {
       uint32_t MaxSrcs = 2;
       IceType Type = Dest->getType();
-      IceInstCall *Call =
+      InstCall *Call =
           makeHelperCall(Type == IceType_f32 ? "fmodf" : "fmod", Dest, MaxSrcs);
       Call->addArg(Src0);
       Call->addArg(Src1);
       return lowerCall(Call);
     } break;
-    case IceInstArithmetic::OpKind_NUM:
+    case InstArithmetic::OpKind_NUM:
       assert(0);
       break;
     }
   }
 }
 
-void IceTargetX8632::lowerAssign(const IceInstAssign *Inst) {
+void IceTargetX8632::lowerAssign(const InstAssign *Inst) {
   IceVariable *Dest = Inst->getDest();
   IceOperand *Src0 = legalize(Inst->getSrc(0));
   assert(Dest->getType() == Src0->getType());
@@ -987,18 +987,18 @@ void IceTargetX8632::lowerAssign(const IceInstAssign *Inst) {
   }
 }
 
-void IceTargetX8632::lowerBr(const IceInstBr *Inst) {
+void IceTargetX8632::lowerBr(const InstBr *Inst) {
   if (Inst->isUnconditional()) {
     _br(Inst->getTargetUnconditional());
   } else {
     IceOperand *Src0 = legalize(Inst->getSrc(0));
     IceConstant *Zero = Ctx->getConstantInt(IceType_i32, 0);
     _cmp(Src0, Zero);
-    _br(IceInstX8632Br::Br_ne, Inst->getTargetTrue(), Inst->getTargetFalse());
+    _br(InstX8632Br::Br_ne, Inst->getTargetTrue(), Inst->getTargetFalse());
   }
 }
 
-void IceTargetX8632::lowerCall(const IceInstCall *Inst) {
+void IceTargetX8632::lowerCall(const InstCall *Instr) {
   // TODO: what to do about tailcalls?
   // Generate a sequence of push instructions, pushing right to left,
   // keeping track of stack offsets in case a push involves a stack
@@ -1008,8 +1008,8 @@ void IceTargetX8632::lowerCall(const IceInstCall *Inst) {
   // eliminated after lowering, we would need to ensure that the
   // pre-call push instructions and the post-call esp adjustment get
   // eliminated as well.
-  for (uint32_t NumArgs = Inst->getNumArgs(), i = 0; i < NumArgs; ++i) {
-    IceOperand *Arg = legalize(Inst->getArg(NumArgs - i - 1));
+  for (uint32_t NumArgs = Instr->getNumArgs(), i = 0; i < NumArgs; ++i) {
+    IceOperand *Arg = legalize(Instr->getArg(NumArgs - i - 1));
     if (Arg->getType() == IceType_i64) {
       _push(hiOperand(Arg));
       _push(loOperand(Arg));
@@ -1032,7 +1032,7 @@ void IceTargetX8632::lowerCall(const IceInstCall *Inst) {
   }
   // Generate the call instruction.  Assign its result to a temporary
   // with high register allocation weight.
-  IceVariable *Dest = Inst->getDest();
+  IceVariable *Dest = Instr->getDest();
   IceVariable *eax = NULL; // doubles as RegLo as necessary
   IceVariable *edx = NULL;
   if (Dest) {
@@ -1059,12 +1059,11 @@ void IceTargetX8632::lowerCall(const IceInstCall *Inst) {
       break;
     }
   }
-  IceOperand *CallTarget = legalize(Inst->getCallTarget());
-  IceInst *NewCall =
-      IceInstX8632Call::create(Cfg, eax, CallTarget, Inst->isTail());
+  IceOperand *CallTarget = legalize(Instr->getCallTarget());
+  Inst *NewCall = InstX8632Call::create(Cfg, eax, CallTarget, Instr->isTail());
   Context.insert(NewCall);
   if (edx)
-    Context.insert(IceInstFakeDef::create(Cfg, edx));
+    Context.insert(InstFakeDef::create(Cfg, edx));
 
   // Add the appropriate offset to esp.
   if (StackOffset) {
@@ -1079,13 +1078,13 @@ void IceTargetX8632::lowerCall(const IceInstCall *Inst) {
       KilledRegs.push_back(Cfg->getTarget()->getPhysicalRegister(i));
   }
   if (!KilledRegs.empty()) {
-    IceInst *Kill = IceInstFakeKill::create(Cfg, KilledRegs, NewCall);
+    Inst *Kill = InstFakeKill::create(Cfg, KilledRegs, NewCall);
     Context.insert(Kill);
   }
 
   // Generate a FakeUse to keep the call live if necessary.
-  if (Inst->hasSideEffects() && eax) {
-    IceInst *FakeUse = IceInstFakeUse::create(Cfg, eax);
+  if (Instr->hasSideEffects() && eax) {
+    Inst *FakeUse = InstFakeUse::create(Cfg, eax);
     Context.insert(FakeUse);
   }
 
@@ -1115,9 +1114,9 @@ void IceTargetX8632::lowerCall(const IceInstCall *Inst) {
   }
 }
 
-void IceTargetX8632::lowerCast(const IceInstCast *Inst) {
+void IceTargetX8632::lowerCast(const InstCast *Inst) {
   // a = cast(b) ==> t=cast(b); a=t; (link t->b, link a->t, no overlap)
-  IceInstCast::OpKind CastKind = Inst->getCastKind();
+  InstCast::OpKind CastKind = Inst->getCastKind();
   IceVariable *Dest = Inst->getDest();
   // Src0RM is the source operand legalized to physical register or memory, but
   // not immediate, since the relevant x86 native instructions don't allow an
@@ -1130,7 +1129,7 @@ void IceTargetX8632::lowerCast(const IceInstCast *Inst) {
   default:
     Cfg->setError("Cast type not supported");
     return;
-  case IceInstCast::Sext:
+  case InstCast::Sext:
     if (Dest->getType() == IceType_i64) {
       // t1=movsx src; t2=t1; t2=sar t2, 31; dst.lo=t1; dst.hi=t2
       IceVariable *DestLo = llvm::cast<IceVariable>(loOperand(Dest));
@@ -1155,7 +1154,7 @@ void IceTargetX8632::lowerCast(const IceInstCast *Inst) {
       _mov(Dest, T);
     }
     break;
-  case IceInstCast::Zext:
+  case InstCast::Zext:
     if (Dest->getType() == IceType_i64) {
       // t1=movzx src; dst.lo=t1; dst.hi=0
       IceConstant *Zero = Ctx->getConstantInt(IceType_i32, 0);
@@ -1182,7 +1181,7 @@ void IceTargetX8632::lowerCast(const IceInstCast *Inst) {
       _mov(Dest, T);
     }
     break;
-  case IceInstCast::Trunc: {
+  case InstCast::Trunc: {
     if (Src0RM->getType() == IceType_i64)
       Src0RM = loOperand(Src0RM);
     // t1 = trunc Src0RM; Dest = t1
@@ -1191,15 +1190,15 @@ void IceTargetX8632::lowerCast(const IceInstCast *Inst) {
     _mov(Dest, T);
     break;
   }
-  case IceInstCast::Fptrunc:
-  case IceInstCast::Fpext: {
+  case InstCast::Fptrunc:
+  case InstCast::Fpext: {
     // t1 = cvt Src0RM; Dest = t1
     IceVariable *T = makeReg(Dest->getType());
     _cvt(T, Src0RM);
     _mov(Dest, T);
     break;
   }
-  case IceInstCast::Fptosi:
+  case InstCast::Fptosi:
     if (Dest->getType() == IceType_i64) {
       // Use a helper for converting floating-point values to 64-bit
       // integers.  SSE2 appears to have no way to convert from xmm
@@ -1210,7 +1209,7 @@ void IceTargetX8632::lowerCast(const IceInstCast *Inst) {
       split64(Dest);
       uint32_t MaxSrcs = 1;
       IceType SrcType = Inst->getSrc(0)->getType();
-      IceInstCall *Call = makeHelperCall(
+      InstCall *Call = makeHelperCall(
           SrcType == IceType_f32 ? "cvtftosi64" : "cvtdtosi64", Dest, MaxSrcs);
       Call->addArg(Inst->getSrc(0));
       lowerCall(Call);
@@ -1224,7 +1223,7 @@ void IceTargetX8632::lowerCast(const IceInstCast *Inst) {
       T_2->setPreferredRegister(T_1, true);
     }
     break;
-  case IceInstCast::Fptoui:
+  case InstCast::Fptoui:
     if (Dest->getType() == IceType_i64 || Dest->getType() == IceType_i32) {
       // Use a helper for both x86-32 and x86-64.
       split64(Dest);
@@ -1235,7 +1234,7 @@ void IceTargetX8632::lowerCast(const IceInstCast *Inst) {
       IceString SrcSubstring = (SrcType == IceType_f32 ? "f" : "d");
       // Possibilities are cvtftoui32, cvtdtoui32, cvtftoui64, cvtdtoui64
       IceString TargetString = "cvt" + SrcSubstring + "toui" + DstSubstring;
-      IceInstCall *Call = makeHelperCall(TargetString, Dest, MaxSrcs);
+      InstCall *Call = makeHelperCall(TargetString, Dest, MaxSrcs);
       Call->addArg(Inst->getSrc(0));
       lowerCall(Call);
       return;
@@ -1249,12 +1248,12 @@ void IceTargetX8632::lowerCast(const IceInstCast *Inst) {
       T_2->setPreferredRegister(T_1, true);
     }
     break;
-  case IceInstCast::Sitofp:
+  case InstCast::Sitofp:
     if (Src0RM->getType() == IceType_i64) {
       // Use a helper for x86-32.
       uint32_t MaxSrcs = 1;
       IceType DestType = Dest->getType();
-      IceInstCall *Call = makeHelperCall(
+      InstCall *Call = makeHelperCall(
           DestType == IceType_f32 ? "cvtsi64tof" : "cvtsi64tod", Dest, MaxSrcs);
       Call->addArg(Inst->getSrc(0));
       lowerCall(Call);
@@ -1272,7 +1271,7 @@ void IceTargetX8632::lowerCast(const IceInstCast *Inst) {
       _mov(Dest, T_2);
     }
     break;
-  case IceInstCast::Uitofp:
+  case InstCast::Uitofp:
     if (Src0RM->getType() == IceType_i64 || Src0RM->getType() == IceType_i32) {
       // Use a helper for x86-32 and x86-64.  Also use a helper for
       // i32 on x86-32.
@@ -1282,7 +1281,7 @@ void IceTargetX8632::lowerCast(const IceInstCast *Inst) {
       IceString DstSubstring = (DestType == IceType_f32 ? "f" : "d");
       // Possibilities are cvtui32tof, cvtui32tod, cvtui64tof, cvtui64tod
       IceString TargetString = "cvtui" + SrcSubstring + "to" + DstSubstring;
-      IceInstCall *Call = makeHelperCall(TargetString, Dest, MaxSrcs);
+      InstCall *Call = makeHelperCall(TargetString, Dest, MaxSrcs);
       Call->addArg(Inst->getSrc(0));
       lowerCall(Call);
       return;
@@ -1299,9 +1298,9 @@ void IceTargetX8632::lowerCast(const IceInstCast *Inst) {
       _mov(Dest, T_2);
     }
     break;
-  case IceInstCast::Bitcast:
+  case InstCast::Bitcast:
     if (Dest->getType() == Src0RM->getType()) {
-      IceInstAssign *Assign = IceInstAssign::create(Cfg, Dest, Src0RM);
+      InstAssign *Assign = InstAssign::create(Cfg, Dest, Src0RM);
       lowerAssign(Assign);
       assert(0 && "Pointer bitcasts aren't lowered correctly.");
       return;
@@ -1369,7 +1368,7 @@ void IceTargetX8632::lowerCast(const IceInstCast *Inst) {
       Spill->setWeight(IceRegWeight::Zero);
       Spill->setPreferredRegister(Dest, true);
 
-      Context.insert(IceInstFakeDef::create(Cfg, Spill));
+      Context.insert(InstFakeDef::create(Cfg, Spill));
 
       IceVariable *T_Lo = NULL, *T_Hi = NULL;
       IceVariableSplit *SpillLo =
@@ -1398,13 +1397,13 @@ namespace {
 // conditional branch.  Since it's quite tedious to validate the table by hand,
 // good execution tests are helpful.
 const struct {
-  IceInstFcmp::FCond Cond;
+  InstFcmp::FCond Cond;
   uint32_t Default;
   bool SwapOperands;
-  IceInstX8632Br::BrCond C1, C2;
+  InstX8632Br::BrCond C1, C2;
 } TableFcmp[] = {
 #define X(A, B, C, D, E)                                                       \
-  { IceInstFcmp::A, B, C, IceInstX8632Br::D, IceInstX8632Br::E }
+  { InstFcmp::A, B, C, InstX8632Br::D, InstX8632Br::E }
     X(False, 0, false, Br_None, Br_None), X(Oeq, 0, false, Br_ne, Br_p),
     X(Ogt, 1, false, Br_a, Br_None),      X(Oge, 1, false, Br_ae, Br_None),
     X(Olt, 1, true, Br_a, Br_None),       X(Ole, 1, true, Br_ae, Br_None),
@@ -1419,7 +1418,7 @@ const uint32_t TableFcmpSize = sizeof(TableFcmp) / sizeof(*TableFcmp);
 
 } // anonymous namespace
 
-void IceTargetX8632::lowerFcmp(const IceInstFcmp *Inst) {
+void IceTargetX8632::lowerFcmp(const InstFcmp *Inst) {
   IceOperand *Src0 = Inst->getSrc(0);
   IceOperand *Src1 = Inst->getSrc(1);
   IceVariable *Dest = Inst->getDest();
@@ -1432,10 +1431,10 @@ void IceTargetX8632::lowerFcmp(const IceInstFcmp *Inst) {
   //   FakeUse(a)         /* only if C1 != Br_None */
   //   mov a, !<default>  /* only if C1 != Br_None */
   //   label:             /* only if C1 != Br_None */
-  IceInstFcmp::FCond Condition = Inst->getCondition();
+  InstFcmp::FCond Condition = Inst->getCondition();
   uint32_t Index = static_cast<uint32_t>(Condition);
   assert(Index < TableFcmpSize);
-  // The table is indexed by IceInstFcmp::Condition.  Make sure it didn't fall
+  // The table is indexed by InstFcmp::Condition.  Make sure it didn't fall
   // out of order.
   assert(TableFcmp[Index].Cond == Condition);
   if (TableFcmp[Index].SwapOperands) {
@@ -1443,8 +1442,8 @@ void IceTargetX8632::lowerFcmp(const IceInstFcmp *Inst) {
     Src0 = Src1;
     Src1 = Tmp;
   }
-  bool HasC1 = (TableFcmp[Index].C1 != IceInstX8632Br::Br_None);
-  bool HasC2 = (TableFcmp[Index].C2 != IceInstX8632Br::Br_None);
+  bool HasC1 = (TableFcmp[Index].C1 != InstX8632Br::Br_None);
+  bool HasC2 = (TableFcmp[Index].C2 != InstX8632Br::Br_None);
   if (HasC1) {
     Src0 = legalize(Src0);
     IceOperand *Src1RM = legalize(Src1, Legal_Reg | Legal_Mem);
@@ -1456,12 +1455,12 @@ void IceTargetX8632::lowerFcmp(const IceInstFcmp *Inst) {
       Ctx->getConstantInt(IceType_i32, TableFcmp[Index].Default);
   _mov(Dest, Default);
   if (HasC1) {
-    IceInstX8632Label *Label = IceInstX8632Label::create(Cfg, this);
+    InstX8632Label *Label = InstX8632Label::create(Cfg, this);
     _br(TableFcmp[Index].C1, Label);
     if (HasC2) {
       _br(TableFcmp[Index].C2, Label);
     }
-    Context.insert(IceInstFakeUse::create(Cfg, Dest));
+    Context.insert(InstFakeUse::create(Cfg, Dest));
     IceConstant *NonDefault =
         Ctx->getConstantInt(IceType_i32, !TableFcmp[Index].Default);
     _mov(Dest, NonDefault);
@@ -1475,11 +1474,11 @@ namespace {
 // for i32 and narrower types.  Each icmp condition has a clear mapping to an
 // x86 conditional branch instruction.
 const struct {
-  IceInstIcmp::ICond Cond;
-  IceInstX8632Br::BrCond Mapping;
+  InstIcmp::ICond Cond;
+  InstX8632Br::BrCond Mapping;
 } TableIcmp32[] = {
 #define X(A, B)                                                                \
-  { IceInstIcmp::A, IceInstX8632Br::B }
+  { InstIcmp::A, InstX8632Br::B }
     X(Eq, Br_e),   X(Ne, Br_ne), X(Ugt, Br_a),  X(Uge, Br_ae), X(Ult, Br_b),
     X(Ule, Br_be), X(Sgt, Br_g), X(Sge, Br_ge), X(Slt, Br_l),  X(Sle, Br_le),
   };
@@ -1491,14 +1490,14 @@ const uint32_t TableIcmp32Size = sizeof(TableIcmp32) / sizeof(*TableIcmp32);
 // conditional branches are needed.  For the other conditions, three separate
 // conditional branches are needed.
 const struct {
-  IceInstIcmp::ICond Cond;
-  IceInstX8632Br::BrCond C1, C2, C3;
+  InstIcmp::ICond Cond;
+  InstX8632Br::BrCond C1, C2, C3;
 } TableIcmp64[] = {
 #define X(A, B, C, D)                                                          \
-  { IceInstIcmp::A, IceInstX8632Br::B, IceInstX8632Br::C, IceInstX8632Br::D }
+  { InstIcmp::A, InstX8632Br::B, InstX8632Br::C, InstX8632Br::D }
     // Eq and Ne are placeholders to ensure TableIcmp64[i].Cond==i
-    { IceInstIcmp::Eq },
-    { IceInstIcmp::Ne },
+    { InstIcmp::Eq },
+    { InstIcmp::Ne },
     X(Ugt, Br_a, Br_b, Br_a),
     X(Uge, Br_a, Br_b, Br_ae),
     X(Ult, Br_b, Br_a, Br_b),
@@ -1511,7 +1510,7 @@ const struct {
 #undef X
 const uint32_t TableIcmp64Size = sizeof(TableIcmp64) / sizeof(*TableIcmp64);
 
-IceInstX8632Br::BrCond getIcmp32Mapping(IceInstIcmp::ICond Cond) {
+InstX8632Br::BrCond getIcmp32Mapping(InstIcmp::ICond Cond) {
   uint32_t Index = static_cast<uint32_t>(Cond);
   assert(Index < TableIcmp32Size);
   assert(TableIcmp32[Index].Cond == Cond);
@@ -1520,7 +1519,7 @@ IceInstX8632Br::BrCond getIcmp32Mapping(IceInstIcmp::ICond Cond) {
 
 } // anonymous namespace
 
-void IceTargetX8632::lowerIcmp(const IceInstIcmp *Inst) {
+void IceTargetX8632::lowerIcmp(const InstIcmp *Inst) {
   IceOperand *Src0 = legalize(Inst->getSrc(0));
   IceOperand *Src1 = legalize(Inst->getSrc(1));
   IceVariable *Dest = Inst->getDest();
@@ -1541,8 +1540,7 @@ void IceTargetX8632::lowerIcmp(const IceInstIcmp *Inst) {
   // Try to fuse a compare immediately followed by a conditional branch.  This
   // is possible when the compare dest and the branch source operands are the
   // same, and are their only uses.  TODO: implement this optimization for i64.
-  if (IceInstBr *NextBr =
-          llvm::dyn_cast_or_null<IceInstBr>(Context.getNextInst())) {
+  if (InstBr *NextBr = llvm::dyn_cast_or_null<InstBr>(Context.getNextInst())) {
     if (Src0->getType() != IceType_i64 && !NextBr->isUnconditional() &&
         Dest == NextBr->getSrc(0) && NextBr->isLastUse(Dest)) {
       IceOperand *Src0New =
@@ -1561,27 +1559,27 @@ void IceTargetX8632::lowerIcmp(const IceInstIcmp *Inst) {
   IceConstant *Zero = Ctx->getConstantInt(IceType_i32, 0);
   IceConstant *One = Ctx->getConstantInt(IceType_i32, 1);
   if (Src0->getType() == IceType_i64) {
-    IceInstIcmp::ICond Condition = Inst->getCondition();
+    InstIcmp::ICond Condition = Inst->getCondition();
     uint32_t Index = static_cast<uint32_t>(Condition);
     assert(Index < TableIcmp64Size);
-    // The table is indexed by IceInstIcmp::Condition.  Make sure it didn't fall
+    // The table is indexed by InstIcmp::Condition.  Make sure it didn't fall
     // out of order.
     assert(TableIcmp64[Index].Cond == Condition);
     IceOperand *Src1LoRI = legalize(loOperand(Src1), Legal_Reg | Legal_Imm);
     IceOperand *Src1HiRI = legalize(hiOperand(Src1), Legal_Reg | Legal_Imm);
-    if (Condition == IceInstIcmp::Eq || Condition == IceInstIcmp::Ne) {
-      IceInstX8632Label *Label = IceInstX8632Label::create(Cfg, this);
-      _mov(Dest, (Condition == IceInstIcmp::Eq ? Zero : One));
+    if (Condition == InstIcmp::Eq || Condition == InstIcmp::Ne) {
+      InstX8632Label *Label = InstX8632Label::create(Cfg, this);
+      _mov(Dest, (Condition == InstIcmp::Eq ? Zero : One));
       _cmp(loOperand(Src0), Src1LoRI);
-      _br(IceInstX8632Br::Br_ne, Label);
+      _br(InstX8632Br::Br_ne, Label);
       _cmp(hiOperand(Src0), Src1HiRI);
-      _br(IceInstX8632Br::Br_ne, Label);
-      Context.insert(IceInstFakeUse::create(Cfg, Dest));
-      _mov(Dest, (Condition == IceInstIcmp::Eq ? One : Zero));
+      _br(InstX8632Br::Br_ne, Label);
+      Context.insert(InstFakeUse::create(Cfg, Dest));
+      _mov(Dest, (Condition == InstIcmp::Eq ? One : Zero));
       Context.insert(Label);
     } else {
-      IceInstX8632Label *LabelFalse = IceInstX8632Label::create(Cfg, this);
-      IceInstX8632Label *LabelTrue = IceInstX8632Label::create(Cfg, this);
+      InstX8632Label *LabelFalse = InstX8632Label::create(Cfg, this);
+      InstX8632Label *LabelTrue = InstX8632Label::create(Cfg, this);
       _mov(Dest, One);
       _cmp(hiOperand(Src0), Src1HiRI);
       _br(TableIcmp64[Index].C1, LabelTrue);
@@ -1589,7 +1587,7 @@ void IceTargetX8632::lowerIcmp(const IceInstIcmp *Inst) {
       _cmp(loOperand(Src0), Src1LoRI);
       _br(TableIcmp64[Index].C3, LabelTrue);
       Context.insert(LabelFalse);
-      Context.insert(IceInstFakeUse::create(Cfg, Dest));
+      Context.insert(InstFakeUse::create(Cfg, Dest));
       _mov(Dest, Zero);
       Context.insert(LabelTrue);
     }
@@ -1598,21 +1596,21 @@ void IceTargetX8632::lowerIcmp(const IceInstIcmp *Inst) {
   // cmp b, c
   IceOperand *Src0New =
       legalize(Src0, IsSrc1ImmOrReg ? Legal_All : Legal_Reg, true);
-  IceInstX8632Label *Label = IceInstX8632Label::create(Cfg, this);
+  InstX8632Label *Label = InstX8632Label::create(Cfg, this);
   _cmp(Src0New, Src1);
   _mov(Dest, One);
   _br(getIcmp32Mapping(Inst->getCondition()), Label);
-  Context.insert(IceInstFakeUse::create(Cfg, Dest));
+  Context.insert(InstFakeUse::create(Cfg, Dest));
   _mov(Dest, Zero);
   Context.insert(Label);
 }
 
 namespace {
 
-bool isAdd(const IceInst *Inst) {
-  if (const IceInstArithmetic *Arith =
-          llvm::dyn_cast_or_null<const IceInstArithmetic>(Inst)) {
-    return (Arith->getOp() == IceInstArithmetic::Add);
+bool isAdd(const Inst *Inst) {
+  if (const InstArithmetic *Arith =
+          llvm::dyn_cast_or_null<const InstArithmetic>(Inst)) {
+    return (Arith->getOp() == InstArithmetic::Add);
   }
   return false;
 }
@@ -1631,11 +1629,11 @@ void computeAddressOpt(IceCfg *Cfg, IceVariable *&Base, IceVariable *&Index,
   while (true) {
     // Base is Base=Var ==>
     //   set Base=Var
-    const IceInst *BaseInst = Base->getDefinition();
+    const Inst *BaseInst = Base->getDefinition();
     IceOperand *BaseOperand0 = BaseInst ? BaseInst->getSrc(0) : NULL;
     IceVariable *BaseVariable0 =
         llvm::dyn_cast_or_null<IceVariable>(BaseOperand0);
-    if (BaseInst && llvm::isa<IceInstAssign>(BaseInst) && BaseVariable0 &&
+    if (BaseInst && llvm::isa<InstAssign>(BaseInst) && BaseVariable0 &&
         // TODO: ensure BaseVariable0 stays single-BB
         true) {
       Base = BaseVariable0;
@@ -1663,15 +1661,15 @@ void computeAddressOpt(IceCfg *Cfg, IceVariable *&Base, IceVariable *&Index,
 
     // Index is Index=Var*Const && log2(Const)+Shift<=3 ==>
     //   Index=Var, Shift+=log2(Const)
-    const IceInst *IndexInst = Index ? Index->getDefinition() : NULL;
-    if (const IceInstArithmetic *ArithInst =
-            llvm::dyn_cast_or_null<IceInstArithmetic>(IndexInst)) {
+    const Inst *IndexInst = Index ? Index->getDefinition() : NULL;
+    if (const InstArithmetic *ArithInst =
+            llvm::dyn_cast_or_null<InstArithmetic>(IndexInst)) {
       IceOperand *IndexOperand0 = ArithInst->getSrc(0);
       IceVariable *IndexVariable0 = llvm::dyn_cast<IceVariable>(IndexOperand0);
       IceOperand *IndexOperand1 = ArithInst->getSrc(1);
       IceConstantInteger *IndexConstant1 =
           llvm::dyn_cast<IceConstantInteger>(IndexOperand1);
-      if (ArithInst->getOp() == IceInstArithmetic::Mul && IndexVariable0 &&
+      if (ArithInst->getOp() == InstArithmetic::Mul && IndexVariable0 &&
           IndexOperand1->getType() == IceType_i32 && IndexConstant1) {
         uint32_t Mult = IndexConstant1->getValue();
         uint32_t LogMult;
@@ -1736,7 +1734,7 @@ void computeAddressOpt(IceCfg *Cfg, IceVariable *&Base, IceVariable *&Index,
 
 } // anonymous namespace
 
-void IceTargetX8632::lowerLoad(const IceInstLoad *Inst) {
+void IceTargetX8632::lowerLoad(const InstLoad *Inst) {
   // A Load instruction can be treated the same as an Assign
   // instruction, after the source operand is transformed into an
   // IceOperandX8632Mem operand.  Note that the address mode
@@ -1766,20 +1764,20 @@ void IceTargetX8632::lowerLoad(const IceInstLoad *Inst) {
   // load instruction's dest variable, and that instruction ends that
   // variable's live range, then make the substitution.  Deal with
   // commutativity optimization in the arithmetic instruction lowering.
-  IceInstArithmetic *NewArith = NULL;
-  if (IceInstArithmetic *Arith =
-          llvm::dyn_cast_or_null<IceInstArithmetic>(Context.getNextInst())) {
+  InstArithmetic *NewArith = NULL;
+  if (InstArithmetic *Arith =
+          llvm::dyn_cast_or_null<InstArithmetic>(Context.getNextInst())) {
     IceVariable *DestLoad = Inst->getDest();
     IceVariable *Src0Arith = llvm::dyn_cast<IceVariable>(Arith->getSrc(0));
     IceVariable *Src1Arith = llvm::dyn_cast<IceVariable>(Arith->getSrc(1));
     if (Src1Arith == DestLoad && Arith->isLastUse(Src1Arith) &&
         DestLoad != Src0Arith) {
-      NewArith = IceInstArithmetic::create(
-          Cfg, Arith->getOp(), Arith->getDest(), Arith->getSrc(0), Src0);
+      NewArith = InstArithmetic::create(Cfg, Arith->getOp(), Arith->getDest(),
+                                        Arith->getSrc(0), Src0);
     } else if (Src0Arith == DestLoad && Arith->isCommutative() &&
                Arith->isLastUse(Src0Arith) && DestLoad != Src1Arith) {
-      NewArith = IceInstArithmetic::create(
-          Cfg, Arith->getOp(), Arith->getDest(), Arith->getSrc(1), Src0);
+      NewArith = InstArithmetic::create(Cfg, Arith->getOp(), Arith->getDest(),
+                                        Arith->getSrc(1), Src0);
     }
     if (NewArith) {
       Arith->setDeleted();
@@ -1789,12 +1787,12 @@ void IceTargetX8632::lowerLoad(const IceInstLoad *Inst) {
     }
   }
 
-  IceInstAssign *Assign = IceInstAssign::create(Cfg, Inst->getDest(), Src0);
+  InstAssign *Assign = InstAssign::create(Cfg, Inst->getDest(), Src0);
   lowerAssign(Assign);
 }
 
 void IceTargetX8632::doAddressOptLoad() {
-  IceInst *Inst = *Context.getCur();
+  Inst *Inst = *Context.getCur();
   IceVariable *Dest = Inst->getDest();
   IceOperand *Addr = Inst->getSrc(0);
   IceVariable *Index = NULL;
@@ -1807,15 +1805,15 @@ void IceTargetX8632::doAddressOptLoad() {
     Addr = IceOperandX8632Mem::create(Cfg, Dest->getType(), Base, OffsetOp,
                                       Index, Shift);
     Inst->setDeleted();
-    Context.insert(IceInstLoad::create(Cfg, Dest, Addr));
+    Context.insert(InstLoad::create(Cfg, Dest, Addr));
   }
 }
 
-void IceTargetX8632::lowerPhi(const IceInstPhi *Inst) {
+void IceTargetX8632::lowerPhi(const InstPhi *Inst) {
   Cfg->setError("Phi lowering not implemented");
 }
 
-void IceTargetX8632::lowerRet(const IceInstRet *Inst) {
+void IceTargetX8632::lowerRet(const InstRet *Inst) {
   IceVariable *Reg = NULL;
   if (Inst->getSrcSize()) {
     IceOperand *Src0 = legalize(Inst->getSrc(0));
@@ -1823,7 +1821,7 @@ void IceTargetX8632::lowerRet(const IceInstRet *Inst) {
       IceVariable *eax = legalizeToVar(loOperand(Src0), false, Reg_eax);
       IceVariable *edx = legalizeToVar(hiOperand(Src0), false, Reg_edx);
       Reg = eax;
-      Context.insert(IceInstFakeUse::create(Cfg, edx));
+      Context.insert(InstFakeUse::create(Cfg, edx));
     } else if (Src0->getType() == IceType_f32 ||
                Src0->getType() == IceType_f64) {
       _fld(Src0);
@@ -1838,17 +1836,17 @@ void IceTargetX8632::lowerRet(const IceInstRet *Inst) {
   // should be inserted?  E.g. "void f(int n){while(1) g(n);}" may not
   // have a ret instruction.
   IceVariable *esp = Cfg->getTarget()->getPhysicalRegister(Reg_esp);
-  Context.insert(IceInstFakeUse::create(Cfg, esp));
+  Context.insert(InstFakeUse::create(Cfg, esp));
 }
 
-void IceTargetX8632::lowerSelect(const IceInstSelect *Inst) {
+void IceTargetX8632::lowerSelect(const InstSelect *Inst) {
   // a=d?b:c ==> cmp d,0; a=b; jne L1; FakeUse(a); a=c; L1:
   IceVariable *Dest = Inst->getDest();
   IceOperand *SrcT = Inst->getTrueOperand();
   IceOperand *SrcF = Inst->getFalseOperand();
   IceOperand *Condition = legalize(Inst->getCondition());
   IceConstant *Zero = Ctx->getConstantInt(IceType_i32, 0);
-  IceInstX8632Label *Label = IceInstX8632Label::create(Cfg, this);
+  InstX8632Label *Label = InstX8632Label::create(Cfg, this);
 
   if (Dest->getType() == IceType_i64) {
     IceVariable *DestLo = llvm::cast<IceVariable>(loOperand(Dest));
@@ -1860,9 +1858,9 @@ void IceTargetX8632::lowerSelect(const IceInstSelect *Inst) {
     _cmp(Condition, Zero);
     _mov(DestLo, SrcLoRI);
     _mov(DestHi, SrcHiRI);
-    _br(IceInstX8632Br::Br_ne, Label);
-    Context.insert(IceInstFakeUse::create(Cfg, DestLo));
-    Context.insert(IceInstFakeUse::create(Cfg, DestHi));
+    _br(InstX8632Br::Br_ne, Label);
+    Context.insert(InstFakeUse::create(Cfg, DestLo));
+    Context.insert(InstFakeUse::create(Cfg, DestHi));
     IceOperand *SrcFLo = loOperand(SrcF);
     IceOperand *SrcFHi = hiOperand(SrcF);
     SrcLoRI = legalize(SrcFLo, Legal_Reg | Legal_Imm, true);
@@ -1873,8 +1871,8 @@ void IceTargetX8632::lowerSelect(const IceInstSelect *Inst) {
     _cmp(Condition, Zero);
     SrcT = legalize(SrcT, Legal_Reg | Legal_Imm, true);
     _mov(Dest, SrcT);
-    _br(IceInstX8632Br::Br_ne, Label);
-    Context.insert(IceInstFakeUse::create(Cfg, Dest));
+    _br(InstX8632Br::Br_ne, Label);
+    Context.insert(InstFakeUse::create(Cfg, Dest));
     SrcF = legalize(SrcF, Legal_Reg | Legal_Imm, true);
     _mov(Dest, SrcF);
   }
@@ -1882,7 +1880,7 @@ void IceTargetX8632::lowerSelect(const IceInstSelect *Inst) {
   Context.insert(Label);
 }
 
-void IceTargetX8632::lowerStore(const IceInstStore *Inst) {
+void IceTargetX8632::lowerStore(const InstStore *Inst) {
   IceOperand *Value = Inst->getData();
   IceOperand *Addr = Inst->getAddr();
   IceOperandX8632Mem *NewAddr = llvm::dyn_cast<IceOperandX8632Mem>(Addr);
@@ -1914,7 +1912,7 @@ void IceTargetX8632::lowerStore(const IceInstStore *Inst) {
 }
 
 void IceTargetX8632::doAddressOptStore() {
-  IceInstStore *Inst = llvm::cast<IceInstStore>(*Context.getCur());
+  InstStore *Inst = llvm::cast<InstStore>(*Context.getCur());
   IceOperand *Data = Inst->getData();
   IceOperand *Addr = Inst->getAddr();
   IceVariable *Index = NULL;
@@ -1927,11 +1925,11 @@ void IceTargetX8632::doAddressOptStore() {
     Addr = IceOperandX8632Mem::create(Cfg, Data->getType(), Base, OffsetOp,
                                       Index, Shift);
     Inst->setDeleted();
-    Context.insert(IceInstStore::create(Cfg, Data, Addr));
+    Context.insert(InstStore::create(Cfg, Data, Addr));
   }
 }
 
-void IceTargetX8632::lowerSwitch(const IceInstSwitch *Inst) {
+void IceTargetX8632::lowerSwitch(const InstSwitch *Inst) {
   // This implements the most naive possible lowering.
   // cmp a,val[0]; jeq label[0]; cmp a,val[1]; jeq label[1]; ... jmp default
   IceOperand *Src0 = Inst->getSrc(0);
@@ -1945,16 +1943,16 @@ void IceTargetX8632::lowerSwitch(const IceInstSwitch *Inst) {
   for (uint32_t I = 0; I < NumCases; ++I) {
     IceOperand *Value = Ctx->getConstantInt(IceType_i32, Inst->getValue(I));
     _cmp(Src0, Value);
-    _br(IceInstX8632Br::Br_e, Inst->getLabel(I));
+    _br(InstX8632Br::Br_e, Inst->getLabel(I));
   }
 
   _br(Inst->getLabelDefault());
 }
 
-void IceTargetX8632::lowerUnreachable(const IceInstUnreachable *Inst) {
+void IceTargetX8632::lowerUnreachable(const InstUnreachable *Inst) {
   uint32_t MaxSrcs = 0;
   IceVariable *Dest = NULL;
-  IceInstCall *Call = makeHelperCall("ice_unreachable", Dest, MaxSrcs);
+  InstCall *Call = makeHelperCall("ice_unreachable", Dest, MaxSrcs);
   lowerCall(Call);
 }
 
@@ -2036,12 +2034,12 @@ void IceTargetX8632::postLower() {
   // there was some prior register allocation pass that made register
   // assignments, those registers need to be black-listed here as
   // well.
-  for (IceInstList::iterator I = Context.getCur(), E = Context.getEnd(); I != E;
+  for (InstList::iterator I = Context.getCur(), E = Context.getEnd(); I != E;
        ++I) {
-    const IceInst *Inst = *I;
+    const Inst *Inst = *I;
     if (Inst->isDeleted())
       continue;
-    if (llvm::isa<IceInstFakeKill>(Inst))
+    if (llvm::isa<InstFakeKill>(Inst))
       continue;
     uint32_t VarIndex = 0;
     for (uint32_t SrcNum = 0; SrcNum < Inst->getSrcSize(); ++SrcNum) {
@@ -2057,9 +2055,9 @@ void IceTargetX8632::postLower() {
   }
   // The second pass colors infinite-weight variables.
   llvm::SmallBitVector AvailableRegisters = WhiteList;
-  for (IceInstList::iterator I = Context.getCur(), E = Context.getEnd(); I != E;
+  for (InstList::iterator I = Context.getCur(), E = Context.getEnd(); I != E;
        ++I) {
-    const IceInst *Inst = *I;
+    const Inst *Inst = *I;
     if (Inst->isDeleted())
       continue;
     uint32_t VarIndex = 0;

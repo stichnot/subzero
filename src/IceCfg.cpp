@@ -269,20 +269,20 @@ void IceCfg::liveness(IceLivenessMode Mode) {
   }
 }
 
-// Traverse every IceVariable of every IceInst and verify that it
+// Traverse every IceVariable of every Inst and verify that it
 // appears within the IceVariable's computed live range.
 bool IceCfg::validateLiveness() const {
   bool Valid = true;
   for (IceNodeList::const_iterator I1 = Nodes.begin(), E1 = Nodes.end();
        I1 != E1; ++I1) {
     CfgNode *Node = *I1;
-    IceInstList &Insts = Node->getInsts();
-    for (IceInstList::const_iterator I2 = Insts.begin(), E2 = Insts.end();
+    InstList &Insts = Node->getInsts();
+    for (InstList::const_iterator I2 = Insts.begin(), E2 = Insts.end();
          I2 != E2; ++I2) {
-      IceInst *Inst = *I2;
+      Inst *Inst = *I2;
       if (Inst->isDeleted())
         continue;
-      if (llvm::isa<IceInstFakeKill>(Inst))
+      if (llvm::isa<InstFakeKill>(Inst))
         continue;
       int32_t InstNumber = Inst->getNumber();
       IceVariable *Dest = Inst->getDest();

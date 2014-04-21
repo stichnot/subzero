@@ -37,7 +37,7 @@ IceRegManagerEntry::IceRegManagerEntry(IceCfg *Cfg,
 
 // An Operand is loaded into this virtual register.  Its Available set
 // is cleared and then set to contain the Operand.
-void IceRegManagerEntry::load(IceInst *Inst) {
+void IceRegManagerEntry::load(Inst *Inst) {
   Available.clear();
   if (Inst) {
     IceOperand *Operand = Inst->getSrc(0);
@@ -50,7 +50,7 @@ void IceRegManagerEntry::load(IceInst *Inst) {
 // is a physical register managed by this RegManager (e.g., specific
 // register requirements for instructions like x86 idiv), then all
 // Available sets must be killed.
-void IceRegManagerEntry::store(IceInst *Inst) {
+void IceRegManagerEntry::store(Inst *Inst) {
   // TODO: Kill all Available sets when necessary.
   IceVariable *Variable = Inst->getDest();
   assert(Variable);
@@ -145,7 +145,7 @@ bool IceRegManager::registerContains(const IceVariable *Reg,
   return false;
 }
 
-void IceRegManager::notifyLoad(IceInst *Inst, bool IsAssign) {
+void IceRegManager::notifyLoad(Inst *Inst, bool IsAssign) {
   IceVariable *Reg = Inst->getDest();
   IceRegManagerEntry *Entry = NULL;
   for (QueueType::iterator I = Queue.begin(), E = Queue.end(); I != E; ++I) {
@@ -160,7 +160,7 @@ void IceRegManager::notifyLoad(IceInst *Inst, bool IsAssign) {
   Entry->load(IsAssign ? Inst : NULL);
 }
 
-void IceRegManager::notifyStore(IceInst *Inst) {
+void IceRegManager::notifyStore(Inst *Inst) {
   IceVariable *Reg = llvm::cast<IceVariable>(Inst->getSrc(0));
   IceRegManagerEntry *Entry = NULL;
   for (QueueType::iterator I = Queue.begin(), E = Queue.end(); I != E; ++I) {

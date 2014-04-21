@@ -1,4 +1,4 @@
-//===- subzero/src/IceInstX8632.cpp - X86-32 instruction implementation ---===//
+//===- subzero/src/InstX8632.cpp - X86-32 instruction implementation ---===//
 //
 //                        The Subzero Code Generator
 //
@@ -7,7 +7,7 @@
 //
 //===----------------------------------------------------------------------===//
 //
-// This file implements the IceInstX8632 and IceOperandX8632 classes,
+// This file implements the InstX8632 and IceOperandX8632 classes,
 // primarily the constructors and the dump()/emit() methods.
 //
 //===----------------------------------------------------------------------===//
@@ -60,7 +60,7 @@ IceOperandX8632Mem::IceOperandX8632Mem(IceCfg *Cfg, IceType Type,
   }
 }
 
-void IceOperandX8632Mem::setUse(const IceInst *Inst, const CfgNode *Node) {
+void IceOperandX8632Mem::setUse(const Inst *Inst, const CfgNode *Node) {
   if (getBase())
     getBase()->setUse(Inst, Node);
   if (getOffset())
@@ -69,56 +69,54 @@ void IceOperandX8632Mem::setUse(const IceInst *Inst, const CfgNode *Node) {
     getIndex()->setUse(Inst, Node);
 }
 
-IceInstX8632Mul::IceInstX8632Mul(IceCfg *Cfg, IceVariable *Dest,
-                                 IceVariable *Source1, IceOperand *Source2)
-    : IceInstX8632(Cfg, IceInstX8632::Mul, 2, Dest) {
+InstX8632Mul::InstX8632Mul(IceCfg *Cfg, IceVariable *Dest, IceVariable *Source1,
+                           IceOperand *Source2)
+    : InstX8632(Cfg, InstX8632::Mul, 2, Dest) {
   addSource(Source1);
   addSource(Source2);
 }
 
-IceInstX8632Shld::IceInstX8632Shld(IceCfg *Cfg, IceVariable *Dest,
-                                   IceVariable *Source1, IceVariable *Source2)
-    : IceInstX8632(Cfg, IceInstX8632::Shld, 3, Dest) {
+InstX8632Shld::InstX8632Shld(IceCfg *Cfg, IceVariable *Dest,
+                             IceVariable *Source1, IceVariable *Source2)
+    : InstX8632(Cfg, InstX8632::Shld, 3, Dest) {
   addSource(Dest);
   addSource(Source1);
   addSource(Source2);
 }
 
-IceInstX8632Shrd::IceInstX8632Shrd(IceCfg *Cfg, IceVariable *Dest,
-                                   IceVariable *Source1, IceVariable *Source2)
-    : IceInstX8632(Cfg, IceInstX8632::Shrd, 3, Dest) {
+InstX8632Shrd::InstX8632Shrd(IceCfg *Cfg, IceVariable *Dest,
+                             IceVariable *Source1, IceVariable *Source2)
+    : InstX8632(Cfg, InstX8632::Shrd, 3, Dest) {
   addSource(Dest);
   addSource(Source1);
   addSource(Source2);
 }
 
-IceInstX8632Label::IceInstX8632Label(IceCfg *Cfg, IceTargetX8632 *Target)
-    : IceInstX8632(Cfg, IceInstX8632::Label, 0, NULL),
+InstX8632Label::InstX8632Label(IceCfg *Cfg, IceTargetX8632 *Target)
+    : InstX8632(Cfg, InstX8632::Label, 0, NULL),
       Number(Target->makeNextLabelNumber()) {}
 
-IceString IceInstX8632Label::getName(const IceCfg *Cfg) const {
+IceString InstX8632Label::getName(const IceCfg *Cfg) const {
   const static size_t BufLen = 30;
   char buf[BufLen];
   snprintf(buf, BufLen, "%u", Number);
   return ".L" + Cfg->getName() + "$__" + buf;
 }
 
-IceInstX8632Br::IceInstX8632Br(IceCfg *Cfg, CfgNode *TargetTrue,
-                               CfgNode *TargetFalse, IceInstX8632Label *Label,
-                               IceInstX8632Br::BrCond Condition)
-    : IceInstX8632(Cfg, IceInstX8632::Br, 0, NULL), Condition(Condition),
+InstX8632Br::InstX8632Br(IceCfg *Cfg, CfgNode *TargetTrue, CfgNode *TargetFalse,
+                         InstX8632Label *Label, InstX8632Br::BrCond Condition)
+    : InstX8632(Cfg, InstX8632::Br, 0, NULL), Condition(Condition),
       TargetTrue(TargetTrue), TargetFalse(TargetFalse), Label(Label) {}
 
-IceInstX8632Call::IceInstX8632Call(IceCfg *Cfg, IceVariable *Dest,
-                                   IceOperand *CallTarget, bool Tail)
-    : IceInstX8632(Cfg, IceInstX8632::Call, 1, Dest), Tail(Tail) {
+InstX8632Call::InstX8632Call(IceCfg *Cfg, IceVariable *Dest,
+                             IceOperand *CallTarget, bool Tail)
+    : InstX8632(Cfg, InstX8632::Call, 1, Dest), Tail(Tail) {
   HasSideEffects = true;
   addSource(CallTarget);
 }
 
-IceInstX8632Cdq::IceInstX8632Cdq(IceCfg *Cfg, IceVariable *Dest,
-                                 IceOperand *Source)
-    : IceInstX8632(Cfg, IceInstX8632::Cdq, 1, Dest) {
+InstX8632Cdq::InstX8632Cdq(IceCfg *Cfg, IceVariable *Dest, IceOperand *Source)
+    : InstX8632(Cfg, InstX8632::Cdq, 1, Dest) {
   assert(Dest->getRegNum() == IceTargetX8632::Reg_edx);
   assert(llvm::isa<IceVariable>(Source));
   assert(llvm::dyn_cast<IceVariable>(Source)->getRegNum() ==
@@ -126,77 +124,73 @@ IceInstX8632Cdq::IceInstX8632Cdq(IceCfg *Cfg, IceVariable *Dest,
   addSource(Source);
 }
 
-IceInstX8632Cvt::IceInstX8632Cvt(IceCfg *Cfg, IceVariable *Dest,
-                                 IceOperand *Source)
-    : IceInstX8632(Cfg, IceInstX8632::Cvt, 1, Dest) {
+InstX8632Cvt::InstX8632Cvt(IceCfg *Cfg, IceVariable *Dest, IceOperand *Source)
+    : InstX8632(Cfg, InstX8632::Cvt, 1, Dest) {
   addSource(Source);
 }
 
-IceInstX8632Icmp::IceInstX8632Icmp(IceCfg *Cfg, IceOperand *Src0,
+InstX8632Icmp::InstX8632Icmp(IceCfg *Cfg, IceOperand *Src0, IceOperand *Src1)
+    : InstX8632(Cfg, InstX8632::Icmp, 2, NULL) {
+  addSource(Src0);
+  addSource(Src1);
+}
+
+InstX8632Ucomiss::InstX8632Ucomiss(IceCfg *Cfg, IceOperand *Src0,
                                    IceOperand *Src1)
-    : IceInstX8632(Cfg, IceInstX8632::Icmp, 2, NULL) {
+    : InstX8632(Cfg, InstX8632::Ucomiss, 2, NULL) {
   addSource(Src0);
   addSource(Src1);
 }
 
-IceInstX8632Ucomiss::IceInstX8632Ucomiss(IceCfg *Cfg, IceOperand *Src0,
-                                         IceOperand *Src1)
-    : IceInstX8632(Cfg, IceInstX8632::Ucomiss, 2, NULL) {
-  addSource(Src0);
-  addSource(Src1);
-}
-
-IceInstX8632Test::IceInstX8632Test(IceCfg *Cfg, IceOperand *Src1,
-                                   IceOperand *Src2)
-    : IceInstX8632(Cfg, IceInstX8632::Test, 2, NULL) {
+InstX8632Test::InstX8632Test(IceCfg *Cfg, IceOperand *Src1, IceOperand *Src2)
+    : InstX8632(Cfg, InstX8632::Test, 2, NULL) {
   addSource(Src1);
   addSource(Src2);
 }
 
-IceInstX8632Store::IceInstX8632Store(IceCfg *Cfg, IceOperand *Value,
-                                     IceOperandX8632 *Mem)
-    : IceInstX8632(Cfg, IceInstX8632::Store, 2, NULL) {
+InstX8632Store::InstX8632Store(IceCfg *Cfg, IceOperand *Value,
+                               IceOperandX8632 *Mem)
+    : InstX8632(Cfg, InstX8632::Store, 2, NULL) {
   addSource(Value);
   addSource(Mem);
 }
 
-IceInstX8632Mov::IceInstX8632Mov(IceCfg *Cfg, IceVariable *Dest,
-                                 IceOperand *Source)
-    : IceInstX8632(Cfg, IceInstX8632::Mov, 1, Dest) {
+InstX8632Mov::InstX8632Mov(IceCfg *Cfg, IceVariable *Dest, IceOperand *Source)
+    : InstX8632(Cfg, InstX8632::Mov, 1, Dest) {
   addSource(Source);
 }
 
-IceInstX8632Movsx::IceInstX8632Movsx(IceCfg *Cfg, IceVariable *Dest,
-                                     IceOperand *Source)
-    : IceInstX8632(Cfg, IceInstX8632::Movsx, 1, Dest) {
+InstX8632Movsx::InstX8632Movsx(IceCfg *Cfg, IceVariable *Dest,
+                               IceOperand *Source)
+    : InstX8632(Cfg, InstX8632::Movsx, 1, Dest) {
   addSource(Source);
 }
 
-IceInstX8632Movzx::IceInstX8632Movzx(IceCfg *Cfg, IceVariable *Dest,
-                                     IceOperand *Source)
-    : IceInstX8632(Cfg, IceInstX8632::Movzx, 1, Dest) {
+InstX8632Movzx::InstX8632Movzx(IceCfg *Cfg, IceVariable *Dest,
+                               IceOperand *Source)
+    : InstX8632(Cfg, InstX8632::Movzx, 1, Dest) {
   addSource(Source);
 }
 
-IceInstX8632Fld::IceInstX8632Fld(IceCfg *Cfg, IceOperand *Src)
-    : IceInstX8632(Cfg, IceInstX8632::Fld, 1, NULL) {
+InstX8632Fld::InstX8632Fld(IceCfg *Cfg, IceOperand *Src)
+    : InstX8632(Cfg, InstX8632::Fld, 1, NULL) {
   addSource(Src);
 }
 
-IceInstX8632Fstp::IceInstX8632Fstp(IceCfg *Cfg, IceVariable *Dest)
-    : IceInstX8632(Cfg, IceInstX8632::Fstp, 0, Dest) {}
+InstX8632Fstp::InstX8632Fstp(IceCfg *Cfg, IceVariable *Dest)
+    : InstX8632(Cfg, InstX8632::Fstp, 0, Dest) {}
 
-IceInstX8632Pop::IceInstX8632Pop(IceCfg *Cfg, IceVariable *Dest)
-    : IceInstX8632(Cfg, IceInstX8632::Pop, 1, Dest) {}
+InstX8632Pop::InstX8632Pop(IceCfg *Cfg, IceVariable *Dest)
+    : InstX8632(Cfg, InstX8632::Pop, 1, Dest) {}
 
-IceInstX8632Push::IceInstX8632Push(IceCfg *Cfg, IceOperand *Source,
-                                   bool SuppressStackAdjustment)
-    : IceInstX8632(Cfg, IceInstX8632::Push, 1, NULL),
+InstX8632Push::InstX8632Push(IceCfg *Cfg, IceOperand *Source,
+                             bool SuppressStackAdjustment)
+    : InstX8632(Cfg, InstX8632::Push, 1, NULL),
       SuppressStackAdjustment(SuppressStackAdjustment) {
   addSource(Source);
 }
 
-bool IceInstX8632Mov::isRedundantAssign() const {
+bool InstX8632Mov::isRedundantAssign() const {
   IceVariable *Src = llvm::dyn_cast<IceVariable>(getSrc(0));
   if (Src == NULL)
     return false;
@@ -212,31 +206,31 @@ bool IceInstX8632Mov::isRedundantAssign() const {
   return false;
 }
 
-IceInstX8632Ret::IceInstX8632Ret(IceCfg *Cfg, IceVariable *Source)
-    : IceInstX8632(Cfg, IceInstX8632::Ret, Source ? 1 : 0, NULL) {
+InstX8632Ret::InstX8632Ret(IceCfg *Cfg, IceVariable *Source)
+    : InstX8632(Cfg, InstX8632::Ret, Source ? 1 : 0, NULL) {
   if (Source)
     addSource(Source);
 }
 
 // ======================== Dump routines ======================== //
 
-void IceInstX8632::dump(const IceCfg *Cfg) const {
+void InstX8632::dump(const IceCfg *Cfg) const {
   IceOstream &Str = Cfg->getContext()->StrDump;
   Str << "[X8632] ";
-  IceInst::dump(Cfg);
+  Inst::dump(Cfg);
 }
 
-void IceInstX8632Label::emit(const IceCfg *Cfg, uint32_t Option) const {
+void InstX8632Label::emit(const IceCfg *Cfg, uint32_t Option) const {
   IceOstream &Str = Cfg->getContext()->StrEmit;
   Str << getName(Cfg) << ":\n";
 }
 
-void IceInstX8632Label::dump(const IceCfg *Cfg) const {
+void InstX8632Label::dump(const IceCfg *Cfg) const {
   IceOstream &Str = Cfg->getContext()->StrDump;
   Str << getName(Cfg) << ":";
 }
 
-void IceInstX8632Br::emit(const IceCfg *Cfg, uint32_t Option) const {
+void InstX8632Br::emit(const IceCfg *Cfg, uint32_t Option) const {
   IceOstream &Str = Cfg->getContext()->StrEmit;
   Str << "\t";
   switch (Condition) {
@@ -294,7 +288,7 @@ void IceInstX8632Br::emit(const IceCfg *Cfg, uint32_t Option) const {
   }
 }
 
-void IceInstX8632Br::dump(const IceCfg *Cfg) const {
+void InstX8632Br::dump(const IceCfg *Cfg) const {
   IceOstream &Str = Cfg->getContext()->StrDump;
   Str << "br ";
   switch (Condition) {
@@ -350,7 +344,7 @@ void IceInstX8632Br::dump(const IceCfg *Cfg) const {
   }
 }
 
-void IceInstX8632Call::emit(const IceCfg *Cfg, uint32_t Option) const {
+void InstX8632Call::emit(const IceCfg *Cfg, uint32_t Option) const {
   IceOstream &Str = Cfg->getContext()->StrEmit;
   assert(getSrcSize() == 1);
   Str << "\tcall\t";
@@ -361,7 +355,7 @@ void IceInstX8632Call::emit(const IceCfg *Cfg, uint32_t Option) const {
   Cfg->getTarget()->resetStackAdjustment();
 }
 
-void IceInstX8632Call::dump(const IceCfg *Cfg) const {
+void InstX8632Call::dump(const IceCfg *Cfg) const {
   IceOstream &Str = Cfg->getContext()->StrDump;
   if (getDest()) {
     dumpDest(Cfg);
@@ -373,8 +367,8 @@ void IceInstX8632Call::dump(const IceCfg *Cfg) const {
   getCallTarget()->dump(Cfg);
 }
 
-void IceEmitTwoAddress(const char *Opcode, const IceInst *Inst,
-                       const IceCfg *Cfg, uint32_t Option, bool ShiftHack) {
+void IceEmitTwoAddress(const char *Opcode, const Inst *Inst, const IceCfg *Cfg,
+                       uint32_t Option, bool ShiftHack) {
   IceOstream &Str = Cfg->getContext()->StrEmit;
   assert(Inst->getSrcSize() == 2);
   assert(Inst->getDest() == Inst->getSrc(0));
@@ -394,50 +388,49 @@ void IceEmitTwoAddress(const char *Opcode, const IceInst *Inst,
   Str << "\n";
 }
 
-template <> const char *IceInstX8632Add::Opcode = "add";
-template <> const char *IceInstX8632Adc::Opcode = "adc";
-template <> const char *IceInstX8632Addss::Opcode = "addss";
-template <> const char *IceInstX8632Sub::Opcode = "sub";
-template <> const char *IceInstX8632Subss::Opcode = "subss";
-template <> const char *IceInstX8632Sbb::Opcode = "sbb";
-template <> const char *IceInstX8632And::Opcode = "and";
-template <> const char *IceInstX8632Or::Opcode = "or";
-template <> const char *IceInstX8632Xor::Opcode = "xor";
-template <> const char *IceInstX8632Imul::Opcode = "imul";
-template <> const char *IceInstX8632Mulss::Opcode = "mulss";
-template <> const char *IceInstX8632Div::Opcode = "div";
-template <> const char *IceInstX8632Idiv::Opcode = "idiv";
-template <> const char *IceInstX8632Divss::Opcode = "divss";
-template <> const char *IceInstX8632Shl::Opcode = "shl";
-template <> const char *IceInstX8632Shr::Opcode = "shr";
-template <> const char *IceInstX8632Sar::Opcode = "sar";
+template <> const char *InstX8632Add::Opcode = "add";
+template <> const char *InstX8632Adc::Opcode = "adc";
+template <> const char *InstX8632Addss::Opcode = "addss";
+template <> const char *InstX8632Sub::Opcode = "sub";
+template <> const char *InstX8632Subss::Opcode = "subss";
+template <> const char *InstX8632Sbb::Opcode = "sbb";
+template <> const char *InstX8632And::Opcode = "and";
+template <> const char *InstX8632Or::Opcode = "or";
+template <> const char *InstX8632Xor::Opcode = "xor";
+template <> const char *InstX8632Imul::Opcode = "imul";
+template <> const char *InstX8632Mulss::Opcode = "mulss";
+template <> const char *InstX8632Div::Opcode = "div";
+template <> const char *InstX8632Idiv::Opcode = "idiv";
+template <> const char *InstX8632Divss::Opcode = "divss";
+template <> const char *InstX8632Shl::Opcode = "shl";
+template <> const char *InstX8632Shr::Opcode = "shr";
+template <> const char *InstX8632Sar::Opcode = "sar";
 
 template <>
-void IceInstX8632Addss::emit(const IceCfg *Cfg, uint32_t Option) const {
+void InstX8632Addss::emit(const IceCfg *Cfg, uint32_t Option) const {
   IceEmitTwoAddress(getDest()->getType() == IceType_f32 ? "addss" : "addsd",
                     this, Cfg, Option);
 }
 
 template <>
-void IceInstX8632Subss::emit(const IceCfg *Cfg, uint32_t Option) const {
+void InstX8632Subss::emit(const IceCfg *Cfg, uint32_t Option) const {
   IceEmitTwoAddress(getDest()->getType() == IceType_f32 ? "subss" : "subsd",
                     this, Cfg, Option);
 }
 
 template <>
-void IceInstX8632Mulss::emit(const IceCfg *Cfg, uint32_t Option) const {
+void InstX8632Mulss::emit(const IceCfg *Cfg, uint32_t Option) const {
   IceEmitTwoAddress(getDest()->getType() == IceType_f32 ? "mulss" : "mulsd",
                     this, Cfg, Option);
 }
 
 template <>
-void IceInstX8632Divss::emit(const IceCfg *Cfg, uint32_t Option) const {
+void InstX8632Divss::emit(const IceCfg *Cfg, uint32_t Option) const {
   IceEmitTwoAddress(getDest()->getType() == IceType_f32 ? "divss" : "divsd",
                     this, Cfg, Option);
 }
 
-template <>
-void IceInstX8632Imul::emit(const IceCfg *Cfg, uint32_t Option) const {
+template <> void InstX8632Imul::emit(const IceCfg *Cfg, uint32_t Option) const {
   IceOstream &Str = Cfg->getContext()->StrEmit;
   assert(getSrcSize() == 2);
   if (getDest()->getType() == IceType_i8) {
@@ -460,7 +453,7 @@ void IceInstX8632Imul::emit(const IceCfg *Cfg, uint32_t Option) const {
   }
 }
 
-void IceInstX8632Mul::emit(const IceCfg *Cfg, uint32_t Option) const {
+void InstX8632Mul::emit(const IceCfg *Cfg, uint32_t Option) const {
   IceOstream &Str = Cfg->getContext()->StrEmit;
   assert(getSrcSize() == 2);
   assert(llvm::isa<IceVariable>(getSrc(0)));
@@ -472,14 +465,14 @@ void IceInstX8632Mul::emit(const IceCfg *Cfg, uint32_t Option) const {
   Str << "\n";
 }
 
-void IceInstX8632Mul::dump(const IceCfg *Cfg) const {
+void InstX8632Mul::dump(const IceCfg *Cfg) const {
   IceOstream &Str = Cfg->getContext()->StrDump;
   dumpDest(Cfg);
   Str << " = mul." << getDest()->getType() << " ";
   dumpSources(Cfg);
 }
 
-void IceInstX8632Shld::emit(const IceCfg *Cfg, uint32_t Option) const {
+void InstX8632Shld::emit(const IceCfg *Cfg, uint32_t Option) const {
   IceOstream &Str = Cfg->getContext()->StrEmit;
   assert(getSrcSize() == 3);
   assert(getDest() == getSrc(0));
@@ -502,14 +495,14 @@ void IceInstX8632Shld::emit(const IceCfg *Cfg, uint32_t Option) const {
   Str << "\n";
 }
 
-void IceInstX8632Shld::dump(const IceCfg *Cfg) const {
+void InstX8632Shld::dump(const IceCfg *Cfg) const {
   IceOstream &Str = Cfg->getContext()->StrDump;
   dumpDest(Cfg);
   Str << " = shld." << getDest()->getType() << " ";
   dumpSources(Cfg);
 }
 
-void IceInstX8632Shrd::emit(const IceCfg *Cfg, uint32_t Option) const {
+void InstX8632Shrd::emit(const IceCfg *Cfg, uint32_t Option) const {
   IceOstream &Str = Cfg->getContext()->StrEmit;
   assert(getSrcSize() == 3);
   assert(getDest() == getSrc(0));
@@ -532,20 +525,20 @@ void IceInstX8632Shrd::emit(const IceCfg *Cfg, uint32_t Option) const {
   Str << "\n";
 }
 
-void IceInstX8632Shrd::dump(const IceCfg *Cfg) const {
+void InstX8632Shrd::dump(const IceCfg *Cfg) const {
   IceOstream &Str = Cfg->getContext()->StrDump;
   dumpDest(Cfg);
   Str << " = shrd." << getDest()->getType() << " ";
   dumpSources(Cfg);
 }
 
-void IceInstX8632Cdq::emit(const IceCfg *Cfg, uint32_t Option) const {
+void InstX8632Cdq::emit(const IceCfg *Cfg, uint32_t Option) const {
   IceOstream &Str = Cfg->getContext()->StrEmit;
   assert(getSrcSize() == 1);
   Str << "\tcdq\n";
 }
 
-void IceInstX8632Cdq::dump(const IceCfg *Cfg) const {
+void InstX8632Cdq::dump(const IceCfg *Cfg) const {
   IceOstream &Str = Cfg->getContext()->StrDump;
   dumpDest(Cfg);
   Str << " = cdq." << getSrc(0)->getType() << " ";
@@ -575,7 +568,7 @@ static IceString getCvtTypeString(IceType Type) {
   return "???";
 }
 
-void IceInstX8632Cvt::emit(const IceCfg *Cfg, uint32_t Option) const {
+void InstX8632Cvt::emit(const IceCfg *Cfg, uint32_t Option) const {
   IceOstream &Str = Cfg->getContext()->StrEmit;
   assert(getSrcSize() == 1);
   Str << "\tcvts" << getCvtTypeString(getSrc(0)->getType()) << "2s"
@@ -586,7 +579,7 @@ void IceInstX8632Cvt::emit(const IceCfg *Cfg, uint32_t Option) const {
   Str << "\n";
 }
 
-void IceInstX8632Cvt::dump(const IceCfg *Cfg) const {
+void InstX8632Cvt::dump(const IceCfg *Cfg) const {
   IceOstream &Str = Cfg->getContext()->StrDump;
   dumpDest(Cfg);
   Str << " = cvts" << getCvtTypeString(getSrc(0)->getType()) << "2s"
@@ -594,7 +587,7 @@ void IceInstX8632Cvt::dump(const IceCfg *Cfg) const {
   dumpSources(Cfg);
 }
 
-void IceInstX8632Icmp::emit(const IceCfg *Cfg, uint32_t Option) const {
+void InstX8632Icmp::emit(const IceCfg *Cfg, uint32_t Option) const {
   IceOstream &Str = Cfg->getContext()->StrEmit;
   assert(getSrcSize() == 2);
   Str << "\tcmp\t";
@@ -604,13 +597,13 @@ void IceInstX8632Icmp::emit(const IceCfg *Cfg, uint32_t Option) const {
   Str << "\n";
 }
 
-void IceInstX8632Icmp::dump(const IceCfg *Cfg) const {
+void InstX8632Icmp::dump(const IceCfg *Cfg) const {
   IceOstream &Str = Cfg->getContext()->StrDump;
   Str << "cmp." << getSrc(0)->getType() << " ";
   dumpSources(Cfg);
 }
 
-void IceInstX8632Ucomiss::emit(const IceCfg *Cfg, uint32_t Option) const {
+void InstX8632Ucomiss::emit(const IceCfg *Cfg, uint32_t Option) const {
   IceOstream &Str = Cfg->getContext()->StrEmit;
   assert(getSrcSize() == 2);
   if (getSrc(0)->getType() == IceType_f32)
@@ -623,13 +616,13 @@ void IceInstX8632Ucomiss::emit(const IceCfg *Cfg, uint32_t Option) const {
   Str << "\n";
 }
 
-void IceInstX8632Ucomiss::dump(const IceCfg *Cfg) const {
+void InstX8632Ucomiss::dump(const IceCfg *Cfg) const {
   IceOstream &Str = Cfg->getContext()->StrDump;
   Str << "ucomiss." << getSrc(0)->getType() << " ";
   dumpSources(Cfg);
 }
 
-void IceInstX8632Test::emit(const IceCfg *Cfg, uint32_t Option) const {
+void InstX8632Test::emit(const IceCfg *Cfg, uint32_t Option) const {
   IceOstream &Str = Cfg->getContext()->StrEmit;
   assert(getSrcSize() == 2);
   Str << "\ttest\t";
@@ -639,13 +632,13 @@ void IceInstX8632Test::emit(const IceCfg *Cfg, uint32_t Option) const {
   Str << "\n";
 }
 
-void IceInstX8632Test::dump(const IceCfg *Cfg) const {
+void InstX8632Test::dump(const IceCfg *Cfg) const {
   IceOstream &Str = Cfg->getContext()->StrDump;
   Str << "test." << getSrc(0)->getType() << " ";
   dumpSources(Cfg);
 }
 
-void IceInstX8632Store::emit(const IceCfg *Cfg, uint32_t Option) const {
+void InstX8632Store::emit(const IceCfg *Cfg, uint32_t Option) const {
   IceOstream &Str = Cfg->getContext()->StrEmit;
   assert(getSrcSize() == 2);
   Str << "\tmov\t";
@@ -655,7 +648,7 @@ void IceInstX8632Store::emit(const IceCfg *Cfg, uint32_t Option) const {
   Str << "\n";
 }
 
-void IceInstX8632Store::dump(const IceCfg *Cfg) const {
+void InstX8632Store::dump(const IceCfg *Cfg) const {
   IceOstream &Str = Cfg->getContext()->StrDump;
   Str << "mov." << getSrc(0)->getType() << " ";
   getSrc(1)->dump(Cfg);
@@ -663,7 +656,7 @@ void IceInstX8632Store::dump(const IceCfg *Cfg) const {
   getSrc(0)->dump(Cfg);
 }
 
-void IceInstX8632Mov::emit(const IceCfg *Cfg, uint32_t Option) const {
+void InstX8632Mov::emit(const IceCfg *Cfg, uint32_t Option) const {
   IceOstream &Str = Cfg->getContext()->StrEmit;
   assert(getSrcSize() == 1);
   Str << "\tmov";
@@ -693,7 +686,7 @@ void IceInstX8632Mov::emit(const IceCfg *Cfg, uint32_t Option) const {
   Str << "\n";
 }
 
-void IceInstX8632Mov::dump(const IceCfg *Cfg) const {
+void InstX8632Mov::dump(const IceCfg *Cfg) const {
   IceOstream &Str = Cfg->getContext()->StrDump;
   Str << "mov." << getDest()->getType() << " ";
   dumpDest(Cfg);
@@ -701,7 +694,7 @@ void IceInstX8632Mov::dump(const IceCfg *Cfg) const {
   dumpSources(Cfg);
 }
 
-void IceInstX8632Movsx::emit(const IceCfg *Cfg, uint32_t Option) const {
+void InstX8632Movsx::emit(const IceCfg *Cfg, uint32_t Option) const {
   IceOstream &Str = Cfg->getContext()->StrEmit;
   assert(getSrcSize() == 1);
   Str << "\tmovsx\t";
@@ -711,7 +704,7 @@ void IceInstX8632Movsx::emit(const IceCfg *Cfg, uint32_t Option) const {
   Str << "\n";
 }
 
-void IceInstX8632Movsx::dump(const IceCfg *Cfg) const {
+void InstX8632Movsx::dump(const IceCfg *Cfg) const {
   IceOstream &Str = Cfg->getContext()->StrDump;
   Str << "movs" << OpcodeTypeFromIceType(getSrc(0)->getType());
   Str << OpcodeTypeFromIceType(getDest()->getType());
@@ -721,7 +714,7 @@ void IceInstX8632Movsx::dump(const IceCfg *Cfg) const {
   dumpSources(Cfg);
 }
 
-void IceInstX8632Movzx::emit(const IceCfg *Cfg, uint32_t Option) const {
+void InstX8632Movzx::emit(const IceCfg *Cfg, uint32_t Option) const {
   IceOstream &Str = Cfg->getContext()->StrEmit;
   assert(getSrcSize() == 1);
   Str << "\tmovzx\t";
@@ -731,7 +724,7 @@ void IceInstX8632Movzx::emit(const IceCfg *Cfg, uint32_t Option) const {
   Str << "\n";
 }
 
-void IceInstX8632Movzx::dump(const IceCfg *Cfg) const {
+void InstX8632Movzx::dump(const IceCfg *Cfg) const {
   IceOstream &Str = Cfg->getContext()->StrDump;
   Str << "movz" << OpcodeTypeFromIceType(getSrc(0)->getType());
   Str << OpcodeTypeFromIceType(getDest()->getType());
@@ -741,7 +734,7 @@ void IceInstX8632Movzx::dump(const IceCfg *Cfg) const {
   dumpSources(Cfg);
 }
 
-void IceInstX8632Fld::emit(const IceCfg *Cfg, uint32_t Option) const {
+void InstX8632Fld::emit(const IceCfg *Cfg, uint32_t Option) const {
   IceOstream &Str = Cfg->getContext()->StrEmit;
   assert(getSrcSize() == 1);
   bool isDouble = (getSrc(0)->getType() == IceType_f64);
@@ -763,13 +756,13 @@ void IceInstX8632Fld::emit(const IceCfg *Cfg, uint32_t Option) const {
   Str << "\n";
 }
 
-void IceInstX8632Fld::dump(const IceCfg *Cfg) const {
+void InstX8632Fld::dump(const IceCfg *Cfg) const {
   IceOstream &Str = Cfg->getContext()->StrDump;
   Str << "fld." << getSrc(0)->getType() << " ";
   dumpSources(Cfg);
 }
 
-void IceInstX8632Fstp::emit(const IceCfg *Cfg, uint32_t Option) const {
+void InstX8632Fstp::emit(const IceCfg *Cfg, uint32_t Option) const {
   IceOstream &Str = Cfg->getContext()->StrEmit;
   assert(getSrcSize() == 0);
   if (getDest() == NULL) {
@@ -795,14 +788,14 @@ void IceInstX8632Fstp::emit(const IceCfg *Cfg, uint32_t Option) const {
   Str << "\tadd\tesp, " << Width << "\n";
 }
 
-void IceInstX8632Fstp::dump(const IceCfg *Cfg) const {
+void InstX8632Fstp::dump(const IceCfg *Cfg) const {
   IceOstream &Str = Cfg->getContext()->StrDump;
   dumpDest(Cfg);
   Str << " = fstp." << getDest()->getType() << ", st(0)";
   Str << "\n";
 }
 
-void IceInstX8632Pop::emit(const IceCfg *Cfg, uint32_t Option) const {
+void InstX8632Pop::emit(const IceCfg *Cfg, uint32_t Option) const {
   IceOstream &Str = Cfg->getContext()->StrEmit;
   assert(getSrcSize() == 0);
   Str << "\tpop\t";
@@ -810,13 +803,13 @@ void IceInstX8632Pop::emit(const IceCfg *Cfg, uint32_t Option) const {
   Str << "\n";
 }
 
-void IceInstX8632Pop::dump(const IceCfg *Cfg) const {
+void InstX8632Pop::dump(const IceCfg *Cfg) const {
   IceOstream &Str = Cfg->getContext()->StrDump;
   dumpDest(Cfg);
   Str << " = pop." << getDest()->getType() << " ";
 }
 
-void IceInstX8632Push::emit(const IceCfg *Cfg, uint32_t Option) const {
+void InstX8632Push::emit(const IceCfg *Cfg, uint32_t Option) const {
   IceOstream &Str = Cfg->getContext()->StrEmit;
   assert(getSrcSize() == 1);
   IceType Type = getSrc(0)->getType();
@@ -845,18 +838,18 @@ void IceInstX8632Push::emit(const IceCfg *Cfg, uint32_t Option) const {
   }
 }
 
-void IceInstX8632Push::dump(const IceCfg *Cfg) const {
+void InstX8632Push::dump(const IceCfg *Cfg) const {
   IceOstream &Str = Cfg->getContext()->StrDump;
   Str << "push." << getSrc(0)->getType() << " ";
   dumpSources(Cfg);
 }
 
-void IceInstX8632Ret::emit(const IceCfg *Cfg, uint32_t Option) const {
+void InstX8632Ret::emit(const IceCfg *Cfg, uint32_t Option) const {
   IceOstream &Str = Cfg->getContext()->StrEmit;
   Str << "\tret\n";
 }
 
-void IceInstX8632Ret::dump(const IceCfg *Cfg) const {
+void InstX8632Ret::dump(const IceCfg *Cfg) const {
   IceOstream &Str = Cfg->getContext()->StrDump;
   IceType Type = (getSrcSize() == 0 ? IceType_void : getSrc(0)->getType());
   Str << "ret." << Type << " ";

@@ -33,17 +33,17 @@ void IceLoweringContext::init(CfgNode *N) {
   advance(Next);
 }
 
-void IceLoweringContext::insert(IceInst *Inst) {
+void IceLoweringContext::insert(Inst *Inst) {
   getNode()->getInsts().insert(Next, Inst);
   Inst->updateVars(getNode());
 }
 
-void IceLoweringContext::skipDeleted(IceInstList::iterator &I) {
+void IceLoweringContext::skipDeleted(InstList::iterator &I) {
   while (I != End && (*I)->isDeleted())
     ++I;
 }
 
-void IceLoweringContext::advance(IceInstList::iterator &I) {
+void IceLoweringContext::advance(InstList::iterator &I) {
   if (I != End) {
     ++I;
     skipDeleted(I);
@@ -69,9 +69,9 @@ IceTargetLowering *IceTargetLowering::createLowering(IceTargetArch Target,
 }
 
 void IceTargetLowering::doAddressOpt() {
-  if (llvm::isa<IceInstLoad>(*Context.getCur()))
+  if (llvm::isa<InstLoad>(*Context.getCur()))
     doAddressOptLoad();
-  else if (llvm::isa<IceInstStore>(*Context.getCur()))
+  else if (llvm::isa<InstStore>(*Context.getCur()))
     doAddressOptStore();
   Context.Cur = Context.Next;
   Context.advanceNext();
@@ -91,57 +91,57 @@ void IceTargetLowering::doAddressOpt() {
 // instructions it consumes.
 void IceTargetLowering::lower() {
   assert(!Context.atEnd());
-  IceInst *Inst = *Context.getCur();
+  Inst *Inst = *Context.getCur();
   switch (Inst->getKind()) {
-  case IceInst::Alloca:
-    lowerAlloca(llvm::dyn_cast<IceInstAlloca>(Inst));
+  case Inst::Alloca:
+    lowerAlloca(llvm::dyn_cast<InstAlloca>(Inst));
     break;
-  case IceInst::Arithmetic:
-    lowerArithmetic(llvm::dyn_cast<IceInstArithmetic>(Inst));
+  case Inst::Arithmetic:
+    lowerArithmetic(llvm::dyn_cast<InstArithmetic>(Inst));
     break;
-  case IceInst::Assign:
-    lowerAssign(llvm::dyn_cast<IceInstAssign>(Inst));
+  case Inst::Assign:
+    lowerAssign(llvm::dyn_cast<InstAssign>(Inst));
     break;
-  case IceInst::Br:
-    lowerBr(llvm::dyn_cast<IceInstBr>(Inst));
+  case Inst::Br:
+    lowerBr(llvm::dyn_cast<InstBr>(Inst));
     break;
-  case IceInst::Call:
-    lowerCall(llvm::dyn_cast<IceInstCall>(Inst));
+  case Inst::Call:
+    lowerCall(llvm::dyn_cast<InstCall>(Inst));
     break;
-  case IceInst::Cast:
-    lowerCast(llvm::dyn_cast<IceInstCast>(Inst));
+  case Inst::Cast:
+    lowerCast(llvm::dyn_cast<InstCast>(Inst));
     break;
-  case IceInst::Fcmp:
-    lowerFcmp(llvm::dyn_cast<IceInstFcmp>(Inst));
+  case Inst::Fcmp:
+    lowerFcmp(llvm::dyn_cast<InstFcmp>(Inst));
     break;
-  case IceInst::Icmp:
-    lowerIcmp(llvm::dyn_cast<IceInstIcmp>(Inst));
+  case Inst::Icmp:
+    lowerIcmp(llvm::dyn_cast<InstIcmp>(Inst));
     break;
-  case IceInst::Load:
-    lowerLoad(llvm::dyn_cast<IceInstLoad>(Inst));
+  case Inst::Load:
+    lowerLoad(llvm::dyn_cast<InstLoad>(Inst));
     break;
-  case IceInst::Phi:
-    lowerPhi(llvm::dyn_cast<IceInstPhi>(Inst));
+  case Inst::Phi:
+    lowerPhi(llvm::dyn_cast<InstPhi>(Inst));
     break;
-  case IceInst::Ret:
-    lowerRet(llvm::dyn_cast<IceInstRet>(Inst));
+  case Inst::Ret:
+    lowerRet(llvm::dyn_cast<InstRet>(Inst));
     break;
-  case IceInst::Select:
-    lowerSelect(llvm::dyn_cast<IceInstSelect>(Inst));
+  case Inst::Select:
+    lowerSelect(llvm::dyn_cast<InstSelect>(Inst));
     break;
-  case IceInst::Store:
-    lowerStore(llvm::dyn_cast<IceInstStore>(Inst));
+  case Inst::Store:
+    lowerStore(llvm::dyn_cast<InstStore>(Inst));
     break;
-  case IceInst::Switch:
-    lowerSwitch(llvm::dyn_cast<IceInstSwitch>(Inst));
+  case Inst::Switch:
+    lowerSwitch(llvm::dyn_cast<InstSwitch>(Inst));
     break;
-  case IceInst::Unreachable:
-    lowerUnreachable(llvm::dyn_cast<IceInstUnreachable>(Inst));
+  case Inst::Unreachable:
+    lowerUnreachable(llvm::dyn_cast<InstUnreachable>(Inst));
     break;
-  case IceInst::FakeDef:
-  case IceInst::FakeUse:
-  case IceInst::FakeKill:
-  case IceInst::Target:
+  case Inst::FakeDef:
+  case Inst::FakeUse:
+  case Inst::FakeKill:
+  case Inst::Target:
     // These are all Target instruction types and shouldn't be
     // encountered at this stage.
     Cfg->setError("Can't lower unsupported instruction type");

@@ -21,7 +21,7 @@
 #include "IceDefs.h"
 #include "IceTypes.h"
 
-#include "IceInst.h" // for the names of the IceInst subtypes
+#include "IceInst.h" // for the names of the Inst subtypes
 
 namespace Ice {
 
@@ -35,24 +35,24 @@ class IceLoweringContext {
 public:
   IceLoweringContext() : Node(NULL) {}
   void init(CfgNode *Node);
-  IceInst *getNextInst() const {
+  Inst *getNextInst() const {
     if (Next == End)
       return NULL;
     return *Next;
   }
   CfgNode *getNode() const { return Node; }
   bool atEnd() const { return Cur == End; }
-  IceInstList::iterator getCur() const { return Cur; }
-  IceInstList::iterator getEnd() const { return End; }
-  void insert(IceInst *Inst);
+  InstList::iterator getCur() const { return Cur; }
+  InstList::iterator getEnd() const { return End; }
+  void insert(Inst *Inst);
   void advanceCur() { advance(Cur); }
   void advanceNext() { advance(Next); }
 
-  // Node is the argument to IceInst::updateVars().
+  // Node is the argument to Inst::updateVars().
   CfgNode *Node;
   // Cur points to the current instruction being considered.  It is
   // guaranteed to point to a non-deleted instruction, or to be End.
-  IceInstList::iterator Cur;
+  InstList::iterator Cur;
   // Next doubles as a pointer to the next valid instruction (if any),
   // and the new-instruction insertion point.  It is also updated for
   // the caller in case the lowering consumes more than one high-level
@@ -62,14 +62,14 @@ public:
   // insertion point", to avoid confusion when previously-deleted
   // instructions come between the two points.
 public:
-  IceInstList::iterator Next;
+  InstList::iterator Next;
   // End is a copy of Insts.end(), used if Next needs to be advanced.
 private:
-  IceInstList::iterator End;
+  InstList::iterator End;
 
 private:
-  void skipDeleted(IceInstList::iterator &I);
-  void advance(IceInstList::iterator &I);
+  void skipDeleted(InstList::iterator &I);
+  void advance(InstList::iterator &I);
   IceLoweringContext(const IceLoweringContext &) LLVM_DELETED_FUNCTION;
   IceLoweringContext &
   operator=(const IceLoweringContext &) LLVM_DELETED_FUNCTION;
@@ -157,21 +157,21 @@ protected:
   IceTargetLowering(IceCfg *Cfg)
       : Cfg(Cfg), Ctx(Cfg->getContext()), HasComputedFrame(false),
         StackAdjustment(0) {}
-  virtual void lowerAlloca(const IceInstAlloca *Inst) = 0;
-  virtual void lowerArithmetic(const IceInstArithmetic *Inst) = 0;
-  virtual void lowerAssign(const IceInstAssign *Inst) = 0;
-  virtual void lowerBr(const IceInstBr *Inst) = 0;
-  virtual void lowerCall(const IceInstCall *Inst) = 0;
-  virtual void lowerCast(const IceInstCast *Inst) = 0;
-  virtual void lowerFcmp(const IceInstFcmp *Inst) = 0;
-  virtual void lowerIcmp(const IceInstIcmp *Inst) = 0;
-  virtual void lowerLoad(const IceInstLoad *Inst) = 0;
-  virtual void lowerPhi(const IceInstPhi *Inst) = 0;
-  virtual void lowerRet(const IceInstRet *Inst) = 0;
-  virtual void lowerSelect(const IceInstSelect *Inst) = 0;
-  virtual void lowerStore(const IceInstStore *Inst) = 0;
-  virtual void lowerSwitch(const IceInstSwitch *Inst) = 0;
-  virtual void lowerUnreachable(const IceInstUnreachable *Inst) = 0;
+  virtual void lowerAlloca(const InstAlloca *Inst) = 0;
+  virtual void lowerArithmetic(const InstArithmetic *Inst) = 0;
+  virtual void lowerAssign(const InstAssign *Inst) = 0;
+  virtual void lowerBr(const InstBr *Inst) = 0;
+  virtual void lowerCall(const InstCall *Inst) = 0;
+  virtual void lowerCast(const InstCast *Inst) = 0;
+  virtual void lowerFcmp(const InstFcmp *Inst) = 0;
+  virtual void lowerIcmp(const InstIcmp *Inst) = 0;
+  virtual void lowerLoad(const InstLoad *Inst) = 0;
+  virtual void lowerPhi(const InstPhi *Inst) = 0;
+  virtual void lowerRet(const InstRet *Inst) = 0;
+  virtual void lowerSelect(const InstSelect *Inst) = 0;
+  virtual void lowerStore(const InstStore *Inst) = 0;
+  virtual void lowerSwitch(const InstSwitch *Inst) = 0;
+  virtual void lowerUnreachable(const InstUnreachable *Inst) = 0;
 
   virtual void doAddressOptLoad() {}
   virtual void doAddressOptStore() {}
