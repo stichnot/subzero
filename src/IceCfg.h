@@ -76,6 +76,9 @@ public:
 
   // Passes over the CFG.
   void translate(IceTargetArch TargetArch);
+  // After the CFG is fully constructed, iterate over the nodes and
+  // compute the predecessor edges, in the form of
+  // CfgNode::InEdges[].
   void registerEdges();
   void renumberInstructions();
   void placePhiLoads();
@@ -86,8 +89,12 @@ public:
   void genFrame();
   void liveness(IceLivenessMode Mode);
   bool validateLiveness() const;
+
+  // Manage the CurrentNode field, which is used for validating the
+  // Variable::DefNode field during dumping/emitting.
   void setCurrentNode(const IceCfgNode *Node) { CurrentNode = Node; }
   const IceCfgNode *getCurrentNode() const { return CurrentNode; }
+
   void emit(uint32_t Option);
   void dump();
 

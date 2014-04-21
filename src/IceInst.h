@@ -67,6 +67,9 @@ public:
   // Returns a list of out-edges corresponding to a terminator
   // instruction, which is the last instruction of the block.
   virtual IceNodeList getTerminatorEdges() const {
+    // All valid terminator instructions override this method.  For
+    // the default implementation, we assert in case some CfgNode
+    // is constructed without a terminator instruction at the end.
     assert(0);
     return IceNodeList();
   }
@@ -222,6 +225,8 @@ private:
 // unconditional branches.
 class IceInstBr : public IceInst {
 public:
+  // Create a conditional branch.  If TargetTrue==TargetFalse, it is
+  // optimized to an unconditional branch.
   static IceInstBr *create(IceCfg *Cfg, IceOperand *Source,
                            IceCfgNode *TargetTrue, IceCfgNode *TargetFalse) {
     return new (Cfg->allocateInst<IceInstBr>())
@@ -258,6 +263,9 @@ private:
 // arg I is captured as getSrc(I+1).
 class IceInstCall : public IceInst {
 public:
+  // The Tail argument represents the "tail" marker from the original
+  // bitcode instruction (which doesn't necessarily mean that this
+  // call must be executed as a tail call).
   static IceInstCall *create(IceCfg *Cfg, uint32_t NumArgs, IceVariable *Dest,
                              IceOperand *CallTarget, bool Tail) {
     return new (Cfg->allocateInst<IceInstCall>())

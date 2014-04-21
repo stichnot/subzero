@@ -25,6 +25,7 @@ public:
     return new (Cfg->allocate<IceCfgNode>()) IceCfgNode(Cfg, LabelIndex, Name);
   }
 
+  // Access the label number and name for this node.
   uint32_t getIndex() const { return Number; }
   IceString getName() const;
   IceString getAsmName() const {
@@ -36,14 +37,18 @@ public:
   void setHasReturn() { HasReturn = true; }
   bool getHasReturn() const { return HasReturn; }
 
+  // Access predecessor and successor edge lists.
   const IceNodeList &getInEdges() const { return InEdges; }
   const IceNodeList &getOutEdges() const { return OutEdges; }
 
+  // Manage the instruction list.
   IceInstList &getInsts() { return Insts; }
   void appendInst(IceInst *Inst);
   void renumberInstructions();
 
   void splitEdge(IceCfgNode *From, IceCfgNode *To);
+  // Add a predecessor edge to the InEdges list for each of this
+  // node's successors.
   void registerEdges();
 
   void placePhiLoads();
