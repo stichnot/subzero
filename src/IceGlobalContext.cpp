@@ -67,7 +67,7 @@ public:
   TypePool<float, ConstantFloat> Floats;
   TypePool<double, ConstantDouble> Doubles;
   TypePool<uint64_t, ConstantInteger> Integers;
-  TypePool<IceRelocatableTuple, ConstantRelocatable> Relocatables;
+  TypePool<RelocatableTuple, ConstantRelocatable> Relocatables;
 };
 
 GlobalContext::GlobalContext(llvm::raw_ostream *OsDump,
@@ -152,7 +152,7 @@ Constant *GlobalContext::getConstantSym(IceType Type, const void *Handle,
                                         int64_t Offset, const IceString &Name,
                                         bool SuppressMangling) {
   return ConstPool->Relocatables.getOrAdd(
-      this, Type, IceRelocatableTuple(Handle, Offset, Name, SuppressMangling));
+      this, Type, RelocatableTuple(Handle, Offset, Name, SuppressMangling));
 }
 
 void IceTimer::printElapsedUs(GlobalContext *Ctx, const IceString &Tag) const {

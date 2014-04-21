@@ -124,20 +124,19 @@ typedef ConstantPrimitive<uint64_t, Operand::kConstInteger> ConstantInteger;
 typedef ConstantPrimitive<float, Operand::kConstFloat> ConstantFloat;
 typedef ConstantPrimitive<double, Operand::kConstDouble> ConstantDouble;
 
-// IceRelocatableTuple bundles the parameters that are used to
+// RelocatableTuple bundles the parameters that are used to
 // construct an ConstantRelocatable.  It is done this way so that
 // ConstantRelocatable can fit into the global constant pool
 // template mechanism.
-class IceRelocatableTuple {
-  IceRelocatableTuple &
-  operator=(const IceRelocatableTuple &) LLVM_DELETED_FUNCTION;
+class RelocatableTuple {
+  RelocatableTuple &operator=(const RelocatableTuple &) LLVM_DELETED_FUNCTION;
 
 public:
-  IceRelocatableTuple(const void *Handle, const int64_t Offset,
-                      const IceString &Name, bool SuppressMangling)
+  RelocatableTuple(const void *Handle, const int64_t Offset,
+                   const IceString &Name, bool SuppressMangling)
       : Handle(Handle), Offset(Offset), Name(Name),
         SuppressMangling(SuppressMangling) {}
-  IceRelocatableTuple(const IceRelocatableTuple &Other)
+  RelocatableTuple(const RelocatableTuple &Other)
       : Handle(Other.Handle), Offset(Other.Offset), Name(Other.Name),
         SuppressMangling(Other.SuppressMangling) {}
 
@@ -152,7 +151,7 @@ public:
 class ConstantRelocatable : public Constant {
 public:
   static ConstantRelocatable *create(GlobalContext *Ctx, IceType Type,
-                                     const IceRelocatableTuple &Tuple) {
+                                     const RelocatableTuple &Tuple) {
     return new (Ctx->allocate<ConstantRelocatable>()) ConstantRelocatable(
         Type, Tuple.Handle, Tuple.Offset, Tuple.Name, Tuple.SuppressMangling);
   }
