@@ -18,7 +18,7 @@
 
 #include <assert.h>
 #include <stdint.h>
-#include <stdio.h> // sprintf
+#include <stdio.h> // snprintf
 
 #include <list>
 #include <map>

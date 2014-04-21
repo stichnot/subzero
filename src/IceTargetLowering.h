@@ -38,9 +38,14 @@ public:
       return NULL;
     return *Next;
   }
+  IceCfgNode *getNode() const { return Node; }
+  bool atEnd() const { return Cur == End; }
+  IceInstList::iterator getCur() const { return Cur; }
+  IceInstList::iterator getEnd() const { return End; }
   void insert(IceInst *Inst);
   void advanceCur() { advance(Cur); }
   void advanceNext() { advance(Next); }
+
   // Node is the argument to IceInst::updateVars().
   IceCfgNode *Node;
   // Cur points to the current instruction being considered.  It is
@@ -54,8 +59,10 @@ public:
   // the notion of "next valid instruction" and "new instruction
   // insertion point", to avoid confusion when previously-deleted
   // instructions come between the two points.
+public:
   IceInstList::iterator Next;
   // End is a copy of Insts.end(), used if Next needs to be advanced.
+private:
   IceInstList::iterator End;
 
 private:

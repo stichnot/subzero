@@ -95,15 +95,20 @@ IceString IceGlobalContext::mangleName(const IceString &Name) const {
 
   unsigned PrefixLength = getTestPrefix().length();
   char NameBase[1 + Name.length()];
-  char NewName[30 + Name.length() + PrefixLength];
+  const size_t BufLen = 30 + Name.length() + PrefixLength;
+  char NewName[BufLen];
   uint32_t BaseLength = 0;
 
   int ItemsParsed = sscanf(Name.c_str(), "_ZN%s", NameBase);
   if (ItemsParsed == 1) {
     // Transform _ZN3foo3barExyz ==> _ZN6Prefix3foo3barExyz
     //   (splice in "6Prefix")          ^^^^^^^
-    sprintf(NewName, "_ZN%u%s%s", PrefixLength, getTestPrefix().c_str(),
+    snprintf(NewName, BufLen, "_ZN%u%s%s", PrefixLength, getTestPrefix().c_str(),
             NameBase);
+    // We ignore the snprintf return value (here and below).  If we
+    // somehow miscalculated the output buffer length, the output will
+    // be truncated, but it will be truncated consistently for all
+    // mangleName() calls on the same input string.
     return NewName;
   }
 
@@ -117,7 +122,7 @@ IceString IceGlobalContext::mangleName(const IceString &Name) const {
     strncpy(OrigName, NameBase, BaseLength);
     OrigName[BaseLength] = '\0';
     strcpy(OrigSuffix, NameBase + BaseLength);
-    sprintf(NewName, "_ZN%u%s%u%sE%s", PrefixLength, getTestPrefix().c_str(),
+    snprintf(NewName, BufLen, "_ZN%u%s%u%sE%s", PrefixLength, getTestPrefix().c_str(),
             BaseLength, OrigName, OrigSuffix);
     return NewName;
   }

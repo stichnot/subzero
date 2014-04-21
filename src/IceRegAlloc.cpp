@@ -416,8 +416,9 @@ void IceLinearScan::scan(const llvm::SmallBitVector &RegMaskFull) {
 
 void IceLiveRangeWrapper::dump(const IceCfg *Cfg) const {
   IceOstream &Str = Cfg->getContext()->StrDump;
-  char buf[30];
-  sprintf(buf, "%2d", Var->getRegNumTmp());
+  const static size_t BufLen = 30;
+  char buf[BufLen];
+  snprintf(buf, BufLen, "%2d", Var->getRegNumTmp());
   Str << "R=" << buf << "  V=";
   Var->dump(Cfg);
   Str << "  Range=" << range();

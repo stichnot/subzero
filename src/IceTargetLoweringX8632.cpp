@@ -483,8 +483,8 @@ void IceTargetX8632::split64(IceVariable *Var) {
     return;
   }
   assert(Hi == NULL);
-  Lo = Cfg->makeVariable(IceType_i32, Context.Node, Var->getName() + "__lo");
-  Hi = Cfg->makeVariable(IceType_i32, Context.Node, Var->getName() + "__hi");
+  Lo = Cfg->makeVariable(IceType_i32, Context.getNode(), Var->getName() + "__lo");
+  Hi = Cfg->makeVariable(IceType_i32, Context.getNode(), Var->getName() + "__hi");
   Var->setLoHi(Lo, Hi);
   if (Var->getIsArg()) {
     Lo->setIsArg(Cfg);
@@ -1318,7 +1318,7 @@ void IceTargetX8632::lowerCast(const IceInstCast *Inst) {
       IceVariable *T = NULL;
       // TODO: Should be able to force a spill setup by calling legalize() with
       // Legal_Mem and not Legal_Reg or Legal_Imm.
-      IceVariable *Spill = Cfg->makeVariable(SrcType, Context.Node);
+      IceVariable *Spill = Cfg->makeVariable(SrcType, Context.getNode());
       Spill->setWeight(IceRegWeight::Zero);
       Spill->setPreferredRegister(Dest, true);
       _mov(T, Src0RM);
@@ -1333,7 +1333,7 @@ void IceTargetX8632::lowerCast(const IceInstCast *Inst) {
       //   a_lo.i32 = t_lo.i32
       //   t_hi.i32 = hi(s.f64)
       //   a_hi.i32 = t_hi.i32
-      IceVariable *Spill = Cfg->makeVariable(IceType_f64, Context.Node);
+      IceVariable *Spill = Cfg->makeVariable(IceType_f64, Context.getNode());
       Spill->setWeight(IceRegWeight::Zero);
       Spill->setPreferredRegister(llvm::dyn_cast<IceVariable>(Src0RM), true);
       _mov(Spill, Src0RM);
@@ -1361,7 +1361,7 @@ void IceTargetX8632::lowerCast(const IceInstCast *Inst) {
       //   t_hi.i32 = b_hi.i32
       //   hi(s.f64) = t_hi.i32
       //   a.f64 = s.f64
-      IceVariable *Spill = Cfg->makeVariable(IceType_f64, Context.Node);
+      IceVariable *Spill = Cfg->makeVariable(IceType_f64, Context.getNode());
       Spill->setWeight(IceRegWeight::Zero);
       Spill->setPreferredRegister(Dest, true);
 
@@ -1790,7 +1790,7 @@ void IceTargetX8632::lowerLoad(const IceInstLoad *Inst) {
 }
 
 void IceTargetX8632::doAddressOptLoad() {
-  IceInst *Inst = *Context.Cur;
+  IceInst *Inst = *Context.getCur();
   IceVariable *Dest = Inst->getDest();
   IceOperand *Addr = Inst->getSrc(0);
   IceVariable *Index = NULL;
@@ -1910,7 +1910,7 @@ void IceTargetX8632::lowerStore(const IceInstStore *Inst) {
 }
 
 void IceTargetX8632::doAddressOptStore() {
-  IceInstStore *Inst = llvm::cast<IceInstStore>(*Context.Cur);
+  IceInstStore *Inst = llvm::cast<IceInstStore>(*Context.getCur());
   IceOperand *Data = Inst->getData();
   IceOperand *Addr = Inst->getAddr();
   IceVariable *Index = NULL;
@@ -2016,7 +2016,7 @@ IceVariable *IceTargetX8632::legalizeToVar(IceOperand *From, bool AllowOverlap,
 }
 
 IceVariable *IceTargetX8632::makeReg(IceType Type, int32_t RegNum) {
-  IceVariable *Reg = Cfg->makeVariable(Type, Context.Node);
+  IceVariable *Reg = Cfg->makeVariable(Type, Context.getNode());
   if (RegNum == IceVariable::NoRegister)
     Reg->setWeightInfinite();
   else
@@ -2032,7 +2032,7 @@ void IceTargetX8632::postLower() {
   // there was some prior register allocation pass that made register
   // assignments, those registers need to be black-listed here as
   // well.
-  for (IceInstList::iterator I = Context.Cur, E = Context.End; I != E; ++I) {
+  for (IceInstList::iterator I = Context.getCur(), E = Context.getEnd(); I != E; ++I) {
     const IceInst *Inst = *I;
     if (Inst->isDeleted())
       continue;
@@ -2052,7 +2052,7 @@ void IceTargetX8632::postLower() {
   }
   // The second pass colors infinite-weight variables.
   llvm::SmallBitVector AvailableRegisters = WhiteList;
-  for (IceInstList::iterator I = Context.Cur, E = Context.End; I != E; ++I) {
+  for (IceInstList::iterator I = Context.getCur(), E = Context.getEnd(); I != E; ++I) {
     const IceInst *Inst = *I;
     if (Inst->isDeleted())
       continue;

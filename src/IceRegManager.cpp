@@ -71,8 +71,9 @@ IceRegManager::IceRegManager(IceCfg *Cfg, IceCfgNode *Node, uint32_t NumReg)
     : NumReg(NumReg), Cfg(Cfg) {
   // TODO: Config flag to use physical registers directly.
   for (uint32_t i = 0; i < NumReg; ++i) {
-    char Buf[100];
-    sprintf(Buf, "r%u_%u", i + 1, Node->getIndex());
+    const static size_t BufLen = 100;
+    char Buf[BufLen];
+    snprintf(Buf, BufLen, "r%u_%u", i + 1, Node->getIndex());
     IceVariable *Reg = Cfg->makeVariable(IceType_i32, Node, Buf);
     Queue.push_back(IceRegManagerEntry::create(Cfg, Reg, NumReg));
   }

@@ -392,12 +392,13 @@ void IceInst::dumpDecorated(const IceCfg *Cfg) const {
       (isDeleted() || isRedundantAssign()))
     return;
   if (Cfg->getContext()->isVerbose(IceV_InstNumbers)) {
-    char buf[30];
+    const static size_t BufLen = 30;
+    char buf[BufLen];
     int32_t Number = getNumber();
     if (Number < 0)
-      sprintf(buf, "[XXX]");
+      snprintf(buf, BufLen, "[XXX]");
     else
-      sprintf(buf, "[%3d]", Number);
+      snprintf(buf, BufLen, "[%3d]", Number);
     Str << buf;
   }
   Str << "  ";

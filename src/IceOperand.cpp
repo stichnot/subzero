@@ -159,8 +159,9 @@ void IceVariable::setIsArg(IceCfg *Cfg) {
 IceString IceVariable::getName() const {
   if (Name != "")
     return Name;
-  char buf[30];
-  sprintf(buf, "__%u", getIndex());
+  const static size_t BufLen = 30;
+  char buf[BufLen];
+  snprintf(buf, BufLen, "__%u", getIndex());
   return buf;
 }
 

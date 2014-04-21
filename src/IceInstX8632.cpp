@@ -95,8 +95,9 @@ IceInstX8632Label::IceInstX8632Label(IceCfg *Cfg, IceTargetX8632 *Target)
       Number(Target->makeNextLabelNumber()) {}
 
 IceString IceInstX8632Label::getName(const IceCfg *Cfg) const {
-  char buf[30];
-  sprintf(buf, "%u", Number);
+  const static size_t BufLen = 30;
+  char buf[BufLen];
+  snprintf(buf, BufLen, "%u", Number);
   return ".L" + Cfg->getName() + "$__" + buf;
 }
 

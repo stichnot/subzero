@@ -28,8 +28,9 @@ IceCfgNode::IceCfgNode(IceCfg *Cfg, uint32_t LabelNumber, IceString Name)
 IceString IceCfgNode::getName() const {
   if (Name != "")
     return Name;
-  char buf[30];
-  sprintf(buf, "__%u", getIndex());
+  const static size_t BufLen = 30;
+  char buf[BufLen];
+  snprintf(buf, BufLen, "__%u", getIndex());
   return buf;
 }
 
@@ -209,7 +210,7 @@ void IceCfgNode::doAddressOpt() {
   IceTargetLowering *Target = Cfg->getTarget();
   IceLoweringContext &Context = Target->getContext();
   Context.init(this);
-  while (Context.Cur != Context.End) {
+  while (!Context.atEnd()) {
     Target->doAddressOpt();
   }
 }
@@ -221,13 +222,12 @@ void IceCfgNode::genCode() {
   IceLoweringContext &Context = Target->getContext();
   // Lower only the regular instructions.  Defer the Phi instructions.
   Context.init(this);
-  while (Context.Cur != Context.End) {
-    IceInstList::iterator Orig = Context.Cur;
-    (void)Orig; // used only in assert()
-    if (llvm::isa<IceInstRet>(*Context.Cur))
+  while (!Context.atEnd()) {
+    IceInstList::iterator Orig = Context.getCur();
+    if (llvm::isa<IceInstRet>(*Orig))
       setHasReturn();
     Target->lower();
-    assert(Context.Cur != Orig);
+    assert(Context.getCur() != Orig);
   }
 }
 

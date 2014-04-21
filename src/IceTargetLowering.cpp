@@ -24,16 +24,16 @@
 
 void IceLoweringContext::init(IceCfgNode *N) {
   Node = N;
-  Cur = Node->getInsts().begin();
-  End = Node->getInsts().end();
+  Cur = getNode()->getInsts().begin();
+  End = getNode()->getInsts().end();
   skipDeleted(Cur);
   Next = Cur;
   advance(Next);
 }
 
 void IceLoweringContext::insert(IceInst *Inst) {
-  Node->getInsts().insert(Next, Inst);
-  Inst->updateVars(Node);
+  getNode()->getInsts().insert(Next, Inst);
+  Inst->updateVars(getNode());
 }
 
 void IceLoweringContext::skipDeleted(IceInstList::iterator &I) {
@@ -67,9 +67,9 @@ IceTargetLowering *IceTargetLowering::createLowering(IceTargetArch Target,
 }
 
 void IceTargetLowering::doAddressOpt() {
-  if (llvm::isa<IceInstLoad>(*Context.Cur))
+  if (llvm::isa<IceInstLoad>(*Context.getCur()))
     doAddressOptLoad();
-  else if (llvm::isa<IceInstStore>(*Context.Cur))
+  else if (llvm::isa<IceInstStore>(*Context.getCur()))
     doAddressOptStore();
   Context.Cur = Context.Next;
   Context.advanceNext();
@@ -88,8 +88,8 @@ void IceTargetLowering::doAddressOpt() {
 // instruction to process, and it should delete any additional
 // instructions it consumes.
 void IceTargetLowering::lower() {
-  assert(Context.Cur != Context.End);
-  IceInst *Inst = *Context.Cur;
+  assert(!Context.atEnd());
+  IceInst *Inst = *Context.getCur();
   switch (Inst->getKind()) {
   case IceInst::Alloca:
     lowerAlloca(llvm::dyn_cast<IceInstAlloca>(Inst));
