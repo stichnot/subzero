@@ -81,7 +81,7 @@ public:
   // After the CFG is fully constructed, iterate over the nodes and
   // compute the predecessor edges, in the form of
   // CfgNode::InEdges[].
-  void registerEdges();
+  void computePredecessors();
   void renumberInstructions();
   void placePhiLoads();
   void placePhiStores();

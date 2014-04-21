@@ -93,7 +93,7 @@ public:
       convertBasicBlock(BBI);
     }
     Cfg->setEntryNode(mapBasicBlockToNode(&F->getEntryBlock()));
-    Cfg->registerEdges();
+    Cfg->computePredecessors();
 
     return Cfg;
   }

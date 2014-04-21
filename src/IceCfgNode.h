@@ -51,7 +51,7 @@ public:
   void splitEdge(CfgNode *From, CfgNode *To);
   // Add a predecessor edge to the InEdges list for each of this
   // node's successors.
-  void registerEdges();
+  void computePredecessors();
 
   void placePhiLoads();
   void placePhiStores();

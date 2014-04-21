@@ -112,9 +112,9 @@ void IceCfg::translate(IceTargetArch TargetArch) {
   dump();
 }
 
-void IceCfg::registerEdges() {
+void IceCfg::computePredecessors() {
   for (NodeList::iterator I = Nodes.begin(), E = Nodes.end(); I != E; ++I) {
-    (*I)->registerEdges();
+    (*I)->computePredecessors();
   }
 }
 

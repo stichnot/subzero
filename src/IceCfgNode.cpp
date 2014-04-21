@@ -100,9 +100,9 @@ void CfgNode::splitEdge(CfgNode *From, CfgNode *To) {
 
 // When a node is created, the OutEdges are immediately knows, but the
 // InEdges have to be built up incrementally.  After the CFG has been
-// constructed, the registerEdges() pass finalizes it by creating the
+// constructed, the computePredecessors() pass finalizes it by creating the
 // InEdges list.
-void CfgNode::registerEdges() {
+void CfgNode::computePredecessors() {
   OutEdges = (*Insts.rbegin())->getTerminatorEdges();
   for (NodeList::const_iterator I = OutEdges.begin(), E = OutEdges.end();
        I != E; ++I) {
