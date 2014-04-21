@@ -1,4 +1,4 @@
-//===- subzero/src/IceCfgNode.cpp - Basic block (node) implementation -----===//
+//===- subzero/src/CfgNode.cpp - Basic block (node) implementation -----===//
 //
 //                        The Subzero Code Generator
 //
@@ -7,7 +7,7 @@
 //
 //===----------------------------------------------------------------------===//
 //
-// This file implements the IceCfgNode class, including the
+// This file implements the CfgNode class, including the
 // complexities of instruction insertion and in-edge calculation.
 //
 //===----------------------------------------------------------------------===//
@@ -22,12 +22,12 @@
 
 namespace Ice {
 
-IceCfgNode::IceCfgNode(IceCfg *Cfg, uint32_t LabelNumber, IceString Name)
+CfgNode::CfgNode(IceCfg *Cfg, uint32_t LabelNumber, IceString Name)
     : Cfg(Cfg), Number(LabelNumber), Name(Name), HasReturn(false) {}
 
 // Returns the name the node was created with.  If no name was given,
 // it synthesizes a (hopefully) unique name.
-IceString IceCfgNode::getName() const {
+IceString CfgNode::getName() const {
   if (Name != "")
     return Name;
   const static size_t BufLen = 30;
@@ -39,7 +39,7 @@ IceString IceCfgNode::getName() const {
 // Adds an instruction to either the Phi list or the regular
 // instruction list.  Validates that all Phis are added before all
 // regular instructions.
-void IceCfgNode::appendInst(IceInst *Inst) {
+void CfgNode::appendInst(IceInst *Inst) {
   if (IceInstPhi *Phi = llvm::dyn_cast<IceInstPhi>(Inst)) {
     if (!Insts.empty()) {
       Cfg->setError("Phi instruction added to the middle of a block");
@@ -57,7 +57,7 @@ void IceCfgNode::appendInst(IceInst *Inst) {
 // numbers in a block must be monotonically increasing.  The range of
 // instruction numbers in a block, from lowest to highest, must not
 // overlap with the range of any other block.
-void IceCfgNode::renumberInstructions() {
+void CfgNode::renumberInstructions() {
   for (IcePhiList::const_iterator I = Phis.begin(), E = Phis.end(); I != E;
        ++I) {
     (*I)->renumber(Cfg);
@@ -73,7 +73,7 @@ void IceCfgNode::renumberInstructions() {
 // in-edge/out-edge structure without doing anything to the CFG
 // linearization, as this is handled by the calling function
 // IceCfg::splitEdge().
-void IceCfgNode::splitEdge(IceCfgNode *From, IceCfgNode *To) {
+void CfgNode::splitEdge(CfgNode *From, CfgNode *To) {
   // Find the out-edge position.
   IceNodeList::iterator Iout = From->OutEdges.begin();
   IceNodeList::iterator Eout = From->OutEdges.end();
@@ -103,11 +103,11 @@ void IceCfgNode::splitEdge(IceCfgNode *From, IceCfgNode *To) {
 // InEdges have to be built up incrementally.  After the CFG has been
 // constructed, the registerEdges() pass finalizes it by creating the
 // InEdges list.
-void IceCfgNode::registerEdges() {
+void CfgNode::registerEdges() {
   OutEdges = (*Insts.rbegin())->getTerminatorEdges();
   for (IceNodeList::const_iterator I = OutEdges.begin(), E = OutEdges.end();
        I != E; ++I) {
-    IceCfgNode *Node = *I;
+    CfgNode *Node = *I;
     Node->InEdges.push_back(this);
   }
 }
@@ -123,7 +123,7 @@ void IceCfgNode::registerEdges() {
 // This is in preparation for part 2 which deletes the Phi
 // instructions and appends assignment instructions to predecessor
 // blocks.  Note that this transformation preserves SSA form.
-void IceCfgNode::placePhiLoads() {
+void CfgNode::placePhiLoads() {
   for (IcePhiList::iterator I = Phis.begin(), E = Phis.end(); I != E; ++I) {
     IceInst *Inst = (*I)->lower(Cfg, this);
     Insts.insert(Insts.begin(), Inst);
@@ -146,7 +146,7 @@ void IceCfgNode::placePhiLoads() {
 // TODO: Defer this pass until after register allocation, then split
 // critical edges, add the assignments, and lower them.  This should
 // reduce the amount of shuffling at the end of each block.
-void IceCfgNode::placePhiStores() {
+void CfgNode::placePhiStores() {
   // Find the insertion point.  TODO: This insertion-point logic is
   // fragile.  It's too closely linked to the branch/compare fusing
   // code in the target lowering.  And it's wrong if the source
@@ -172,7 +172,7 @@ void IceCfgNode::placePhiStores() {
   // Consider every out-edge.
   for (IceNodeList::const_iterator I1 = OutEdges.begin(), E1 = OutEdges.end();
        I1 != E1; ++I1) {
-    IceCfgNode *Target = *I1;
+    CfgNode *Target = *I1;
     // Consider every Phi instruction at the out-edge.
     for (IcePhiList::const_iterator I2 = Target->Phis.begin(),
                                     E2 = Target->Phis.end();
@@ -198,7 +198,7 @@ void IceCfgNode::placePhiStores() {
 }
 
 // Deletes the phi instructions after the loads and stores are placed.
-void IceCfgNode::deletePhis() {
+void CfgNode::deletePhis() {
   for (IcePhiList::iterator I = Phis.begin(), E = Phis.end(); I != E; ++I) {
     (*I)->setDeleted();
   }
@@ -208,7 +208,7 @@ void IceCfgNode::deletePhis() {
 // IceTargetLowering object.  If it returns a new instruction
 // (representing the optimized address mode), then insert the new
 // instruction and delete the old.
-void IceCfgNode::doAddressOpt() {
+void CfgNode::doAddressOpt() {
   IceTargetLowering *Target = Cfg->getTarget();
   IceLoweringContext &Context = Target->getContext();
   Context.init(this);
@@ -219,7 +219,7 @@ void IceCfgNode::doAddressOpt() {
 
 // Drives the target lowering.  Passes the current instruction and the
 // next non-deleted instruction for target lowering.
-void IceCfgNode::genCode() {
+void CfgNode::genCode() {
   IceTargetLowering *Target = Cfg->getTarget();
   IceLoweringContext &Context = Target->getContext();
   // Lower only the regular instructions.  Defer the Phi instructions.
@@ -237,7 +237,7 @@ void IceCfgNode::genCode() {
 // incoming liveness changed from before, false if it stayed the same.
 // (If it changes, the node's predecessors need to be processed
 // again.)
-bool IceCfgNode::liveness(IceLivenessMode Mode, IceLiveness *Liveness) {
+bool CfgNode::liveness(IceLivenessMode Mode, IceLiveness *Liveness) {
   uint32_t NumVars;
   if (Mode == IceLiveness_LREndLightweight)
     NumVars = Cfg->getNumVariables();
@@ -254,7 +254,7 @@ bool IceCfgNode::liveness(IceLivenessMode Mode, IceLiveness *Liveness) {
     // Initialize Live to be the union of all successors' LiveIn.
     for (IceNodeList::const_iterator I = OutEdges.begin(), E = OutEdges.end();
          I != E; ++I) {
-      IceCfgNode *Succ = *I;
+      CfgNode *Succ = *I;
       Live |= Liveness->getLiveIn(Succ);
       // Mark corresponding argument of phis in successor as live.
       for (IcePhiList::const_iterator I1 = Succ->Phis.begin(),
@@ -332,8 +332,7 @@ bool IceCfgNode::liveness(IceLivenessMode Mode, IceLiveness *Liveness) {
 // assignment to the phi-based temporary is in a different basic
 // block, and there is a single read that ends the live in the basic
 // block that contained the actual phi instruction.
-void IceCfgNode::livenessPostprocess(IceLivenessMode Mode,
-                                     IceLiveness *Liveness) {
+void CfgNode::livenessPostprocess(IceLivenessMode Mode, IceLiveness *Liveness) {
   int32_t FirstInstNum = 0;
   int32_t LastInstNum = 0;
   // Process phis in any order.  Process only Dest operands.
@@ -411,7 +410,7 @@ void IceCfgNode::livenessPostprocess(IceLivenessMode Mode,
 
 // ======================== Dump routines ======================== //
 
-void IceCfgNode::emit(IceCfg *Cfg, uint32_t Option) const {
+void CfgNode::emit(IceCfg *Cfg, uint32_t Option) const {
   Cfg->setCurrentNode(this);
   IceOstream &Str = Cfg->getContext()->StrEmit;
   if (Cfg->getEntryNode() == this) {
@@ -439,7 +438,7 @@ void IceCfgNode::emit(IceCfg *Cfg, uint32_t Option) const {
   }
 }
 
-void IceCfgNode::dump(IceCfg *Cfg) const {
+void CfgNode::dump(IceCfg *Cfg) const {
   Cfg->setCurrentNode(this);
   IceOstream &Str = Cfg->getContext()->StrDump;
   IceLiveness *Liveness = Cfg->getLiveness();

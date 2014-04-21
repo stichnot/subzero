@@ -60,7 +60,7 @@ IceOperandX8632Mem::IceOperandX8632Mem(IceCfg *Cfg, IceType Type,
   }
 }
 
-void IceOperandX8632Mem::setUse(const IceInst *Inst, const IceCfgNode *Node) {
+void IceOperandX8632Mem::setUse(const IceInst *Inst, const CfgNode *Node) {
   if (getBase())
     getBase()->setUse(Inst, Node);
   if (getOffset())
@@ -103,9 +103,8 @@ IceString IceInstX8632Label::getName(const IceCfg *Cfg) const {
   return ".L" + Cfg->getName() + "$__" + buf;
 }
 
-IceInstX8632Br::IceInstX8632Br(IceCfg *Cfg, IceCfgNode *TargetTrue,
-                               IceCfgNode *TargetFalse,
-                               IceInstX8632Label *Label,
+IceInstX8632Br::IceInstX8632Br(IceCfg *Cfg, CfgNode *TargetTrue,
+                               CfgNode *TargetFalse, IceInstX8632Label *Label,
                                IceInstX8632Br::BrCond Condition)
     : IceInstX8632(Cfg, IceInstX8632::Br, 0, NULL), Condition(Condition),
       TargetTrue(TargetTrue), TargetFalse(TargetFalse), Label(Label) {}

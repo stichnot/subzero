@@ -35,7 +35,7 @@
 namespace Ice {
 
 class IceCfg;
-class IceCfgNode;
+class CfgNode;
 class IceConstant;
 class IceGlobalContext;
 class IceInst;
@@ -54,7 +54,7 @@ typedef std::list<IceInst *> IceInstList;
 typedef std::list<IceInstPhi *> IcePhiList;
 typedef std::vector<IceOperand *> IceOpList;
 typedef std::vector<IceVariable *> IceVarList;
-typedef std::vector<IceCfgNode *> IceNodeList;
+typedef std::vector<CfgNode *> IceNodeList;
 
 enum IceLivenessMode {
   // Lightweight version of live-range-end calculation.  Marks the

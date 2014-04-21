@@ -34,13 +34,13 @@ namespace Ice {
 class IceLoweringContext {
 public:
   IceLoweringContext() : Node(NULL) {}
-  void init(IceCfgNode *Node);
+  void init(CfgNode *Node);
   IceInst *getNextInst() const {
     if (Next == End)
       return NULL;
     return *Next;
   }
-  IceCfgNode *getNode() const { return Node; }
+  CfgNode *getNode() const { return Node; }
   bool atEnd() const { return Cur == End; }
   IceInstList::iterator getCur() const { return Cur; }
   IceInstList::iterator getEnd() const { return End; }
@@ -49,7 +49,7 @@ public:
   void advanceNext() { advance(Next); }
 
   // Node is the argument to IceInst::updateVars().
-  IceCfgNode *Node;
+  CfgNode *Node;
   // Cur points to the current instruction being considered.  It is
   // guaranteed to point to a non-deleted instruction, or to be End.
   IceInstList::iterator Cur;
@@ -148,8 +148,8 @@ public:
   getRegisterSetForType(IceType Type) const = 0;
   void regAlloc();
 
-  virtual void addProlog(IceCfgNode *Node) = 0;
-  virtual void addEpilog(IceCfgNode *Node) = 0;
+  virtual void addProlog(CfgNode *Node) = 0;
+  virtual void addEpilog(CfgNode *Node) = 0;
 
   virtual ~IceTargetLowering() {}
 

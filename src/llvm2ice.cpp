@@ -116,7 +116,7 @@ private:
     return mapValueToIceVar(V, convertType(V->getType()));
   }
 
-  Ice::IceCfgNode *mapBasicBlockToNode(const BasicBlock *BB) {
+  Ice::CfgNode *mapBasicBlockToNode(const BasicBlock *BB) {
     if (NodeMap.find(BB) == NodeMap.end()) {
       NodeMap[BB] = Cfg->makeNode(BB->getName());
     }
@@ -345,8 +345,8 @@ private:
       Ice::IceOperand *Src = convertOperand(Inst, 0);
       BasicBlock *BBThen = Inst->getSuccessor(0);
       BasicBlock *BBElse = Inst->getSuccessor(1);
-      Ice::IceCfgNode *NodeThen = mapBasicBlockToNode(BBThen);
-      Ice::IceCfgNode *NodeElse = mapBasicBlockToNode(BBElse);
+      Ice::CfgNode *NodeThen = mapBasicBlockToNode(BBThen);
+      Ice::CfgNode *NodeElse = mapBasicBlockToNode(BBElse);
       return Ice::IceInstBr::create(Cfg, Src, NodeThen, NodeElse);
     } else {
       BasicBlock *BBSucc = Inst->getSuccessor(0);
@@ -500,7 +500,7 @@ private:
 
   Ice::IceInst *convertSwitchInstruction(const SwitchInst *Inst) {
     Ice::IceOperand *Source = convertValue(Inst->getCondition());
-    Ice::IceCfgNode *LabelDefault = mapBasicBlockToNode(Inst->getDefaultDest());
+    Ice::CfgNode *LabelDefault = mapBasicBlockToNode(Inst->getDefaultDest());
     unsigned NumCases = Inst->getNumCases();
     Ice::IceInstSwitch *Switch =
         Ice::IceInstSwitch::create(Cfg, NumCases, Source, LabelDefault);
@@ -508,8 +508,7 @@ private:
     for (SwitchInst::ConstCaseIt I = Inst->case_begin(), E = Inst->case_end();
          I != E; ++I, ++CurrentCase) {
       uint64_t CaseValue = I.getCaseValue()->getZExtValue();
-      Ice::IceCfgNode *CaseSuccessor =
-          mapBasicBlockToNode(I.getCaseSuccessor());
+      Ice::CfgNode *CaseSuccessor = mapBasicBlockToNode(I.getCaseSuccessor());
       Switch->addBranch(CurrentCase, CaseValue, CaseSuccessor);
     }
     return Switch;
@@ -540,8 +539,8 @@ private:
     return Ice::IceInstUnreachable::create(Cfg);
   }
 
-  Ice::IceCfgNode *convertBasicBlock(const BasicBlock *BB) {
-    Ice::IceCfgNode *Node = mapBasicBlockToNode(BB);
+  Ice::CfgNode *convertBasicBlock(const BasicBlock *BB) {
+    Ice::CfgNode *Node = mapBasicBlockToNode(BB);
     for (BasicBlock::const_iterator II = BB->begin(), II_e = BB->end();
          II != II_e; ++II) {
       Ice::IceInst *Inst = convertInstruction(II);
@@ -554,10 +553,10 @@ private:
   // Data
   Ice::IceGlobalContext *Ctx;
   Ice::IceCfg *Cfg;
-  Ice::IceCfgNode *CurrentNode;
+  Ice::CfgNode *CurrentNode;
   Ice::IceType SubzeroPointerType;
   std::map<const Value *, Ice::IceVariable *> VarMap;
-  std::map<const BasicBlock *, Ice::IceCfgNode *> NodeMap;
+  std::map<const BasicBlock *, Ice::CfgNode *> NodeMap;
 };
 
 static cl::list<Ice::IceVerbose> VerboseList(

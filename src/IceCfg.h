@@ -49,20 +49,20 @@ public:
   bool hasError() const { return HasError; }
   IceString getError() const { return ErrorMessage; }
 
-  // Manage nodes (a.k.a. basic blocks, IceCfgNodes).
-  void setEntryNode(IceCfgNode *EntryNode) { Entry = EntryNode; }
-  IceCfgNode *getEntryNode() const { return Entry; }
+  // Manage nodes (a.k.a. basic blocks, CfgNodes).
+  void setEntryNode(CfgNode *EntryNode) { Entry = EntryNode; }
+  CfgNode *getEntryNode() const { return Entry; }
   // Create a node and append it to the end of the linearized list.
-  IceCfgNode *makeNode(const IceString &Name = "");
+  CfgNode *makeNode(const IceString &Name = "");
   uint32_t getNumNodes() const { return Nodes.size(); }
   const IceNodeList &getNodes() const { return Nodes; }
-  IceCfgNode *splitEdge(IceCfgNode *From, IceCfgNode *To);
+  CfgNode *splitEdge(CfgNode *From, CfgNode *To);
 
   // Manage instruction numbering.
   int32_t newInstNumber() { return NextInstNumber++; }
 
   // Manage IceVariables.
-  IceVariable *makeVariable(IceType Type, const IceCfgNode *Node,
+  IceVariable *makeVariable(IceType Type, const CfgNode *Node,
                             const IceString &Name = "");
   uint32_t getNumVariables() const { return Variables.size(); }
   const IceVarList &getVariables() const { return Variables; }
@@ -94,8 +94,8 @@ public:
 
   // Manage the CurrentNode field, which is used for validating the
   // Variable::DefNode field during dumping/emitting.
-  void setCurrentNode(const IceCfgNode *Node) { CurrentNode = Node; }
-  const IceCfgNode *getCurrentNode() const { return CurrentNode; }
+  void setCurrentNode(const CfgNode *Node) { CurrentNode = Node; }
+  const CfgNode *getCurrentNode() const { return CurrentNode; }
 
   void emit(uint32_t Option);
   void dump();
@@ -125,7 +125,7 @@ private:
   bool IsInternal; // internal linkage
   bool HasError;
   IceString ErrorMessage;
-  IceCfgNode *Entry; // entry basic block
+  CfgNode *Entry;    // entry basic block
   IceNodeList Nodes; // linearized node list; Entry should be first
   int32_t NextInstNumber;
   IceVarList Variables;
@@ -135,10 +135,10 @@ private:
 
   // CurrentNode is maintained during dumping/emitting just for
   // validating IceVariable::DefNode.  Normally, a traversal over
-  // IceCfgNodes maintains this, but before global operations like
+  // CfgNodes maintains this, but before global operations like
   // register allocation, setCurrentNode(NULL) should be called to
   // avoid spurious validation failures.
-  const IceCfgNode *CurrentNode;
+  const CfgNode *CurrentNode;
 
   // TODO: This is a hack, and should be moved into a global context
   // guarded with a mutex.  The purpose is to add a header comment at

@@ -69,7 +69,7 @@ bool IceRegManagerEntry::contains(const IceOperand *Operand) const {
   return false;
 }
 
-IceRegManager::IceRegManager(IceCfg *Cfg, IceCfgNode *Node, uint32_t NumReg)
+IceRegManager::IceRegManager(IceCfg *Cfg, CfgNode *Node, uint32_t NumReg)
     : NumReg(NumReg), Cfg(Cfg) {
   // TODO: Config flag to use physical registers directly.
   for (uint32_t i = 0; i < NumReg; ++i) {

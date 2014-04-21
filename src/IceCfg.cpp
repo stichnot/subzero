@@ -42,17 +42,17 @@ void IceCfg::setError(const IceString &Message) {
   Ctx->StrDump << "ICE translation error: " << ErrorMessage << "\n";
 }
 
-IceCfgNode *IceCfg::makeNode(const IceString &Name) {
+CfgNode *IceCfg::makeNode(const IceString &Name) {
   uint32_t LabelIndex = Nodes.size();
-  IceCfgNode *Node = IceCfgNode::create(this, LabelIndex, Name);
+  CfgNode *Node = CfgNode::create(this, LabelIndex, Name);
   Nodes.push_back(Node);
   return Node;
 }
 
-IceCfgNode *IceCfg::splitEdge(IceCfgNode *From, IceCfgNode *To) {
+CfgNode *IceCfg::splitEdge(CfgNode *From, CfgNode *To) {
   // Create the new node.
   IceString NewNodeName = "s__" + From->getName() + "__" + To->getName();
-  IceCfgNode *NewNode = makeNode(NewNodeName);
+  CfgNode *NewNode = makeNode(NewNodeName);
 
   // Decide where "this" should go in the linearization.  The two
   // obvious choices are right after the From node, and right before
@@ -60,7 +60,7 @@ IceCfgNode *IceCfg::splitEdge(IceCfgNode *From, IceCfgNode *To) {
   assert(NewNode == Nodes.back());
   Nodes.pop_back();
   for (IceNodeList::iterator I = Nodes.begin(), E = Nodes.end(); I != E; ++I) {
-    IceCfgNode *Node = *I;
+    CfgNode *Node = *I;
     if (Node == To) {
       Nodes.insert(I, NewNode);
       break;
@@ -74,7 +74,7 @@ IceCfgNode *IceCfg::splitEdge(IceCfgNode *From, IceCfgNode *To) {
 
 // Create a new IceVariable with a particular type and an optional
 // name.  The Node argument is the node where the variable is defined.
-IceVariable *IceCfg::makeVariable(IceType Type, const IceCfgNode *Node,
+IceVariable *IceCfg::makeVariable(IceType Type, const CfgNode *Node,
                                   const IceString &Name) {
   uint32_t Index = Variables.size();
   Variables.push_back(IceVariable::create(this, Type, Node, Index, Name));
@@ -168,7 +168,7 @@ void IceCfg::genFrame() {
   // emission/assembly pass to avoid an extra iteration over the node
   // list.  Or keep a separate list of exit nodes.
   for (IceNodeList::iterator I = Nodes.begin(), E = Nodes.end(); I != E; ++I) {
-    IceCfgNode *Node = *I;
+    CfgNode *Node = *I;
     if (Node->getHasReturn())
       getTarget()->addEpilog(Node);
   }
@@ -196,7 +196,7 @@ void IceCfg::liveness(IceLivenessMode Mode) {
     // Iterate in reverse topological order to speed up convergence.
     for (IceNodeList::reverse_iterator I = Nodes.rbegin(), E = Nodes.rend();
          I != E; ++I) {
-      IceCfgNode *Node = *I;
+      CfgNode *Node = *I;
       if (NeedToProcess[Node->getIndex()]) {
         NeedToProcess[Node->getIndex()] = false;
         bool Changed = Node->liveness(Mode, getLiveness());
@@ -207,7 +207,7 @@ void IceCfg::liveness(IceLivenessMode Mode) {
           for (IceNodeList::const_iterator I1 = InEdges.begin(),
                                            E1 = InEdges.end();
                I1 != E1; ++I1) {
-            IceCfgNode *Pred = *I1;
+            CfgNode *Pred = *I1;
             NeedToProcess[Pred->getIndex()] = true;
           }
         }
@@ -275,7 +275,7 @@ bool IceCfg::validateLiveness() const {
   bool Valid = true;
   for (IceNodeList::const_iterator I1 = Nodes.begin(), E1 = Nodes.end();
        I1 != E1; ++I1) {
-    IceCfgNode *Node = *I1;
+    CfgNode *Node = *I1;
     IceInstList &Insts = Node->getInsts();
     for (IceInstList::const_iterator I2 = Insts.begin(), E2 = Insts.end();
          I2 != E2; ++I2) {

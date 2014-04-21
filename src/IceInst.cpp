@@ -67,7 +67,7 @@ bool IceInst::isLastUse(const IceOperand *TestSrc) const {
   return false;
 }
 
-void IceInst::updateVars(IceCfgNode *Node) {
+void IceInst::updateVars(CfgNode *Node) {
   if (Dest)
     Dest->setDefinition(this, Node);
   for (uint32_t I = 0; I < getSrcSize(); ++I) {
@@ -77,7 +77,7 @@ void IceInst::updateVars(IceCfgNode *Node) {
 
 void IceInst::liveness(IceLivenessMode Mode, int32_t InstNumber,
                        llvm::BitVector &Live, IceLiveness *Liveness,
-                       const IceCfgNode *Node) {
+                       const CfgNode *Node) {
   if (isDeleted())
     return;
   if (llvm::isa<IceInstFakeKill>(this))
@@ -195,8 +195,8 @@ IceInstAssign::IceInstAssign(IceCfg *Cfg, IceVariable *Dest, IceOperand *Source)
 // If TargetTrue==TargetFalse, we turn it into an unconditional
 // branch.  This ensures that, along with the 'switch' instruction
 // semantics, there is at most one edge from one node to another.
-IceInstBr::IceInstBr(IceCfg *Cfg, IceOperand *Source, IceCfgNode *TargetTrue,
-                     IceCfgNode *TargetFalse)
+IceInstBr::IceInstBr(IceCfg *Cfg, IceOperand *Source, CfgNode *TargetTrue,
+                     CfgNode *TargetFalse)
     : IceInst(Cfg, IceInst::Br, 1, NULL), TargetFalse(TargetFalse),
       TargetTrue(TargetTrue) {
   if (TargetTrue == TargetFalse) {
@@ -206,7 +206,7 @@ IceInstBr::IceInstBr(IceCfg *Cfg, IceOperand *Source, IceCfgNode *TargetTrue,
   }
 }
 
-IceInstBr::IceInstBr(IceCfg *Cfg, IceCfgNode *Target)
+IceInstBr::IceInstBr(IceCfg *Cfg, CfgNode *Target)
     : IceInst(Cfg, IceInst::Br, 0, NULL), TargetFalse(Target),
       TargetTrue(NULL) {}
 
@@ -245,14 +245,14 @@ IceInstLoad::IceInstLoad(IceCfg *Cfg, IceVariable *Dest, IceOperand *SourceAddr)
 
 IceInstPhi::IceInstPhi(IceCfg *Cfg, uint32_t MaxSrcs, IceVariable *Dest)
     : IceInst(Cfg, Phi, MaxSrcs, Dest) {
-  Labels = Cfg->allocateArrayOf<IceCfgNode *>(MaxSrcs);
+  Labels = Cfg->allocateArrayOf<CfgNode *>(MaxSrcs);
 }
 
 // TODO: A Switch instruction (and maybe others) can add duplicate
 // edges.  We may want to de-dup Phis and validate consistency (i.e.,
 // the source operands are the same for duplicate edges), though it
 // seems the current lowering code is OK with this situation.
-void IceInstPhi::addArgument(IceOperand *Source, IceCfgNode *Label) {
+void IceInstPhi::addArgument(IceOperand *Source, CfgNode *Label) {
   Labels[getSrcSize()] = Label;
   addSource(Source);
 }
@@ -260,7 +260,7 @@ void IceInstPhi::addArgument(IceOperand *Source, IceCfgNode *Label) {
 // Find the source operand corresponding to the incoming edge for the
 // given node.  TODO: This uses a linear-time search, which could be
 // improved if it becomes a problem.
-IceOperand *IceInstPhi::getOperandForTarget(IceCfgNode *Target) const {
+IceOperand *IceInstPhi::getOperandForTarget(CfgNode *Target) const {
   for (uint32_t I = 0; I < getSrcSize(); ++I) {
     if (Labels[I] == Target)
       return getSrc(I);
@@ -272,7 +272,7 @@ IceOperand *IceInstPhi::getOperandForTarget(IceCfgNode *Target) const {
 // Updates liveness for a particular operand based on the given
 // predecessor edge.  Doesn't mark the operand as live if the Phi
 // instruction is dead or deleted.
-void IceInstPhi::livenessPhiOperand(llvm::BitVector &Live, IceCfgNode *Target,
+void IceInstPhi::livenessPhiOperand(llvm::BitVector &Live, CfgNode *Target,
                                     IceLiveness *Liveness) {
   if (isDeleted() || Dead)
     return;
@@ -293,7 +293,7 @@ void IceInstPhi::livenessPhiOperand(llvm::BitVector &Live, IceCfgNode *Target,
 
 // Change "a=phi(...)" to "a_phi=phi(...)" and return a new
 // instruction "a=a_phi".
-IceInst *IceInstPhi::lower(IceCfg *Cfg, IceCfgNode *Node) {
+IceInst *IceInstPhi::lower(IceCfg *Cfg, CfgNode *Node) {
   IceVariable *Dest = getDest();
   assert(Dest);
   IceString PhiName = Dest->getName() + "_phi";
@@ -331,12 +331,12 @@ IceInstStore::IceInstStore(IceCfg *Cfg, IceOperand *Data, IceOperand *Addr)
 }
 
 IceInstSwitch::IceInstSwitch(IceCfg *Cfg, uint32_t NumCases, IceOperand *Source,
-                             IceCfgNode *LabelDefault)
+                             CfgNode *LabelDefault)
     : IceInst(Cfg, IceInst::Switch, 1, NULL), LabelDefault(LabelDefault),
       NumCases(NumCases) {
   addSource(Source);
   Values = Cfg->allocateArrayOf<uint64_t>(NumCases);
-  Labels = Cfg->allocateArrayOf<IceCfgNode *>(NumCases);
+  Labels = Cfg->allocateArrayOf<CfgNode *>(NumCases);
   // Initialize in case buggy code doesn't set all entries
   for (uint32_t I = 0; I < NumCases; ++I) {
     Values[I] = 0;
@@ -345,7 +345,7 @@ IceInstSwitch::IceInstSwitch(IceCfg *Cfg, uint32_t NumCases, IceOperand *Source,
 }
 
 void IceInstSwitch::addBranch(uint32_t CaseIndex, uint64_t Value,
-                              IceCfgNode *Label) {
+                              CfgNode *Label) {
   assert(CaseIndex < NumCases);
   Values[CaseIndex] = Value;
   Labels[CaseIndex] = Label;

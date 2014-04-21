@@ -94,7 +94,7 @@ class IceRegManager {
 public:
   typedef std::vector<IceRegManagerEntry *> QueueType;
   // Initialize a brand new register manager.
-  static IceRegManager *create(IceCfg *Cfg, IceCfgNode *Node, uint32_t NumReg) {
+  static IceRegManager *create(IceCfg *Cfg, CfgNode *Node, uint32_t NumReg) {
     return new IceRegManager(Cfg, Node, NumReg);
   }
   // Capture the predecessor's end-of-block state for an extended
@@ -112,7 +112,7 @@ public:
   void dump(const IceCfg *Cfg) const;
 
 private:
-  IceRegManager(IceCfg *Cfg, IceCfgNode *Node, uint32_t NumReg);
+  IceRegManager(IceCfg *Cfg, CfgNode *Node, uint32_t NumReg);
   IceRegManager(const IceRegManager &Other);
   const uint32_t NumReg;
   // The LRU register queue.  The front element is the least recently

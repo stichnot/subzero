@@ -55,22 +55,22 @@ public:
   IceLiveness(IceCfg *Cfg, IceLivenessMode Mode)
       : Cfg(Cfg), Mode(Mode), NumGlobals(0) {}
   void init();
-  IceVariable *getVariable(uint32_t LiveIndex, const IceCfgNode *Node) const;
+  IceVariable *getVariable(uint32_t LiveIndex, const CfgNode *Node) const;
   uint32_t getLiveIndex(const IceVariable *Var) const;
   uint32_t getGlobalSize() const { return NumGlobals; }
-  uint32_t getLocalSize(const IceCfgNode *Node) const {
+  uint32_t getLocalSize(const CfgNode *Node) const {
     return NumGlobals + Nodes[Node->getIndex()].NumLocals;
   }
-  llvm::BitVector &getLiveIn(const IceCfgNode *Node) {
+  llvm::BitVector &getLiveIn(const CfgNode *Node) {
     return Nodes[Node->getIndex()].LiveIn;
   }
-  llvm::BitVector &getLiveOut(const IceCfgNode *Node) {
+  llvm::BitVector &getLiveOut(const CfgNode *Node) {
     return Nodes[Node->getIndex()].LiveOut;
   }
-  std::vector<int> &getLiveBegin(const IceCfgNode *Node) {
+  std::vector<int> &getLiveBegin(const CfgNode *Node) {
     return Nodes[Node->getIndex()].LiveBegin;
   }
-  std::vector<int> &getLiveEnd(const IceCfgNode *Node) {
+  std::vector<int> &getLiveEnd(const CfgNode *Node) {
     return Nodes[Node->getIndex()].LiveEnd;
   }
   IceLiveRange &getLiveRange(IceVariable *Var);

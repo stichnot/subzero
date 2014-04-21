@@ -24,7 +24,7 @@
 
 namespace Ice {
 
-void IceLoweringContext::init(IceCfgNode *N) {
+void IceLoweringContext::init(CfgNode *N) {
   Node = N;
   Cur = getNode()->getInsts().begin();
   End = getNode()->getInsts().end();

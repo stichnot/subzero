@@ -54,7 +54,7 @@ public:
   IceConstant *getOffset() const { return Offset; }
   IceVariable *getIndex() const { return Index; }
   uint32_t getShift() const { return Shift; }
-  virtual void setUse(const IceInst *Inst, const IceCfgNode *Node);
+  virtual void setUse(const IceInst *Inst, const CfgNode *Node);
   virtual void emit(const IceCfg *Cfg, uint32_t Option) const;
   virtual void dump(const IceCfg *Cfg) const;
 
@@ -233,16 +233,16 @@ public:
     Br_p,
     Br_None
   };
-  static IceInstX8632Br *create(IceCfg *Cfg, IceCfgNode *TargetTrue,
-                                IceCfgNode *TargetFalse, BrCond Condition) {
+  static IceInstX8632Br *create(IceCfg *Cfg, CfgNode *TargetTrue,
+                                CfgNode *TargetFalse, BrCond Condition) {
     return new (Cfg->allocate<IceInstX8632Br>())
         IceInstX8632Br(Cfg, TargetTrue, TargetFalse, NULL, Condition);
   }
-  static IceInstX8632Br *create(IceCfg *Cfg, IceCfgNode *Target) {
+  static IceInstX8632Br *create(IceCfg *Cfg, CfgNode *Target) {
     return new (Cfg->allocate<IceInstX8632Br>())
         IceInstX8632Br(Cfg, NULL, Target, NULL, Br_None);
   }
-  static IceInstX8632Br *create(IceCfg *Cfg, IceCfgNode *Target,
+  static IceInstX8632Br *create(IceCfg *Cfg, CfgNode *Target,
                                 BrCond Condition) {
     return new (Cfg->allocate<IceInstX8632Br>())
         IceInstX8632Br(Cfg, Target, NULL, NULL, Condition);
@@ -252,20 +252,20 @@ public:
     return new (Cfg->allocate<IceInstX8632Br>())
         IceInstX8632Br(Cfg, NULL, NULL, Label, Condition);
   }
-  IceCfgNode *getTargetTrue() const { return TargetTrue; }
-  IceCfgNode *getTargetFalse() const { return TargetFalse; }
+  CfgNode *getTargetTrue() const { return TargetTrue; }
+  CfgNode *getTargetFalse() const { return TargetFalse; }
   virtual void emit(const IceCfg *Cfg, uint32_t Option) const;
   virtual void dump(const IceCfg *Cfg) const;
   static bool classof(const IceInst *Inst) { return isClassof(Inst, Br); }
 
 private:
-  IceInstX8632Br(IceCfg *Cfg, IceCfgNode *TargetTrue, IceCfgNode *TargetFalse,
+  IceInstX8632Br(IceCfg *Cfg, CfgNode *TargetTrue, CfgNode *TargetFalse,
                  IceInstX8632Label *Label, BrCond Condition);
   IceInstX8632Br(const IceInstX8632Br &) LLVM_DELETED_FUNCTION;
   IceInstX8632Br &operator=(const IceInstX8632Br &) LLVM_DELETED_FUNCTION;
   BrCond Condition;
-  IceCfgNode *TargetTrue;
-  IceCfgNode *TargetFalse;
+  CfgNode *TargetTrue;
+  CfgNode *TargetFalse;
   IceInstX8632Label *Label; // Intra-block branch target
 };
 

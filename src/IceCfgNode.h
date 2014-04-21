@@ -1,4 +1,4 @@
-//===- subzero/src/IceCfgNode.h - Control flow graph node -------*- C++ -*-===//
+//===- subzero/src/CfgNode.h - Control flow graph node -------*- C++ -*-===//
 //
 //                        The Subzero Code Generator
 //
@@ -7,7 +7,7 @@
 //
 //===----------------------------------------------------------------------===//
 //
-// This file declares the IceCfgNode class, which represents a single
+// This file declares the CfgNode class, which represents a single
 // basic block as its instruction list, in-edge list, and out-edge
 // list.
 //
@@ -20,11 +20,11 @@
 
 namespace Ice {
 
-class IceCfgNode {
+class CfgNode {
 public:
-  static IceCfgNode *create(IceCfg *Cfg, uint32_t LabelIndex,
-                            IceString Name = "") {
-    return new (Cfg->allocate<IceCfgNode>()) IceCfgNode(Cfg, LabelIndex, Name);
+  static CfgNode *create(IceCfg *Cfg, uint32_t LabelIndex,
+                         IceString Name = "") {
+    return new (Cfg->allocate<CfgNode>()) CfgNode(Cfg, LabelIndex, Name);
   }
 
   // Access the label number and name for this node.
@@ -48,7 +48,7 @@ public:
   void appendInst(IceInst *Inst);
   void renumberInstructions();
 
-  void splitEdge(IceCfgNode *From, IceCfgNode *To);
+  void splitEdge(CfgNode *From, CfgNode *To);
   // Add a predecessor edge to the InEdges list for each of this
   // node's successors.
   void registerEdges();
@@ -64,9 +64,9 @@ public:
   void dump(IceCfg *Cfg) const;
 
 private:
-  IceCfgNode(IceCfg *Cfg, uint32_t LabelIndex, IceString Name);
-  IceCfgNode(const IceCfgNode &) LLVM_DELETED_FUNCTION;
-  IceCfgNode &operator=(const IceCfgNode &) LLVM_DELETED_FUNCTION;
+  CfgNode(IceCfg *Cfg, uint32_t LabelIndex, IceString Name);
+  CfgNode(const CfgNode &) LLVM_DELETED_FUNCTION;
+  CfgNode &operator=(const CfgNode &) LLVM_DELETED_FUNCTION;
   IceCfg *const Cfg;
   const uint32_t Number; // label index
   IceString Name;        // for dumping only

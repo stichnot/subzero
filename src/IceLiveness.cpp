@@ -9,7 +9,7 @@
 //
 // This file provides some of the support for the IceLiveness class.
 // In particular, it handles the sparsity representation of the
-// mapping between IceVariables and IceCfgNodes.  The idea is that
+// mapping between IceVariables and CfgNodes.  The idea is that
 // since most variables are used only within a single basic block, we
 // can partition the variables into "local" and "global" sets.
 // Instead of sizing and indexing vectors according to
@@ -92,7 +92,7 @@ void IceLiveness::init() {
 }
 
 IceVariable *IceLiveness::getVariable(uint32_t LiveIndex,
-                                      const IceCfgNode *Node) const {
+                                      const CfgNode *Node) const {
   if (LiveIndex < NumGlobals)
     return LiveToVarMap[LiveIndex];
   uint32_t NodeIndex = Node->getIndex();

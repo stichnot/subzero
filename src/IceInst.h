@@ -80,10 +80,10 @@ public:
   // instruction.  In particular, it marks where the Dest variable is
   // first assigned, and it tracks whether variables are live across
   // basic blocks, i.e. used in a different block from their definition.
-  void updateVars(IceCfgNode *Node);
+  void updateVars(CfgNode *Node);
 
   void liveness(IceLivenessMode Mode, int32_t InstNumber, llvm::BitVector &Live,
-                IceLiveness *Liveness, const IceCfgNode *Node);
+                IceLiveness *Liveness, const CfgNode *Node);
   virtual void emit(const IceCfg *Cfg, uint32_t Option) const;
   virtual void dump(const IceCfg *Cfg) const;
   virtual void dumpExtras(const IceCfg *Cfg) const;
@@ -229,18 +229,18 @@ class IceInstBr : public IceInst {
 public:
   // Create a conditional branch.  If TargetTrue==TargetFalse, it is
   // optimized to an unconditional branch.
-  static IceInstBr *create(IceCfg *Cfg, IceOperand *Source,
-                           IceCfgNode *TargetTrue, IceCfgNode *TargetFalse) {
+  static IceInstBr *create(IceCfg *Cfg, IceOperand *Source, CfgNode *TargetTrue,
+                           CfgNode *TargetFalse) {
     return new (Cfg->allocateInst<IceInstBr>())
         IceInstBr(Cfg, Source, TargetTrue, TargetFalse);
   }
-  static IceInstBr *create(IceCfg *Cfg, IceCfgNode *Target) {
+  static IceInstBr *create(IceCfg *Cfg, CfgNode *Target) {
     return new (Cfg->allocateInst<IceInstBr>()) IceInstBr(Cfg, Target);
   }
   bool isUnconditional() const { return getTargetTrue() == NULL; }
-  IceCfgNode *getTargetTrue() const { return TargetTrue; }
-  IceCfgNode *getTargetFalse() const { return TargetFalse; }
-  IceCfgNode *getTargetUnconditional() const {
+  CfgNode *getTargetTrue() const { return TargetTrue; }
+  CfgNode *getTargetFalse() const { return TargetFalse; }
+  CfgNode *getTargetUnconditional() const {
     assert(isUnconditional());
     return getTargetFalse();
   }
@@ -250,15 +250,15 @@ public:
 
 private:
   // Conditional branch
-  IceInstBr(IceCfg *Cfg, IceOperand *Source, IceCfgNode *TargetTrue,
-            IceCfgNode *TargetFalse);
+  IceInstBr(IceCfg *Cfg, IceOperand *Source, CfgNode *TargetTrue,
+            CfgNode *TargetFalse);
   // Unconditional branch
-  IceInstBr(IceCfg *Cfg, IceCfgNode *Target);
+  IceInstBr(IceCfg *Cfg, CfgNode *Target);
   IceInstBr(const IceInstBr &) LLVM_DELETED_FUNCTION;
   IceInstBr &operator=(const IceInstBr &) LLVM_DELETED_FUNCTION;
 
-  IceCfgNode *const TargetFalse; // Doubles as unconditional branch target
-  IceCfgNode *const TargetTrue;  // NULL if unconditional branch
+  CfgNode *const TargetFalse; // Doubles as unconditional branch target
+  CfgNode *const TargetTrue;  // NULL if unconditional branch
 };
 
 // Call instruction.  The call target is captured as getSrc(0), and
@@ -430,11 +430,11 @@ public:
   static IceInstPhi *create(IceCfg *Cfg, uint32_t MaxSrcs, IceVariable *Dest) {
     return new (Cfg->allocateInst<IceInstPhi>()) IceInstPhi(Cfg, MaxSrcs, Dest);
   }
-  void addArgument(IceOperand *Source, IceCfgNode *Label);
-  IceOperand *getOperandForTarget(IceCfgNode *Target) const;
-  void livenessPhiOperand(llvm::BitVector &Live, IceCfgNode *Target,
+  void addArgument(IceOperand *Source, CfgNode *Label);
+  IceOperand *getOperandForTarget(CfgNode *Target) const;
+  void livenessPhiOperand(llvm::BitVector &Live, CfgNode *Target,
                           IceLiveness *Liveness);
-  IceInst *lower(IceCfg *Cfg, IceCfgNode *Node);
+  IceInst *lower(IceCfg *Cfg, CfgNode *Node);
   virtual void dump(const IceCfg *Cfg) const;
   static bool classof(const IceInst *Inst) { return Inst->getKind() == Phi; }
 
@@ -443,9 +443,9 @@ private:
   IceInstPhi(const IceInstPhi &) LLVM_DELETED_FUNCTION;
   IceInstPhi &operator=(const IceInstPhi &) LLVM_DELETED_FUNCTION;
   // Labels[] duplicates the InEdges[] information in the enclosing
-  // IceCfgNode, but the Phi instruction is created before InEdges[]
+  // CfgNode, but the Phi instruction is created before InEdges[]
   // is available, so it's more complicated to share the list.
-  IceCfgNode **Labels;
+  CfgNode **Labels;
 };
 
 // Ret instruction.  The return value is captured in getSrc(0), but if
@@ -512,34 +512,34 @@ private:
 class IceInstSwitch : public IceInst {
 public:
   static IceInstSwitch *create(IceCfg *Cfg, uint32_t NumCases,
-                               IceOperand *Source, IceCfgNode *LabelDefault) {
+                               IceOperand *Source, CfgNode *LabelDefault) {
     return new (Cfg->allocateInst<IceInstSwitch>())
         IceInstSwitch(Cfg, NumCases, Source, LabelDefault);
   }
-  IceCfgNode *getLabelDefault() const { return LabelDefault; }
+  CfgNode *getLabelDefault() const { return LabelDefault; }
   uint32_t getNumCases() const { return NumCases; }
   uint64_t getValue(uint32_t I) const {
     assert(I < NumCases);
     return Values[I];
   }
-  IceCfgNode *getLabel(uint32_t I) const {
+  CfgNode *getLabel(uint32_t I) const {
     assert(I < NumCases);
     return Labels[I];
   }
-  void addBranch(uint32_t CaseIndex, uint64_t Value, IceCfgNode *Label);
+  void addBranch(uint32_t CaseIndex, uint64_t Value, CfgNode *Label);
   virtual IceNodeList getTerminatorEdges() const;
   virtual void dump(const IceCfg *Cfg) const;
   static bool classof(const IceInst *Inst) { return Inst->getKind() == Switch; }
 
 private:
   IceInstSwitch(IceCfg *Cfg, uint32_t NumCases, IceOperand *Source,
-                IceCfgNode *LabelDefault);
+                CfgNode *LabelDefault);
   IceInstSwitch(const IceInstSwitch &) LLVM_DELETED_FUNCTION;
   IceInstSwitch &operator=(const IceInstSwitch &) LLVM_DELETED_FUNCTION;
-  IceCfgNode *LabelDefault;
-  uint32_t NumCases;   // not including the default case
-  uint64_t *Values;    // size is NumCases
-  IceCfgNode **Labels; // size is NumCases
+  CfgNode *LabelDefault;
+  uint32_t NumCases; // not including the default case
+  uint64_t *Values;  // size is NumCases
+  CfgNode **Labels;  // size is NumCases
 };
 
 // Unreachable instruction.  This is a terminator instruction with no

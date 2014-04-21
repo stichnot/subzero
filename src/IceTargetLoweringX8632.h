@@ -44,8 +44,8 @@ public:
   virtual size_t typeWidthInBytesOnStack(IceType Type) {
     return (iceTypeWidthInBytes(Type) + 3) & ~3;
   }
-  virtual void addProlog(IceCfgNode *Node);
-  virtual void addEpilog(IceCfgNode *Node);
+  virtual void addProlog(CfgNode *Node);
+  virtual void addEpilog(CfgNode *Node);
   uint32_t makeNextLabelNumber() { return NextLabelNumber++; }
   // Ensure that a 64-bit IceVariable has been split into 2 32-bit
   // IceVariables, creating them if necessary.  This is needed for all
@@ -142,15 +142,15 @@ protected:
   void _and(IceVariable *Dest, IceOperand *Src0) {
     Context.insert(IceInstX8632And::create(Cfg, Dest, Src0));
   }
-  void _br(IceInstX8632Br::BrCond Condition, IceCfgNode *TargetTrue,
-           IceCfgNode *TargetFalse) {
+  void _br(IceInstX8632Br::BrCond Condition, CfgNode *TargetTrue,
+           CfgNode *TargetFalse) {
     Context.insert(
         IceInstX8632Br::create(Cfg, TargetTrue, TargetFalse, Condition));
   }
-  void _br(IceCfgNode *Target) {
+  void _br(CfgNode *Target) {
     Context.insert(IceInstX8632Br::create(Cfg, Target));
   }
-  void _br(IceInstX8632Br::BrCond Condition, IceCfgNode *Target) {
+  void _br(IceInstX8632Br::BrCond Condition, CfgNode *Target) {
     Context.insert(IceInstX8632Br::create(Cfg, Target, Condition));
   }
   void _br(IceInstX8632Br::BrCond Condition, IceInstX8632Label *Label) {

@@ -127,14 +127,14 @@ bool IceLiveRange::containsValue(int32_t Value) const {
   return false;
 }
 
-void IceVariable::setUse(const IceInst *Inst, const IceCfgNode *Node) {
+void IceVariable::setUse(const IceInst *Inst, const CfgNode *Node) {
   if (DefNode == NULL)
     return;
   if (llvm::isa<IceInstPhi>(Inst) || Node != DefNode)
     DefNode = NULL;
 }
 
-void IceVariable::setDefinition(IceInst *Inst, const IceCfgNode *Node) {
+void IceVariable::setDefinition(IceInst *Inst, const CfgNode *Node) {
   if (DefNode == NULL)
     return;
   // Can first check preexisting DefInst if we care about multi-def vars.
@@ -143,7 +143,7 @@ void IceVariable::setDefinition(IceInst *Inst, const IceCfgNode *Node) {
     DefNode = NULL;
 }
 
-void IceVariable::replaceDefinition(IceInst *Inst, const IceCfgNode *Node) {
+void IceVariable::replaceDefinition(IceInst *Inst, const CfgNode *Node) {
   DefInst = NULL;
   setDefinition(Inst, Node);
 }
@@ -152,7 +152,7 @@ void IceVariable::setIsArg(IceCfg *Cfg) {
   IsArgument = true;
   if (DefNode == NULL)
     return;
-  IceCfgNode *Entry = Cfg->getEntryNode();
+  CfgNode *Entry = Cfg->getEntryNode();
   if (DefNode == Entry)
     return;
   DefNode = NULL;
@@ -214,7 +214,7 @@ void IceVariable::emit(const IceCfg *Cfg, uint32_t Option) const {
 
 void IceVariable::dump(const IceCfg *Cfg) const {
   IceOstream &Str = Cfg->getContext()->StrDump;
-  const IceCfgNode *CurrentNode = Cfg->getCurrentNode();
+  const CfgNode *CurrentNode = Cfg->getCurrentNode();
   (void)CurrentNode; // used only in assert()
   assert(CurrentNode == NULL || DefNode == NULL || DefNode == CurrentNode);
   if (Cfg->getContext()->isVerbose(IceV_RegOrigins) ||

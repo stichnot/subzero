@@ -191,7 +191,7 @@ IceVariable *IceTargetX8632::getPhysicalRegister(uint32_t RegNum) {
   assert(RegNum < PhysicalRegisters.size());
   IceVariable *Reg = PhysicalRegisters[RegNum];
   if (Reg == NULL) {
-    IceCfgNode *Node = NULL; // NULL means multi-block lifetime
+    CfgNode *Node = NULL; // NULL means multi-block lifetime
     Reg = Cfg->makeVariable(IceType_i32, Node);
     Reg->setRegNum(RegNum);
     PhysicalRegisters[RegNum] = Reg;
@@ -249,7 +249,7 @@ void IceTargetX8632::setArgOffsetAndCopy(IceVariable *Arg,
   InArgsSizeBytes += typeWidthInBytesOnStack(Type);
 }
 
-void IceTargetX8632::addProlog(IceCfgNode *Node) {
+void IceTargetX8632::addProlog(CfgNode *Node) {
   // If SimpleCoalescing is false, each variable without a register
   // gets its own unique stack slot, which leads to large stack
   // frames.  If SimpleCoalescing is true, then each "global" variable
@@ -426,7 +426,7 @@ void IceTargetX8632::addProlog(IceCfgNode *Node) {
   }
 }
 
-void IceTargetX8632::addEpilog(IceCfgNode *Node) {
+void IceTargetX8632::addEpilog(CfgNode *Node) {
   IceInstList &Insts = Node->getInsts();
   IceInstList::reverse_iterator RI, E;
   for (RI = Insts.rbegin(), E = Insts.rend(); RI != E; ++RI) {

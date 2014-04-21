@@ -49,7 +49,7 @@ public:
     assert(I < getNumVars());
     return Vars[I];
   }
-  virtual void setUse(const IceInst *Inst, const IceCfgNode *Node) {}
+  virtual void setUse(const IceInst *Inst, const CfgNode *Node) {}
   virtual void emit(const IceCfg *Cfg, uint32_t Option) const = 0;
   virtual void dump(const IceCfg *Cfg) const = 0;
 
@@ -267,7 +267,7 @@ IceOstream &operator<<(IceOstream &Str, const IceLiveRange &L);
 // have a non-negative RegNum field.
 class IceVariable : public IceOperand {
 public:
-  static IceVariable *create(IceCfg *Cfg, IceType Type, const IceCfgNode *Node,
+  static IceVariable *create(IceCfg *Cfg, IceType Type, const CfgNode *Node,
                              uint32_t Index, const IceString &Name) {
     return new (Cfg->allocate<IceVariable>())
         IceVariable(Type, Node, Index, Name);
@@ -277,12 +277,12 @@ public:
   IceString getName() const;
 
   IceInst *getDefinition() const { return DefInst; }
-  void setDefinition(IceInst *Inst, const IceCfgNode *Node);
-  void replaceDefinition(IceInst *Inst, const IceCfgNode *Node);
+  void setDefinition(IceInst *Inst, const CfgNode *Node);
+  void replaceDefinition(IceInst *Inst, const CfgNode *Node);
 
-  const IceCfgNode *getLocalUseNode() const { return DefNode; }
+  const CfgNode *getLocalUseNode() const { return DefNode; }
   bool isMultiblockLife() const { return (DefNode == NULL); }
-  void setUse(const IceInst *Inst, const IceCfgNode *Node);
+  void setUse(const IceInst *Inst, const CfgNode *Node);
 
   bool getIsArg() const { return IsArgument; }
   void setIsArg(IceCfg *Cfg);
@@ -347,7 +347,7 @@ public:
   }
 
 private:
-  IceVariable(IceType Type, const IceCfgNode *Node, uint32_t Index,
+  IceVariable(IceType Type, const CfgNode *Node, uint32_t Index,
               const IceString &Name)
       : IceOperand(Variable, Type), Number(Index), Name(Name), DefInst(NULL),
         DefNode(Node), IsArgument(false), StackOffset(0), RegNum(NoRegister),
@@ -370,7 +370,7 @@ private:
   // DefNode is the node where this variable was produced, and is
   // reset to NULL if it is used outside that node.  This is used for
   // detecting isMultiblockLife().
-  const IceCfgNode *DefNode;
+  const CfgNode *DefNode;
   bool IsArgument;
   // StackOffset is the canonical location on stack (only if
   // RegNum<0 || IsArgument).
