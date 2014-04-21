@@ -358,7 +358,7 @@ void TargetX8632::addProlog(CfgNode *Node) {
   // TODO: Make this right for different width args, calling
   // conventions, etc.  For one thing, args passed in registers will
   // need to be copied/shuffled to their home registers (the
-  // IceRegManager code may have some permutation logic to leverage),
+  // RegManager code may have some permutation logic to leverage),
   // and if they have no home register, home space will need to be
   // allocated on the stack to copy into.
   Variable *FramePtr = getPhysicalRegister(getFrameOrStackReg());

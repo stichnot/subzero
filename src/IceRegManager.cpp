@@ -1,4 +1,4 @@
-//===- subzero/src/IceRegManager.cpp - Simple reg alloc implementation ----===//
+//===- subzero/src/RegManager.cpp - Simple reg alloc implementation ----===//
 //
 //                        The Subzero Code Generator
 //
@@ -7,7 +7,7 @@
 //
 //===----------------------------------------------------------------------===//
 //
-// This file implements the IceRegManager class, which is a very
+// This file implements the RegManager class, which is a very
 // simple register allocator that uses operand availability along with
 // a LRU replacement policy that allocates across a single or extended
 // basic block.
@@ -26,18 +26,16 @@
 
 namespace Ice {
 
-IceRegManagerEntry::IceRegManagerEntry(IceCfg *Cfg, Variable *Var,
-                                       uint32_t NumReg)
+RegManagerEntry::RegManagerEntry(IceCfg *Cfg, Variable *Var, uint32_t NumReg)
     : Var(Var) {}
 
-IceRegManagerEntry::IceRegManagerEntry(IceCfg *Cfg,
-                                       const IceRegManagerEntry &Other,
-                                       uint32_t NumReg)
+RegManagerEntry::RegManagerEntry(IceCfg *Cfg, const RegManagerEntry &Other,
+                                 uint32_t NumReg)
     : Var(Other.Var), Available(Other.Available) {}
 
 // An Operand is loaded into this virtual register.  Its Available set
 // is cleared and then set to contain the Operand.
-void IceRegManagerEntry::load(Inst *Inst) {
+void RegManagerEntry::load(Inst *Inst) {
   Available.clear();
   if (Inst) {
     Operand *Operand = Inst->getSrc(0);
@@ -50,14 +48,14 @@ void IceRegManagerEntry::load(Inst *Inst) {
 // is a physical register managed by this RegManager (e.g., specific
 // register requirements for instructions like x86 idiv), then all
 // Available sets must be killed.
-void IceRegManagerEntry::store(Inst *Inst) {
+void RegManagerEntry::store(Inst *Inst) {
   // TODO: Kill all Available sets when necessary.
   Variable *Variable = Inst->getDest();
   assert(Variable);
   Available.push_back(Variable);
 }
 
-bool IceRegManagerEntry::contains(const Operand *Operand) const {
+bool RegManagerEntry::contains(const Operand *Operand) const {
   if (getVar() == Operand)
     return true;
   for (OperandList::const_iterator I = Available.begin(), E = Available.end();
@@ -69,7 +67,7 @@ bool IceRegManagerEntry::contains(const Operand *Operand) const {
   return false;
 }
 
-IceRegManager::IceRegManager(IceCfg *Cfg, CfgNode *Node, uint32_t NumReg)
+RegManager::RegManager(IceCfg *Cfg, CfgNode *Node, uint32_t NumReg)
     : NumReg(NumReg), Cfg(Cfg) {
   // TODO: Config flag to use physical registers directly.
   for (uint32_t i = 0; i < NumReg; ++i) {
@@ -77,21 +75,21 @@ IceRegManager::IceRegManager(IceCfg *Cfg, CfgNode *Node, uint32_t NumReg)
     char Buf[BufLen];
     snprintf(Buf, BufLen, "r%u_%u", i + 1, Node->getIndex());
     Variable *Reg = Cfg->makeVariable(IceType_i32, Node, Buf);
-    Queue.push_back(IceRegManagerEntry::create(Cfg, Reg, NumReg));
+    Queue.push_back(RegManagerEntry::create(Cfg, Reg, NumReg));
   }
 }
 
-IceRegManager::IceRegManager(const IceRegManager &Other)
+RegManager::RegManager(const RegManager &Other)
     : NumReg(Other.NumReg), Cfg(Other.Cfg) {
   for (QueueType::const_iterator I = Other.Queue.begin(), E = Other.Queue.end();
        I != E; ++I) {
-    Queue.push_back(IceRegManagerEntry::create(Cfg, **I, NumReg));
+    Queue.push_back(RegManagerEntry::create(Cfg, **I, NumReg));
   }
 }
 
 // Prefer[0] is highest preference, Prefer[1] is second, etc.
-Variable *IceRegManager::getRegister(IceType Type, const OperandList &Prefer,
-                                     const VarList &Avoid)
+Variable *RegManager::getRegister(IceType Type, const OperandList &Prefer,
+                                  const VarList &Avoid)
     // TODO: "Avoid" is actually a set of virtual or physical registers.
     // Wait - no it's not.  For an Arithmetic instruction, the load of the
     // first operand should avoid using a register that contains the
@@ -102,11 +100,11 @@ Variable *IceRegManager::getRegister(IceType Type, const OperandList &Prefer,
   // to this register.  If its index into the Prefer list is better
   // than the current best, update the current best.
   // TODO: implement this policy
-  IceRegManagerEntry *Good = NULL;
-  IceRegManagerEntry *Best = NULL;
+  RegManagerEntry *Good = NULL;
+  RegManagerEntry *Best = NULL;
   for (QueueType::const_iterator I1 = Queue.begin(), E1 = Queue.end(); I1 != E1;
        ++I1) {
-    IceRegManagerEntry *Entry = *I1;
+    RegManagerEntry *Entry = *I1;
     bool AvoidEntry = false;
     for (VarList::const_iterator I2 = Avoid.begin(), E2 = Avoid.end(); I2 != E2;
          ++I2) {
@@ -134,8 +132,8 @@ Variable *IceRegManager::getRegister(IceType Type, const OperandList &Prefer,
   return Best->getVar();
 }
 
-bool IceRegManager::registerContains(const Variable *Reg,
-                                     const Operand *Op) const {
+bool RegManager::registerContains(const Variable *Reg,
+                                  const Operand *Op) const {
   for (QueueType::const_iterator I = Queue.begin(), E = Queue.end(); I != E;
        ++I) {
     if ((*I)->getVar() == Reg)
@@ -145,9 +143,9 @@ bool IceRegManager::registerContains(const Variable *Reg,
   return false;
 }
 
-void IceRegManager::notifyLoad(Inst *Inst, bool IsAssign) {
+void RegManager::notifyLoad(Inst *Inst, bool IsAssign) {
   Variable *Reg = Inst->getDest();
-  IceRegManagerEntry *Entry = NULL;
+  RegManagerEntry *Entry = NULL;
   for (QueueType::iterator I = Queue.begin(), E = Queue.end(); I != E; ++I) {
     if ((*I)->getVar() == Reg) {
       Entry = *I;
@@ -160,9 +158,9 @@ void IceRegManager::notifyLoad(Inst *Inst, bool IsAssign) {
   Entry->load(IsAssign ? Inst : NULL);
 }
 
-void IceRegManager::notifyStore(Inst *Inst) {
+void RegManager::notifyStore(Inst *Inst) {
   Variable *Reg = llvm::cast<Variable>(Inst->getSrc(0));
-  IceRegManagerEntry *Entry = NULL;
+  RegManagerEntry *Entry = NULL;
   for (QueueType::iterator I = Queue.begin(), E = Queue.end(); I != E; ++I) {
     if ((*I)->getVar() == Reg) {
       Entry = *I;
@@ -173,21 +171,21 @@ void IceRegManager::notifyStore(Inst *Inst) {
   assert(Entry);
   Queue.push_back(Entry);
   Entry->store(Inst);
-  // TODO: See the TODO in IceRegManagerEntry::store().  For the
+  // TODO: See the TODO in RegManagerEntry::store().  For the
   // instruction "a=reg", "a" must be removed from all other Available
   // sets.  But is this actually possible with SSA form?
 }
 
 // ======================== Dump routines ======================== //
 
-void IceRegManager::dump(const IceCfg *Cfg) const {
+void RegManager::dump(const IceCfg *Cfg) const {
   for (QueueType::const_iterator I = Queue.begin(), E = Queue.end(); I != E;
        ++I) {
     (*I)->dump(Cfg);
   }
 }
 
-void IceRegManagerEntry::dump(const IceCfg *Cfg) const {
+void RegManagerEntry::dump(const IceCfg *Cfg) const {
   IceOstream &Str = Cfg->getContext()->StrDump;
   Str << " " << getVar() << "={";
   for (OperandList::const_iterator I = Available.begin(), E = Available.end();

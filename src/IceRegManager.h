@@ -1,4 +1,4 @@
-//===- subzero/src/IceRegManager.h - Simple local reg allocator -*- C++ -*-===//
+//===- subzero/src/RegManager.h - Simple local reg allocator -*- C++ -*-===//
 //
 //                        The Subzero Code Generator
 //
@@ -7,7 +7,7 @@
 //
 //===----------------------------------------------------------------------===//
 //
-// This file declares the IceRegManager class which does very simple
+// This file declares the RegManager class which does very simple
 // register allocation across a single basic block.
 //
 //===----------------------------------------------------------------------===//
@@ -61,15 +61,14 @@ namespace Ice {
 // registers.
 // The cmp/fcmp instruction is like a commutative arithmetic instruction.
 
-class IceRegManagerEntry {
+class RegManagerEntry {
 public:
-  static IceRegManagerEntry *create(IceCfg *Cfg, Variable *Var,
-                                    uint32_t NumReg) {
-    return new IceRegManagerEntry(Cfg, Var, NumReg);
+  static RegManagerEntry *create(IceCfg *Cfg, Variable *Var, uint32_t NumReg) {
+    return new RegManagerEntry(Cfg, Var, NumReg);
   }
-  static IceRegManagerEntry *
-  create(IceCfg *Cfg, const IceRegManagerEntry &Other, uint32_t NumReg) {
-    return new IceRegManagerEntry(Cfg, Other, NumReg);
+  static RegManagerEntry *create(IceCfg *Cfg, const RegManagerEntry &Other,
+                                 uint32_t NumReg) {
+    return new RegManagerEntry(Cfg, Other, NumReg);
   }
   void load(Inst *Inst);
   void store(Inst *Inst);
@@ -78,9 +77,8 @@ public:
   void dump(const IceCfg *Cfg) const;
 
 private:
-  IceRegManagerEntry(IceCfg *Cfg, Variable *Var, uint32_t NumReg);
-  IceRegManagerEntry(IceCfg *Cfg, const IceRegManagerEntry &Other,
-                     uint32_t NumReg);
+  RegManagerEntry(IceCfg *Cfg, Variable *Var, uint32_t NumReg);
+  RegManagerEntry(IceCfg *Cfg, const RegManagerEntry &Other, uint32_t NumReg);
 
   // Virtual register.
   Variable *const Var;
@@ -90,20 +88,20 @@ private:
 };
 
 // TODO: Use some "virtual register" subclass of Variable.
-class IceRegManager {
+class RegManager {
 public:
-  typedef std::vector<IceRegManagerEntry *> QueueType;
+  typedef std::vector<RegManagerEntry *> QueueType;
   // Initialize a brand new register manager.
-  static IceRegManager *create(IceCfg *Cfg, CfgNode *Node, uint32_t NumReg) {
-    return new IceRegManager(Cfg, Node, NumReg);
+  static RegManager *create(IceCfg *Cfg, CfgNode *Node, uint32_t NumReg) {
+    return new RegManager(Cfg, Node, NumReg);
   }
   // Capture the predecessor's end-of-block state for an extended
   // basic block.
-  static IceRegManager *create(const IceRegManager &Other) {
-    return new IceRegManager(Other);
+  static RegManager *create(const RegManager &Other) {
+    return new RegManager(Other);
   }
   // TODO: Are these Variable instances duplicated across
-  // IceRegManager objects?
+  // RegManager objects?
   Variable *getRegister(IceType Type, const OperandList &Prefer,
                         const VarList &Avoid) const;
   bool registerContains(const Variable *Reg, const Operand *Op) const;
@@ -112,8 +110,8 @@ public:
   void dump(const IceCfg *Cfg) const;
 
 private:
-  IceRegManager(IceCfg *Cfg, CfgNode *Node, uint32_t NumReg);
-  IceRegManager(const IceRegManager &Other);
+  RegManager(IceCfg *Cfg, CfgNode *Node, uint32_t NumReg);
+  RegManager(const RegManager &Other);
   const uint32_t NumReg;
   // The LRU register queue.  The front element is the least recently
   // used and the next to be assigned.
