@@ -184,7 +184,7 @@ protected:
   virtual void postLower() {}
 
   IceCfg *Cfg;
-  IceGlobalContext *Ctx;
+  GlobalContext *Ctx;
   bool HasComputedFrame;
   // StackAdjustment keeps track of the current stack offset from its
   // natural location, as arguments are pushed for a function call.

@@ -1,4 +1,4 @@
-//===- subzero/src/IceGlobalContext.h - Global context defs -----*- C++ -*-===//
+//===- subzero/src/GlobalContext.h - Global context defs -----*- C++ -*-===//
 //
 //                        The Subzero Code Generator
 //
@@ -24,15 +24,15 @@
 
 namespace Ice {
 
-// TODO: Accesses to all non-const fields of IceGlobalContext need to
+// TODO: Accesses to all non-const fields of GlobalContext need to
 // be synchronized, especially the constant pool, the allocator, and
 // the output streams.
-class IceGlobalContext {
+class GlobalContext {
 public:
-  IceGlobalContext(llvm::raw_ostream *OsDump, llvm::raw_ostream *OsEmit,
-                   IceVerboseMask VerboseMask, IceTargetArch TargetArch,
-                   IceOptLevel OptLevel, IceString TestPrefix);
-  ~IceGlobalContext();
+  GlobalContext(llvm::raw_ostream *OsDump, llvm::raw_ostream *OsEmit,
+                IceVerboseMask VerboseMask, IceTargetArch TargetArch,
+                IceOptLevel OptLevel, IceString TestPrefix);
+  ~GlobalContext();
 
   // Returns true if any of the specified options in the verbose mask
   // are set.  If the argument is omitted, it checks if any verbose
@@ -81,8 +81,8 @@ private:
   const IceTargetArch TargetArch;
   const IceOptLevel OptLevel;
   const IceString TestPrefix;
-  IceGlobalContext(const IceGlobalContext &) LLVM_DELETED_FUNCTION;
-  IceGlobalContext &operator=(const IceGlobalContext &) LLVM_DELETED_FUNCTION;
+  GlobalContext(const GlobalContext &) LLVM_DELETED_FUNCTION;
+  GlobalContext &operator=(const GlobalContext &) LLVM_DELETED_FUNCTION;
 };
 
 } // end of namespace Ice

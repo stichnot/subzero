@@ -25,7 +25,7 @@ namespace Ice {
 IceOstream *GlobalStr = NULL;
 bool IceCfg::HasEmittedFirstMethod = false;
 
-IceCfg::IceCfg(IceGlobalContext *Ctx)
+IceCfg::IceCfg(GlobalContext *Ctx)
     : Ctx(Ctx), Name(""), Type(IceType_void), IsInternal(false),
       HasError(false), ErrorMessage(""), Entry(NULL), NextInstNumber(1),
       Live(NULL),

@@ -1,4 +1,4 @@
-//===- subzero/src/IceGlobalContext.cpp - Global context defs ---*- C++ -*-===//
+//===- subzero/src/GlobalContext.cpp - Global context defs ---*- C++ -*-===//
 //
 //                        The Subzero Code Generator
 //
@@ -32,7 +32,7 @@ template <typename KeyType, typename ValueType> class IceTypePool {
 
 public:
   IceTypePool() {}
-  ValueType *getOrAdd(IceGlobalContext *Ctx, IceType Type, KeyType Key) {
+  ValueType *getOrAdd(GlobalContext *Ctx, IceType Type, KeyType Key) {
     uint32_t Index = KeyToIndex.translate(TupleType(Type, Key));
     if (Index >= Pool.size()) {
       Pool.resize(Index + 1);
@@ -70,11 +70,11 @@ public:
   IceTypePool<IceRelocatableTuple, IceConstantRelocatable> Relocatables;
 };
 
-IceGlobalContext::IceGlobalContext(llvm::raw_ostream *OsDump,
-                                   llvm::raw_ostream *OsEmit,
-                                   IceVerboseMask VerboseMask,
-                                   IceTargetArch TargetArch,
-                                   IceOptLevel OptLevel, IceString TestPrefix)
+GlobalContext::GlobalContext(llvm::raw_ostream *OsDump,
+                             llvm::raw_ostream *OsEmit,
+                             IceVerboseMask VerboseMask,
+                             IceTargetArch TargetArch, IceOptLevel OptLevel,
+                             IceString TestPrefix)
     : StrDump(OsDump), StrEmit(OsEmit), VerboseMask(VerboseMask),
       ConstantPool(new IceConstantPool()), TargetArch(TargetArch),
       OptLevel(OptLevel), TestPrefix(TestPrefix) {}
@@ -83,7 +83,7 @@ IceGlobalContext::IceGlobalContext(llvm::raw_ostream *OsDump,
 // given prefix.  For a C++ symbol, nest the original symbol inside
 // the "prefix" namespace.  For other symbols, just prepend the
 // prefix.
-IceString IceGlobalContext::mangleName(const IceString &Name) const {
+IceString GlobalContext::mangleName(const IceString &Name) const {
   // An already-nested name like foo::bar() gets pushed down one
   // level, making it equivalent to Prefix::foo::bar().
   //   _ZN3foo3barExyz ==> _ZN6Prefix3foo3barExyz
@@ -134,31 +134,30 @@ IceString IceGlobalContext::mangleName(const IceString &Name) const {
   return getTestPrefix() + Name;
 }
 
-IceGlobalContext::~IceGlobalContext() {}
+GlobalContext::~GlobalContext() {}
 
-IceConstant *IceGlobalContext::getConstantInt(IceType Type,
-                                              uint64_t ConstantInt64) {
+IceConstant *GlobalContext::getConstantInt(IceType Type,
+                                           uint64_t ConstantInt64) {
   return ConstantPool->Integers.getOrAdd(this, Type, ConstantInt64);
 }
 
-IceConstant *IceGlobalContext::getConstantFloat(float ConstantFloat) {
+IceConstant *GlobalContext::getConstantFloat(float ConstantFloat) {
   return ConstantPool->Floats.getOrAdd(this, IceType_f32, ConstantFloat);
 }
 
-IceConstant *IceGlobalContext::getConstantDouble(double ConstantDouble) {
+IceConstant *GlobalContext::getConstantDouble(double ConstantDouble) {
   return ConstantPool->Doubles.getOrAdd(this, IceType_f64, ConstantDouble);
 }
 
-IceConstant *IceGlobalContext::getConstantSym(IceType Type, const void *Handle,
-                                              int64_t Offset,
-                                              const IceString &Name,
-                                              bool SuppressMangling) {
+IceConstant *GlobalContext::getConstantSym(IceType Type, const void *Handle,
+                                           int64_t Offset,
+                                           const IceString &Name,
+                                           bool SuppressMangling) {
   return ConstantPool->Relocatables.getOrAdd(
       this, Type, IceRelocatableTuple(Handle, Offset, Name, SuppressMangling));
 }
 
-void IceTimer::printElapsedUs(IceGlobalContext *Ctx,
-                              const IceString &Tag) const {
+void IceTimer::printElapsedUs(GlobalContext *Ctx, const IceString &Tag) const {
   if (Ctx->isVerbose(IceV_Timing)) {
     // Prefixing with '#' allows timing strings to be included
     // without error in textual assembly output.

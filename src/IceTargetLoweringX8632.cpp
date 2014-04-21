@@ -55,7 +55,7 @@ IceTargetX8632::IceTargetX8632(IceCfg *Cfg)
 }
 
 void IceTargetX8632::translateO2() {
-  IceGlobalContext *Context = Cfg->getContext();
+  GlobalContext *Context = Cfg->getContext();
   IceOstream &Str = Context->StrDump;
   IceTimer T_placePhiLoads;
   Cfg->placePhiLoads();
@@ -142,7 +142,7 @@ void IceTargetX8632::translateO2() {
 }
 
 void IceTargetX8632::translateOm1() {
-  IceGlobalContext *Context = Cfg->getContext();
+  GlobalContext *Context = Cfg->getContext();
   IceOstream &Str = Context->StrDump;
   IceTimer T_placePhiLoads;
   Cfg->placePhiLoads();

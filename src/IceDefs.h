@@ -37,7 +37,7 @@ namespace Ice {
 class IceCfg;
 class CfgNode;
 class IceConstant;
-class IceGlobalContext;
+class GlobalContext;
 class Inst;
 class InstPhi;
 class InstTarget;
@@ -144,7 +144,7 @@ public:
     llvm::TimeRecord End = llvm::TimeRecord::getCurrentTime(false);
     return End.getWallTime() - Start.getWallTime();
   }
-  void printElapsedUs(IceGlobalContext *Ctx, const IceString &Tag) const;
+  void printElapsedUs(GlobalContext *Ctx, const IceString &Tag) const;
 
 private:
   const llvm::TimeRecord Start;

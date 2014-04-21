@@ -95,7 +95,7 @@ private:
 template <typename T, Operand::OperandKind K>
 class IceConstantPrimitive : public IceConstant {
 public:
-  static IceConstantPrimitive *create(IceGlobalContext *Ctx, IceType Type,
+  static IceConstantPrimitive *create(GlobalContext *Ctx, IceType Type,
                                       T Value) {
     return new (Ctx->allocate<IceConstantPrimitive>())
         IceConstantPrimitive(Type, Value);
@@ -155,7 +155,7 @@ public:
 // a fixed offset.
 class IceConstantRelocatable : public IceConstant {
 public:
-  static IceConstantRelocatable *create(IceGlobalContext *Ctx, IceType Type,
+  static IceConstantRelocatable *create(GlobalContext *Ctx, IceType Type,
                                         const IceRelocatableTuple &Tuple) {
     return new (Ctx->allocate<IceConstantRelocatable>()) IceConstantRelocatable(
         Type, Tuple.Handle, Tuple.Offset, Tuple.Name, Tuple.SuppressMangling);

@@ -26,10 +26,10 @@ namespace Ice {
 
 class IceCfg {
 public:
-  IceCfg(IceGlobalContext *Ctx);
+  IceCfg(GlobalContext *Ctx);
   ~IceCfg();
 
-  IceGlobalContext *getContext() const { return Ctx; }
+  GlobalContext *getContext() const { return Ctx; }
 
   // Manage the name and return type of the function being translated.
   void setName(const IceString &FunctionName) { Name = FunctionName; }
@@ -119,7 +119,7 @@ private:
   // implementation over at a later point.
   llvm::BumpPtrAllocator Allocator;
 
-  IceGlobalContext *Ctx;
+  GlobalContext *Ctx;
   IceString Name;  // function name
   IceType Type;    // return type
   bool IsInternal; // internal linkage

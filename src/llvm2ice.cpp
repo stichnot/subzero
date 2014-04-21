@@ -56,7 +56,7 @@ template <typename T> static std::string LLVMObjectAsString(const T *O) {
 //
 class LLVM2ICEConverter {
 public:
-  LLVM2ICEConverter(Ice::IceGlobalContext *Ctx)
+  LLVM2ICEConverter(Ice::GlobalContext *Ctx)
       : Ctx(Ctx), Cfg(NULL), CurrentNode(NULL) {
     // All PNaCl pointer widths are 32 bits because of the sandbox
     // model.
@@ -549,7 +549,7 @@ private:
 
 private:
   // Data
-  Ice::IceGlobalContext *Ctx;
+  Ice::GlobalContext *Ctx;
   Ice::IceCfg *Cfg;
   Ice::CfgNode *CurrentNode;
   Ice::IceType SubzeroPointerType;
@@ -651,8 +651,7 @@ int main(int argc, char **argv) {
   raw_os_ostream *Ls = new raw_os_ostream(LogFilename == "-" ? std::cout : Lfs);
   Ls->SetUnbuffered();
 
-  Ice::IceGlobalContext Ctx(Ls, Os, VerboseMask, TargetArch, OptLevel,
-                            TestPrefix);
+  Ice::GlobalContext Ctx(Ls, Os, VerboseMask, TargetArch, OptLevel, TestPrefix);
 
   for (Module::const_iterator I = Mod->begin(), E = Mod->end(); I != E; ++I) {
     if (I->empty())
