@@ -40,8 +40,8 @@ public:
   bool getHasReturn() const { return HasReturn; }
 
   // Access predecessor and successor edge lists.
-  const IceNodeList &getInEdges() const { return InEdges; }
-  const IceNodeList &getOutEdges() const { return OutEdges; }
+  const NodeList &getInEdges() const { return InEdges; }
+  const NodeList &getOutEdges() const { return OutEdges; }
 
   // Manage the instruction list.
   InstList &getInsts() { return Insts; }
@@ -71,9 +71,9 @@ private:
   const uint32_t Number; // label index
   IceString Name;        // for dumping only
   bool HasReturn;        // does this block need an epilog?
-  IceNodeList InEdges;   // in no particular order
-  IceNodeList OutEdges;  // in no particular order
-  IcePhiList Phis;       // unordered set of phi instructions
+  NodeList InEdges;      // in no particular order
+  NodeList OutEdges;     // in no particular order
+  PhiList Phis;          // unordered set of phi instructions
   InstList Insts;        // ordered list of non-phi instructions
 };
 

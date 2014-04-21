@@ -208,8 +208,8 @@ InstBr::InstBr(IceCfg *Cfg, Operand *Source, CfgNode *TargetTrue,
 InstBr::InstBr(IceCfg *Cfg, CfgNode *Target)
     : Inst(Cfg, Inst::Br, 0, NULL), TargetFalse(Target), TargetTrue(NULL) {}
 
-IceNodeList InstBr::getTerminatorEdges() const {
-  IceNodeList OutEdges;
+NodeList InstBr::getTerminatorEdges() const {
+  NodeList OutEdges;
   OutEdges.push_back(TargetFalse);
   if (TargetTrue)
     OutEdges.push_back(TargetTrue);
@@ -347,8 +347,8 @@ void InstSwitch::addBranch(uint32_t CaseIndex, uint64_t Value, CfgNode *Label) {
   Labels[CaseIndex] = Label;
 }
 
-IceNodeList InstSwitch::getTerminatorEdges() const {
-  IceNodeList OutEdges;
+NodeList InstSwitch::getTerminatorEdges() const {
+  NodeList OutEdges;
   OutEdges.push_back(LabelDefault);
   for (uint32_t I = 0; I < NumCases; ++I) {
     OutEdges.push_back(Labels[I]);
@@ -372,10 +372,10 @@ InstFakeUse::InstFakeUse(IceCfg *Cfg, Variable *Src)
   addSource(Src);
 }
 
-InstFakeKill::InstFakeKill(IceCfg *Cfg, const IceVarList &KilledRegs,
+InstFakeKill::InstFakeKill(IceCfg *Cfg, const VarList &KilledRegs,
                            const Inst *Linked)
     : Inst(Cfg, Inst::FakeKill, KilledRegs.size(), NULL), Linked(Linked) {
-  for (IceVarList::const_iterator I = KilledRegs.begin(), E = KilledRegs.end();
+  for (VarList::const_iterator I = KilledRegs.begin(), E = KilledRegs.end();
        I != E; ++I) {
     Variable *Var = *I;
     addSource(Var);

@@ -27,7 +27,7 @@ namespace Ice {
 IceTargetX8632::IceTargetX8632(IceCfg *Cfg)
     : TargetLowering(Cfg), IsEbpBasedFrame(false), FrameSizeLocals(0),
       LocalsSizeBytes(0), NextLabelNumber(0), ComputedLiveRanges(false),
-      PhysicalRegisters(IceVarList(Reg_NUM)) {
+      PhysicalRegisters(VarList(Reg_NUM)) {
   llvm::SmallBitVector IntegerRegisters(Reg_NUM);
   llvm::SmallBitVector IntegerRegistersNonI8(Reg_NUM);
   llvm::SmallBitVector FloatRegisters(Reg_NUM);
@@ -284,9 +284,9 @@ void IceTargetX8632::addProlog(CfgNode *Node) {
   // Prepass.  Compute RegsUsed, PreservedRegsSizeBytes, and
   // LocalsSizeBytes.
   RegsUsed = llvm::SmallBitVector(CalleeSaves.size());
-  const IceVarList &Variables = Cfg->getVariables();
-  const IceVarList &Args = Cfg->getArgs();
-  for (IceVarList::const_iterator I = Variables.begin(), E = Variables.end();
+  const VarList &Variables = Cfg->getVariables();
+  const VarList &Args = Cfg->getArgs();
+  for (VarList::const_iterator I = Variables.begin(), E = Variables.end();
        I != E; ++I) {
     Variable *Var = *I;
     if (Var->hasReg()) {
@@ -375,7 +375,7 @@ void IceTargetX8632::addProlog(CfgNode *Node) {
   GlobalsSize = 0;
   LocalsSize.assign(LocalsSize.size(), 0);
   int32_t NextStackOffset = 0;
-  for (IceVarList::const_iterator I = Variables.begin(), E = Variables.end();
+  for (VarList::const_iterator I = Variables.begin(), E = Variables.end();
        I != E; ++I) {
     Variable *Var = *I;
     if (Var->hasReg()) {
@@ -1071,7 +1071,7 @@ void IceTargetX8632::lowerCall(const InstCall *Instr) {
   }
 
   // Insert a register-kill pseudo instruction.
-  IceVarList KilledRegs;
+  VarList KilledRegs;
   for (uint32_t i = 0; i < ScratchRegs.size(); ++i) {
     if (ScratchRegs[i])
       KilledRegs.push_back(Cfg->getTarget()->getPhysicalRegister(i));

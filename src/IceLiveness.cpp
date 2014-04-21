@@ -79,7 +79,7 @@ void Liveness::init() {
   assert(NumGlobals == TmpNumGlobals);
 
   // Process each node.
-  const IceNodeList &LNodes = Cfg->getNodes();
+  const NodeList &LNodes = Cfg->getNodes();
   uint32_t NumLNodes = LNodes.size();
   for (uint32_t i = 0; i < NumLNodes; ++i) {
     LivenessNode &Node = Nodes[LNodes[i]->getIndex()];

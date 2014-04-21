@@ -86,7 +86,7 @@ private:
   Variable *const Var;
 
   // Set of operands currently available in the virtual register.
-  IceOpList Available;
+  OperandList Available;
 };
 
 // TODO: Use some "virtual register" subclass of Variable.
@@ -104,8 +104,8 @@ public:
   }
   // TODO: Are these Variable instances duplicated across
   // IceRegManager objects?
-  Variable *getRegister(IceType Type, const IceOpList &Prefer,
-                        const IceVarList &Avoid) const;
+  Variable *getRegister(IceType Type, const OperandList &Prefer,
+                        const VarList &Avoid) const;
   bool registerContains(const Variable *Reg, const Operand *Op) const;
   void notifyLoad(Inst *Inst, bool IsAssign = true);
   void notifyStore(Inst *Inst);

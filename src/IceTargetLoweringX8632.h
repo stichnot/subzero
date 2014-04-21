@@ -258,7 +258,7 @@ protected:
   llvm::SmallBitVector RegsUsed;
   uint32_t NextLabelNumber;
   bool ComputedLiveRanges;
-  IceVarList PhysicalRegisters;
+  VarList PhysicalRegisters;
   static IceString RegNames[];
 
 private:

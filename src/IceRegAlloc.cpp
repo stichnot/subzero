@@ -49,9 +49,8 @@ void IceLinearScan::scan(const llvm::SmallBitVector &RegMaskFull) {
   // instructions, thanks to temporary generation during lowering.  As
   // a result, it may be useful to design a better data structure for
   // storing Cfg->getVariables().
-  const IceVarList &Vars = Cfg->getVariables();
-  for (IceVarList::const_iterator I = Vars.begin(), E = Vars.end(); I != E;
-       ++I) {
+  const VarList &Vars = Cfg->getVariables();
+  for (VarList::const_iterator I = Vars.begin(), E = Vars.end(); I != E; ++I) {
     Variable *Var = *I;
     // Explicitly don't consider zero-weight variables, which are
     // meant to be spill slots.

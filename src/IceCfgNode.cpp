@@ -58,8 +58,7 @@ void CfgNode::appendInst(Inst *Inst) {
 // instruction numbers in a block, from lowest to highest, must not
 // overlap with the range of any other block.
 void CfgNode::renumberInstructions() {
-  for (IcePhiList::const_iterator I = Phis.begin(), E = Phis.end(); I != E;
-       ++I) {
+  for (PhiList::const_iterator I = Phis.begin(), E = Phis.end(); I != E; ++I) {
     (*I)->renumber(Cfg);
   }
   InstList::const_iterator I = Insts.begin(), E = Insts.end();
@@ -75,8 +74,8 @@ void CfgNode::renumberInstructions() {
 // IceCfg::splitEdge().
 void CfgNode::splitEdge(CfgNode *From, CfgNode *To) {
   // Find the out-edge position.
-  IceNodeList::iterator Iout = From->OutEdges.begin();
-  IceNodeList::iterator Eout = From->OutEdges.end();
+  NodeList::iterator Iout = From->OutEdges.begin();
+  NodeList::iterator Eout = From->OutEdges.end();
   for (; Iout != Eout; ++Iout) {
     if (*Iout == To)
       break;
@@ -84,8 +83,8 @@ void CfgNode::splitEdge(CfgNode *From, CfgNode *To) {
   assert(Iout != Eout);
 
   // Find the in-edge position.
-  IceNodeList::iterator Iin = To->InEdges.begin();
-  IceNodeList::iterator Ein = To->InEdges.end();
+  NodeList::iterator Iin = To->InEdges.begin();
+  NodeList::iterator Ein = To->InEdges.end();
   for (; Iin != Ein; ++Iin) {
     if (*Iin == From)
       break;
@@ -105,7 +104,7 @@ void CfgNode::splitEdge(CfgNode *From, CfgNode *To) {
 // InEdges list.
 void CfgNode::registerEdges() {
   OutEdges = (*Insts.rbegin())->getTerminatorEdges();
-  for (IceNodeList::const_iterator I = OutEdges.begin(), E = OutEdges.end();
+  for (NodeList::const_iterator I = OutEdges.begin(), E = OutEdges.end();
        I != E; ++I) {
     CfgNode *Node = *I;
     Node->InEdges.push_back(this);
@@ -124,7 +123,7 @@ void CfgNode::registerEdges() {
 // instructions and appends assignment instructions to predecessor
 // blocks.  Note that this transformation preserves SSA form.
 void CfgNode::placePhiLoads() {
-  for (IcePhiList::iterator I = Phis.begin(), E = Phis.end(); I != E; ++I) {
+  for (PhiList::iterator I = Phis.begin(), E = Phis.end(); I != E; ++I) {
     Inst *Inst = (*I)->lower(Cfg, this);
     Insts.insert(Insts.begin(), Inst);
     Inst->updateVars(this);
@@ -170,12 +169,12 @@ void CfgNode::placePhiStores() {
   }
 
   // Consider every out-edge.
-  for (IceNodeList::const_iterator I1 = OutEdges.begin(), E1 = OutEdges.end();
+  for (NodeList::const_iterator I1 = OutEdges.begin(), E1 = OutEdges.end();
        I1 != E1; ++I1) {
     CfgNode *Target = *I1;
     // Consider every Phi instruction at the out-edge.
-    for (IcePhiList::const_iterator I2 = Target->Phis.begin(),
-                                    E2 = Target->Phis.end();
+    for (PhiList::const_iterator I2 = Target->Phis.begin(),
+                                 E2 = Target->Phis.end();
          I2 != E2; ++I2) {
       Operand *Operand = (*I2)->getOperandForTarget(this);
       assert(Operand);
@@ -199,7 +198,7 @@ void CfgNode::placePhiStores() {
 
 // Deletes the phi instructions after the loads and stores are placed.
 void CfgNode::deletePhis() {
-  for (IcePhiList::iterator I = Phis.begin(), E = Phis.end(); I != E; ++I) {
+  for (PhiList::iterator I = Phis.begin(), E = Phis.end(); I != E; ++I) {
     (*I)->setDeleted();
   }
 }
@@ -252,13 +251,13 @@ bool CfgNode::liveness(LivenessMode Mode, Liveness *Liveness) {
     LiveBegin.assign(NumVars, 0);
     LiveEnd.assign(NumVars, 0);
     // Initialize Live to be the union of all successors' LiveIn.
-    for (IceNodeList::const_iterator I = OutEdges.begin(), E = OutEdges.end();
+    for (NodeList::const_iterator I = OutEdges.begin(), E = OutEdges.end();
          I != E; ++I) {
       CfgNode *Succ = *I;
       Live |= Liveness->getLiveIn(Succ);
       // Mark corresponding argument of phis in successor as live.
-      for (IcePhiList::const_iterator I1 = Succ->Phis.begin(),
-                                      E1 = Succ->Phis.end();
+      for (PhiList::const_iterator I1 = Succ->Phis.begin(),
+                                   E1 = Succ->Phis.end();
            I1 != E1; ++I1) {
         (*I1)->livenessPhiOperand(Live, this, Liveness);
       }
@@ -275,8 +274,7 @@ bool CfgNode::liveness(LivenessMode Mode, Liveness *Liveness) {
   // instruction number to be that of the earliest phi instruction in
   // the block.
   int32_t FirstPhiNumber = 0; // sentinel value
-  for (IcePhiList::const_iterator I = Phis.begin(), E = Phis.end(); I != E;
-       ++I) {
+  for (PhiList::const_iterator I = Phis.begin(), E = Phis.end(); I != E; ++I) {
     if (FirstPhiNumber <= 0)
       FirstPhiNumber = (*I)->getNumber();
     (*I)->liveness(Mode, FirstPhiNumber, Live, Liveness, this);
@@ -336,8 +334,7 @@ void CfgNode::livenessPostprocess(LivenessMode Mode, Liveness *Liveness) {
   int32_t FirstInstNum = 0;
   int32_t LastInstNum = 0;
   // Process phis in any order.  Process only Dest operands.
-  for (IcePhiList::const_iterator I = Phis.begin(), E = Phis.end(); I != E;
-       ++I) {
+  for (PhiList::const_iterator I = Phis.begin(), E = Phis.end(); I != E; ++I) {
     InstPhi *Inst = *I;
     Inst->deleteIfDead();
     if (Inst->isDeleted())
@@ -417,8 +414,7 @@ void CfgNode::emit(IceCfg *Cfg, uint32_t Option) const {
     Str << Cfg->getContext()->mangleName(Cfg->getName()) << ":\n";
   }
   Str << getAsmName() << ":\n";
-  for (IcePhiList::const_iterator I = Phis.begin(), E = Phis.end(); I != E;
-       ++I) {
+  for (PhiList::const_iterator I = Phis.begin(), E = Phis.end(); I != E; ++I) {
     InstPhi *Inst = *I;
     if (Inst->isDeleted())
       continue;
@@ -448,7 +444,7 @@ void CfgNode::dump(IceCfg *Cfg) const {
   // Dump list of predecessor nodes.
   if (Cfg->getContext()->isVerbose(IceV_Preds) && !InEdges.empty()) {
     Str << "    // preds = ";
-    for (IceNodeList::const_iterator I = InEdges.begin(), E = InEdges.end();
+    for (NodeList::const_iterator I = InEdges.begin(), E = InEdges.end();
          I != E; ++I) {
       if (I != InEdges.begin())
         Str << ", ";
@@ -471,7 +467,7 @@ void CfgNode::dump(IceCfg *Cfg) const {
   }
   // Dump each instruction.
   if (Cfg->getContext()->isVerbose(IceV_Instructions)) {
-    for (IcePhiList::const_iterator I = Phis.begin(), E = Phis.end(); I != E;
+    for (PhiList::const_iterator I = Phis.begin(), E = Phis.end(); I != E;
          ++I) {
       const Inst *Inst = *I;
       Inst->dumpDecorated(Cfg);
@@ -498,7 +494,7 @@ void CfgNode::dump(IceCfg *Cfg) const {
   // Dump list of successor nodes.
   if (Cfg->getContext()->isVerbose(IceV_Succs)) {
     Str << "    // succs = ";
-    for (IceNodeList::const_iterator I = OutEdges.begin(), E = OutEdges.end();
+    for (NodeList::const_iterator I = OutEdges.begin(), E = OutEdges.end();
          I != E; ++I) {
       if (I != OutEdges.begin())
         Str << ", ";

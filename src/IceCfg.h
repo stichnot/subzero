@@ -55,7 +55,7 @@ public:
   // Create a node and append it to the end of the linearized list.
   CfgNode *makeNode(const IceString &Name = "");
   uint32_t getNumNodes() const { return Nodes.size(); }
-  const IceNodeList &getNodes() const { return Nodes; }
+  const NodeList &getNodes() const { return Nodes; }
   CfgNode *splitEdge(CfgNode *From, CfgNode *To);
 
   // Manage instruction numbering.
@@ -65,11 +65,11 @@ public:
   Variable *makeVariable(IceType Type, const CfgNode *Node,
                          const IceString &Name = "");
   uint32_t getNumVariables() const { return Variables.size(); }
-  const IceVarList &getVariables() const { return Variables; }
+  const VarList &getVariables() const { return Variables; }
 
   // Manage arguments to the function.
   void addArg(Variable *Arg);
-  const IceVarList &getArgs() const { return Args; }
+  const VarList &getArgs() const { return Args; }
 
   // Miscellaneous accessors.
   TargetLowering *getTarget() const { return Target.get(); }
@@ -125,11 +125,11 @@ private:
   bool IsInternal; // internal linkage
   bool HasError;
   IceString ErrorMessage;
-  CfgNode *Entry;    // entry basic block
-  IceNodeList Nodes; // linearized node list; Entry should be first
+  CfgNode *Entry; // entry basic block
+  NodeList Nodes; // linearized node list; Entry should be first
   int32_t NextInstNumber;
-  IceVarList Variables;
-  IceVarList Args; // subset of Variables, in argument order
+  VarList Variables;
+  VarList Args; // subset of Variables, in argument order
   llvm::OwningPtr<Liveness> Live;
   llvm::OwningPtr<TargetLowering> Target;
 

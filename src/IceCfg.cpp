@@ -59,7 +59,7 @@ CfgNode *IceCfg::splitEdge(CfgNode *From, CfgNode *To) {
   // the To node.  For now, let's do the latter.
   assert(NewNode == Nodes.back());
   Nodes.pop_back();
-  for (IceNodeList::iterator I = Nodes.begin(), E = Nodes.end(); I != E; ++I) {
+  for (NodeList::iterator I = Nodes.begin(), E = Nodes.end(); I != E; ++I) {
     CfgNode *Node = *I;
     if (Node == To) {
       Nodes.insert(I, NewNode);
@@ -113,40 +113,40 @@ void IceCfg::translate(IceTargetArch TargetArch) {
 }
 
 void IceCfg::registerEdges() {
-  for (IceNodeList::iterator I = Nodes.begin(), E = Nodes.end(); I != E; ++I) {
+  for (NodeList::iterator I = Nodes.begin(), E = Nodes.end(); I != E; ++I) {
     (*I)->registerEdges();
   }
 }
 
 void IceCfg::renumberInstructions() {
   NextInstNumber = 1;
-  for (IceNodeList::iterator I = Nodes.begin(), E = Nodes.end(); I != E; ++I) {
+  for (NodeList::iterator I = Nodes.begin(), E = Nodes.end(); I != E; ++I) {
     (*I)->renumberInstructions();
   }
 }
 
 // placePhiLoads() must be called before placePhiStores().
 void IceCfg::placePhiLoads() {
-  for (IceNodeList::iterator I = Nodes.begin(), E = Nodes.end(); I != E; ++I) {
+  for (NodeList::iterator I = Nodes.begin(), E = Nodes.end(); I != E; ++I) {
     (*I)->placePhiLoads();
   }
 }
 
 // placePhiStores() must be called after placePhiLoads().
 void IceCfg::placePhiStores() {
-  for (IceNodeList::iterator I = Nodes.begin(), E = Nodes.end(); I != E; ++I) {
+  for (NodeList::iterator I = Nodes.begin(), E = Nodes.end(); I != E; ++I) {
     (*I)->placePhiStores();
   }
 }
 
 void IceCfg::deletePhis() {
-  for (IceNodeList::iterator I = Nodes.begin(), E = Nodes.end(); I != E; ++I) {
+  for (NodeList::iterator I = Nodes.begin(), E = Nodes.end(); I != E; ++I) {
     (*I)->deletePhis();
   }
 }
 
 void IceCfg::doAddressOpt() {
-  for (IceNodeList::iterator I = Nodes.begin(), E = Nodes.end(); I != E; ++I) {
+  for (NodeList::iterator I = Nodes.begin(), E = Nodes.end(); I != E; ++I) {
     (*I)->doAddressOpt();
   }
 }
@@ -156,7 +156,7 @@ void IceCfg::genCode() {
     setError("IceCfg::makeTarget() wasn't called.");
     return;
   }
-  for (IceNodeList::iterator I = Nodes.begin(), E = Nodes.end(); I != E; ++I) {
+  for (NodeList::iterator I = Nodes.begin(), E = Nodes.end(); I != E; ++I) {
     (*I)->genCode();
   }
 }
@@ -167,7 +167,7 @@ void IceCfg::genFrame() {
   // TODO: Consider folding epilog generation into the final
   // emission/assembly pass to avoid an extra iteration over the node
   // list.  Or keep a separate list of exit nodes.
-  for (IceNodeList::iterator I = Nodes.begin(), E = Nodes.end(); I != E; ++I) {
+  for (NodeList::iterator I = Nodes.begin(), E = Nodes.end(); I != E; ++I) {
     CfgNode *Node = *I;
     if (Node->getHasReturn())
       getTarget()->addEpilog(Node);
@@ -178,8 +178,7 @@ void IceCfg::liveness(LivenessMode Mode) {
   if (Mode == Liveness_LREndLightweight) {
     // Lightweight liveness is a quick single pass and doesn't need to
     // iterate until convergence.
-    for (IceNodeList::iterator I = Nodes.begin(), E = Nodes.end(); I != E;
-         ++I) {
+    for (NodeList::iterator I = Nodes.begin(), E = Nodes.end(); I != E; ++I) {
       (*I)->liveness(Mode, getLiveness());
     }
     return;
@@ -189,12 +188,12 @@ void IceCfg::liveness(LivenessMode Mode) {
   Live->init();
   llvm::BitVector NeedToProcess(Nodes.size());
   // Mark all nodes as needing to be processed.
-  for (IceNodeList::iterator I = Nodes.begin(), E = Nodes.end(); I != E; ++I) {
+  for (NodeList::iterator I = Nodes.begin(), E = Nodes.end(); I != E; ++I) {
     NeedToProcess[(*I)->getIndex()] = true;
   }
   while (NeedToProcess.any()) {
     // Iterate in reverse topological order to speed up convergence.
-    for (IceNodeList::reverse_iterator I = Nodes.rbegin(), E = Nodes.rend();
+    for (NodeList::reverse_iterator I = Nodes.rbegin(), E = Nodes.rend();
          I != E; ++I) {
       CfgNode *Node = *I;
       if (NeedToProcess[Node->getIndex()]) {
@@ -203,9 +202,9 @@ void IceCfg::liveness(LivenessMode Mode) {
         if (Changed) {
           // If the beginning-of-block liveness changed since the last
           // iteration, mark all in-edges as needing to be processed.
-          const IceNodeList &InEdges = Node->getInEdges();
-          for (IceNodeList::const_iterator I1 = InEdges.begin(),
-                                           E1 = InEdges.end();
+          const NodeList &InEdges = Node->getInEdges();
+          for (NodeList::const_iterator I1 = InEdges.begin(),
+                                        E1 = InEdges.end();
                I1 != E1; ++I1) {
             CfgNode *Pred = *I1;
             NeedToProcess[Pred->getIndex()] = true;
@@ -216,7 +215,7 @@ void IceCfg::liveness(LivenessMode Mode) {
   }
   if (Mode == Liveness_RangesFull) {
     // Reset each variable's live range.
-    for (IceVarList::const_iterator I = Variables.begin(), E = Variables.end();
+    for (VarList::const_iterator I = Variables.begin(), E = Variables.end();
          I != E; ++I) {
       if (Variable *Var = *I)
         Var->resetLiveRange();
@@ -225,7 +224,7 @@ void IceCfg::liveness(LivenessMode Mode) {
   IceTimer T_liveRange;
   // Make a final pass over instructions to delete dead instructions
   // and build each Variable's live range.
-  for (IceNodeList::iterator I = Nodes.begin(), E = Nodes.end(); I != E; ++I) {
+  for (NodeList::iterator I = Nodes.begin(), E = Nodes.end(); I != E; ++I) {
     (*I)->livenessPostprocess(Mode, getLiveness());
   }
   if (Mode == Liveness_RangesFull) {
@@ -273,8 +272,8 @@ void IceCfg::liveness(LivenessMode Mode) {
 // appears within the Variable's computed live range.
 bool IceCfg::validateLiveness() const {
   bool Valid = true;
-  for (IceNodeList::const_iterator I1 = Nodes.begin(), E1 = Nodes.end();
-       I1 != E1; ++I1) {
+  for (NodeList::const_iterator I1 = Nodes.begin(), E1 = Nodes.end(); I1 != E1;
+       ++I1) {
     CfgNode *Node = *I1;
     InstList &Insts = Node->getInsts();
     for (InstList::const_iterator I2 = Insts.begin(), E2 = Insts.end();
@@ -337,7 +336,7 @@ void IceCfg::emit(uint32_t Option) {
     Str << "\t.globl\t" << getContext()->mangleName(Name) << "\n";
     Str << "\t.type\t" << getContext()->mangleName(Name) << ",@function\n";
   }
-  for (IceNodeList::const_iterator I = Nodes.begin(), E = Nodes.end(); I != E;
+  for (NodeList::const_iterator I = Nodes.begin(), E = Nodes.end(); I != E;
        ++I) {
     (*I)->emit(this, Option);
   }
@@ -366,7 +365,7 @@ void IceCfg::dump() {
   setCurrentNode(NULL);
   if (getContext()->isVerbose(IceV_Liveness)) {
     // Print summary info about variables
-    for (IceVarList::const_iterator I = Variables.begin(), E = Variables.end();
+    for (VarList::const_iterator I = Variables.begin(), E = Variables.end();
          I != E; ++I) {
       Variable *Var = *I;
       Str << "//"
@@ -377,7 +376,7 @@ void IceCfg::dump() {
     }
   }
   // Print each basic block
-  for (IceNodeList::const_iterator I = Nodes.begin(), E = Nodes.end(); I != E;
+  for (NodeList::const_iterator I = Nodes.begin(), E = Nodes.end(); I != E;
        ++I) {
     (*I)->dump(this);
   }

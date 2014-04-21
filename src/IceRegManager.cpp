@@ -60,7 +60,7 @@ void IceRegManagerEntry::store(Inst *Inst) {
 bool IceRegManagerEntry::contains(const Operand *Operand) const {
   if (getVar() == Operand)
     return true;
-  for (IceOpList::const_iterator I = Available.begin(), E = Available.end();
+  for (OperandList::const_iterator I = Available.begin(), E = Available.end();
        I != E; ++I) {
     if (*I == Operand)
       return true;
@@ -90,8 +90,8 @@ IceRegManager::IceRegManager(const IceRegManager &Other)
 }
 
 // Prefer[0] is highest preference, Prefer[1] is second, etc.
-Variable *IceRegManager::getRegister(IceType Type, const IceOpList &Prefer,
-                                     const IceVarList &Avoid)
+Variable *IceRegManager::getRegister(IceType Type, const OperandList &Prefer,
+                                     const VarList &Avoid)
     // TODO: "Avoid" is actually a set of virtual or physical registers.
     // Wait - no it's not.  For an Arithmetic instruction, the load of the
     // first operand should avoid using a register that contains the
@@ -108,8 +108,8 @@ Variable *IceRegManager::getRegister(IceType Type, const IceOpList &Prefer,
        ++I1) {
     IceRegManagerEntry *Entry = *I1;
     bool AvoidEntry = false;
-    for (IceVarList::const_iterator I2 = Avoid.begin(), E2 = Avoid.end();
-         I2 != E2; ++I2) {
+    for (VarList::const_iterator I2 = Avoid.begin(), E2 = Avoid.end(); I2 != E2;
+         ++I2) {
       if (Entry->contains(*I2)) {
         AvoidEntry = true;
         break;
@@ -119,7 +119,7 @@ Variable *IceRegManager::getRegister(IceType Type, const IceOpList &Prefer,
       continue;
     if (Good == NULL)
       Good = Entry;
-    for (IceOpList::const_iterator I2 = Prefer.begin(), E2 = Prefer.end();
+    for (OperandList::const_iterator I2 = Prefer.begin(), E2 = Prefer.end();
          I2 != E2; ++I2) {
       if (Entry->contains(*I2)) {
         // TODO: Only set Best if it is better than the previous Best.
@@ -190,7 +190,7 @@ void IceRegManager::dump(const IceCfg *Cfg) const {
 void IceRegManagerEntry::dump(const IceCfg *Cfg) const {
   IceOstream &Str = Cfg->getContext()->StrDump;
   Str << " " << getVar() << "={";
-  for (IceOpList::const_iterator I = Available.begin(), E = Available.end();
+  for (OperandList::const_iterator I = Available.begin(), E = Available.end();
        I != E; ++I) {
     if (I != Available.begin())
       Str << ",";

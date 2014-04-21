@@ -68,12 +68,12 @@ public:
 
   // Returns a list of out-edges corresponding to a terminator
   // instruction, which is the last instruction of the block.
-  virtual IceNodeList getTerminatorEdges() const {
+  virtual NodeList getTerminatorEdges() const {
     // All valid terminator instructions override this method.  For
     // the default implementation, we assert in case some CfgNode
     // is constructed without a terminator instruction at the end.
     assert(0);
-    return IceNodeList();
+    return NodeList();
   }
 
   // Updates the status of the Variables contained within the
@@ -241,7 +241,7 @@ public:
     assert(isUnconditional());
     return getTargetFalse();
   }
-  virtual IceNodeList getTerminatorEdges() const;
+  virtual NodeList getTerminatorEdges() const;
   virtual void dump(const IceCfg *Cfg) const;
   static bool classof(const Inst *Inst) { return Inst->getKind() == Br; }
 
@@ -450,7 +450,7 @@ public:
   static InstRet *create(IceCfg *Cfg, Operand *Source = NULL) {
     return new (Cfg->allocateInst<InstRet>()) InstRet(Cfg, Source);
   }
-  virtual IceNodeList getTerminatorEdges() const { return IceNodeList(); }
+  virtual NodeList getTerminatorEdges() const { return NodeList(); }
   virtual void dump(const IceCfg *Cfg) const;
   static bool classof(const Inst *Inst) { return Inst->getKind() == Ret; }
 
@@ -519,7 +519,7 @@ public:
     return Labels[I];
   }
   void addBranch(uint32_t CaseIndex, uint64_t Value, CfgNode *Label);
-  virtual IceNodeList getTerminatorEdges() const;
+  virtual NodeList getTerminatorEdges() const;
   virtual void dump(const IceCfg *Cfg) const;
   static bool classof(const Inst *Inst) { return Inst->getKind() == Switch; }
 
@@ -541,7 +541,7 @@ public:
   static InstUnreachable *create(IceCfg *Cfg) {
     return new (Cfg->allocateInst<InstUnreachable>()) InstUnreachable(Cfg);
   }
-  virtual IceNodeList getTerminatorEdges() const { return IceNodeList(); }
+  virtual NodeList getTerminatorEdges() const { return NodeList(); }
   virtual void dump(const IceCfg *Cfg) const;
   static bool classof(const Inst *Inst) {
     return Inst->getKind() == Unreachable;
@@ -612,7 +612,7 @@ private:
 // gets dead-code eliminated, the FakeKill instruction will as well.
 class InstFakeKill : public Inst {
 public:
-  static InstFakeKill *create(IceCfg *Cfg, const IceVarList &KilledRegs,
+  static InstFakeKill *create(IceCfg *Cfg, const VarList &KilledRegs,
                               const Inst *Linked) {
     return new (Cfg->allocateInst<InstFakeKill>())
         InstFakeKill(Cfg, KilledRegs, Linked);
@@ -623,7 +623,7 @@ public:
   static bool classof(const Inst *Inst) { return Inst->getKind() == FakeKill; }
 
 private:
-  InstFakeKill(IceCfg *Cfg, const IceVarList &KilledRegs, const Inst *Linked);
+  InstFakeKill(IceCfg *Cfg, const VarList &KilledRegs, const Inst *Linked);
   InstFakeKill(const InstFakeKill &) LLVM_DELETED_FUNCTION;
   InstFakeKill &operator=(const InstFakeKill &) LLVM_DELETED_FUNCTION;
   // This instruction is ignored if Linked->isDeleted() is true.

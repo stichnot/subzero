@@ -51,10 +51,10 @@ class Variable;
 // http://llvm.org/docs/ProgrammersManual.html#picking-the-right-data-structure-for-a-task
 typedef std::string IceString;
 typedef std::list<Inst *> InstList;
-typedef std::list<InstPhi *> IcePhiList;
-typedef std::vector<Operand *> IceOpList;
-typedef std::vector<Variable *> IceVarList;
-typedef std::vector<CfgNode *> IceNodeList;
+typedef std::list<InstPhi *> PhiList;
+typedef std::vector<Operand *> OperandList;
+typedef std::vector<Variable *> VarList;
+typedef std::vector<CfgNode *> NodeList;
 
 enum LivenessMode {
   // Lightweight version of live-range-end calculation.  Marks the
