@@ -7,9 +7,9 @@
 //
 //===----------------------------------------------------------------------===//
 //
-// This file declares the TargetLowering and IceLoweringContext
+// This file declares the TargetLowering and LoweringContext
 // classes.  TargetLowering is an abstract class used to drive the
-// translation/lowering process.  IceLoweringContext maintains a
+// translation/lowering process.  LoweringContext maintains a
 // context for lowering each instruction, offering conveniences such
 // as iterating over non-deleted instructions.
 //
@@ -25,15 +25,15 @@
 
 namespace Ice {
 
-// IceLoweringContext makes it easy to iterate through non-deleted
+// LoweringContext makes it easy to iterate through non-deleted
 // instructions in a node, and insert new (lowered) instructions at
 // the current point.  Along with the instruction list container and
 // associated iterators, it holds the current node, which is needed
 // when inserting new instructions in order to track whether variables
 // are used as single-block or multi-block.
-class IceLoweringContext {
+class LoweringContext {
 public:
-  IceLoweringContext() : Node(NULL) {}
+  LoweringContext() : Node(NULL) {}
   void init(CfgNode *Node);
   Inst *getNextInst() const {
     if (Next == End)
@@ -70,9 +70,8 @@ private:
 private:
   void skipDeleted(InstList::iterator &I);
   void advance(InstList::iterator &I);
-  IceLoweringContext(const IceLoweringContext &) LLVM_DELETED_FUNCTION;
-  IceLoweringContext &
-  operator=(const IceLoweringContext &) LLVM_DELETED_FUNCTION;
+  LoweringContext(const LoweringContext &) LLVM_DELETED_FUNCTION;
+  LoweringContext &operator=(const LoweringContext &) LLVM_DELETED_FUNCTION;
 };
 
 class TargetLowering {
@@ -130,7 +129,7 @@ public:
   int32_t getStackAdjustment() const { return StackAdjustment; }
   void updateStackAdjustment(int32_t Offset) { StackAdjustment += Offset; }
   void resetStackAdjustment() { StackAdjustment = 0; }
-  IceLoweringContext &getContext() { return Context; }
+  LoweringContext &getContext() { return Context; }
 
   enum RegSet {
     RegSet_None = 0,
@@ -189,7 +188,7 @@ protected:
   // StackAdjustment keeps track of the current stack offset from its
   // natural location, as arguments are pushed for a function call.
   int32_t StackAdjustment;
-  IceLoweringContext Context;
+  LoweringContext Context;
 
 private:
   TargetLowering(const TargetLowering &) LLVM_DELETED_FUNCTION;

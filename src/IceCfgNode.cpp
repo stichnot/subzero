@@ -209,7 +209,7 @@ void CfgNode::deletePhis() {
 // instruction and delete the old.
 void CfgNode::doAddressOpt() {
   TargetLowering *Target = Cfg->getTarget();
-  IceLoweringContext &Context = Target->getContext();
+  LoweringContext &Context = Target->getContext();
   Context.init(this);
   while (!Context.atEnd()) {
     Target->doAddressOpt();
@@ -220,7 +220,7 @@ void CfgNode::doAddressOpt() {
 // next non-deleted instruction for target lowering.
 void CfgNode::genCode() {
   TargetLowering *Target = Cfg->getTarget();
-  IceLoweringContext &Context = Target->getContext();
+  LoweringContext &Context = Target->getContext();
   // Lower only the regular instructions.  Defer the Phi instructions.
   Context.init(this);
   while (!Context.atEnd()) {

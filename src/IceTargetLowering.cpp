@@ -11,7 +11,7 @@
 // specifically invoking the appropriate lowering method for a given
 // instruction kind and driving global register allocation.  It also
 // implements the non-deleted instruction iteration in
-// IceLoweringContext.
+// LoweringContext.
 //
 //===----------------------------------------------------------------------===//
 
@@ -24,7 +24,7 @@
 
 namespace Ice {
 
-void IceLoweringContext::init(CfgNode *N) {
+void LoweringContext::init(CfgNode *N) {
   Node = N;
   Cur = getNode()->getInsts().begin();
   End = getNode()->getInsts().end();
@@ -33,17 +33,17 @@ void IceLoweringContext::init(CfgNode *N) {
   advance(Next);
 }
 
-void IceLoweringContext::insert(Inst *Inst) {
+void LoweringContext::insert(Inst *Inst) {
   getNode()->getInsts().insert(Next, Inst);
   Inst->updateVars(getNode());
 }
 
-void IceLoweringContext::skipDeleted(InstList::iterator &I) {
+void LoweringContext::skipDeleted(InstList::iterator &I) {
   while (I != End && (*I)->isDeleted())
     ++I;
 }
 
-void IceLoweringContext::advance(InstList::iterator &I) {
+void LoweringContext::advance(InstList::iterator &I) {
   if (I != End) {
     ++I;
     skipDeleted(I);
