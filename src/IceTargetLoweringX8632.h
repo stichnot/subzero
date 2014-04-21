@@ -22,9 +22,9 @@
 
 namespace Ice {
 
-class IceTargetX8632 : public TargetLowering {
+class TargetX8632 : public TargetLowering {
 public:
-  static IceTargetX8632 *create(IceCfg *Cfg) { return new IceTargetX8632(Cfg); }
+  static TargetX8632 *create(IceCfg *Cfg) { return new TargetX8632(Cfg); }
 
   virtual void translateOm1();
   virtual void translateO2();
@@ -79,7 +79,7 @@ public:
   };
 
 protected:
-  IceTargetX8632(IceCfg *Cfg);
+  TargetX8632(IceCfg *Cfg);
 
   virtual void postLower();
 
@@ -262,8 +262,8 @@ protected:
   static IceString RegNames[];
 
 private:
-  IceTargetX8632(const IceTargetX8632 &) LLVM_DELETED_FUNCTION;
-  IceTargetX8632 &operator=(const IceTargetX8632 &) LLVM_DELETED_FUNCTION;
+  TargetX8632(const TargetX8632 &) LLVM_DELETED_FUNCTION;
+  TargetX8632 &operator=(const TargetX8632 &) LLVM_DELETED_FUNCTION;
 };
 
 } // end of namespace Ice

@@ -22,7 +22,7 @@
 
 namespace Ice {
 
-class IceTargetX8632;
+class TargetX8632;
 
 class OperandX8632 : public Operand {
 public:
@@ -197,7 +197,7 @@ private:
 // lowering.
 class InstX8632Label : public InstX8632 {
 public:
-  static InstX8632Label *create(IceCfg *Cfg, IceTargetX8632 *Target) {
+  static InstX8632Label *create(IceCfg *Cfg, TargetX8632 *Target) {
     return new (Cfg->allocate<InstX8632Label>()) InstX8632Label(Cfg, Target);
   }
   IceString getName(const IceCfg *Cfg) const;
@@ -205,7 +205,7 @@ public:
   virtual void dump(const IceCfg *Cfg) const;
 
 private:
-  InstX8632Label(IceCfg *Cfg, IceTargetX8632 *Target);
+  InstX8632Label(IceCfg *Cfg, TargetX8632 *Target);
   InstX8632Label(const InstX8632Label &) LLVM_DELETED_FUNCTION;
   InstX8632Label &operator=(const InstX8632Label &) LLVM_DELETED_FUNCTION;
   uint32_t Number; // used only for unique label string generation

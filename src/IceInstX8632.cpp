@@ -92,7 +92,7 @@ InstX8632Shrd::InstX8632Shrd(IceCfg *Cfg, Variable *Dest, Variable *Source1,
   addSource(Source2);
 }
 
-InstX8632Label::InstX8632Label(IceCfg *Cfg, IceTargetX8632 *Target)
+InstX8632Label::InstX8632Label(IceCfg *Cfg, TargetX8632 *Target)
     : InstX8632(Cfg, InstX8632::Label, 0, NULL),
       Number(Target->makeNextLabelNumber()) {}
 
@@ -117,10 +117,9 @@ InstX8632Call::InstX8632Call(IceCfg *Cfg, Variable *Dest, Operand *CallTarget,
 
 InstX8632Cdq::InstX8632Cdq(IceCfg *Cfg, Variable *Dest, Operand *Source)
     : InstX8632(Cfg, InstX8632::Cdq, 1, Dest) {
-  assert(Dest->getRegNum() == IceTargetX8632::Reg_edx);
+  assert(Dest->getRegNum() == TargetX8632::Reg_edx);
   assert(llvm::isa<Variable>(Source));
-  assert(llvm::dyn_cast<Variable>(Source)->getRegNum() ==
-         IceTargetX8632::Reg_eax);
+  assert(llvm::dyn_cast<Variable>(Source)->getRegNum() == TargetX8632::Reg_eax);
   addSource(Source);
 }
 
@@ -374,7 +373,7 @@ void IceEmitTwoAddress(const char *Opcode, const Inst *Inst, const IceCfg *Cfg,
   bool EmittedSrc1 = false;
   if (ShiftHack) {
     Variable *ShiftReg = llvm::dyn_cast<Variable>(Inst->getSrc(1));
-    if (ShiftReg && ShiftReg->getRegNum() == IceTargetX8632::Reg_ecx) {
+    if (ShiftReg && ShiftReg->getRegNum() == TargetX8632::Reg_ecx) {
       Str << "cl";
       EmittedSrc1 = true;
     }
@@ -432,7 +431,7 @@ template <> void InstX8632Imul::emit(const IceCfg *Cfg, uint32_t Option) const {
   if (getDest()->getType() == IceType_i8) {
     // The 8-bit version of imul only allows the form "imul r/m8".
     Variable *Src0 = llvm::dyn_cast<Variable>(getSrc(0));
-    assert(Src0 && Src0->getRegNum() == IceTargetX8632::Reg_eax);
+    assert(Src0 && Src0->getRegNum() == TargetX8632::Reg_eax);
     Str << "\timul\t";
     getSrc(1)->emit(Cfg, Option);
     Str << "\n";
@@ -454,8 +453,8 @@ void InstX8632Mul::emit(const IceCfg *Cfg, uint32_t Option) const {
   assert(getSrcSize() == 2);
   assert(llvm::isa<Variable>(getSrc(0)));
   assert(llvm::dyn_cast<Variable>(getSrc(0))->getRegNum() ==
-         IceTargetX8632::Reg_eax);
-  assert(getDest()->getRegNum() == IceTargetX8632::Reg_eax); // TODO: allow edx?
+         TargetX8632::Reg_eax);
+  assert(getDest()->getRegNum() == TargetX8632::Reg_eax); // TODO: allow edx?
   Str << "\tmul\t";
   getSrc(1)->emit(Cfg, Option);
   Str << "\n";
@@ -481,7 +480,7 @@ void InstX8632Shld::emit(const IceCfg *Cfg, uint32_t Option) const {
   bool EmittedSrc1 = false;
   if (ShiftHack) {
     Variable *ShiftReg = llvm::dyn_cast<Variable>(getSrc(2));
-    if (ShiftReg && ShiftReg->getRegNum() == IceTargetX8632::Reg_ecx) {
+    if (ShiftReg && ShiftReg->getRegNum() == TargetX8632::Reg_ecx) {
       Str << "cl";
       EmittedSrc1 = true;
     }
@@ -511,7 +510,7 @@ void InstX8632Shrd::emit(const IceCfg *Cfg, uint32_t Option) const {
   bool EmittedSrc1 = false;
   if (ShiftHack) {
     Variable *ShiftReg = llvm::dyn_cast<Variable>(getSrc(2));
-    if (ShiftReg && ShiftReg->getRegNum() == IceTargetX8632::Reg_ecx) {
+    if (ShiftReg && ShiftReg->getRegNum() == TargetX8632::Reg_ecx) {
       Str << "cl";
       EmittedSrc1 = true;
     }

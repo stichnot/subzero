@@ -10,7 +10,7 @@
 // This file implements the TargetLoweringX8632 class, which
 // consists almost entirely of the lowering sequence for each
 // high-level instruction.  It also implements
-// IceTargetX8632Fast::postLower() which does the simplest possible
+// TargetX8632Fast::postLower() which does the simplest possible
 // register allocation for the "fast" target.
 //
 //===----------------------------------------------------------------------===//
@@ -24,7 +24,7 @@
 
 namespace Ice {
 
-IceTargetX8632::IceTargetX8632(IceCfg *Cfg)
+TargetX8632::TargetX8632(IceCfg *Cfg)
     : TargetLowering(Cfg), IsEbpBasedFrame(false), FrameSizeLocals(0),
       LocalsSizeBytes(0), NextLabelNumber(0), ComputedLiveRanges(false),
       PhysicalRegisters(VarList(Reg_NUM)) {
@@ -54,7 +54,7 @@ IceTargetX8632::IceTargetX8632(IceCfg *Cfg)
   ScratchRegs[Reg_edx] = true;
 }
 
-void IceTargetX8632::translateO2() {
+void TargetX8632::translateO2() {
   GlobalContext *Context = Cfg->getContext();
   IceOstream &Str = Context->StrDump;
   IceTimer T_placePhiLoads;
@@ -141,7 +141,7 @@ void IceTargetX8632::translateO2() {
   Cfg->dump();
 }
 
-void IceTargetX8632::translateOm1() {
+void TargetX8632::translateOm1() {
   GlobalContext *Context = Cfg->getContext();
   IceOstream &Str = Context->StrDump;
   IceTimer T_placePhiLoads;
@@ -182,12 +182,12 @@ void IceTargetX8632::translateOm1() {
   Cfg->dump();
 }
 
-IceString IceTargetX8632::RegNames[] = { "eax",  "ecx",  "edx",  "ebx",  "esp",
-                                         "ebp",  "esi",  "edi",  "???",  "xmm0",
-                                         "xmm1", "xmm2", "xmm3", "xmm4", "xmm5",
-                                         "xmm6", "xmm7" };
+IceString TargetX8632::RegNames[] = { "eax",  "ecx",  "edx",  "ebx",  "esp",
+                                      "ebp",  "esi",  "edi",  "???",  "xmm0",
+                                      "xmm1", "xmm2", "xmm3", "xmm4", "xmm5",
+                                      "xmm6", "xmm7" };
 
-Variable *IceTargetX8632::getPhysicalRegister(uint32_t RegNum) {
+Variable *TargetX8632::getPhysicalRegister(uint32_t RegNum) {
   assert(RegNum < PhysicalRegisters.size());
   Variable *Reg = PhysicalRegisters[RegNum];
   if (Reg == NULL) {
@@ -199,7 +199,7 @@ Variable *IceTargetX8632::getPhysicalRegister(uint32_t RegNum) {
   return Reg;
 }
 
-IceString IceTargetX8632::getRegName(uint32_t RegNum, IceType Type) const {
+IceString TargetX8632::getRegName(uint32_t RegNum, IceType Type) const {
   assert(RegNum < Reg_NUM);
   static IceString RegNames8[] = { "al", "cl", "dl", "bl", "??",
                                    "??", "??", "??", "ah" };
@@ -224,9 +224,9 @@ IceString IceTargetX8632::getRegName(uint32_t RegNum, IceType Type) const {
 // For an I64 arg that has been split into Lo and Hi components, it
 // calls itself recursively on the components, taking care to handle
 // Lo first because of the little-endian architecture.
-void IceTargetX8632::setArgOffsetAndCopy(Variable *Arg, Variable *FramePtr,
-                                         int32_t BasicFrameOffset,
-                                         int32_t &InArgsSizeBytes) {
+void TargetX8632::setArgOffsetAndCopy(Variable *Arg, Variable *FramePtr,
+                                      int32_t BasicFrameOffset,
+                                      int32_t &InArgsSizeBytes) {
   Variable *Lo = Arg->getLo();
   Variable *Hi = Arg->getHi();
   IceType Type = Arg->getType();
@@ -248,7 +248,7 @@ void IceTargetX8632::setArgOffsetAndCopy(Variable *Arg, Variable *FramePtr,
   InArgsSizeBytes += typeWidthInBytesOnStack(Type);
 }
 
-void IceTargetX8632::addProlog(CfgNode *Node) {
+void TargetX8632::addProlog(CfgNode *Node) {
   // If SimpleCoalescing is false, each variable without a register
   // gets its own unique stack slot, which leads to large stack
   // frames.  If SimpleCoalescing is true, then each "global" variable
@@ -425,7 +425,7 @@ void IceTargetX8632::addProlog(CfgNode *Node) {
   }
 }
 
-void IceTargetX8632::addEpilog(CfgNode *Node) {
+void TargetX8632::addEpilog(CfgNode *Node) {
   InstList &Insts = Node->getInsts();
   InstList::reverse_iterator RI, E;
   for (RI = Insts.rbegin(), E = Insts.rend(); RI != E; ++RI) {
@@ -466,7 +466,7 @@ void IceTargetX8632::addEpilog(CfgNode *Node) {
   }
 }
 
-void IceTargetX8632::split64(Variable *Var) {
+void TargetX8632::split64(Variable *Var) {
   switch (Var->getType()) {
   default:
     return;
@@ -495,7 +495,7 @@ void IceTargetX8632::split64(Variable *Var) {
   }
 }
 
-Operand *IceTargetX8632::loOperand(Operand *Operand) {
+Operand *TargetX8632::loOperand(Operand *Operand) {
   assert(Operand->getType() == IceType_i64);
   if (Operand->getType() != IceType_i64)
     return Operand;
@@ -516,7 +516,7 @@ Operand *IceTargetX8632::loOperand(Operand *Operand) {
   return NULL;
 }
 
-Operand *IceTargetX8632::hiOperand(Operand *Operand) {
+Operand *TargetX8632::hiOperand(Operand *Operand) {
   assert(Operand->getType() == IceType_i64);
   if (Operand->getType() != IceType_i64)
     return Operand;
@@ -549,8 +549,8 @@ Operand *IceTargetX8632::hiOperand(Operand *Operand) {
   return NULL;
 }
 
-llvm::SmallBitVector IceTargetX8632::getRegisterSet(RegSetMask Include,
-                                                    RegSetMask Exclude) const {
+llvm::SmallBitVector TargetX8632::getRegisterSet(RegSetMask Include,
+                                                 RegSetMask Exclude) const {
   llvm::SmallBitVector Registers(Reg_NUM);
   bool Scratch = Include & ~Exclude & RegSet_CallerSave;
   bool Preserved = Include & ~Exclude & RegSet_CalleeSave;
@@ -576,7 +576,7 @@ llvm::SmallBitVector IceTargetX8632::getRegisterSet(RegSetMask Include,
   return Registers;
 }
 
-void IceTargetX8632::lowerAlloca(const InstAlloca *Inst) {
+void TargetX8632::lowerAlloca(const InstAlloca *Inst) {
   IsEbpBasedFrame = true;
   // TODO(sehr,stichnot): align allocated memory, keep stack aligned, minimize
   // the number of adjustments of esp, etc.
@@ -587,7 +587,7 @@ void IceTargetX8632::lowerAlloca(const InstAlloca *Inst) {
   _mov(Dest, esp);
 }
 
-void IceTargetX8632::lowerArithmetic(const InstArithmetic *Inst) {
+void TargetX8632::lowerArithmetic(const InstArithmetic *Inst) {
   Variable *Dest = Inst->getDest();
   Operand *Src0 = legalize(Inst->getSrc(0));
   Operand *Src1 = legalize(Inst->getSrc(1));
@@ -964,7 +964,7 @@ void IceTargetX8632::lowerArithmetic(const InstArithmetic *Inst) {
   }
 }
 
-void IceTargetX8632::lowerAssign(const InstAssign *Inst) {
+void TargetX8632::lowerAssign(const InstAssign *Inst) {
   Variable *Dest = Inst->getDest();
   Operand *Src0 = legalize(Inst->getSrc(0));
   assert(Dest->getType() == Src0->getType());
@@ -986,7 +986,7 @@ void IceTargetX8632::lowerAssign(const InstAssign *Inst) {
   }
 }
 
-void IceTargetX8632::lowerBr(const InstBr *Inst) {
+void TargetX8632::lowerBr(const InstBr *Inst) {
   if (Inst->isUnconditional()) {
     _br(Inst->getTargetUnconditional());
   } else {
@@ -997,7 +997,7 @@ void IceTargetX8632::lowerBr(const InstBr *Inst) {
   }
 }
 
-void IceTargetX8632::lowerCall(const InstCall *Instr) {
+void TargetX8632::lowerCall(const InstCall *Instr) {
   // TODO: what to do about tailcalls?
   // Generate a sequence of push instructions, pushing right to left,
   // keeping track of stack offsets in case a push involves a stack
@@ -1113,7 +1113,7 @@ void IceTargetX8632::lowerCall(const InstCall *Instr) {
   }
 }
 
-void IceTargetX8632::lowerCast(const InstCast *Inst) {
+void TargetX8632::lowerCast(const InstCast *Inst) {
   // a = cast(b) ==> t=cast(b); a=t; (link t->b, link a->t, no overlap)
   InstCast::OpKind CastKind = Inst->getCastKind();
   Variable *Dest = Inst->getDest();
@@ -1417,7 +1417,7 @@ const uint32_t TableFcmpSize = sizeof(TableFcmp) / sizeof(*TableFcmp);
 
 } // anonymous namespace
 
-void IceTargetX8632::lowerFcmp(const InstFcmp *Inst) {
+void TargetX8632::lowerFcmp(const InstFcmp *Inst) {
   Operand *Src0 = Inst->getSrc(0);
   Operand *Src1 = Inst->getSrc(1);
   Variable *Dest = Inst->getDest();
@@ -1518,7 +1518,7 @@ InstX8632Br::BrCond getIcmp32Mapping(InstIcmp::ICond Cond) {
 
 } // anonymous namespace
 
-void IceTargetX8632::lowerIcmp(const InstIcmp *Inst) {
+void TargetX8632::lowerIcmp(const InstIcmp *Inst) {
   Operand *Src0 = legalize(Inst->getSrc(0));
   Operand *Src1 = legalize(Inst->getSrc(1));
   Variable *Dest = Inst->getDest();
@@ -1731,7 +1731,7 @@ void computeAddressOpt(IceCfg *Cfg, Variable *&Base, Variable *&Index,
 
 } // anonymous namespace
 
-void IceTargetX8632::lowerLoad(const InstLoad *Inst) {
+void TargetX8632::lowerLoad(const InstLoad *Inst) {
   // A Load instruction can be treated the same as an Assign
   // instruction, after the source operand is transformed into an
   // OperandX8632Mem operand.  Note that the address mode
@@ -1788,7 +1788,7 @@ void IceTargetX8632::lowerLoad(const InstLoad *Inst) {
   lowerAssign(Assign);
 }
 
-void IceTargetX8632::doAddressOptLoad() {
+void TargetX8632::doAddressOptLoad() {
   Inst *Inst = *Context.getCur();
   Variable *Dest = Inst->getDest();
   Operand *Addr = Inst->getSrc(0);
@@ -1806,11 +1806,11 @@ void IceTargetX8632::doAddressOptLoad() {
   }
 }
 
-void IceTargetX8632::lowerPhi(const InstPhi *Inst) {
+void TargetX8632::lowerPhi(const InstPhi *Inst) {
   Cfg->setError("Phi lowering not implemented");
 }
 
-void IceTargetX8632::lowerRet(const InstRet *Inst) {
+void TargetX8632::lowerRet(const InstRet *Inst) {
   Variable *Reg = NULL;
   if (Inst->getSrcSize()) {
     Operand *Src0 = legalize(Inst->getSrc(0));
@@ -1836,7 +1836,7 @@ void IceTargetX8632::lowerRet(const InstRet *Inst) {
   Context.insert(InstFakeUse::create(Cfg, esp));
 }
 
-void IceTargetX8632::lowerSelect(const InstSelect *Inst) {
+void TargetX8632::lowerSelect(const InstSelect *Inst) {
   // a=d?b:c ==> cmp d,0; a=b; jne L1; FakeUse(a); a=c; L1:
   Variable *Dest = Inst->getDest();
   Operand *SrcT = Inst->getTrueOperand();
@@ -1875,7 +1875,7 @@ void IceTargetX8632::lowerSelect(const InstSelect *Inst) {
   Context.insert(Label);
 }
 
-void IceTargetX8632::lowerStore(const InstStore *Inst) {
+void TargetX8632::lowerStore(const InstStore *Inst) {
   Operand *Value = Inst->getData();
   Operand *Addr = Inst->getAddr();
   OperandX8632Mem *NewAddr = llvm::dyn_cast<OperandX8632Mem>(Addr);
@@ -1904,7 +1904,7 @@ void IceTargetX8632::lowerStore(const InstStore *Inst) {
   }
 }
 
-void IceTargetX8632::doAddressOptStore() {
+void TargetX8632::doAddressOptStore() {
   InstStore *Inst = llvm::cast<InstStore>(*Context.getCur());
   Operand *Data = Inst->getData();
   Operand *Addr = Inst->getAddr();
@@ -1922,7 +1922,7 @@ void IceTargetX8632::doAddressOptStore() {
   }
 }
 
-void IceTargetX8632::lowerSwitch(const InstSwitch *Inst) {
+void TargetX8632::lowerSwitch(const InstSwitch *Inst) {
   // This implements the most naive possible lowering.
   // cmp a,val[0]; jeq label[0]; cmp a,val[1]; jeq label[1]; ... jmp default
   Operand *Src0 = Inst->getSrc(0);
@@ -1942,15 +1942,15 @@ void IceTargetX8632::lowerSwitch(const InstSwitch *Inst) {
   _br(Inst->getLabelDefault());
 }
 
-void IceTargetX8632::lowerUnreachable(const InstUnreachable *Inst) {
+void TargetX8632::lowerUnreachable(const InstUnreachable *Inst) {
   uint32_t MaxSrcs = 0;
   Variable *Dest = NULL;
   InstCall *Call = makeHelperCall("ice_unreachable", Dest, MaxSrcs);
   lowerCall(Call);
 }
 
-Operand *IceTargetX8632::legalize(Operand *From, LegalMask Allowed,
-                                  bool AllowOverlap, int32_t RegNum) {
+Operand *TargetX8632::legalize(Operand *From, LegalMask Allowed,
+                               bool AllowOverlap, int32_t RegNum) {
   assert(Allowed & Legal_Reg);
   assert(RegNum == Variable::NoRegister || Allowed == Legal_Reg);
   if (OperandX8632Mem *Mem = llvm::dyn_cast<OperandX8632Mem>(From)) {
@@ -2004,12 +2004,12 @@ Operand *IceTargetX8632::legalize(Operand *From, LegalMask Allowed,
   return From;
 }
 
-Variable *IceTargetX8632::legalizeToVar(Operand *From, bool AllowOverlap,
-                                        int32_t RegNum) {
+Variable *TargetX8632::legalizeToVar(Operand *From, bool AllowOverlap,
+                                     int32_t RegNum) {
   return llvm::cast<Variable>(legalize(From, Legal_Reg, AllowOverlap, RegNum));
 }
 
-Variable *IceTargetX8632::makeReg(IceType Type, int32_t RegNum) {
+Variable *TargetX8632::makeReg(IceType Type, int32_t RegNum) {
   Variable *Reg = Cfg->makeVariable(Type, Context.getNode());
   if (RegNum == Variable::NoRegister)
     Reg->setWeightInfinite();
@@ -2018,7 +2018,7 @@ Variable *IceTargetX8632::makeReg(IceType Type, int32_t RegNum) {
   return Reg;
 }
 
-void IceTargetX8632::postLower() {
+void TargetX8632::postLower() {
   if (Ctx->getOptLevel() != IceOpt_m1)
     return;
   llvm::SmallBitVector WhiteList = getRegisterSet(RegSet_All, RegSet_None);
