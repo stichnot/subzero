@@ -16,9 +16,9 @@
 #ifndef SUBZERO_SRC_ICEDEFS_H
 #define SUBZERO_SRC_ICEDEFS_H
 
-#include <assert.h>
+#include <cassert>
 #include <stdint.h>
-#include <stdio.h> // snprintf
+#include <cstdio> // snprintf
 
 #include <list>
 #include <map>
