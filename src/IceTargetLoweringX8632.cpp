@@ -483,8 +483,10 @@ void IceTargetX8632::split64(IceVariable *Var) {
     return;
   }
   assert(Hi == NULL);
-  Lo = Cfg->makeVariable(IceType_i32, Context.getNode(), Var->getName() + "__lo");
-  Hi = Cfg->makeVariable(IceType_i32, Context.getNode(), Var->getName() + "__hi");
+  Lo = Cfg->makeVariable(IceType_i32, Context.getNode(),
+                         Var->getName() + "__lo");
+  Hi = Cfg->makeVariable(IceType_i32, Context.getNode(),
+                         Var->getName() + "__hi");
   Var->setLoHi(Lo, Hi);
   if (Var->getIsArg()) {
     Lo->setIsArg(Cfg);
@@ -2032,7 +2034,8 @@ void IceTargetX8632::postLower() {
   // there was some prior register allocation pass that made register
   // assignments, those registers need to be black-listed here as
   // well.
-  for (IceInstList::iterator I = Context.getCur(), E = Context.getEnd(); I != E; ++I) {
+  for (IceInstList::iterator I = Context.getCur(), E = Context.getEnd(); I != E;
+       ++I) {
     const IceInst *Inst = *I;
     if (Inst->isDeleted())
       continue;
@@ -2052,7 +2055,8 @@ void IceTargetX8632::postLower() {
   }
   // The second pass colors infinite-weight variables.
   llvm::SmallBitVector AvailableRegisters = WhiteList;
-  for (IceInstList::iterator I = Context.getCur(), E = Context.getEnd(); I != E; ++I) {
+  for (IceInstList::iterator I = Context.getCur(), E = Context.getEnd(); I != E;
+       ++I) {
     const IceInst *Inst = *I;
     if (Inst->isDeleted())
       continue;

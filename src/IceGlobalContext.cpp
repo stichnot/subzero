@@ -103,8 +103,8 @@ IceString IceGlobalContext::mangleName(const IceString &Name) const {
   if (ItemsParsed == 1) {
     // Transform _ZN3foo3barExyz ==> _ZN6Prefix3foo3barExyz
     //   (splice in "6Prefix")          ^^^^^^^
-    snprintf(NewName, BufLen, "_ZN%u%s%s", PrefixLength, getTestPrefix().c_str(),
-            NameBase);
+    snprintf(NewName, BufLen, "_ZN%u%s%s", PrefixLength,
+             getTestPrefix().c_str(), NameBase);
     // We ignore the snprintf return value (here and below).  If we
     // somehow miscalculated the output buffer length, the output will
     // be truncated, but it will be truncated consistently for all
@@ -122,8 +122,8 @@ IceString IceGlobalContext::mangleName(const IceString &Name) const {
     strncpy(OrigName, NameBase, BaseLength);
     OrigName[BaseLength] = '\0';
     strcpy(OrigSuffix, NameBase + BaseLength);
-    snprintf(NewName, BufLen, "_ZN%u%s%u%sE%s", PrefixLength, getTestPrefix().c_str(),
-            BaseLength, OrigName, OrigSuffix);
+    snprintf(NewName, BufLen, "_ZN%u%s%u%sE%s", PrefixLength,
+             getTestPrefix().c_str(), BaseLength, OrigName, OrigSuffix);
     return NewName;
   }
 
