@@ -160,7 +160,7 @@ void TargetLowering::lower() {
 // registers could potentially be parameterized if we want to restrict
 // registers e.g. for performance testing.
 void TargetLowering::regAlloc() {
-  IceLinearScan LinearScan(Cfg);
+  LinearScan LinearScan(Cfg);
   RegSetMask RegInclude = RegSet_None;
   RegSetMask RegExclude = RegSet_None;
   RegInclude |= RegSet_CallerSave;

@@ -7,7 +7,7 @@
 //
 //===----------------------------------------------------------------------===//
 //
-// This file implements the IceLinearScan class, which performs the
+// This file implements the LinearScan class, which performs the
 // linear-scan register allocation after liveness analysis has been
 // performed.
 //
@@ -32,7 +32,7 @@ namespace Ice {
 // Requires running IceCfg::liveness(Liveness_RangesFull) in
 // preparation.  Results are assigned to Variable::RegNum for each
 // Variable.
-void IceLinearScan::scan(const llvm::SmallBitVector &RegMaskFull) {
+void LinearScan::scan(const llvm::SmallBitVector &RegMaskFull) {
   if (!RegMaskFull.any())
     return;
   Unhandled.clear();
@@ -425,7 +425,7 @@ void LiveRangeWrapper::dump(const IceCfg *Cfg) const {
   Str << "  Range=" << range();
 }
 
-void IceLinearScan::dump(IceCfg *Cfg) const {
+void LinearScan::dump(IceCfg *Cfg) const {
   IceOstream &Str = Cfg->getContext()->StrDump;
   if (!Cfg->getContext()->isVerbose(IceV_LinearScan))
     return;

@@ -9,7 +9,7 @@
 //
 // This file declares the data structures used during linear-scan
 // register allocation.  This includes LiveRangeWrapper which
-// encapsulates a variable and its live range, and IceLinearScan which
+// encapsulates a variable and its live range, and LinearScan which
 // holds the various work queues for the linear-scan algorithm.
 //
 //===----------------------------------------------------------------------===//
@@ -45,9 +45,9 @@ private:
   LiveRangeWrapper &operator=(const LiveRangeWrapper &) LLVM_DELETED_FUNCTION;
 };
 
-class IceLinearScan {
+class LinearScan {
 public:
-  IceLinearScan(IceCfg *Cfg) : Cfg(Cfg) {}
+  LinearScan(IceCfg *Cfg) : Cfg(Cfg) {}
   void scan(const llvm::SmallBitVector &RegMask);
   void dump(IceCfg *Cfg) const;
 
@@ -70,8 +70,8 @@ private:
   typedef std::list<LiveRangeWrapper> UnorderedRanges;
   OrderedRanges Unhandled;
   UnorderedRanges Active, Inactive, Handled;
-  IceLinearScan(const IceLinearScan &) LLVM_DELETED_FUNCTION;
-  IceLinearScan &operator=(const IceLinearScan &) LLVM_DELETED_FUNCTION;
+  LinearScan(const LinearScan &) LLVM_DELETED_FUNCTION;
+  LinearScan &operator=(const LinearScan &) LLVM_DELETED_FUNCTION;
 };
 
 } // end of namespace Ice
