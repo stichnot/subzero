@@ -299,7 +299,7 @@ bool IceCfg::validateLiveness() const {
       }
       uint32_t VarIndex = 0;
       for (uint32_t I = 0; I < Inst->getSrcSize(); ++I) {
-        IceOperand *Src = Inst->getSrc(I);
+        Operand *Src = Inst->getSrc(I);
         uint32_t NumVars = Src->getNumVars();
         for (uint32_t J = 0; J < NumVars; ++J, ++VarIndex) {
           const IceVariable *Var = Src->getVar(J);

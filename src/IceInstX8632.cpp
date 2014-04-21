@@ -7,7 +7,7 @@
 //
 //===----------------------------------------------------------------------===//
 //
-// This file implements the InstX8632 and IceOperandX8632 classes,
+// This file implements the InstX8632 and OperandX8632 classes,
 // primarily the constructors and the dump()/emit() methods.
 //
 //===----------------------------------------------------------------------===//
@@ -38,10 +38,10 @@ static const char *OpcodeTypeFromIceType(IceType type) {
   }
 }
 
-IceOperandX8632Mem::IceOperandX8632Mem(IceCfg *Cfg, IceType Type,
-                                       IceVariable *Base, IceConstant *Offset,
-                                       IceVariable *Index, uint32_t Shift)
-    : IceOperandX8632(Mem, Type), Base(Base), Offset(Offset), Index(Index),
+OperandX8632Mem::OperandX8632Mem(IceCfg *Cfg, IceType Type, IceVariable *Base,
+                                 IceConstant *Offset, IceVariable *Index,
+                                 uint32_t Shift)
+    : OperandX8632(Mem, Type), Base(Base), Offset(Offset), Index(Index),
       Shift(Shift) {
   Vars = NULL;
   NumVars = 0;
@@ -60,7 +60,7 @@ IceOperandX8632Mem::IceOperandX8632Mem(IceCfg *Cfg, IceType Type,
   }
 }
 
-void IceOperandX8632Mem::setUse(const Inst *Inst, const CfgNode *Node) {
+void OperandX8632Mem::setUse(const Inst *Inst, const CfgNode *Node) {
   if (getBase())
     getBase()->setUse(Inst, Node);
   if (getOffset())
@@ -70,7 +70,7 @@ void IceOperandX8632Mem::setUse(const Inst *Inst, const CfgNode *Node) {
 }
 
 InstX8632Mul::InstX8632Mul(IceCfg *Cfg, IceVariable *Dest, IceVariable *Source1,
-                           IceOperand *Source2)
+                           Operand *Source2)
     : InstX8632(Cfg, InstX8632::Mul, 2, Dest) {
   addSource(Source1);
   addSource(Source2);
@@ -109,13 +109,13 @@ InstX8632Br::InstX8632Br(IceCfg *Cfg, CfgNode *TargetTrue, CfgNode *TargetFalse,
       TargetTrue(TargetTrue), TargetFalse(TargetFalse), Label(Label) {}
 
 InstX8632Call::InstX8632Call(IceCfg *Cfg, IceVariable *Dest,
-                             IceOperand *CallTarget, bool Tail)
+                             Operand *CallTarget, bool Tail)
     : InstX8632(Cfg, InstX8632::Call, 1, Dest), Tail(Tail) {
   HasSideEffects = true;
   addSource(CallTarget);
 }
 
-InstX8632Cdq::InstX8632Cdq(IceCfg *Cfg, IceVariable *Dest, IceOperand *Source)
+InstX8632Cdq::InstX8632Cdq(IceCfg *Cfg, IceVariable *Dest, Operand *Source)
     : InstX8632(Cfg, InstX8632::Cdq, 1, Dest) {
   assert(Dest->getRegNum() == IceTargetX8632::Reg_edx);
   assert(llvm::isa<IceVariable>(Source));
@@ -124,55 +124,51 @@ InstX8632Cdq::InstX8632Cdq(IceCfg *Cfg, IceVariable *Dest, IceOperand *Source)
   addSource(Source);
 }
 
-InstX8632Cvt::InstX8632Cvt(IceCfg *Cfg, IceVariable *Dest, IceOperand *Source)
+InstX8632Cvt::InstX8632Cvt(IceCfg *Cfg, IceVariable *Dest, Operand *Source)
     : InstX8632(Cfg, InstX8632::Cvt, 1, Dest) {
   addSource(Source);
 }
 
-InstX8632Icmp::InstX8632Icmp(IceCfg *Cfg, IceOperand *Src0, IceOperand *Src1)
+InstX8632Icmp::InstX8632Icmp(IceCfg *Cfg, Operand *Src0, Operand *Src1)
     : InstX8632(Cfg, InstX8632::Icmp, 2, NULL) {
   addSource(Src0);
   addSource(Src1);
 }
 
-InstX8632Ucomiss::InstX8632Ucomiss(IceCfg *Cfg, IceOperand *Src0,
-                                   IceOperand *Src1)
+InstX8632Ucomiss::InstX8632Ucomiss(IceCfg *Cfg, Operand *Src0, Operand *Src1)
     : InstX8632(Cfg, InstX8632::Ucomiss, 2, NULL) {
   addSource(Src0);
   addSource(Src1);
 }
 
-InstX8632Test::InstX8632Test(IceCfg *Cfg, IceOperand *Src1, IceOperand *Src2)
+InstX8632Test::InstX8632Test(IceCfg *Cfg, Operand *Src1, Operand *Src2)
     : InstX8632(Cfg, InstX8632::Test, 2, NULL) {
   addSource(Src1);
   addSource(Src2);
 }
 
-InstX8632Store::InstX8632Store(IceCfg *Cfg, IceOperand *Value,
-                               IceOperandX8632 *Mem)
+InstX8632Store::InstX8632Store(IceCfg *Cfg, Operand *Value, OperandX8632 *Mem)
     : InstX8632(Cfg, InstX8632::Store, 2, NULL) {
   addSource(Value);
   addSource(Mem);
 }
 
-InstX8632Mov::InstX8632Mov(IceCfg *Cfg, IceVariable *Dest, IceOperand *Source)
+InstX8632Mov::InstX8632Mov(IceCfg *Cfg, IceVariable *Dest, Operand *Source)
     : InstX8632(Cfg, InstX8632::Mov, 1, Dest) {
   addSource(Source);
 }
 
-InstX8632Movsx::InstX8632Movsx(IceCfg *Cfg, IceVariable *Dest,
-                               IceOperand *Source)
+InstX8632Movsx::InstX8632Movsx(IceCfg *Cfg, IceVariable *Dest, Operand *Source)
     : InstX8632(Cfg, InstX8632::Movsx, 1, Dest) {
   addSource(Source);
 }
 
-InstX8632Movzx::InstX8632Movzx(IceCfg *Cfg, IceVariable *Dest,
-                               IceOperand *Source)
+InstX8632Movzx::InstX8632Movzx(IceCfg *Cfg, IceVariable *Dest, Operand *Source)
     : InstX8632(Cfg, InstX8632::Movzx, 1, Dest) {
   addSource(Source);
 }
 
-InstX8632Fld::InstX8632Fld(IceCfg *Cfg, IceOperand *Src)
+InstX8632Fld::InstX8632Fld(IceCfg *Cfg, Operand *Src)
     : InstX8632(Cfg, InstX8632::Fld, 1, NULL) {
   addSource(Src);
 }
@@ -183,7 +179,7 @@ InstX8632Fstp::InstX8632Fstp(IceCfg *Cfg, IceVariable *Dest)
 InstX8632Pop::InstX8632Pop(IceCfg *Cfg, IceVariable *Dest)
     : InstX8632(Cfg, InstX8632::Pop, 1, Dest) {}
 
-InstX8632Push::InstX8632Push(IceCfg *Cfg, IceOperand *Source,
+InstX8632Push::InstX8632Push(IceCfg *Cfg, Operand *Source,
                              bool SuppressStackAdjustment)
     : InstX8632(Cfg, InstX8632::Push, 1, NULL),
       SuppressStackAdjustment(SuppressStackAdjustment) {
@@ -856,12 +852,12 @@ void InstX8632Ret::dump(const IceCfg *Cfg) const {
   dumpSources(Cfg);
 }
 
-void IceOperandX8632::dump(const IceCfg *Cfg) const {
+void OperandX8632::dump(const IceCfg *Cfg) const {
   IceOstream &Str = Cfg->getContext()->StrDump;
-  Str << "<IceOperandX8632>";
+  Str << "<OperandX8632>";
 }
 
-void IceOperandX8632Mem::emit(const IceCfg *Cfg, uint32_t Option) const {
+void OperandX8632Mem::emit(const IceCfg *Cfg, uint32_t Option) const {
   IceOstream &Str = Cfg->getContext()->StrEmit;
   switch (getType()) {
   case IceType_i1:
@@ -918,7 +914,7 @@ void IceOperandX8632Mem::emit(const IceCfg *Cfg, uint32_t Option) const {
   Str << "]";
 }
 
-void IceOperandX8632Mem::dump(const IceCfg *Cfg) const {
+void OperandX8632Mem::dump(const IceCfg *Cfg) const {
   IceOstream &Str = Cfg->getContext()->StrDump;
   bool Dumped = false;
   Str << "[";

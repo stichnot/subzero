@@ -1,4 +1,4 @@
-//===- subzero/src/IceOperand.h - High-level operands -----------*- C++ -*-===//
+//===- subzero/src/Operand.h - High-level operands -----------*- C++ -*-===//
 //
 //                        The Subzero Code Generator
 //
@@ -7,7 +7,7 @@
 //
 //===----------------------------------------------------------------------===//
 //
-// This file declares the IceOperand class and its target-independent
+// This file declares the Operand class and its target-independent
 // subclasses.  The main classes are IceVariable, which represents an
 // LLVM variable that is either register- or stack-allocated, and the
 // IceConstant hierarchy, which represents integer, floating-point,
@@ -23,7 +23,7 @@
 
 namespace Ice {
 
-class IceOperand {
+class Operand {
 public:
   enum OperandKind {
     Constant,
@@ -40,7 +40,7 @@ public:
   OperandKind getKind() const { return Kind; }
   IceType getType() const { return Type; }
 
-  // Every IceOperand keeps an array of the IceVariables referenced in
+  // Every Operand keeps an array of the IceVariables referenced in
   // the operand.  This is so that the liveness operations can get
   // quick access to the variables of interest, without having to dig
   // so far into the operand.
@@ -53,10 +53,10 @@ public:
   virtual void emit(const IceCfg *Cfg, uint32_t Option) const = 0;
   virtual void dump(const IceCfg *Cfg) const = 0;
 
-  virtual ~IceOperand() {}
+  virtual ~Operand() {}
 
 protected:
-  IceOperand(OperandKind Kind, IceType Type) : Type(Type), Kind(Kind) {}
+  Operand(OperandKind Kind, IceType Type) : Type(Type), Kind(Kind) {}
   const IceType Type;
   const OperandKind Kind;
   // Vars and NumVars are initialized by the derived class.
@@ -64,24 +64,24 @@ protected:
   IceVariable **Vars;
 
 private:
-  IceOperand(const IceOperand &) LLVM_DELETED_FUNCTION;
-  IceOperand &operator=(const IceOperand &) LLVM_DELETED_FUNCTION;
+  Operand(const Operand &) LLVM_DELETED_FUNCTION;
+  Operand &operator=(const Operand &) LLVM_DELETED_FUNCTION;
 };
 
 // IceConstant is the abstract base class for constants.  All
 // constants are allocated from a global arena and are pooled.
-class IceConstant : public IceOperand {
+class IceConstant : public Operand {
 public:
   virtual void emit(const IceCfg *Cfg, uint32_t Option) const = 0;
   virtual void dump(const IceCfg *Cfg) const = 0;
 
-  static bool classof(const IceOperand *Operand) {
+  static bool classof(const Operand *Operand) {
     OperandKind Kind = Operand->getKind();
     return Kind >= Constant && Kind <= Constant_Num;
   }
 
 protected:
-  IceConstant(OperandKind Kind, IceType Type) : IceOperand(Kind, Type) {
+  IceConstant(OperandKind Kind, IceType Type) : Operand(Kind, Type) {
     Vars = NULL;
     NumVars = 0;
   }
@@ -92,7 +92,7 @@ private:
 };
 
 // IceConstantPrimitive<> wraps a primitive type.
-template <typename T, IceOperand::OperandKind K>
+template <typename T, Operand::OperandKind K>
 class IceConstantPrimitive : public IceConstant {
 public:
   static IceConstantPrimitive *create(IceGlobalContext *Ctx, IceType Type,
@@ -110,7 +110,7 @@ public:
     Str << getValue();
   }
 
-  static bool classof(const IceOperand *Operand) {
+  static bool classof(const Operand *Operand) {
     return Operand->getKind() == K;
   }
 
@@ -123,11 +123,10 @@ private:
   const T Value;
 };
 
-typedef IceConstantPrimitive<uint64_t, IceOperand::ConstantInteger>
+typedef IceConstantPrimitive<uint64_t, Operand::ConstantInteger>
 IceConstantInteger;
-typedef IceConstantPrimitive<float, IceOperand::ConstantFloat> IceConstantFloat;
-typedef IceConstantPrimitive<double, IceOperand::ConstantDouble>
-IceConstantDouble;
+typedef IceConstantPrimitive<float, Operand::ConstantFloat> IceConstantFloat;
+typedef IceConstantPrimitive<double, Operand::ConstantDouble> IceConstantDouble;
 
 // IceRelocatableTuple bundles the parameters that are used to
 // construct an IceConstantRelocatable.  It is done this way so that
@@ -169,7 +168,7 @@ public:
   virtual void emit(const IceCfg *Cfg, uint32_t Option) const;
   virtual void dump(const IceCfg *Cfg) const;
 
-  static bool classof(const IceOperand *Operand) {
+  static bool classof(const Operand *Operand) {
     OperandKind Kind = Operand->getKind();
     return Kind == ConstantRelocatable;
   }
@@ -265,7 +264,7 @@ IceOstream &operator<<(IceOstream &Str, const LiveRange &L);
 // IceVariable represents an operand that is register-allocated or
 // stack-allocated.  If it is register-allocated, it will ultimately
 // have a non-negative RegNum field.
-class IceVariable : public IceOperand {
+class IceVariable : public Operand {
 public:
   static IceVariable *create(IceCfg *Cfg, IceType Type, const CfgNode *Node,
                              uint32_t Index, const IceString &Name) {
@@ -342,14 +341,14 @@ public:
   virtual void emit(const IceCfg *Cfg, uint32_t Option) const;
   virtual void dump(const IceCfg *Cfg) const;
 
-  static bool classof(const IceOperand *Operand) {
+  static bool classof(const Operand *Operand) {
     return Operand->getKind() == Variable;
   }
 
 private:
   IceVariable(IceType Type, const CfgNode *Node, uint32_t Index,
               const IceString &Name)
-      : IceOperand(Variable, Type), Number(Index), Name(Name), DefInst(NULL),
+      : Operand(Variable, Type), Number(Index), Name(Name), DefInst(NULL),
         DefNode(Node), IsArgument(false), StackOffset(0), RegNum(NoRegister),
         RegNumTmp(NoRegister), Weight(1), RegisterPreference(NULL),
         AllowRegisterOverlap(false), LoVar(NULL), HiVar(NULL) {
@@ -401,7 +400,7 @@ private:
   // wasteful for a 64-bit target.
   IceVariable *LoVar;
   IceVariable *HiVar;
-  // VarsReal (and IceOperand::Vars) are set up such that Vars[0] ==
+  // VarsReal (and Operand::Vars) are set up such that Vars[0] ==
   // this.
   IceVariable *VarsReal[1];
 };

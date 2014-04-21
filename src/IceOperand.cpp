@@ -1,4 +1,4 @@
-//===- subzero/src/IceOperand.cpp - High-level operand implementation -----===//
+//===- subzero/src/Operand.cpp - High-level operand implementation -----===//
 //
 //                        The Subzero Code Generator
 //
@@ -7,7 +7,7 @@
 //
 //===----------------------------------------------------------------------===//
 //
-// This file implements the IceOperand class and its
+// This file implements the Operand class and its
 // target-independent subclasses, primarily for the methods of the
 // IceVariable class.
 //

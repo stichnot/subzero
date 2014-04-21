@@ -165,10 +165,10 @@ private:
     return Ice::IceType_void;
   }
 
-  // Given a LLVM instruction and an operand number, produce the Ice::IceOperand
+  // Given a LLVM instruction and an operand number, produce the Ice::Operand
   // this
   // refers to. If there's no such operand, return NULL.
-  Ice::IceOperand *convertOperand(const Instruction *Inst, unsigned OpNum) {
+  Ice::Operand *convertOperand(const Instruction *Inst, unsigned OpNum) {
     if (OpNum >= Inst->getNumOperands()) {
       return NULL;
     }
@@ -176,7 +176,7 @@ private:
     return convertValue(Op);
   }
 
-  Ice::IceOperand *convertValue(const Value *Op) {
+  Ice::Operand *convertValue(const Value *Op) {
     if (const Constant *Const = dyn_cast<Constant>(Op)) {
       if (const GlobalValue *GV = dyn_cast<GlobalValue>(Const)) {
         return Ctx->getConstantSym(convertType(GV->getType()), GV, 0,
@@ -307,22 +307,22 @@ private:
   }
 
   Ice::Inst *convertLoadInstruction(const LoadInst *Inst) {
-    Ice::IceOperand *Src = convertOperand(Inst, 0);
+    Ice::Operand *Src = convertOperand(Inst, 0);
     Ice::IceVariable *Dest = mapValueToIceVar(Inst);
     return Ice::InstLoad::create(Cfg, Dest, Src);
   }
 
   Ice::Inst *convertStoreInstruction(const StoreInst *Inst) {
-    Ice::IceOperand *Addr = convertOperand(Inst, 1);
-    Ice::IceOperand *Val = convertOperand(Inst, 0);
+    Ice::Operand *Addr = convertOperand(Inst, 1);
+    Ice::Operand *Val = convertOperand(Inst, 0);
     return Ice::InstStore::create(Cfg, Val, Addr);
   }
 
   Ice::Inst *convertArithInstruction(const Instruction *Inst,
                                      Ice::InstArithmetic::OpKind Opcode) {
     const BinaryOperator *BinOp = cast<BinaryOperator>(Inst);
-    Ice::IceOperand *Src0 = convertOperand(Inst, 0);
-    Ice::IceOperand *Src1 = convertOperand(Inst, 1);
+    Ice::Operand *Src0 = convertOperand(Inst, 0);
+    Ice::Operand *Src1 = convertOperand(Inst, 1);
     Ice::IceVariable *Dest = mapValueToIceVar(BinOp);
     return Ice::InstArithmetic::create(Cfg, Opcode, Dest, Src0, Src1);
   }
@@ -340,7 +340,7 @@ private:
 
   Ice::Inst *convertBrInstruction(const BranchInst *Inst) {
     if (Inst->isConditional()) {
-      Ice::IceOperand *Src = convertOperand(Inst, 0);
+      Ice::Operand *Src = convertOperand(Inst, 0);
       BasicBlock *BBThen = Inst->getSuccessor(0);
       BasicBlock *BBElse = Inst->getSuccessor(1);
       Ice::CfgNode *NodeThen = mapBasicBlockToNode(BBThen);
@@ -353,19 +353,19 @@ private:
   }
 
   Ice::Inst *convertIntToPtrInstruction(const IntToPtrInst *Inst) {
-    Ice::IceOperand *Src = convertOperand(Inst, 0);
+    Ice::Operand *Src = convertOperand(Inst, 0);
     Ice::IceVariable *Dest = mapValueToIceVar(Inst, SubzeroPointerType);
     return Ice::InstAssign::create(Cfg, Dest, Src);
   }
 
   Ice::Inst *convertPtrToIntInstruction(const PtrToIntInst *Inst) {
-    Ice::IceOperand *Src = convertOperand(Inst, 0);
+    Ice::Operand *Src = convertOperand(Inst, 0);
     Ice::IceVariable *Dest = mapValueToIceVar(Inst);
     return Ice::InstAssign::create(Cfg, Dest, Src);
   }
 
   Ice::Inst *convertRetInstruction(const ReturnInst *Inst) {
-    Ice::IceOperand *RetOperand = convertOperand(Inst, 0);
+    Ice::Operand *RetOperand = convertOperand(Inst, 0);
     if (RetOperand) {
       return Ice::InstRet::create(Cfg, RetOperand);
     } else {
@@ -375,14 +375,14 @@ private:
 
   Ice::Inst *convertCastInstruction(const Instruction *Inst,
                                     Ice::InstCast::OpKind CastKind) {
-    Ice::IceOperand *Src = convertOperand(Inst, 0);
+    Ice::Operand *Src = convertOperand(Inst, 0);
     Ice::IceVariable *Dest = mapValueToIceVar(Inst);
     return Ice::InstCast::create(Cfg, CastKind, Dest, Src);
   }
 
   Ice::Inst *convertICmpInstruction(const ICmpInst *Inst) {
-    Ice::IceOperand *Src0 = convertOperand(Inst, 0);
-    Ice::IceOperand *Src1 = convertOperand(Inst, 1);
+    Ice::Operand *Src0 = convertOperand(Inst, 0);
+    Ice::Operand *Src1 = convertOperand(Inst, 1);
     Ice::IceVariable *Dest = mapValueToIceVar(Inst);
 
     Ice::InstIcmp::ICond Cond;
@@ -425,8 +425,8 @@ private:
   }
 
   Ice::Inst *convertFCmpInstruction(const FCmpInst *Inst) {
-    Ice::IceOperand *Src0 = convertOperand(Inst, 0);
-    Ice::IceOperand *Src1 = convertOperand(Inst, 1);
+    Ice::Operand *Src0 = convertOperand(Inst, 0);
+    Ice::Operand *Src1 = convertOperand(Inst, 1);
     Ice::IceVariable *Dest = mapValueToIceVar(Inst);
 
     Ice::InstFcmp::FCond Cond;
@@ -490,14 +490,14 @@ private:
 
   Ice::Inst *convertSelectInstruction(const SelectInst *Inst) {
     Ice::IceVariable *Dest = mapValueToIceVar(Inst);
-    Ice::IceOperand *Cond = convertValue(Inst->getCondition());
-    Ice::IceOperand *Source1 = convertValue(Inst->getTrueValue());
-    Ice::IceOperand *Source2 = convertValue(Inst->getFalseValue());
+    Ice::Operand *Cond = convertValue(Inst->getCondition());
+    Ice::Operand *Source1 = convertValue(Inst->getTrueValue());
+    Ice::Operand *Source2 = convertValue(Inst->getFalseValue());
     return Ice::InstSelect::create(Cfg, Dest, Cond, Source1, Source2);
   }
 
   Ice::Inst *convertSwitchInstruction(const SwitchInst *Inst) {
-    Ice::IceOperand *Source = convertValue(Inst->getCondition());
+    Ice::Operand *Source = convertValue(Inst->getCondition());
     Ice::CfgNode *LabelDefault = mapBasicBlockToNode(Inst->getDefaultDest());
     unsigned NumCases = Inst->getNumCases();
     Ice::InstSwitch *Switch =
@@ -514,7 +514,7 @@ private:
 
   Ice::Inst *convertCallInstruction(const CallInst *Inst) {
     Ice::IceVariable *Dest = mapValueToIceVar(Inst);
-    Ice::IceOperand *CallTarget = convertValue(Inst->getCalledValue());
+    Ice::Operand *CallTarget = convertValue(Inst->getCalledValue());
     unsigned NumArgs = Inst->getNumArgOperands();
     Ice::InstCall *NewInst = Ice::InstCall::create(
         Cfg, NumArgs, Dest, CallTarget, Inst->isTailCall());
@@ -526,7 +526,7 @@ private:
 
   Ice::Inst *convertAllocaInstruction(const AllocaInst *Inst) {
     // PNaCl bitcode only contains allocas of byte-granular objects.
-    Ice::IceOperand *ByteCount = convertValue(Inst->getArraySize());
+    Ice::Operand *ByteCount = convertValue(Inst->getArraySize());
     uint32_t Align = Inst->getAlignment();
     Ice::IceVariable *Dest = mapValueToIceVar(Inst, SubzeroPointerType);
 

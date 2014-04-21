@@ -55,8 +55,8 @@ public:
   void split64(IceVariable *Var);
   void setArgOffsetAndCopy(IceVariable *Arg, IceVariable *FramePtr,
                            int32_t BasicFrameOffset, int32_t &InArgsSizeBytes);
-  IceOperand *loOperand(IceOperand *Operand);
-  IceOperand *hiOperand(IceOperand *Operand);
+  Operand *loOperand(Operand *Operand);
+  Operand *hiOperand(Operand *Operand);
   enum Registers {
     Reg_eax = 0,
     Reg_ecx = Reg_eax + 1,
@@ -109,10 +109,10 @@ protected:
     Legal_All = ~Legal_None
   };
   typedef uint32_t LegalMask;
-  IceOperand *legalize(IceOperand *From, LegalMask Allowed = Legal_All,
-                       bool AllowOverlap = false,
-                       int32_t RegNum = IceVariable::NoRegister);
-  IceVariable *legalizeToVar(IceOperand *From, bool AllowOverlap = false,
+  Operand *legalize(Operand *From, LegalMask Allowed = Legal_All,
+                    bool AllowOverlap = false,
+                    int32_t RegNum = IceVariable::NoRegister);
+  IceVariable *legalizeToVar(Operand *From, bool AllowOverlap = false,
                              int32_t RegNum = IceVariable::NoRegister);
   IceVariable *makeReg(IceType Type, int32_t RegNum = IceVariable::NoRegister);
   InstCall *makeHelperCall(const IceString &Name, IceVariable *Dest,
@@ -129,16 +129,16 @@ protected:
   // The following are helpers that insert lowered x86 instructions
   // with minimal syntactic overhead, so that the lowering code can
   // look as close to assembly as practical.
-  void _adc(IceVariable *Dest, IceOperand *Src0) {
+  void _adc(IceVariable *Dest, Operand *Src0) {
     Context.insert(InstX8632Adc::create(Cfg, Dest, Src0));
   }
-  void _add(IceVariable *Dest, IceOperand *Src0) {
+  void _add(IceVariable *Dest, Operand *Src0) {
     Context.insert(InstX8632Add::create(Cfg, Dest, Src0));
   }
-  void _addss(IceVariable *Dest, IceOperand *Src0) {
+  void _addss(IceVariable *Dest, Operand *Src0) {
     Context.insert(InstX8632Addss::create(Cfg, Dest, Src0));
   }
-  void _and(IceVariable *Dest, IceOperand *Src0) {
+  void _and(IceVariable *Dest, Operand *Src0) {
     Context.insert(InstX8632And::create(Cfg, Dest, Src0));
   }
   void _br(InstX8632Br::BrCond Condition, CfgNode *TargetTrue,
@@ -155,37 +155,35 @@ protected:
   void _br(InstX8632Br::BrCond Condition, InstX8632Label *Label) {
     Context.insert(InstX8632Br::create(Cfg, Label, Condition));
   }
-  void _cdq(IceVariable *Dest, IceOperand *Src0) {
+  void _cdq(IceVariable *Dest, Operand *Src0) {
     Context.insert(InstX8632Cdq::create(Cfg, Dest, Src0));
   }
-  void _cmp(IceOperand *Src0, IceOperand *Src1) {
+  void _cmp(Operand *Src0, Operand *Src1) {
     Context.insert(InstX8632Icmp::create(Cfg, Src0, Src1));
   }
-  void _cvt(IceVariable *Dest, IceOperand *Src0) {
+  void _cvt(IceVariable *Dest, Operand *Src0) {
     Context.insert(InstX8632Cvt::create(Cfg, Dest, Src0));
   }
-  void _div(IceVariable *Dest, IceOperand *Src0, IceOperand *Src1) {
+  void _div(IceVariable *Dest, Operand *Src0, Operand *Src1) {
     Context.insert(InstX8632Div::create(Cfg, Dest, Src0, Src1));
   }
-  void _divss(IceVariable *Dest, IceOperand *Src0) {
+  void _divss(IceVariable *Dest, Operand *Src0) {
     Context.insert(InstX8632Divss::create(Cfg, Dest, Src0));
   }
-  void _fld(IceOperand *Src0) {
-    Context.insert(InstX8632Fld::create(Cfg, Src0));
-  }
+  void _fld(Operand *Src0) { Context.insert(InstX8632Fld::create(Cfg, Src0)); }
   void _fstp(IceVariable *Dest) {
     Context.insert(InstX8632Fstp::create(Cfg, Dest));
   }
-  void _idiv(IceVariable *Dest, IceOperand *Src0, IceOperand *Src1) {
+  void _idiv(IceVariable *Dest, Operand *Src0, Operand *Src1) {
     Context.insert(InstX8632Idiv::create(Cfg, Dest, Src0, Src1));
   }
-  void _imul(IceVariable *Dest, IceOperand *Src0) {
+  void _imul(IceVariable *Dest, Operand *Src0) {
     Context.insert(InstX8632Imul::create(Cfg, Dest, Src0));
   }
   // If Dest=NULL is passed in, then a new variable is created, marked
   // as infinite register allocation weight, and returned through the
   // in/out Dest argument.
-  void _mov(IceVariable *&Dest, IceOperand *Src0,
+  void _mov(IceVariable *&Dest, Operand *Src0,
             int32_t RegNum = IceVariable::NoRegister) {
     if (Dest == NULL) {
       Dest = legalizeToVar(Src0, false, RegNum);
@@ -193,64 +191,64 @@ protected:
       Context.insert(InstX8632Mov::create(Cfg, Dest, Src0));
     }
   }
-  void _movsx(IceVariable *Dest, IceOperand *Src0) {
+  void _movsx(IceVariable *Dest, Operand *Src0) {
     Context.insert(InstX8632Movsx::create(Cfg, Dest, Src0));
   }
-  void _movzx(IceVariable *Dest, IceOperand *Src0) {
+  void _movzx(IceVariable *Dest, Operand *Src0) {
     Context.insert(InstX8632Movzx::create(Cfg, Dest, Src0));
   }
-  void _mul(IceVariable *Dest, IceVariable *Src0, IceOperand *Src1) {
+  void _mul(IceVariable *Dest, IceVariable *Src0, Operand *Src1) {
     Context.insert(InstX8632Mul::create(Cfg, Dest, Src0, Src1));
   }
-  void _mulss(IceVariable *Dest, IceOperand *Src0) {
+  void _mulss(IceVariable *Dest, Operand *Src0) {
     Context.insert(InstX8632Mulss::create(Cfg, Dest, Src0));
   }
-  void _or(IceVariable *Dest, IceOperand *Src0) {
+  void _or(IceVariable *Dest, Operand *Src0) {
     Context.insert(InstX8632Or::create(Cfg, Dest, Src0));
   }
   void _pop(IceVariable *Dest) {
     Context.insert(InstX8632Pop::create(Cfg, Dest));
   }
-  void _push(IceOperand *Src0, bool SuppressStackAdjustment = false) {
+  void _push(Operand *Src0, bool SuppressStackAdjustment = false) {
     Context.insert(InstX8632Push::create(Cfg, Src0, SuppressStackAdjustment));
   }
   void _ret(IceVariable *Src0 = NULL) {
     Context.insert(InstX8632Ret::create(Cfg, Src0));
   }
-  void _sar(IceVariable *Dest, IceOperand *Src0) {
+  void _sar(IceVariable *Dest, Operand *Src0) {
     Context.insert(InstX8632Sar::create(Cfg, Dest, Src0));
   }
-  void _sbb(IceVariable *Dest, IceOperand *Src0) {
+  void _sbb(IceVariable *Dest, Operand *Src0) {
     Context.insert(InstX8632Sbb::create(Cfg, Dest, Src0));
   }
-  void _shl(IceVariable *Dest, IceOperand *Src0) {
+  void _shl(IceVariable *Dest, Operand *Src0) {
     Context.insert(InstX8632Shl::create(Cfg, Dest, Src0));
   }
   void _shld(IceVariable *Dest, IceVariable *Src0, IceVariable *Src1) {
     Context.insert(InstX8632Shld::create(Cfg, Dest, Src0, Src1));
   }
-  void _shr(IceVariable *Dest, IceOperand *Src0) {
+  void _shr(IceVariable *Dest, Operand *Src0) {
     Context.insert(InstX8632Shr::create(Cfg, Dest, Src0));
   }
   void _shrd(IceVariable *Dest, IceVariable *Src0, IceVariable *Src1) {
     Context.insert(InstX8632Shrd::create(Cfg, Dest, Src0, Src1));
   }
-  void _store(IceOperand *Value, IceOperandX8632 *Mem) {
+  void _store(Operand *Value, OperandX8632 *Mem) {
     Context.insert(InstX8632Store::create(Cfg, Value, Mem));
   }
-  void _sub(IceVariable *Dest, IceOperand *Src0) {
+  void _sub(IceVariable *Dest, Operand *Src0) {
     Context.insert(InstX8632Sub::create(Cfg, Dest, Src0));
   }
-  void _subss(IceVariable *Dest, IceOperand *Src0) {
+  void _subss(IceVariable *Dest, Operand *Src0) {
     Context.insert(InstX8632Subss::create(Cfg, Dest, Src0));
   }
-  void _test(IceOperand *Src0, IceOperand *Src1) {
+  void _test(Operand *Src0, Operand *Src1) {
     Context.insert(InstX8632Test::create(Cfg, Src0, Src1));
   }
-  void _ucomiss(IceOperand *Src0, IceOperand *Src1) {
+  void _ucomiss(Operand *Src0, Operand *Src1) {
     Context.insert(InstX8632Ucomiss::create(Cfg, Src0, Src1));
   }
-  void _xor(IceVariable *Dest, IceOperand *Src0) {
+  void _xor(IceVariable *Dest, Operand *Src0) {
     Context.insert(InstX8632Xor::create(Cfg, Dest, Src0));
   }
 

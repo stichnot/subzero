@@ -177,7 +177,7 @@ void CfgNode::placePhiStores() {
     for (IcePhiList::const_iterator I2 = Target->Phis.begin(),
                                     E2 = Target->Phis.end();
          I2 != E2; ++I2) {
-      IceOperand *Operand = (*I2)->getOperandForTarget(this);
+      Operand *Operand = (*I2)->getOperandForTarget(this);
       assert(Operand);
       if (Operand == NULL)
         continue;

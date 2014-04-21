@@ -43,7 +43,7 @@ class InstPhi;
 class InstTarget;
 class LiveRange;
 class Liveness;
-class IceOperand;
+class Operand;
 class IceTargetLowering;
 class IceVariable;
 
@@ -52,7 +52,7 @@ class IceVariable;
 typedef std::string IceString;
 typedef std::list<Inst *> InstList;
 typedef std::list<InstPhi *> IcePhiList;
-typedef std::vector<IceOperand *> IceOpList;
+typedef std::vector<Operand *> IceOpList;
 typedef std::vector<IceVariable *> IceVarList;
 typedef std::vector<CfgNode *> IceNodeList;
 

@@ -25,7 +25,7 @@ Inst::Inst(IceCfg *Cfg, InstKind Kind, uint32_t MaxSrcs, IceVariable *Dest)
     : Kind(Kind), Deleted(false), Dead(false), HasSideEffects(false),
       Dest(Dest), MaxSrcs(MaxSrcs), NumSrcs(0), LiveRangesEnded(0) {
   Number = Cfg->newInstNumber();
-  Srcs = Cfg->allocateArrayOf<IceOperand *>(MaxSrcs);
+  Srcs = Cfg->allocateArrayOf<Operand *>(MaxSrcs);
 }
 
 // Assign the instruction a new number.
@@ -42,14 +42,14 @@ void Inst::deleteIfDead() {
 
 // If Src is an IceVariable, it returns true if this instruction ends
 // Src's live range.  Otherwise, returns false.
-bool Inst::isLastUse(const IceOperand *TestSrc) const {
+bool Inst::isLastUse(const Operand *TestSrc) const {
   if (LiveRangesEnded == 0)
     return false; // early-exit optimization
   if (const IceVariable *TestVar = llvm::dyn_cast<const IceVariable>(TestSrc)) {
     uint32_t VarIndex = 0;
     uint32_t Mask = LiveRangesEnded;
     for (uint32_t I = 0; I < getSrcSize(); ++I) {
-      IceOperand *Src = getSrc(I);
+      Operand *Src = getSrc(I);
       uint32_t NumVars = Src->getNumVars();
       for (uint32_t J = 0; J < NumVars; ++J, ++VarIndex) {
         const IceVariable *Var = Src->getVar(J);
@@ -87,7 +87,7 @@ void Inst::liveness(LivenessMode Mode, int32_t InstNumber,
     resetLastUses();
     uint32_t VarIndex = 0;
     for (uint32_t I = 0; I < getSrcSize(); ++I) {
-      IceOperand *Src = getSrc(I);
+      Operand *Src = getSrc(I);
       uint32_t NumVars = Src->getNumVars();
       for (uint32_t J = 0; J < NumVars; ++J, ++VarIndex) {
         const IceVariable *Var = Src->getVar(J);
@@ -124,7 +124,7 @@ void Inst::liveness(LivenessMode Mode, int32_t InstNumber,
   resetLastUses();
   uint32_t VarIndex = 0;
   for (uint32_t I = 0; I < getSrcSize(); ++I) {
-    IceOperand *Src = getSrc(I);
+    Operand *Src = getSrc(I);
     uint32_t NumVars = Src->getNumVars();
     for (uint32_t J = 0; J < NumVars; ++J, ++VarIndex) {
       const IceVariable *Var = Src->getVar(J);
@@ -158,14 +158,14 @@ void Inst::liveness(LivenessMode Mode, int32_t InstNumber,
   }
 }
 
-InstAlloca::InstAlloca(IceCfg *Cfg, IceOperand *ByteCount, uint32_t Align,
+InstAlloca::InstAlloca(IceCfg *Cfg, Operand *ByteCount, uint32_t Align,
                        IceVariable *Dest)
     : Inst(Cfg, Inst::Alloca, 1, Dest), Align(Align) {
   addSource(ByteCount);
 }
 
 InstArithmetic::InstArithmetic(IceCfg *Cfg, OpKind Op, IceVariable *Dest,
-                               IceOperand *Source1, IceOperand *Source2)
+                               Operand *Source1, Operand *Source2)
     : Inst(Cfg, Inst::Arithmetic, 2, Dest), Op(Op) {
   addSource(Source1);
   addSource(Source2);
@@ -186,7 +186,7 @@ bool InstArithmetic::isCommutative() const {
   }
 }
 
-InstAssign::InstAssign(IceCfg *Cfg, IceVariable *Dest, IceOperand *Source)
+InstAssign::InstAssign(IceCfg *Cfg, IceVariable *Dest, Operand *Source)
     : Inst(Cfg, Inst::Assign, 1, Dest) {
   addSource(Source);
 }
@@ -194,7 +194,7 @@ InstAssign::InstAssign(IceCfg *Cfg, IceVariable *Dest, IceOperand *Source)
 // If TargetTrue==TargetFalse, we turn it into an unconditional
 // branch.  This ensures that, along with the 'switch' instruction
 // semantics, there is at most one edge from one node to another.
-InstBr::InstBr(IceCfg *Cfg, IceOperand *Source, CfgNode *TargetTrue,
+InstBr::InstBr(IceCfg *Cfg, Operand *Source, CfgNode *TargetTrue,
                CfgNode *TargetFalse)
     : Inst(Cfg, Inst::Br, 1, NULL), TargetFalse(TargetFalse),
       TargetTrue(TargetTrue) {
@@ -217,26 +217,26 @@ IceNodeList InstBr::getTerminatorEdges() const {
 }
 
 InstCast::InstCast(IceCfg *Cfg, OpKind CastKind, IceVariable *Dest,
-                   IceOperand *Source)
+                   Operand *Source)
     : Inst(Cfg, Inst::Cast, 1, Dest), CastKind(CastKind) {
   addSource(Source);
 }
 
 InstFcmp::InstFcmp(IceCfg *Cfg, FCond Condition, IceVariable *Dest,
-                   IceOperand *Source1, IceOperand *Source2)
+                   Operand *Source1, Operand *Source2)
     : Inst(Cfg, Inst::Fcmp, 2, Dest), Condition(Condition) {
   addSource(Source1);
   addSource(Source2);
 }
 
 InstIcmp::InstIcmp(IceCfg *Cfg, ICond Condition, IceVariable *Dest,
-                   IceOperand *Source1, IceOperand *Source2)
+                   Operand *Source1, Operand *Source2)
     : Inst(Cfg, Inst::Icmp, 2, Dest), Condition(Condition) {
   addSource(Source1);
   addSource(Source2);
 }
 
-InstLoad::InstLoad(IceCfg *Cfg, IceVariable *Dest, IceOperand *SourceAddr)
+InstLoad::InstLoad(IceCfg *Cfg, IceVariable *Dest, Operand *SourceAddr)
     : Inst(Cfg, Inst::Load, 1, Dest) {
   addSource(SourceAddr);
 }
@@ -250,7 +250,7 @@ InstPhi::InstPhi(IceCfg *Cfg, uint32_t MaxSrcs, IceVariable *Dest)
 // edges.  We may want to de-dup Phis and validate consistency (i.e.,
 // the source operands are the same for duplicate edges), though it
 // seems the current lowering code is OK with this situation.
-void InstPhi::addArgument(IceOperand *Source, CfgNode *Label) {
+void InstPhi::addArgument(Operand *Source, CfgNode *Label) {
   Labels[getSrcSize()] = Label;
   addSource(Source);
 }
@@ -258,7 +258,7 @@ void InstPhi::addArgument(IceOperand *Source, CfgNode *Label) {
 // Find the source operand corresponding to the incoming edge for the
 // given node.  TODO: This uses a linear-time search, which could be
 // improved if it becomes a problem.
-IceOperand *InstPhi::getOperandForTarget(CfgNode *Target) const {
+Operand *InstPhi::getOperandForTarget(CfgNode *Target) const {
   for (uint32_t I = 0; I < getSrcSize(); ++I) {
     if (Labels[I] == Target)
       return getSrc(I);
@@ -306,14 +306,14 @@ Inst *InstPhi::lower(IceCfg *Cfg, CfgNode *Node) {
   return NewInst;
 }
 
-InstRet::InstRet(IceCfg *Cfg, IceOperand *Source)
+InstRet::InstRet(IceCfg *Cfg, Operand *Source)
     : Inst(Cfg, Ret, Source ? 1 : 0, NULL) {
   if (Source)
     addSource(Source);
 }
 
-InstSelect::InstSelect(IceCfg *Cfg, IceVariable *Dest, IceOperand *Condition,
-                       IceOperand *SourceTrue, IceOperand *SourceFalse)
+InstSelect::InstSelect(IceCfg *Cfg, IceVariable *Dest, Operand *Condition,
+                       Operand *SourceTrue, Operand *SourceFalse)
     : Inst(Cfg, Inst::Select, 3, Dest) {
   assert(Condition->getType() == IceType_i1);
   addSource(Condition);
@@ -321,13 +321,13 @@ InstSelect::InstSelect(IceCfg *Cfg, IceVariable *Dest, IceOperand *Condition,
   addSource(SourceFalse);
 }
 
-InstStore::InstStore(IceCfg *Cfg, IceOperand *Data, IceOperand *Addr)
+InstStore::InstStore(IceCfg *Cfg, Operand *Data, Operand *Addr)
     : Inst(Cfg, Inst::Store, 2, NULL) {
   addSource(Data);
   addSource(Addr);
 }
 
-InstSwitch::InstSwitch(IceCfg *Cfg, uint32_t NumCases, IceOperand *Source,
+InstSwitch::InstSwitch(IceCfg *Cfg, uint32_t NumCases, Operand *Source,
                        CfgNode *LabelDefault)
     : Inst(Cfg, Inst::Switch, 1, NULL), LabelDefault(LabelDefault),
       NumCases(NumCases) {
@@ -433,7 +433,7 @@ void Inst::dumpExtras(const IceCfg *Cfg) const {
   if (Cfg->getContext()->isVerbose(IceV_Liveness)) {
     uint32_t VarIndex = 0;
     for (uint32_t I = 0; I < getSrcSize(); ++I) {
-      IceOperand *Src = getSrc(I);
+      Operand *Src = getSrc(I);
       uint32_t NumVars = Src->getNumVars();
       for (uint32_t J = 0; J < NumVars; ++J, ++VarIndex) {
         const IceVariable *Var = Src->getVar(J);
@@ -825,9 +825,9 @@ void InstRet::dump(const IceCfg *Cfg) const {
 void InstSelect::dump(const IceCfg *Cfg) const {
   IceOstream &Str = Cfg->getContext()->StrDump;
   dumpDest(Cfg);
-  IceOperand *Condition = getCondition();
-  IceOperand *TrueOp = getTrueOperand();
-  IceOperand *FalseOp = getFalseOperand();
+  Operand *Condition = getCondition();
+  Operand *TrueOp = getTrueOperand();
+  Operand *FalseOp = getFalseOperand();
   Str << " = select " << Condition->getType() << " ";
   Condition->dump(Cfg);
   Str << ", " << TrueOp->getType() << " ";

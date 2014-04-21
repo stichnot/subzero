@@ -40,7 +40,7 @@ IceRegManagerEntry::IceRegManagerEntry(IceCfg *Cfg,
 void IceRegManagerEntry::load(Inst *Inst) {
   Available.clear();
   if (Inst) {
-    IceOperand *Operand = Inst->getSrc(0);
+    Operand *Operand = Inst->getSrc(0);
     Available.push_back(Operand);
   }
 }
@@ -57,7 +57,7 @@ void IceRegManagerEntry::store(Inst *Inst) {
   Available.push_back(Variable);
 }
 
-bool IceRegManagerEntry::contains(const IceOperand *Operand) const {
+bool IceRegManagerEntry::contains(const Operand *Operand) const {
   if (getVar() == Operand)
     return true;
   for (IceOpList::const_iterator I = Available.begin(), E = Available.end();
@@ -135,7 +135,7 @@ IceVariable *IceRegManager::getRegister(IceType Type, const IceOpList &Prefer,
 }
 
 bool IceRegManager::registerContains(const IceVariable *Reg,
-                                     const IceOperand *Op) const {
+                                     const Operand *Op) const {
   for (QueueType::const_iterator I = Queue.begin(), E = Queue.end(); I != E;
        ++I) {
     if ((*I)->getVar() == Reg)

@@ -73,7 +73,7 @@ public:
   }
   void load(Inst *Inst);
   void store(Inst *Inst);
-  bool contains(const IceOperand *Operand) const;
+  bool contains(const Operand *Operand) const;
   IceVariable *getVar() const { return Var; }
   void dump(const IceCfg *Cfg) const;
 
@@ -106,7 +106,7 @@ public:
   // IceRegManager objects?
   IceVariable *getRegister(IceType Type, const IceOpList &Prefer,
                            const IceVarList &Avoid) const;
-  bool registerContains(const IceVariable *Reg, const IceOperand *Op) const;
+  bool registerContains(const IceVariable *Reg, const Operand *Op) const;
   void notifyLoad(Inst *Inst, bool IsAssign = true);
   void notifyStore(Inst *Inst);
   void dump(const IceCfg *Cfg) const;
