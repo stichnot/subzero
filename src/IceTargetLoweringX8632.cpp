@@ -1,4 +1,4 @@
-//===- subzero/src/IceTargetLoweringX8632.cpp - x86-32 lowering -----------===//
+//===- subzero/src/TargetLoweringX8632.cpp - x86-32 lowering -----------===//
 //
 //                        The Subzero Code Generator
 //
@@ -7,7 +7,7 @@
 //
 //===----------------------------------------------------------------------===//
 //
-// This file implements the IceTargetLoweringX8632 class, which
+// This file implements the TargetLoweringX8632 class, which
 // consists almost entirely of the lowering sequence for each
 // high-level instruction.  It also implements
 // IceTargetX8632Fast::postLower() which does the simplest possible
@@ -25,7 +25,7 @@
 namespace Ice {
 
 IceTargetX8632::IceTargetX8632(IceCfg *Cfg)
-    : IceTargetLowering(Cfg), IsEbpBasedFrame(false), FrameSizeLocals(0),
+    : TargetLowering(Cfg), IsEbpBasedFrame(false), FrameSizeLocals(0),
       LocalsSizeBytes(0), NextLabelNumber(0), ComputedLiveRanges(false),
       PhysicalRegisters(IceVarList(Reg_NUM)) {
   llvm::SmallBitVector IntegerRegisters(Reg_NUM);

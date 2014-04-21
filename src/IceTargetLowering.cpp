@@ -1,4 +1,4 @@
-//===- subzero/src/IceTargetLowering.cpp - Basic lowering implementation --===//
+//===- subzero/src/TargetLowering.cpp - Basic lowering implementation --===//
 //
 //                        The Subzero Code Generator
 //
@@ -7,7 +7,7 @@
 //
 //===----------------------------------------------------------------------===//
 //
-// This file implements the skeleton of the IceTargetLowering class,
+// This file implements the skeleton of the TargetLowering class,
 // specifically invoking the appropriate lowering method for a given
 // instruction kind and driving global register allocation.  It also
 // implements the non-deleted instruction iteration in
@@ -50,8 +50,8 @@ void IceLoweringContext::advance(InstList::iterator &I) {
   }
 }
 
-IceTargetLowering *IceTargetLowering::createLowering(IceTargetArch Target,
-                                                     IceCfg *Cfg) {
+TargetLowering *TargetLowering::createLowering(IceTargetArch Target,
+                                               IceCfg *Cfg) {
   // These statements can be #ifdef'd to specialize the code generator
   // to a subset of the available targets.
   if (Target == IceTarget_X8632)
@@ -68,7 +68,7 @@ IceTargetLowering *IceTargetLowering::createLowering(IceTargetArch Target,
   return NULL;
 }
 
-void IceTargetLowering::doAddressOpt() {
+void TargetLowering::doAddressOpt() {
   if (llvm::isa<InstLoad>(*Context.getCur()))
     doAddressOptLoad();
   else if (llvm::isa<InstStore>(*Context.getCur()))
@@ -89,7 +89,7 @@ void IceTargetLowering::doAddressOpt() {
 // it should advance Context.Cur to point to the next non-deleted
 // instruction to process, and it should delete any additional
 // instructions it consumes.
-void IceTargetLowering::lower() {
+void TargetLowering::lower() {
   assert(!Context.atEnd());
   Inst *Inst = *Context.getCur();
   switch (Inst->getKind()) {
@@ -159,7 +159,7 @@ void IceTargetLowering::lower() {
 // perhaps for the frame pointer) to be allocated.  This set of
 // registers could potentially be parameterized if we want to restrict
 // registers e.g. for performance testing.
-void IceTargetLowering::regAlloc() {
+void TargetLowering::regAlloc() {
   IceLinearScan LinearScan(Cfg);
   RegSetMask RegInclude = RegSet_None;
   RegSetMask RegExclude = RegSet_None;

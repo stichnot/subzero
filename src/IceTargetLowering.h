@@ -1,4 +1,4 @@
-//===- subzero/src/IceTargetLowering.h - Lowering interface -----*- C++ -*-===//
+//===- subzero/src/TargetLowering.h - Lowering interface -----*- C++ -*-===//
 //
 //                        The Subzero Code Generator
 //
@@ -7,8 +7,8 @@
 //
 //===----------------------------------------------------------------------===//
 //
-// This file declares the IceTargetLowering and IceLoweringContext
-// classes.  IceTargetLowering is an abstract class used to drive the
+// This file declares the TargetLowering and IceLoweringContext
+// classes.  TargetLowering is an abstract class used to drive the
 // translation/lowering process.  IceLoweringContext maintains a
 // context for lowering each instruction, offering conveniences such
 // as iterating over non-deleted instructions.
@@ -75,9 +75,9 @@ private:
   operator=(const IceLoweringContext &) LLVM_DELETED_FUNCTION;
 };
 
-class IceTargetLowering {
+class TargetLowering {
 public:
-  static IceTargetLowering *createLowering(IceTargetArch Target, IceCfg *Cfg);
+  static TargetLowering *createLowering(IceTargetArch Target, IceCfg *Cfg);
   void translate() {
     switch (Ctx->getOptLevel()) {
     case IceOpt_m1:
@@ -151,10 +151,10 @@ public:
   virtual void addProlog(CfgNode *Node) = 0;
   virtual void addEpilog(CfgNode *Node) = 0;
 
-  virtual ~IceTargetLowering() {}
+  virtual ~TargetLowering() {}
 
 protected:
-  IceTargetLowering(IceCfg *Cfg)
+  TargetLowering(IceCfg *Cfg)
       : Cfg(Cfg), Ctx(Cfg->getContext()), HasComputedFrame(false),
         StackAdjustment(0) {}
   virtual void lowerAlloca(const InstAlloca *Inst) = 0;
@@ -192,8 +192,8 @@ protected:
   IceLoweringContext Context;
 
 private:
-  IceTargetLowering(const IceTargetLowering &) LLVM_DELETED_FUNCTION;
-  IceTargetLowering &operator=(const IceTargetLowering &) LLVM_DELETED_FUNCTION;
+  TargetLowering(const TargetLowering &) LLVM_DELETED_FUNCTION;
+  TargetLowering &operator=(const TargetLowering &) LLVM_DELETED_FUNCTION;
 };
 
 } // end of namespace Ice

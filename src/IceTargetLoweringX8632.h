@@ -1,4 +1,4 @@
-//===- subzero/src/IceTargetLoweringX8632.h - x86-32 lowering ---*- C++ -*-===//
+//===- subzero/src/TargetLoweringX8632.h - x86-32 lowering ---*- C++ -*-===//
 //
 //                        The Subzero Code Generator
 //
@@ -7,8 +7,8 @@
 //
 //===----------------------------------------------------------------------===//
 //
-// This file declares the IceTargetLoweringX8632 class, which
-// implements the IceTargetLowering interface for the x86-32
+// This file declares the TargetLoweringX8632 class, which
+// implements the TargetLowering interface for the x86-32
 // architecture.
 //
 //===----------------------------------------------------------------------===//
@@ -22,7 +22,7 @@
 
 namespace Ice {
 
-class IceTargetX8632 : public IceTargetLowering {
+class IceTargetX8632 : public TargetLowering {
 public:
   static IceTargetX8632 *create(IceCfg *Cfg) { return new IceTargetX8632(Cfg); }
 

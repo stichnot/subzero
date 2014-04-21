@@ -205,11 +205,11 @@ void CfgNode::deletePhis() {
 }
 
 // Does address mode optimization.  Pass each instruction to the
-// IceTargetLowering object.  If it returns a new instruction
+// TargetLowering object.  If it returns a new instruction
 // (representing the optimized address mode), then insert the new
 // instruction and delete the old.
 void CfgNode::doAddressOpt() {
-  IceTargetLowering *Target = Cfg->getTarget();
+  TargetLowering *Target = Cfg->getTarget();
   IceLoweringContext &Context = Target->getContext();
   Context.init(this);
   while (!Context.atEnd()) {
@@ -220,7 +220,7 @@ void CfgNode::doAddressOpt() {
 // Drives the target lowering.  Passes the current instruction and the
 // next non-deleted instruction for target lowering.
 void CfgNode::genCode() {
-  IceTargetLowering *Target = Cfg->getTarget();
+  TargetLowering *Target = Cfg->getTarget();
   IceLoweringContext &Context = Target->getContext();
   // Lower only the regular instructions.  Defer the Phi instructions.
   Context.init(this);

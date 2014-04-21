@@ -176,7 +176,7 @@ Variable Variable::asType(IceType Type) {
 
 // ======================== dump routines ======================== //
 
-// TODO: This should be handed by the IceTargetLowering subclass.
+// TODO: This should be handed by the TargetLowering subclass.
 void Variable::emit(const IceCfg *Cfg, uint32_t Option) const {
   IceOstream &Str = Cfg->getContext()->StrEmit;
   assert(DefNode == NULL || DefNode == Cfg->getCurrentNode());

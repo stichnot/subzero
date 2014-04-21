@@ -72,7 +72,7 @@ public:
   const IceVarList &getArgs() const { return Args; }
 
   // Miscellaneous accessors.
-  IceTargetLowering *getTarget() const { return Target.get(); }
+  TargetLowering *getTarget() const { return Target.get(); }
   Liveness *getLiveness() const { return Live.get(); }
   bool hasComputedFrame() const;
 
@@ -131,7 +131,7 @@ private:
   IceVarList Variables;
   IceVarList Args; // subset of Variables, in argument order
   llvm::OwningPtr<Liveness> Live;
-  llvm::OwningPtr<IceTargetLowering> Target;
+  llvm::OwningPtr<TargetLowering> Target;
 
   // CurrentNode is maintained during dumping/emitting just for
   // validating Variable::DefNode.  Normally, a traversal over

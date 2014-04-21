@@ -44,7 +44,7 @@ class InstTarget;
 class LiveRange;
 class Liveness;
 class Operand;
-class IceTargetLowering;
+class TargetLowering;
 class Variable;
 
 // TODO: Switch over to LLVM's ADT container classes.

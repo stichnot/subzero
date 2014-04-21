@@ -29,7 +29,7 @@ IceCfg::IceCfg(GlobalContext *Ctx)
     : Ctx(Ctx), Name(""), Type(IceType_void), IsInternal(false),
       HasError(false), ErrorMessage(""), Entry(NULL), NextInstNumber(1),
       Live(NULL),
-      Target(IceTargetLowering::createLowering(Ctx->getTargetArch(), this)),
+      Target(TargetLowering::createLowering(Ctx->getTargetArch(), this)),
       CurrentNode(NULL) {
   GlobalStr = &Ctx->StrDump;
 }
