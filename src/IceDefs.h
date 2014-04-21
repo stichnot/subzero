@@ -76,10 +76,10 @@ enum LivenessMode {
 
 // This is a convenience templated class that provides a mapping
 // between a parameterized type and small unsigned integers.
-template <typename T, typename Cmp = std::less<T> > class IceValueTranslation {
+template <typename T, typename Cmp = std::less<T> > class ValueTranslation {
 public:
   typedef typename std::map<const T, uint32_t, Cmp> ContainerType;
-  IceValueTranslation() {}
+  ValueTranslation() {}
   void clear() { Entries.clear(); }
   uint32_t translate(const T &Value) {
     typename ContainerType::const_iterator Iter = Entries.find(Value);

@@ -52,7 +52,7 @@ private:
       return memcmp(&A.second, &B.second, sizeof(KeyType)) < 0;
     }
   };
-  IceValueTranslation<TupleType, TupleCompare> KeyToIndex;
+  ValueTranslation<TupleType, TupleCompare> KeyToIndex;
   std::vector<ValueType *> Pool;
 };
 
