@@ -52,6 +52,13 @@ public:
   virtual void emit(const IceCfg *Cfg, uint32_t Option) const = 0;
   virtual void dump(const IceCfg *Cfg) const = 0;
 
+  // Query whether this object was allocated in isolation, or added to
+  // some higher-level pool.  This determines whether a containing
+  // object's destructor should delete this object.  Generally,
+  // constants are pooled globally, variables are pooled per-CFG, and
+  // target-specific operands are not pooled.
+  virtual bool isPooled() const { return false; }
+
   virtual ~Operand() {}
 
 protected:
@@ -71,6 +78,7 @@ private:
 // constants are allocated from a global arena and are pooled.
 class Constant : public Operand {
 public:
+  virtual bool isPooled() const { return true; }
   virtual void emit(const IceCfg *Cfg, uint32_t Option) const = 0;
   virtual void dump(const IceCfg *Cfg) const = 0;
 
@@ -84,6 +92,7 @@ protected:
     Vars = NULL;
     NumVars = 0;
   }
+  virtual ~Constant() {}
 
 private:
   Constant(const Constant &) LLVM_DELETED_FUNCTION;
@@ -116,6 +125,7 @@ private:
   ConstantPrimitive(IceType Type, T Value) : Constant(K, Type), Value(Value) {}
   ConstantPrimitive(const ConstantPrimitive &) LLVM_DELETED_FUNCTION;
   ConstantPrimitive &operator=(const ConstantPrimitive &) LLVM_DELETED_FUNCTION;
+  virtual ~ConstantPrimitive() {}
   const T Value;
 };
 
@@ -175,6 +185,7 @@ private:
   ConstantRelocatable(const ConstantRelocatable &) LLVM_DELETED_FUNCTION;
   ConstantRelocatable &
   operator=(const ConstantRelocatable &) LLVM_DELETED_FUNCTION;
+  virtual ~ConstantRelocatable() {}
   const void *const Handle; // opaque handle e.g. to LLVM
   const int64_t Offset;     // fixed offset to add
   const IceString Name;     // optional for debug/dump
@@ -331,12 +342,17 @@ public:
   // emission.
   Variable asType(IceType Type);
 
+  virtual bool isPooled() const { return true; }
+
   virtual void emit(const IceCfg *Cfg, uint32_t Option) const;
   virtual void dump(const IceCfg *Cfg) const;
 
   static bool classof(const Operand *Operand) {
     return Operand->getKind() == kVariable;
   }
+
+  // The destructor is public because of the asType() method.
+  virtual ~Variable() {}
 
 private:
   Variable(IceType Type, const CfgNode *Node, uint32_t Index,

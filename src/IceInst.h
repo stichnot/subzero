@@ -94,7 +94,7 @@ public:
   void dumpDest(const IceCfg *Cfg) const;
   virtual bool isRedundantAssign() const { return false; }
 
-  virtual ~Inst() {}
+  virtual ~Inst();
 
 protected:
   Inst(IceCfg *Cfg, InstKind Kind, uint32_t MaxSrcs, Variable *Dest);
@@ -150,6 +150,7 @@ private:
   InstAlloca(IceCfg *Cfg, Operand *ByteCount, uint32_t Align, Variable *Dest);
   InstAlloca(const InstAlloca &) LLVM_DELETED_FUNCTION;
   InstAlloca &operator=(const InstAlloca &) LLVM_DELETED_FUNCTION;
+  virtual ~InstAlloca() {}
   const uint32_t Align;
 };
 
@@ -190,6 +191,7 @@ private:
                  Operand *Source2);
   InstArithmetic(const InstArithmetic &) LLVM_DELETED_FUNCTION;
   InstArithmetic &operator=(const InstArithmetic &) LLVM_DELETED_FUNCTION;
+  virtual ~InstArithmetic() {}
 
   const OpKind Op;
 };
@@ -212,6 +214,7 @@ private:
   InstAssign(IceCfg *Cfg, Variable *Dest, Operand *Source);
   InstAssign(const InstAssign &) LLVM_DELETED_FUNCTION;
   InstAssign &operator=(const InstAssign &) LLVM_DELETED_FUNCTION;
+  virtual ~InstAssign() {}
 };
 
 // Branch instruction.  This represents both conditional and
@@ -247,6 +250,7 @@ private:
   InstBr(IceCfg *Cfg, CfgNode *Target);
   InstBr(const InstBr &) LLVM_DELETED_FUNCTION;
   InstBr &operator=(const InstBr &) LLVM_DELETED_FUNCTION;
+  virtual ~InstBr() {}
 
   CfgNode *const TargetFalse; // Doubles as unconditional branch target
   CfgNode *const TargetTrue;  // NULL if unconditional branch
@@ -284,6 +288,7 @@ private:
   }
   InstCall(const InstCall &) LLVM_DELETED_FUNCTION;
   InstCall &operator=(const InstCall &) LLVM_DELETED_FUNCTION;
+  virtual ~InstCall() {}
   const bool Tail;
 };
 
@@ -316,6 +321,7 @@ private:
   InstCast(IceCfg *Cfg, OpKind CastKind, Variable *Dest, Operand *Source);
   InstCast(const InstCast &) LLVM_DELETED_FUNCTION;
   InstCast &operator=(const InstCast &) LLVM_DELETED_FUNCTION;
+  virtual ~InstCast() {}
   const OpKind CastKind;
 };
 
@@ -351,6 +357,7 @@ private:
            Operand *Source2);
   InstFcmp(const InstFcmp &) LLVM_DELETED_FUNCTION;
   InstFcmp &operator=(const InstFcmp &) LLVM_DELETED_FUNCTION;
+  virtual ~InstFcmp() {}
   const FCond Condition;
 };
 
@@ -384,6 +391,7 @@ private:
            Operand *Source2);
   InstIcmp(const InstIcmp &) LLVM_DELETED_FUNCTION;
   InstIcmp &operator=(const InstIcmp &) LLVM_DELETED_FUNCTION;
+  virtual ~InstIcmp() {}
   const ICond Condition;
 };
 
@@ -400,6 +408,7 @@ private:
   InstLoad(IceCfg *Cfg, Variable *Dest, Operand *SourceAddr);
   InstLoad(const InstLoad &) LLVM_DELETED_FUNCTION;
   InstLoad &operator=(const InstLoad &) LLVM_DELETED_FUNCTION;
+  virtual ~InstLoad() {}
 };
 
 // Phi instruction.  For incoming edge I, the node is Labels[I] and
@@ -421,6 +430,12 @@ private:
   InstPhi(IceCfg *Cfg, uint32_t MaxSrcs, Variable *Dest);
   InstPhi(const InstPhi &) LLVM_DELETED_FUNCTION;
   InstPhi &operator=(const InstPhi &) LLVM_DELETED_FUNCTION;
+  virtual ~InstPhi() {
+#ifdef ICE_NO_ARENAS
+    delete[] Labels;
+#endif // ICE_NO_ARENAS
+  }
+
   // Labels[] duplicates the InEdges[] information in the enclosing
   // CfgNode, but the Phi instruction is created before InEdges[]
   // is available, so it's more complicated to share the list.
@@ -443,6 +458,7 @@ private:
   InstRet(IceCfg *Cfg, Operand *Source);
   InstRet(const InstRet &) LLVM_DELETED_FUNCTION;
   InstRet &operator=(const InstRet &) LLVM_DELETED_FUNCTION;
+  virtual ~InstRet() {}
 };
 
 // Select instruction.  The condition, true, and false operands are captured.
@@ -464,6 +480,7 @@ private:
              Operand *Source2);
   InstSelect(const InstSelect &) LLVM_DELETED_FUNCTION;
   InstSelect &operator=(const InstSelect &) LLVM_DELETED_FUNCTION;
+  virtual ~InstSelect() {}
 };
 
 // Store instruction.  The address operand is captured, along with the
@@ -482,6 +499,7 @@ private:
   InstStore(IceCfg *Cfg, Operand *Data, Operand *Addr);
   InstStore(const InstStore &) LLVM_DELETED_FUNCTION;
   InstStore &operator=(const InstStore &) LLVM_DELETED_FUNCTION;
+  virtual ~InstStore() {}
 };
 
 // Switch instruction.  The single source operand is captured as
@@ -513,6 +531,13 @@ private:
              CfgNode *LabelDefault);
   InstSwitch(const InstSwitch &) LLVM_DELETED_FUNCTION;
   InstSwitch &operator=(const InstSwitch &) LLVM_DELETED_FUNCTION;
+  virtual ~InstSwitch() {
+#ifdef ICE_NO_ARENAS
+    delete[] Values;
+    delete[] Labels;
+#endif // ICE_NO_ARENAS
+  }
+
   CfgNode *LabelDefault;
   uint32_t NumCases; // not including the default case
   uint64_t *Values;  // size is NumCases
@@ -536,6 +561,7 @@ private:
   InstUnreachable(IceCfg *Cfg);
   InstUnreachable(const InstUnreachable &) LLVM_DELETED_FUNCTION;
   InstUnreachable &operator=(const InstUnreachable &) LLVM_DELETED_FUNCTION;
+  virtual ~InstUnreachable() {}
 };
 
 // FakeDef instruction.  This creates a fake definition of a variable,
@@ -564,6 +590,7 @@ private:
   InstFakeDef(IceCfg *Cfg, Variable *Dest, Variable *Src);
   InstFakeDef(const InstFakeDef &) LLVM_DELETED_FUNCTION;
   InstFakeDef &operator=(const InstFakeDef &) LLVM_DELETED_FUNCTION;
+  virtual ~InstFakeDef() {}
 };
 
 // FakeUse instruction.  This creates a fake use of a variable, to
@@ -584,6 +611,7 @@ private:
   InstFakeUse(IceCfg *Cfg, Variable *Src);
   InstFakeUse(const InstFakeUse &) LLVM_DELETED_FUNCTION;
   InstFakeUse &operator=(const InstFakeUse &) LLVM_DELETED_FUNCTION;
+  virtual ~InstFakeUse() {}
 };
 
 // FakeKill instruction.  This "kills" a set of variables by adding a
@@ -611,6 +639,8 @@ private:
   InstFakeKill(IceCfg *Cfg, const VarList &KilledRegs, const Inst *Linked);
   InstFakeKill(const InstFakeKill &) LLVM_DELETED_FUNCTION;
   InstFakeKill &operator=(const InstFakeKill &) LLVM_DELETED_FUNCTION;
+  virtual ~InstFakeKill() {}
+
   // This instruction is ignored if Linked->isDeleted() is true.
   const Inst *Linked;
 };
@@ -631,6 +661,7 @@ protected:
   }
   InstTarget(const InstTarget &) LLVM_DELETED_FUNCTION;
   InstTarget &operator=(const InstTarget &) LLVM_DELETED_FUNCTION;
+  virtual ~InstTarget() {}
 };
 
 } // end of namespace Ice

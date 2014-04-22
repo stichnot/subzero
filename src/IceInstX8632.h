@@ -37,6 +37,9 @@ public:
 protected:
   OperandX8632(OperandTypeX8632 Kind, IceType Type)
       : Operand(static_cast<OperandKind>(Kind), Type) {}
+  virtual ~OperandX8632() {}
+
+private:
   OperandX8632(const OperandX8632 &) LLVM_DELETED_FUNCTION;
   OperandX8632 &operator=(const OperandX8632 &) LLVM_DELETED_FUNCTION;
 };
@@ -65,6 +68,7 @@ private:
                   Variable *Index, uint32_t Shift);
   OperandX8632Mem(const OperandX8632Mem &) LLVM_DELETED_FUNCTION;
   OperandX8632Mem &operator=(const OperandX8632Mem &) LLVM_DELETED_FUNCTION;
+  virtual ~OperandX8632Mem() {}
   Variable *Base;
   Constant *Offset;
   Variable *Index;
@@ -96,6 +100,7 @@ private:
   }
   VariableSplit(const VariableSplit &) LLVM_DELETED_FUNCTION;
   VariableSplit &operator=(const VariableSplit &) LLVM_DELETED_FUNCTION;
+  virtual ~VariableSplit() {}
   Variable *Var;
   Portion Part;
 };
@@ -149,6 +154,7 @@ public:
 protected:
   InstX8632(IceCfg *Cfg, InstKindX8632 Kind, uint32_t Maxsrcs, Variable *Dest)
       : InstTarget(Cfg, static_cast<InstKind>(Kind), Maxsrcs, Dest) {}
+  virtual ~InstX8632() {}
   static bool isClassof(const Inst *Inst, InstKindX8632 MyKind) {
     return Inst->getKind() == static_cast<InstKind>(MyKind);
   }
@@ -207,6 +213,7 @@ private:
   InstX8632Label(IceCfg *Cfg, TargetX8632 *Target);
   InstX8632Label(const InstX8632Label &) LLVM_DELETED_FUNCTION;
   InstX8632Label &operator=(const InstX8632Label &) LLVM_DELETED_FUNCTION;
+  virtual ~InstX8632Label() {}
   uint32_t Number; // used only for unique label string generation
 };
 
@@ -256,6 +263,7 @@ private:
               InstX8632Label *Label, BrCond Condition);
   InstX8632Br(const InstX8632Br &) LLVM_DELETED_FUNCTION;
   InstX8632Br &operator=(const InstX8632Br &) LLVM_DELETED_FUNCTION;
+  virtual ~InstX8632Br() {}
   BrCond Condition;
   CfgNode *TargetTrue;
   CfgNode *TargetFalse;
@@ -278,6 +286,7 @@ private:
   InstX8632Call(IceCfg *Cfg, Variable *Dest, Operand *CallTarget, bool Tail);
   InstX8632Call(const InstX8632Call &) LLVM_DELETED_FUNCTION;
   InstX8632Call &operator=(const InstX8632Call &) LLVM_DELETED_FUNCTION;
+  virtual ~InstX8632Call() {}
   const bool Tail;
 };
 
@@ -310,6 +319,7 @@ private:
   }
   InstX8632Binop(const InstX8632Binop &) LLVM_DELETED_FUNCTION;
   InstX8632Binop &operator=(const InstX8632Binop &) LLVM_DELETED_FUNCTION;
+  virtual ~InstX8632Binop() {}
   static const char *Opcode;
 };
 
@@ -345,6 +355,7 @@ private:
   }
   InstX8632Ternop(const InstX8632Ternop &) LLVM_DELETED_FUNCTION;
   InstX8632Ternop &operator=(const InstX8632Ternop &) LLVM_DELETED_FUNCTION;
+  virtual ~InstX8632Ternop() {}
   static const char *Opcode;
 };
 
@@ -382,6 +393,7 @@ private:
                Operand *Source2);
   InstX8632Mul(const InstX8632Mul &) LLVM_DELETED_FUNCTION;
   InstX8632Mul &operator=(const InstX8632Mul &) LLVM_DELETED_FUNCTION;
+  virtual ~InstX8632Mul() {}
 };
 
 class InstX8632Shld : public InstX8632 {
@@ -400,6 +412,7 @@ private:
                 Variable *Source2);
   InstX8632Shld(const InstX8632Shld &) LLVM_DELETED_FUNCTION;
   InstX8632Shld &operator=(const InstX8632Shld &) LLVM_DELETED_FUNCTION;
+  virtual ~InstX8632Shld() {}
 };
 
 class InstX8632Shrd : public InstX8632 {
@@ -418,6 +431,7 @@ private:
                 Variable *Source2);
   InstX8632Shrd(const InstX8632Shrd &) LLVM_DELETED_FUNCTION;
   InstX8632Shrd &operator=(const InstX8632Shrd &) LLVM_DELETED_FUNCTION;
+  virtual ~InstX8632Shrd() {}
 };
 
 // Sign-extend eax into edx
@@ -434,6 +448,7 @@ private:
   InstX8632Cdq(IceCfg *Cfg, Variable *Dest, Operand *Source);
   InstX8632Cdq(const InstX8632Cdq &) LLVM_DELETED_FUNCTION;
   InstX8632Cdq &operator=(const InstX8632Cdq &) LLVM_DELETED_FUNCTION;
+  virtual ~InstX8632Cdq() {}
 };
 
 // Cvt instruction - wrapper for cvtsX2sY where X and Y are in {s,d,i}
@@ -453,6 +468,7 @@ private:
   InstX8632Cvt(IceCfg *Cfg, Variable *Dest, Operand *Source);
   InstX8632Cvt(const InstX8632Cvt &) LLVM_DELETED_FUNCTION;
   InstX8632Cvt &operator=(const InstX8632Cvt &) LLVM_DELETED_FUNCTION;
+  virtual ~InstX8632Cvt() {}
 };
 
 class InstX8632Icmp : public InstX8632 {
@@ -468,6 +484,7 @@ private:
   InstX8632Icmp(IceCfg *Cfg, Operand *Src1, Operand *Src2);
   InstX8632Icmp(const InstX8632Icmp &) LLVM_DELETED_FUNCTION;
   InstX8632Icmp &operator=(const InstX8632Icmp &) LLVM_DELETED_FUNCTION;
+  virtual ~InstX8632Icmp() {}
 };
 
 class InstX8632Ucomiss : public InstX8632 {
@@ -484,6 +501,7 @@ private:
   InstX8632Ucomiss(IceCfg *Cfg, Operand *Src1, Operand *Src2);
   InstX8632Ucomiss(const InstX8632Ucomiss &) LLVM_DELETED_FUNCTION;
   InstX8632Ucomiss &operator=(const InstX8632Ucomiss &) LLVM_DELETED_FUNCTION;
+  virtual ~InstX8632Ucomiss() {}
 };
 
 class InstX8632Test : public InstX8632 {
@@ -501,6 +519,7 @@ private:
   InstX8632Test(IceCfg *Cfg, Operand *Source1, Operand *Source2);
   InstX8632Test(const InstX8632Test &) LLVM_DELETED_FUNCTION;
   InstX8632Test &operator=(const InstX8632Test &) LLVM_DELETED_FUNCTION;
+  virtual ~InstX8632Test() {}
 };
 
 // This is essentially a "mov" instruction with an OperandX8632Mem
@@ -521,6 +540,7 @@ private:
   InstX8632Store(IceCfg *Cfg, Operand *Value, OperandX8632 *Mem);
   InstX8632Store(const InstX8632Store &) LLVM_DELETED_FUNCTION;
   InstX8632Store &operator=(const InstX8632Store &) LLVM_DELETED_FUNCTION;
+  virtual ~InstX8632Store() {}
 };
 
 class InstX8632Mov : public InstX8632 {
@@ -537,6 +557,7 @@ private:
   InstX8632Mov(IceCfg *Cfg, Variable *Dest, Operand *Source);
   InstX8632Mov(const InstX8632Mov &) LLVM_DELETED_FUNCTION;
   InstX8632Mov &operator=(const InstX8632Mov &) LLVM_DELETED_FUNCTION;
+  virtual ~InstX8632Mov() {}
 };
 
 class InstX8632Movsx : public InstX8632 {
@@ -553,6 +574,7 @@ private:
   InstX8632Movsx(IceCfg *Cfg, Variable *Dest, Operand *Source);
   InstX8632Movsx(const InstX8632Movsx &) LLVM_DELETED_FUNCTION;
   InstX8632Movsx &operator=(const InstX8632Movsx &) LLVM_DELETED_FUNCTION;
+  virtual ~InstX8632Movsx() {}
 };
 
 class InstX8632Movzx : public InstX8632 {
@@ -569,6 +591,7 @@ private:
   InstX8632Movzx(IceCfg *Cfg, Variable *Dest, Operand *Source);
   InstX8632Movzx(const InstX8632Movzx &) LLVM_DELETED_FUNCTION;
   InstX8632Movzx &operator=(const InstX8632Movzx &) LLVM_DELETED_FUNCTION;
+  virtual ~InstX8632Movzx() {}
 };
 
 class InstX8632Fld : public InstX8632 {
@@ -584,6 +607,7 @@ private:
   InstX8632Fld(IceCfg *Cfg, Operand *Src);
   InstX8632Fld(const InstX8632Fld &) LLVM_DELETED_FUNCTION;
   InstX8632Fld &operator=(const InstX8632Fld &) LLVM_DELETED_FUNCTION;
+  virtual ~InstX8632Fld() {}
 };
 
 class InstX8632Fstp : public InstX8632 {
@@ -599,6 +623,7 @@ private:
   InstX8632Fstp(IceCfg *Cfg, Variable *Dest);
   InstX8632Fstp(const InstX8632Fstp &) LLVM_DELETED_FUNCTION;
   InstX8632Fstp &operator=(const InstX8632Fstp &) LLVM_DELETED_FUNCTION;
+  virtual ~InstX8632Fstp() {}
 };
 
 class InstX8632Pop : public InstX8632 {
@@ -614,6 +639,7 @@ private:
   InstX8632Pop(IceCfg *Cfg, Variable *Dest);
   InstX8632Pop(const InstX8632Pop &) LLVM_DELETED_FUNCTION;
   InstX8632Pop &operator=(const InstX8632Pop &) LLVM_DELETED_FUNCTION;
+  virtual ~InstX8632Pop() {}
 };
 
 class InstX8632Push : public InstX8632 {
@@ -632,6 +658,7 @@ private:
   InstX8632Push(const InstX8632Push &) LLVM_DELETED_FUNCTION;
   InstX8632Push &operator=(const InstX8632Push &) LLVM_DELETED_FUNCTION;
   bool SuppressStackAdjustment;
+  virtual ~InstX8632Push() {}
 };
 
 class InstX8632Ret : public InstX8632 {
@@ -647,6 +674,7 @@ private:
   InstX8632Ret(IceCfg *Cfg, Variable *Source);
   InstX8632Ret(const InstX8632Ret &) LLVM_DELETED_FUNCTION;
   InstX8632Ret &operator=(const InstX8632Ret &) LLVM_DELETED_FUNCTION;
+  virtual ~InstX8632Ret() {}
 };
 
 } // end of namespace Ice

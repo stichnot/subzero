@@ -28,6 +28,21 @@ Inst::Inst(IceCfg *Cfg, InstKind Kind, uint32_t MaxSrcs, Variable *Dest)
   Srcs = Cfg->allocateArrayOf<Operand *>(MaxSrcs);
 }
 
+Inst::~Inst() {
+#ifdef ICE_NO_ARENAS
+  for (IceSize_t i = 0; i < getSrcSize(); ++i) {
+    Operand *Src = getSrc(i);
+    if (Src && !Src->isPooled()) {
+      delete Src;
+    }
+  }
+  delete[] Srcs;
+  if (getDest() && !getDest()->isPooled()) {
+    delete getDest();
+  }
+#endif // ICE_NO_ARENAS
+}
+
 // Assign the instruction a new number.
 void Inst::renumber(IceCfg *Cfg) {
   Number = isDeleted() ? -1 : Cfg->newInstNumber();
