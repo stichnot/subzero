@@ -1,4 +1,4 @@
-//===- subzero/src/IceCfg.h - Control flow graph ----------------*- C++ -*-===//
+//===- Subzero/src/IceCfg.h - Control flow graph ----------------*- C++ -*-===//
 //
 //                        The Subzero Code Generator
 //
@@ -54,7 +54,7 @@ public:
   CfgNode *getEntryNode() const { return Entry; }
   // Create a node and append it to the end of the linearized list.
   CfgNode *makeNode(const IceString &Name = "");
-  uint32_t getNumNodes() const { return Nodes.size(); }
+  IceSize_t getNumNodes() const { return Nodes.size(); }
   const NodeList &getNodes() const { return Nodes; }
   CfgNode *splitEdge(CfgNode *From, CfgNode *To);
 
@@ -64,7 +64,7 @@ public:
   // Manage Variables.
   Variable *makeVariable(IceType Type, const CfgNode *Node,
                          const IceString &Name = "");
-  uint32_t getNumVariables() const { return Variables.size(); }
+  IceSize_t getNumVariables() const { return Variables.size(); }
   const VarList &getVariables() const { return Variables; }
 
   // Manage arguments to the function.

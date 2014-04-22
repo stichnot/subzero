@@ -152,7 +152,7 @@ public:
   virtual void dump(const IceCfg *Cfg) const;
 
 protected:
-  InstX8632(IceCfg *Cfg, InstKindX8632 Kind, uint32_t Maxsrcs, Variable *Dest)
+  InstX8632(IceCfg *Cfg, InstKindX8632 Kind, IceSize_t Maxsrcs, Variable *Dest)
       : InstTarget(Cfg, static_cast<InstKind>(Kind), Maxsrcs, Dest) {}
   virtual ~InstX8632() {}
   static bool isClassof(const Inst *Inst, InstKindX8632 MyKind) {
@@ -214,7 +214,7 @@ private:
   InstX8632Label(const InstX8632Label &) LLVM_DELETED_FUNCTION;
   InstX8632Label &operator=(const InstX8632Label &) LLVM_DELETED_FUNCTION;
   virtual ~InstX8632Label() {}
-  uint32_t Number; // used only for unique label string generation
+  IceSize_t Number; // used only for unique label string generation
 };
 
 class InstX8632Br : public InstX8632 {

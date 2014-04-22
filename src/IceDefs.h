@@ -83,14 +83,14 @@ enum LivenessMode {
 // between a parameterized type and small unsigned integers.
 template <typename T, typename Cmp = std::less<T> > class ValueTranslation {
 public:
-  typedef typename std::map<const T, uint32_t, Cmp> ContainerType;
+  typedef typename std::map<const T, IceSize_t, Cmp> ContainerType;
   ValueTranslation() {}
   void clear() { Entries.clear(); }
-  uint32_t translate(const T &Value) {
+  IceSize_t translate(const T &Value) {
     typename ContainerType::const_iterator Iter = Entries.find(Value);
     if (Iter != Entries.end())
       return Iter->second;
-    uint32_t Index = Entries.size();
+    IceSize_t Index = Entries.size();
     Entries[Value] = Index;
     return Index;
   }

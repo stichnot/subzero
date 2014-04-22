@@ -29,7 +29,7 @@ class LivenessNode {
 public:
   LivenessNode() : NumLocals(0) {}
   // NumLocals is the number of Variables local to this block.
-  uint32_t NumLocals;
+  IceSize_t NumLocals;
   // LiveToVarMap maps a liveness bitvector index to an Variable.
   // This is generally just for printing/dumping.  The index should be
   // less than NumLocals + Liveness::NumGlobals.
@@ -55,10 +55,10 @@ public:
   Liveness(IceCfg *Cfg, LivenessMode Mode)
       : Cfg(Cfg), Mode(Mode), NumGlobals(0) {}
   void init();
-  Variable *getVariable(uint32_t LiveIndex, const CfgNode *Node) const;
-  uint32_t getLiveIndex(const Variable *Var) const;
-  uint32_t getGlobalSize() const { return NumGlobals; }
-  uint32_t getLocalSize(const CfgNode *Node) const {
+  Variable *getVariable(IceSize_t LiveIndex, const CfgNode *Node) const;
+  IceSize_t getLiveIndex(const Variable *Var) const;
+  IceSize_t getGlobalSize() const { return NumGlobals; }
+  IceSize_t getLocalSize(const CfgNode *Node) const {
     return NumGlobals + Nodes[Node->getIndex()].NumLocals;
   }
   llvm::BitVector &getLiveIn(const CfgNode *Node) {
@@ -80,12 +80,12 @@ public:
 private:
   IceCfg *Cfg;
   LivenessMode Mode;
-  uint32_t NumGlobals;
+  IceSize_t NumGlobals;
   // Size of Nodes is IceCfg::Nodes.size().
   std::vector<LivenessNode> Nodes;
   // VarToLiveMap maps an Variable's Variable::Number to its
   // live index within its basic block.
-  std::vector<uint32_t> VarToLiveMap;
+  std::vector<IceSize_t> VarToLiveMap;
   // LiveToVarMap is analogous to LivenessNode::LiveToVarMap, but
   // for non-local variables.
   std::vector<Variable *> LiveToVarMap;

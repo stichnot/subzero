@@ -51,7 +51,7 @@ OperandX8632Mem::OperandX8632Mem(IceCfg *Cfg, IceType Type, Variable *Base,
     ++NumVars;
   if (NumVars) {
     Vars = Cfg->allocateArrayOf<Variable *>(NumVars);
-    uint32_t I = 0;
+    IceSize_t I = 0;
     if (Base)
       Vars[I++] = Base;
     if (Index)
@@ -765,7 +765,7 @@ void InstX8632Fstp::emit(const IceCfg *Cfg, uint32_t Option) const {
   // memory.  Hack this by creating a temporary stack slot, spilling
   // st(0) there, loading it into the xmm register, and deallocating
   // the stack slot.
-  uint32_t Width = typeWidthInBytes(getDest()->getType());
+  size_t Width = typeWidthInBytes(getDest()->getType());
   Str << "\tsub\tesp, " << Width << "\n";
   Str << "\tfstp\t" << (Width == 8 ? "q" : "d") << "word ptr [esp]\n";
   Str << "\tmovs" << (Width == 8 ? "d" : "s") << "\t";

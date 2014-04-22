@@ -180,7 +180,7 @@ void LinearScan::scan(const llvm::SmallBitVector &RegMaskFull) {
 
     // Calculate available registers into Free[].
     llvm::SmallBitVector Free = RegMask;
-    for (uint32_t i = 0; i < RegMask.size(); ++i) {
+    for (IceSize_t i = 0; i < RegMask.size(); ++i) {
       if (RegUses[i] > 0)
         Free[i] = false;
     }
@@ -216,7 +216,7 @@ void LinearScan::scan(const llvm::SmallBitVector &RegMaskFull) {
 
     // Print info about physical register availability.
     if (Cfg->getContext()->isVerbose(IceV_LinearScan)) {
-      for (uint32_t i = 0; i < RegMask.size(); ++i) {
+      for (IceSize_t i = 0; i < RegMask.size(); ++i) {
         if (RegMask[i]) {
           Str << Cfg->getTarget()->getRegName(i, IceType_i32)
               << "(U=" << RegUses[i] << ",F=" << Free[i] << ") ";
@@ -297,7 +297,7 @@ void LinearScan::scan(const llvm::SmallBitVector &RegMaskFull) {
       // MinWeightIndex must be valid because of the initial
       // RegMask.any() test.
       assert(MinWeightIndex >= 0);
-      for (uint32_t i = MinWeightIndex + 1; i < Weights.size(); ++i) {
+      for (IceSize_t i = MinWeightIndex + 1; i < Weights.size(); ++i) {
         if (RegMask[i] && Weights[i] < Weights[MinWeightIndex])
           MinWeightIndex = i;
       }

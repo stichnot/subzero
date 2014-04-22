@@ -29,14 +29,14 @@ const struct {
 
 #undef X
 
-const uint32_t TypeAttributesSize =
+const size_t TypeAttributesSize =
     sizeof(TypeAttributes) / sizeof(*TypeAttributes);
 
 } // end anonymous namespace
 
 size_t typeWidthInBytes(IceType Type) {
   size_t Width = 0;
-  uint32_t Index = static_cast<uint32_t>(Type);
+  size_t Index = static_cast<size_t>(Type);
   if (Index < TypeAttributesSize) {
     Width = TypeAttributes[Index].TypeWidthInBytes;
   }
@@ -47,7 +47,7 @@ size_t typeWidthInBytes(IceType Type) {
 // ======================== Dump routines ======================== //
 
 template <> IceOstream &operator<<(IceOstream &Str, const IceType &Type) {
-  uint32_t Index = static_cast<uint32_t>(Type);
+  size_t Index = static_cast<size_t>(Type);
   if (Index < TypeAttributesSize) {
     Str << TypeAttributes[Index].DisplayString;
   } else {

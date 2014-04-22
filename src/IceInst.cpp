@@ -21,7 +21,7 @@
 
 namespace Ice {
 
-Inst::Inst(IceCfg *Cfg, InstKind Kind, uint32_t MaxSrcs, Variable *Dest)
+Inst::Inst(IceCfg *Cfg, InstKind Kind, IceSize_t MaxSrcs, Variable *Dest)
     : Kind(Kind), Deleted(false), Dead(false), HasSideEffects(false),
       Dest(Dest), MaxSrcs(MaxSrcs), NumSrcs(0), LiveRangesEnded(0) {
   Number = Cfg->newInstNumber();
@@ -61,12 +61,12 @@ bool Inst::isLastUse(const Operand *TestSrc) const {
   if (LiveRangesEnded == 0)
     return false; // early-exit optimization
   if (const Variable *TestVar = llvm::dyn_cast<const Variable>(TestSrc)) {
-    uint32_t VarIndex = 0;
-    uint32_t Mask = LiveRangesEnded;
-    for (uint32_t I = 0; I < getSrcSize(); ++I) {
+    IceSize_t VarIndex = 0;
+    IceSize_t Mask = LiveRangesEnded;
+    for (IceSize_t I = 0; I < getSrcSize(); ++I) {
       Operand *Src = getSrc(I);
-      uint32_t NumVars = Src->getNumVars();
-      for (uint32_t J = 0; J < NumVars; ++J, ++VarIndex) {
+      IceSize_t NumVars = Src->getNumVars();
+      for (IceSize_t J = 0; J < NumVars; ++J, ++VarIndex) {
         const Variable *Var = Src->getVar(J);
         if (Var == TestVar) {
           // We've found where the variable is used in the instruction.
@@ -107,15 +107,15 @@ void Inst::liveness(LivenessMode Mode, int32_t InstNumber,
   // For lightweight liveness, do the simple calculation and return.
   if (Mode == Liveness_LREndLightweight) {
     resetLastUses();
-    uint32_t VarIndex = 0;
-    for (uint32_t I = 0; I < getSrcSize(); ++I) {
+    IceSize_t VarIndex = 0;
+    for (IceSize_t I = 0; I < getSrcSize(); ++I) {
       Operand *Src = getSrc(I);
-      uint32_t NumVars = Src->getNumVars();
-      for (uint32_t J = 0; J < NumVars; ++J, ++VarIndex) {
+      IceSize_t NumVars = Src->getNumVars();
+      for (IceSize_t J = 0; J < NumVars; ++J, ++VarIndex) {
         const Variable *Var = Src->getVar(J);
         if (Var->isMultiblockLife())
           continue;
-        uint32_t Index = Var->getIndex();
+        IceSize_t Index = Var->getIndex();
         if (Live[Index])
           continue;
         Live[Index] = true;
@@ -129,7 +129,7 @@ void Inst::liveness(LivenessMode Mode, int32_t InstNumber,
   std::vector<int32_t> &LiveEnd = Liveness->getLiveEnd(Node);
   Dead = false;
   if (Dest) {
-    uint32_t VarNum = Liveness->getLiveIndex(Dest);
+    IceSize_t VarNum = Liveness->getLiveIndex(Dest);
     if (Live[VarNum]) {
       Live[VarNum] = false;
       LiveBegin[VarNum] = InstNumber;
@@ -144,13 +144,13 @@ void Inst::liveness(LivenessMode Mode, int32_t InstNumber,
   // we still need to update LiveRangesEnded.
   bool IsPhi = llvm::isa<InstPhi>(this);
   resetLastUses();
-  uint32_t VarIndex = 0;
-  for (uint32_t I = 0; I < getSrcSize(); ++I) {
+  IceSize_t VarIndex = 0;
+  for (IceSize_t I = 0; I < getSrcSize(); ++I) {
     Operand *Src = getSrc(I);
-    uint32_t NumVars = Src->getNumVars();
-    for (uint32_t J = 0; J < NumVars; ++J, ++VarIndex) {
+    IceSize_t NumVars = Src->getNumVars();
+    for (IceSize_t J = 0; J < NumVars; ++J, ++VarIndex) {
       const Variable *Var = Src->getVar(J);
-      uint32_t VarNum = Liveness->getLiveIndex(Var);
+      IceSize_t VarNum = Liveness->getLiveIndex(Var);
       if (!Live[VarNum]) {
         setLastUse(VarIndex);
         if (!IsPhi) {
@@ -264,7 +264,7 @@ InstLoad::InstLoad(IceCfg *Cfg, Variable *Dest, Operand *SourceAddr)
   addSource(SourceAddr);
 }
 
-InstPhi::InstPhi(IceCfg *Cfg, uint32_t MaxSrcs, Variable *Dest)
+InstPhi::InstPhi(IceCfg *Cfg, IceSize_t MaxSrcs, Variable *Dest)
     : Inst(Cfg, Phi, MaxSrcs, Dest) {
   Labels = Cfg->allocateArrayOf<CfgNode *>(MaxSrcs);
 }
@@ -282,7 +282,7 @@ void InstPhi::addArgument(Operand *Source, CfgNode *Label) {
 // given node.  TODO: This uses a linear-time search, which could be
 // improved if it becomes a problem.
 Operand *InstPhi::getOperandForTarget(CfgNode *Target) const {
-  for (uint32_t I = 0; I < getSrcSize(); ++I) {
+  for (IceSize_t I = 0; I < getSrcSize(); ++I) {
     if (Labels[I] == Target)
       return getSrc(I);
   }
@@ -297,10 +297,10 @@ void InstPhi::livenessPhiOperand(llvm::BitVector &Live, CfgNode *Target,
                                  Liveness *Liveness) {
   if (isDeleted() || Dead)
     return;
-  for (uint32_t I = 0; I < getSrcSize(); ++I) {
+  for (IceSize_t I = 0; I < getSrcSize(); ++I) {
     if (Labels[I] == Target) {
       if (Variable *Var = llvm::dyn_cast<Variable>(getSrc(I))) {
-        uint32_t SrcIndex = Liveness->getLiveIndex(Var);
+        IceSize_t SrcIndex = Liveness->getLiveIndex(Var);
         if (!Live[SrcIndex]) {
           setLastUse(I);
           Live[SrcIndex] = true;
@@ -350,7 +350,7 @@ InstStore::InstStore(IceCfg *Cfg, Operand *Data, Operand *Addr)
   addSource(Addr);
 }
 
-InstSwitch::InstSwitch(IceCfg *Cfg, uint32_t NumCases, Operand *Source,
+InstSwitch::InstSwitch(IceCfg *Cfg, IceSize_t NumCases, Operand *Source,
                        CfgNode *LabelDefault)
     : Inst(Cfg, Inst::Switch, 1, NULL), LabelDefault(LabelDefault),
       NumCases(NumCases) {
@@ -358,13 +358,14 @@ InstSwitch::InstSwitch(IceCfg *Cfg, uint32_t NumCases, Operand *Source,
   Values = Cfg->allocateArrayOf<uint64_t>(NumCases);
   Labels = Cfg->allocateArrayOf<CfgNode *>(NumCases);
   // Initialize in case buggy code doesn't set all entries
-  for (uint32_t I = 0; I < NumCases; ++I) {
+  for (IceSize_t I = 0; I < NumCases; ++I) {
     Values[I] = 0;
     Labels[I] = NULL;
   }
 }
 
-void InstSwitch::addBranch(uint32_t CaseIndex, uint64_t Value, CfgNode *Label) {
+void InstSwitch::addBranch(IceSize_t CaseIndex, uint64_t Value,
+                           CfgNode *Label) {
   assert(CaseIndex < NumCases);
   Values[CaseIndex] = Value;
   Labels[CaseIndex] = Label;
@@ -373,7 +374,7 @@ void InstSwitch::addBranch(uint32_t CaseIndex, uint64_t Value, CfgNode *Label) {
 NodeList InstSwitch::getTerminatorEdges() const {
   NodeList OutEdges;
   OutEdges.push_back(LabelDefault);
-  for (uint32_t I = 0; I < NumCases; ++I) {
+  for (IceSize_t I = 0; I < NumCases; ++I) {
     OutEdges.push_back(Labels[I]);
   }
   return OutEdges;
@@ -454,11 +455,11 @@ void Inst::dumpExtras(const IceCfg *Cfg) const {
   // Print "LIVEEND={a,b,c}" for all source operands whose live ranges
   // are known to end at this instruction.
   if (Cfg->getContext()->isVerbose(IceV_Liveness)) {
-    uint32_t VarIndex = 0;
-    for (uint32_t I = 0; I < getSrcSize(); ++I) {
+    IceSize_t VarIndex = 0;
+    for (IceSize_t I = 0; I < getSrcSize(); ++I) {
       Operand *Src = getSrc(I);
-      uint32_t NumVars = Src->getNumVars();
-      for (uint32_t J = 0; J < NumVars; ++J, ++VarIndex) {
+      IceSize_t NumVars = Src->getNumVars();
+      for (IceSize_t J = 0; J < NumVars; ++J, ++VarIndex) {
         const Variable *Var = Src->getVar(J);
         if (isLastUse(Var)) {
           if (First)
@@ -477,7 +478,7 @@ void Inst::dumpExtras(const IceCfg *Cfg) const {
 
 void Inst::dumpSources(const IceCfg *Cfg) const {
   IceOstream &Str = Cfg->getContext()->getStrDump();
-  for (uint32_t I = 0; I < getSrcSize(); ++I) {
+  for (IceSize_t I = 0; I < getSrcSize(); ++I) {
     if (I > 0)
       Str << ", ";
     getSrc(I)->dump(Cfg);
@@ -486,7 +487,7 @@ void Inst::dumpSources(const IceCfg *Cfg) const {
 
 void Inst::emitSources(const IceCfg *Cfg, uint32_t Option) const {
   IceOstream &Str = Cfg->getContext()->getStrEmit();
-  for (uint32_t I = 0; I < getSrcSize(); ++I) {
+  for (IceSize_t I = 0; I < getSrcSize(); ++I) {
     if (I > 0)
       Str << ", ";
     getSrc(I)->emit(Cfg, Option);
@@ -563,7 +564,7 @@ void InstCall::dump(const IceCfg *Cfg) const {
   Str << " ";
   getCallTarget()->dump(Cfg);
   Str << "(";
-  for (uint32_t I = 0; I < getNumArgs(); ++I) {
+  for (IceSize_t I = 0; I < getNumArgs(); ++I) {
     if (I > 0)
       Str << ", ";
     Str << getArg(I)->getType() << " ";
@@ -681,7 +682,7 @@ void InstSwitch::dump(const IceCfg *Cfg) const {
   Str << "switch " << Type << " ";
   getSrc(0)->dump(Cfg);
   Str << ", label %" << getLabelDefault()->getName() << " [\n";
-  for (uint32_t I = 0; I < getNumCases(); ++I) {
+  for (IceSize_t I = 0; I < getNumCases(); ++I) {
     Str << "    " << Type << " " << getValue(I) << ", label %"
         << getLabel(I)->getName() << "\n";
   }
@@ -692,7 +693,7 @@ void InstPhi::dump(const IceCfg *Cfg) const {
   IceOstream &Str = Cfg->getContext()->getStrDump();
   dumpDest(Cfg);
   Str << " = phi " << getDest()->getType() << " ";
-  for (uint32_t I = 0; I < getSrcSize(); ++I) {
+  for (IceSize_t I = 0; I < getSrcSize(); ++I) {
     if (I > 0)
       Str << ", ";
     Str << "[ ";

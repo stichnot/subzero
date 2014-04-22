@@ -29,8 +29,8 @@ public:
   virtual void translateOm1();
   virtual void translateO2();
 
-  virtual Variable *getPhysicalRegister(uint32_t RegNum);
-  virtual IceString getRegName(uint32_t RegNum, IceType Type) const;
+  virtual Variable *getPhysicalRegister(IceSize_t RegNum);
+  virtual IceString getRegName(IceSize_t RegNum, IceType Type) const;
   virtual llvm::SmallBitVector getRegisterSet(RegSetMask Include,
                                               RegSetMask Exclude) const;
   virtual const llvm::SmallBitVector &
@@ -38,7 +38,7 @@ public:
     return TypeToRegisterSet[Type];
   }
   virtual bool hasFramePointer() const { return IsEbpBasedFrame; }
-  virtual uint32_t getFrameOrStackReg() const {
+  virtual IceSize_t getFrameOrStackReg() const {
     return IsEbpBasedFrame ? Reg_ebp : Reg_esp;
   }
   virtual size_t typeWidthInBytesOnStack(IceType Type) {
@@ -46,7 +46,7 @@ public:
   }
   virtual void addProlog(CfgNode *Node);
   virtual void addEpilog(CfgNode *Node);
-  uint32_t makeNextLabelNumber() { return NextLabelNumber++; }
+  IceSize_t makeNextLabelNumber() { return NextLabelNumber++; }
   // Ensure that a 64-bit Variable has been split into 2 32-bit
   // Variables, creating them if necessary.  This is needed for all
   // I64 operations, and it is needed for pushing F64 arguments for
@@ -116,7 +116,7 @@ protected:
                           int32_t RegNum = Variable::NoRegister);
   Variable *makeReg(IceType Type, int32_t RegNum = Variable::NoRegister);
   InstCall *makeHelperCall(const IceString &Name, Variable *Dest,
-                           uint32_t MaxSrcs) {
+                           IceSize_t MaxSrcs) {
     bool SuppressMangling = true;
     bool Tailcall = false;
     IceType Type = Dest ? Dest->getType() : IceType_void;
@@ -255,7 +255,7 @@ protected:
   llvm::SmallBitVector TypeToRegisterSet[IceType_NUM];
   llvm::SmallBitVector ScratchRegs;
   llvm::SmallBitVector RegsUsed;
-  uint32_t NextLabelNumber;
+  IceSize_t NextLabelNumber;
   bool ComputedLiveRanges;
   VarList PhysicalRegisters;
   static IceString RegNames[];

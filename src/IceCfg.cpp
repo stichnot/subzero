@@ -43,7 +43,7 @@ void IceCfg::setError(const IceString &Message) {
 }
 
 CfgNode *IceCfg::makeNode(const IceString &Name) {
-  uint32_t LabelIndex = Nodes.size();
+  IceSize_t LabelIndex = Nodes.size();
   CfgNode *Node = CfgNode::create(this, LabelIndex, Name);
   Nodes.push_back(Node);
   return Node;
@@ -76,7 +76,7 @@ CfgNode *IceCfg::splitEdge(CfgNode *From, CfgNode *To) {
 // name.  The Node argument is the node where the variable is defined.
 Variable *IceCfg::makeVariable(IceType Type, const CfgNode *Node,
                                const IceString &Name) {
-  uint32_t Index = Variables.size();
+  IceSize_t Index = Variables.size();
   Variables.push_back(Variable::create(this, Type, Node, Index, Name));
   return Variables[Index];
 }
@@ -234,7 +234,7 @@ void IceCfg::liveness(LivenessMode Mode) {
     // the trivial live range [1,1) and will *not* interfere with
     // other arguments.  So if the first instruction of the method is
     // "r=arg1+arg2", both args may be assigned the same register.
-    for (uint32_t I = 0; I < Args.size(); ++I) {
+    for (IceSize_t I = 0; I < Args.size(); ++I) {
       Variable *Arg = Args[I];
       if (!Live->getLiveRange(Arg).isEmpty()) {
         // Add live range [-1,0) with weight 0.
@@ -251,8 +251,8 @@ void IceCfg::liveness(LivenessMode Mode) {
     // Remove Variable::LiveRange and redirect to
     // Liveness::LiveRanges.  TODO: make sure Variable weights
     // are applied properly.
-    uint32_t NumVars = Variables.size();
-    for (uint32_t i = 0; i < NumVars; ++i) {
+    IceSize_t NumVars = Variables.size();
+    for (IceSize_t i = 0; i < NumVars; ++i) {
       Variable *Var = Variables[i];
       Var->setLiveRange(Live->getLiveRange(Var));
       if (Var->getWeight().isInf())
@@ -296,11 +296,11 @@ bool IceCfg::validateLiveness() const {
           assert(Valid);
         }
       }
-      uint32_t VarIndex = 0;
-      for (uint32_t I = 0; I < Inst->getSrcSize(); ++I) {
+      IceSize_t VarIndex = 0;
+      for (IceSize_t I = 0; I < Inst->getSrcSize(); ++I) {
         Operand *Src = Inst->getSrc(I);
-        uint32_t NumVars = Src->getNumVars();
-        for (uint32_t J = 0; J < NumVars; ++J, ++VarIndex) {
+        IceSize_t NumVars = Src->getNumVars();
+        for (IceSize_t J = 0; J < NumVars; ++J, ++VarIndex) {
           const Variable *Var = Src->getVar(J);
           if (!Var->getLiveRange().containsValue(InstNumber)) {
             Valid = false;
@@ -355,7 +355,7 @@ void IceCfg::dump() {
     if (getInternal())
       Str << "internal ";
     Str << ReturnType << " @" << getFunctionName() << "(";
-    for (uint32_t i = 0; i < Args.size(); ++i) {
+    for (IceSize_t i = 0; i < Args.size(); ++i) {
       if (i > 0)
         Str << ", ";
       Str << Args[i]->getType() << " ";

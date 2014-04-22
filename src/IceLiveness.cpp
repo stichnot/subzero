@@ -31,8 +31,8 @@ namespace Ice {
 
 void Liveness::init() {
   // Initialize most of the container sizes.
-  uint32_t NumVars = Cfg->getVariables().size();
-  uint32_t NumNodes = Cfg->getNumNodes();
+  IceSize_t NumVars = Cfg->getVariables().size();
+  IceSize_t NumNodes = Cfg->getNumNodes();
   Nodes.resize(NumNodes);
   VarToLiveMap.resize(NumVars);
   if (Mode == Liveness_RangesFull)
@@ -40,19 +40,19 @@ void Liveness::init() {
 
   // Count the number of globals, and the number of locals for each
   // block.
-  for (uint32_t i = 0; i < NumVars; ++i) {
+  for (IceSize_t i = 0; i < NumVars; ++i) {
     Variable *Var = Cfg->getVariables()[i];
     if (Var->isMultiblockLife()) {
       ++NumGlobals;
     } else {
-      uint32_t Index = Var->getLocalUseNode()->getIndex();
+      IceSize_t Index = Var->getLocalUseNode()->getIndex();
       ++Nodes[Index].NumLocals;
     }
   }
 
   // Resize each LivenessNode::LiveToVarMap, and the global
   // LiveToVarMap.  Reset the counts to 0.
-  for (uint32_t i = 0; i < NumNodes; ++i) {
+  for (IceSize_t i = 0; i < NumNodes; ++i) {
     Nodes[i].LiveToVarMap.assign(Nodes[i].NumLocals, NULL);
     Nodes[i].NumLocals = 0;
   }
@@ -60,16 +60,16 @@ void Liveness::init() {
 
   // Sort each variable into the appropriate LiveToVarMap.  Also set
   // VarToLiveMap.
-  uint32_t TmpNumGlobals = 0;
-  for (uint32_t i = 0; i < NumVars; ++i) {
+  IceSize_t TmpNumGlobals = 0;
+  for (IceSize_t i = 0; i < NumVars; ++i) {
     Variable *Var = Cfg->getVariables()[i];
-    uint32_t VarIndex = Var->getIndex();
-    uint32_t LiveIndex;
+    IceSize_t VarIndex = Var->getIndex();
+    IceSize_t LiveIndex;
     if (Var->isMultiblockLife()) {
       LiveIndex = TmpNumGlobals++;
       LiveToVarMap[LiveIndex] = Var;
     } else {
-      uint32_t NodeIndex = Var->getLocalUseNode()->getIndex();
+      IceSize_t NodeIndex = Var->getLocalUseNode()->getIndex();
       LiveIndex = Nodes[NodeIndex].NumLocals++;
       Nodes[NodeIndex].LiveToVarMap[LiveIndex] = Var;
       LiveIndex += NumGlobals;
@@ -80,8 +80,8 @@ void Liveness::init() {
 
   // Process each node.
   const NodeList &LNodes = Cfg->getNodes();
-  uint32_t NumLNodes = LNodes.size();
-  for (uint32_t i = 0; i < NumLNodes; ++i) {
+  IceSize_t NumLNodes = LNodes.size();
+  for (IceSize_t i = 0; i < NumLNodes; ++i) {
     LivenessNode &Node = Nodes[LNodes[i]->getIndex()];
     // NumLocals, LiveToVarMap already initialized
     Node.LiveIn.resize(NumGlobals);
@@ -91,14 +91,15 @@ void Liveness::init() {
   }
 }
 
-Variable *Liveness::getVariable(uint32_t LiveIndex, const CfgNode *Node) const {
+Variable *Liveness::getVariable(IceSize_t LiveIndex,
+                                const CfgNode *Node) const {
   if (LiveIndex < NumGlobals)
     return LiveToVarMap[LiveIndex];
-  uint32_t NodeIndex = Node->getIndex();
+  IceSize_t NodeIndex = Node->getIndex();
   return Nodes[NodeIndex].LiveToVarMap[LiveIndex - NumGlobals];
 }
 
-uint32_t Liveness::getLiveIndex(const Variable *Var) const {
+IceSize_t Liveness::getLiveIndex(const Variable *Var) const {
   return VarToLiveMap[Var->getIndex()];
 }
 

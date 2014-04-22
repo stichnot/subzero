@@ -22,13 +22,13 @@ namespace Ice {
 
 class CfgNode {
 public:
-  static CfgNode *create(IceCfg *Cfg, uint32_t LabelIndex,
+  static CfgNode *create(IceCfg *Cfg, IceSize_t LabelIndex,
                          IceString Name = "") {
     return new (Cfg->allocate<CfgNode>()) CfgNode(Cfg, LabelIndex, Name);
   }
 
   // Access the label number and name for this node.
-  uint32_t getIndex() const { return Number; }
+  IceSize_t getIndex() const { return Number; }
   IceString getName() const;
   IceString getAsmName() const {
     return ".L" + Cfg->getFunctionName() + "$" + getName();
@@ -64,17 +64,17 @@ public:
   void dump(IceCfg *Cfg) const;
 
 private:
-  CfgNode(IceCfg *Cfg, uint32_t LabelIndex, IceString Name);
+  CfgNode(IceCfg *Cfg, IceSize_t LabelIndex, IceString Name);
   CfgNode(const CfgNode &) LLVM_DELETED_FUNCTION;
   CfgNode &operator=(const CfgNode &) LLVM_DELETED_FUNCTION;
   IceCfg *const Cfg;
-  const uint32_t Number; // label index
-  IceString Name;        // for dumping only
-  bool HasReturn;        // does this block need an epilog?
-  NodeList InEdges;      // in no particular order
-  NodeList OutEdges;     // in no particular order
-  PhiList Phis;          // unordered set of phi instructions
-  InstList Insts;        // ordered list of non-phi instructions
+  const IceSize_t Number; // label index
+  IceString Name;         // for dumping only
+  bool HasReturn;         // does this block need an epilog?
+  NodeList InEdges;       // in no particular order
+  NodeList OutEdges;      // in no particular order
+  PhiList Phis;           // unordered set of phi instructions
+  InstList Insts;         // ordered list of non-phi instructions
 };
 
 } // end of namespace Ice

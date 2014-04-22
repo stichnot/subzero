@@ -59,8 +59,8 @@ public:
 
   Variable *getDest() const { return Dest; }
 
-  uint32_t getSrcSize() const { return NumSrcs; }
-  Operand *getSrc(uint32_t I) const {
+  IceSize_t getSrcSize() const { return NumSrcs; }
+  Operand *getSrc(IceSize_t I) const {
     assert(I < getSrcSize());
     return Srcs[I];
   }
@@ -97,13 +97,13 @@ public:
   virtual ~Inst();
 
 protected:
-  Inst(IceCfg *Cfg, InstKind Kind, uint32_t MaxSrcs, Variable *Dest);
+  Inst(IceCfg *Cfg, InstKind Kind, IceSize_t MaxSrcs, Variable *Dest);
   void addSource(Operand *Src) {
     assert(Src);
     assert(NumSrcs < MaxSrcs);
     Srcs[NumSrcs++] = Src;
   }
-  void setLastUse(uint32_t VarIndex) {
+  void setLastUse(IceSize_t VarIndex) {
     if (VarIndex < 8 * sizeof(LiveRangesEnded))
       LiveRangesEnded |= (1u << VarIndex);
   }
@@ -122,8 +122,8 @@ protected:
   bool HasSideEffects;
 
   Variable *Dest;
-  const uint32_t MaxSrcs; // only used for assert
-  uint32_t NumSrcs;
+  const IceSize_t MaxSrcs; // only used for assert
+  IceSize_t NumSrcs;
   Operand **Srcs;
 
   uint32_t LiveRangesEnded; // only first 32 src operands tracked, sorry
@@ -268,21 +268,21 @@ public:
   // The Tail argument represents the "tail" marker from the original
   // bitcode instruction (which doesn't necessarily mean that this
   // call must be executed as a tail call).
-  static InstCall *create(IceCfg *Cfg, uint32_t NumArgs, Variable *Dest,
+  static InstCall *create(IceCfg *Cfg, IceSize_t NumArgs, Variable *Dest,
                           Operand *CallTarget, bool Tail) {
     return new (Cfg->allocateInst<InstCall>())
         InstCall(Cfg, NumArgs, Dest, CallTarget, Tail);
   }
   void addArg(Operand *Arg) { addSource(Arg); }
   Operand *getCallTarget() const { return getSrc(0); }
-  Operand *getArg(uint32_t I) const { return getSrc(I + 1); }
-  uint32_t getNumArgs() const { return getSrcSize() - 1; }
+  Operand *getArg(IceSize_t I) const { return getSrc(I + 1); }
+  IceSize_t getNumArgs() const { return getSrcSize() - 1; }
   bool isTail() const { return Tail; }
   virtual void dump(const IceCfg *Cfg) const;
   static bool classof(const Inst *Inst) { return Inst->getKind() == Call; }
 
 private:
-  InstCall(IceCfg *Cfg, uint32_t NumArgs, Variable *Dest, Operand *CallTarget,
+  InstCall(IceCfg *Cfg, IceSize_t NumArgs, Variable *Dest, Operand *CallTarget,
            bool Tail)
       : Inst(Cfg, Inst::Call, NumArgs + 1, Dest), Tail(Tail) {
     // Set HasSideEffects so that the call instruction can't be
@@ -421,7 +421,7 @@ private:
 // the Phi source operand is getSrc(I).
 class InstPhi : public Inst {
 public:
-  static InstPhi *create(IceCfg *Cfg, uint32_t MaxSrcs, Variable *Dest) {
+  static InstPhi *create(IceCfg *Cfg, IceSize_t MaxSrcs, Variable *Dest) {
     return new (Cfg->allocateInst<InstPhi>()) InstPhi(Cfg, MaxSrcs, Dest);
   }
   void addArgument(Operand *Source, CfgNode *Label);
@@ -433,7 +433,7 @@ public:
   static bool classof(const Inst *Inst) { return Inst->getKind() == Phi; }
 
 private:
-  InstPhi(IceCfg *Cfg, uint32_t MaxSrcs, Variable *Dest);
+  InstPhi(IceCfg *Cfg, IceSize_t MaxSrcs, Variable *Dest);
   InstPhi(const InstPhi &) LLVM_DELETED_FUNCTION;
   InstPhi &operator=(const InstPhi &) LLVM_DELETED_FUNCTION;
   virtual ~InstPhi() {
@@ -517,29 +517,29 @@ private:
 // getSrc(0).
 class InstSwitch : public Inst {
 public:
-  static InstSwitch *create(IceCfg *Cfg, uint32_t NumCases, Operand *Source,
+  static InstSwitch *create(IceCfg *Cfg, IceSize_t NumCases, Operand *Source,
                             CfgNode *LabelDefault) {
     return new (Cfg->allocateInst<InstSwitch>())
         InstSwitch(Cfg, NumCases, Source, LabelDefault);
   }
   Operand *getComparison() const { return getSrc(0); }
   CfgNode *getLabelDefault() const { return LabelDefault; }
-  uint32_t getNumCases() const { return NumCases; }
-  uint64_t getValue(uint32_t I) const {
+  IceSize_t getNumCases() const { return NumCases; }
+  uint64_t getValue(IceSize_t I) const {
     assert(I < NumCases);
     return Values[I];
   }
-  CfgNode *getLabel(uint32_t I) const {
+  CfgNode *getLabel(IceSize_t I) const {
     assert(I < NumCases);
     return Labels[I];
   }
-  void addBranch(uint32_t CaseIndex, uint64_t Value, CfgNode *Label);
+  void addBranch(IceSize_t CaseIndex, uint64_t Value, CfgNode *Label);
   virtual NodeList getTerminatorEdges() const;
   virtual void dump(const IceCfg *Cfg) const;
   static bool classof(const Inst *Inst) { return Inst->getKind() == Switch; }
 
 private:
-  InstSwitch(IceCfg *Cfg, uint32_t NumCases, Operand *Source,
+  InstSwitch(IceCfg *Cfg, IceSize_t NumCases, Operand *Source,
              CfgNode *LabelDefault);
   InstSwitch(const InstSwitch &) LLVM_DELETED_FUNCTION;
   InstSwitch &operator=(const InstSwitch &) LLVM_DELETED_FUNCTION;
@@ -551,9 +551,9 @@ private:
   }
 
   CfgNode *LabelDefault;
-  uint32_t NumCases; // not including the default case
-  uint64_t *Values;  // size is NumCases
-  CfgNode **Labels;  // size is NumCases
+  IceSize_t NumCases; // not including the default case
+  uint64_t *Values;   // size is NumCases
+  CfgNode **Labels;   // size is NumCases
 };
 
 // Unreachable instruction.  This is a terminator instruction with no
@@ -667,7 +667,7 @@ public:
   static bool classof(const Inst *Inst) { return Inst->getKind() >= Target; }
 
 protected:
-  InstTarget(IceCfg *Cfg, InstKind Kind, uint32_t MaxSrcs, Variable *Dest)
+  InstTarget(IceCfg *Cfg, InstKind Kind, IceSize_t MaxSrcs, Variable *Dest)
       : Inst(Cfg, Kind, MaxSrcs, Dest) {
     assert(Kind >= Target);
   }

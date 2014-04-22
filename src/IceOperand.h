@@ -44,8 +44,8 @@ public:
   // the operand.  This is so that the liveness operations can get
   // quick access to the variables of interest, without having to dig
   // so far into the operand.
-  uint32_t getNumVars() const { return NumVars; }
-  Variable *getVar(uint32_t I) const {
+  IceSize_t getNumVars() const { return NumVars; }
+  Variable *getVar(IceSize_t I) const {
     assert(I < getNumVars());
     return Vars[I];
   }
@@ -66,7 +66,7 @@ protected:
   const IceType Type;
   const OperandKind Kind;
   // Vars and NumVars are initialized by the derived class.
-  uint32_t NumVars;
+  IceSize_t NumVars;
   Variable **Vars;
 
 private:
@@ -268,11 +268,11 @@ IceOstream &operator<<(IceOstream &Str, const LiveRange &L);
 class Variable : public Operand {
 public:
   static Variable *create(IceCfg *Cfg, IceType Type, const CfgNode *Node,
-                          uint32_t Index, const IceString &Name) {
+                          IceSize_t Index, const IceString &Name) {
     return new (Cfg->allocate<Variable>()) Variable(Type, Node, Index, Name);
   }
 
-  uint32_t getIndex() const { return Number; }
+  IceSize_t getIndex() const { return Number; }
   IceString getName() const;
 
   Inst *getDefinition() const { return DefInst; }
@@ -351,7 +351,7 @@ public:
   virtual ~Variable() {}
 
 private:
-  Variable(IceType Type, const CfgNode *Node, uint32_t Index,
+  Variable(IceType Type, const CfgNode *Node, IceSize_t Index,
            const IceString &Name)
       : Operand(kVariable, Type), Number(Index), Name(Name), DefInst(NULL),
         DefNode(Node), IsArgument(false), StackOffset(0), RegNum(NoRegister),
@@ -365,7 +365,7 @@ private:
   Variable &operator=(const Variable &) LLVM_DELETED_FUNCTION;
   // Number is unique across all variables, and is used as a
   // (bit)vector index for liveness analysis.
-  const uint32_t Number;
+  const IceSize_t Number;
   // Name is optional.
   const IceString Name;
   // DefInst is the instruction that produces this variable as its

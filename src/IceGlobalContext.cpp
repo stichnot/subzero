@@ -33,7 +33,7 @@ template <typename KeyType, typename ValueType> class TypePool {
 public:
   TypePool() {}
   ValueType *getOrAdd(GlobalContext *Ctx, IceType Type, KeyType Key) {
-    uint32_t Index = KeyToIndex.translate(TupleType(Type, Key));
+    IceSize_t Index = KeyToIndex.translate(TupleType(Type, Key));
     if (Index >= Pool.size()) {
       Pool.resize(Index + 1);
       Pool[Index] = ValueType::create(Ctx, Type, Key);
@@ -99,7 +99,7 @@ IceString GlobalContext::mangleName(const IceString &Name) const {
   char NameBase[1 + Name.length()];
   const size_t BufLen = 30 + Name.length() + PrefixLength;
   char NewName[BufLen];
-  uint32_t BaseLength = 0;
+  uint32_t BaseLength = 0; // using uint32_t due to sscanf format string
 
   int ItemsParsed = sscanf(Name.c_str(), "_ZN%s", NameBase);
   if (ItemsParsed == 1) {
