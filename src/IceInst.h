@@ -143,6 +143,7 @@ public:
         InstAlloca(Cfg, ByteCount, Align, Dest);
   }
   uint32_t getAlign() const { return Align; }
+  Operand *getSizeInBytes() const { return getSrc(0); }
   virtual void dump(const IceCfg *Cfg) const;
   static bool classof(const Inst *Inst) { return Inst->getKind() == Alloca; }
 
@@ -232,6 +233,10 @@ public:
     return new (Cfg->allocateInst<InstBr>()) InstBr(Cfg, Target);
   }
   bool isUnconditional() const { return getTargetTrue() == NULL; }
+  Operand *getCondition() const {
+    assert(!isUnconditional());
+    return getSrc(0);
+  }
   CfgNode *getTargetTrue() const { return TargetTrue; }
   CfgNode *getTargetFalse() const { return TargetFalse; }
   CfgNode *getTargetUnconditional() const {
@@ -401,6 +406,7 @@ public:
   static InstLoad *create(IceCfg *Cfg, Variable *Dest, Operand *SourceAddr) {
     return new (Cfg->allocateInst<InstLoad>()) InstLoad(Cfg, Dest, SourceAddr);
   }
+  Operand *getSourceAddress() const { return getSrc(0); }
   virtual void dump(const IceCfg *Cfg) const;
   static bool classof(const Inst *Inst) { return Inst->getKind() == Load; }
 
@@ -444,11 +450,16 @@ private:
 
 // Ret instruction.  The return value is captured in getSrc(0), but if
 // there is no return value (void-type function), then
-// getSrcSize()==0.
+// getSrcSize()==0 and hasRetValue()==false.
 class InstRet : public Inst {
 public:
   static InstRet *create(IceCfg *Cfg, Operand *Source = NULL) {
     return new (Cfg->allocateInst<InstRet>()) InstRet(Cfg, Source);
+  }
+  bool hasRetValue() const { return getSrcSize(); }
+  Operand *getRetValue() const {
+    assert(hasRetValue());
+    return getSrc(0);
   }
   virtual NodeList getTerminatorEdges() const { return NodeList(); }
   virtual void dump(const IceCfg *Cfg) const;
@@ -511,6 +522,7 @@ public:
     return new (Cfg->allocateInst<InstSwitch>())
         InstSwitch(Cfg, NumCases, Source, LabelDefault);
   }
+  Operand *getComparison() const { return getSrc(0); }
   CfgNode *getLabelDefault() const { return LabelDefault; }
   uint32_t getNumCases() const { return NumCases; }
   uint64_t getValue(uint32_t I) const {

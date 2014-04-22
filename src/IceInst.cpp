@@ -502,7 +502,7 @@ void InstAlloca::dump(const IceCfg *Cfg) const {
   IceOstream &Str = Cfg->getContext()->getStrDump();
   dumpDest(Cfg);
   Str << " = alloca i8, i32 ";
-  getSrc(0)->dump(Cfg);
+  getSizeInBytes()->dump(Cfg);
   Str << ", align " << Align;
 }
 
@@ -541,7 +541,7 @@ void InstBr::dump(const IceCfg *Cfg) const {
   Str << "br ";
   if (!isUnconditional()) {
     Str << "i1 ";
-    getSrc(0)->dump(Cfg);
+    getCondition()->dump(Cfg);
     Str << ", label %" << getTargetTrue()->getName() << ", ";
   }
   Str << "label %" << getTargetFalse()->getName();
@@ -677,7 +677,7 @@ void InstStore::dump(const IceCfg *Cfg) const {
 
 void InstSwitch::dump(const IceCfg *Cfg) const {
   IceOstream &Str = Cfg->getContext()->getStrDump();
-  IceType Type = getSrc(0)->getType();
+  IceType Type = getComparison()->getType();
   Str << "switch " << Type << " ";
   getSrc(0)->dump(Cfg);
   Str << ", label %" << getLabelDefault()->getName() << " [\n";
@@ -703,9 +703,9 @@ void InstPhi::dump(const IceCfg *Cfg) const {
 
 void InstRet::dump(const IceCfg *Cfg) const {
   IceOstream &Str = Cfg->getContext()->getStrDump();
-  IceType Type = getSrcSize() == 0 ? IceType_void : getSrc(0)->getType();
+  IceType Type = hasRetValue() ? getRetValue()->getType() : IceType_void;
   Str << "ret " << Type;
-  if (getSrcSize()) {
+  if (hasRetValue()) {
     Str << " ";
     dumpSources(Cfg);
   }

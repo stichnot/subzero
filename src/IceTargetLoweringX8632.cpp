@@ -583,7 +583,7 @@ void TargetX8632::lowerAlloca(const InstAlloca *Inst) {
   // TODO(sehr,stichnot): align allocated memory, keep stack aligned, minimize
   // the number of adjustments of esp, etc.
   Variable *esp = getPhysicalRegister(Reg_esp);
-  Operand *TotalSize = legalize(Inst->getSrc(0));
+  Operand *TotalSize = legalize(Inst->getSizeInBytes());
   Variable *Dest = Inst->getDest();
   _sub(esp, TotalSize);
   _mov(Dest, esp);
@@ -992,7 +992,7 @@ void TargetX8632::lowerBr(const InstBr *Inst) {
   if (Inst->isUnconditional()) {
     _br(Inst->getTargetUnconditional());
   } else {
-    Operand *Src0 = legalize(Inst->getSrc(0));
+    Operand *Src0 = legalize(Inst->getCondition());
     Constant *Zero = Ctx->getConstantInt(IceType_i32, 0);
     _cmp(Src0, Zero);
     _br(InstX8632Br::Br_ne, Inst->getTargetTrue(), Inst->getTargetFalse());
@@ -1740,7 +1740,7 @@ void TargetX8632::lowerLoad(const InstLoad *Inst) {
   // optimization already creates an OperandX8632Mem operand, so it
   // doesn't need another level of transformation.
   IceType Type = Inst->getDest()->getType();
-  Operand *Src0 = Inst->getSrc(0);
+  Operand *Src0 = Inst->getSourceAddress();
   // Address mode optimization already creates an OperandX8632Mem
   // operand, so it doesn't need another level of transformation.
   if (!llvm::isa<OperandX8632Mem>(Src0)) {
@@ -1814,8 +1814,8 @@ void TargetX8632::lowerPhi(const InstPhi *Inst) {
 
 void TargetX8632::lowerRet(const InstRet *Inst) {
   Variable *Reg = NULL;
-  if (Inst->getSrcSize()) {
-    Operand *Src0 = legalize(Inst->getSrc(0));
+  if (Inst->hasRetValue()) {
+    Operand *Src0 = legalize(Inst->getRetValue());
     if (Src0->getType() == IceType_i64) {
       Variable *eax = legalizeToVar(loOperand(Src0), false, Reg_eax);
       Variable *edx = legalizeToVar(hiOperand(Src0), false, Reg_edx);
@@ -1927,7 +1927,7 @@ void TargetX8632::doAddressOptStore() {
 void TargetX8632::lowerSwitch(const InstSwitch *Inst) {
   // This implements the most naive possible lowering.
   // cmp a,val[0]; jeq label[0]; cmp a,val[1]; jeq label[1]; ... jmp default
-  Operand *Src0 = Inst->getSrc(0);
+  Operand *Src0 = Inst->getComparison();
   uint32_t NumCases = Inst->getNumCases();
   // OK, we'll be slightly less naive by forcing Src into a physical
   // register if there are 2 or more uses.
