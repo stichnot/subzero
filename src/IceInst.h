@@ -316,7 +316,7 @@ private:
   InstCast(IceCfg *Cfg, OpKind CastKind, Variable *Dest, Operand *Source);
   InstCast(const InstCast &) LLVM_DELETED_FUNCTION;
   InstCast &operator=(const InstCast &) LLVM_DELETED_FUNCTION;
-  OpKind CastKind;
+  const OpKind CastKind;
 };
 
 #define ICEINSTFCMP_TABLE                                                      \
@@ -351,7 +351,7 @@ private:
            Operand *Source2);
   InstFcmp(const InstFcmp &) LLVM_DELETED_FUNCTION;
   InstFcmp &operator=(const InstFcmp &) LLVM_DELETED_FUNCTION;
-  FCond Condition;
+  const FCond Condition;
 };
 
 #define ICEINSTICMP_TABLE                                                      \
@@ -384,7 +384,7 @@ private:
            Operand *Source2);
   InstIcmp(const InstIcmp &) LLVM_DELETED_FUNCTION;
   InstIcmp &operator=(const InstIcmp &) LLVM_DELETED_FUNCTION;
-  ICond Condition;
+  const ICond Condition;
 };
 
 // Load instruction.  The source address is captured in getSrc(0);
