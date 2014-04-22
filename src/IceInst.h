@@ -24,6 +24,8 @@ namespace Ice {
 class Inst {
 public:
   enum InstKind {
+    // Arbitrary (alphabetical) order, except put Unreachable first.
+    Unreachable,
     Alloca,
     Arithmetic,
     Assign, // not part of LLVM/PNaCl bitcode
@@ -38,7 +40,6 @@ public:
     Select,
     Store,
     Switch,
-    Unreachable,
     FakeDef,  // not part of LLVM/PNaCl bitcode
     FakeUse,  // not part of LLVM/PNaCl bitcode
     FakeKill, // not part of LLVM/PNaCl bitcode
