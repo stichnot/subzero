@@ -780,28 +780,28 @@ void TargetX8632::lowerArithmetic(const InstArithmetic *Inst) {
       _mov(DestHi, T_3);
     } break;
     case InstArithmetic::Udiv: {
-      IceSize_t MaxSrcs = 2;
+      const IceSize_t MaxSrcs = 2;
       InstCall *Call = makeHelperCall("__udivdi3", Dest, MaxSrcs);
       Call->addArg(Inst->getSrc(0));
       Call->addArg(Inst->getSrc(1));
       lowerCall(Call);
     } break;
     case InstArithmetic::Sdiv: {
-      IceSize_t MaxSrcs = 2;
+      const IceSize_t MaxSrcs = 2;
       InstCall *Call = makeHelperCall("__divdi3", Dest, MaxSrcs);
       Call->addArg(Inst->getSrc(0));
       Call->addArg(Inst->getSrc(1));
       lowerCall(Call);
     } break;
     case InstArithmetic::Urem: {
-      IceSize_t MaxSrcs = 2;
+      const IceSize_t MaxSrcs = 2;
       InstCall *Call = makeHelperCall("__umoddi3", Dest, MaxSrcs);
       Call->addArg(Inst->getSrc(0));
       Call->addArg(Inst->getSrc(1));
       lowerCall(Call);
     } break;
     case InstArithmetic::Srem: {
-      IceSize_t MaxSrcs = 2;
+      const IceSize_t MaxSrcs = 2;
       InstCall *Call = makeHelperCall("__moddi3", Dest, MaxSrcs);
       Call->addArg(Inst->getSrc(0));
       Call->addArg(Inst->getSrc(1));
@@ -950,7 +950,7 @@ void TargetX8632::lowerArithmetic(const InstArithmetic *Inst) {
       _mov(Dest, T);
       break;
     case InstArithmetic::Frem: {
-      IceSize_t MaxSrcs = 2;
+      const IceSize_t MaxSrcs = 2;
       IceType Type = Dest->getType();
       InstCall *Call =
           makeHelperCall(Type == IceType_f32 ? "fmodf" : "fmod", Dest, MaxSrcs);
@@ -1207,7 +1207,7 @@ void TargetX8632::lowerCast(const InstCast *Inst) {
       // temporary manipulation of the status word.  This helper is
       // not needed for x86-64.
       split64(Dest);
-      IceSize_t MaxSrcs = 1;
+      const IceSize_t MaxSrcs = 1;
       IceType SrcType = Inst->getSrc(0)->getType();
       InstCall *Call = makeHelperCall(
           SrcType == IceType_f32 ? "cvtftosi64" : "cvtdtosi64", Dest, MaxSrcs);
@@ -1227,7 +1227,7 @@ void TargetX8632::lowerCast(const InstCast *Inst) {
     if (Dest->getType() == IceType_i64 || Dest->getType() == IceType_i32) {
       // Use a helper for both x86-32 and x86-64.
       split64(Dest);
-      IceSize_t MaxSrcs = 1;
+      const IceSize_t MaxSrcs = 1;
       IceType DestType = Dest->getType();
       IceType SrcType = Src0RM->getType();
       IceString DstSubstring = (DestType == IceType_i64 ? "64" : "32");
@@ -1251,7 +1251,7 @@ void TargetX8632::lowerCast(const InstCast *Inst) {
   case InstCast::Sitofp:
     if (Src0RM->getType() == IceType_i64) {
       // Use a helper for x86-32.
-      IceSize_t MaxSrcs = 1;
+      const IceSize_t MaxSrcs = 1;
       IceType DestType = Dest->getType();
       InstCall *Call = makeHelperCall(
           DestType == IceType_f32 ? "cvtsi64tof" : "cvtsi64tod", Dest, MaxSrcs);
@@ -1275,7 +1275,7 @@ void TargetX8632::lowerCast(const InstCast *Inst) {
     if (Src0RM->getType() == IceType_i64 || Src0RM->getType() == IceType_i32) {
       // Use a helper for x86-32 and x86-64.  Also use a helper for
       // i32 on x86-32.
-      IceSize_t MaxSrcs = 1;
+      const IceSize_t MaxSrcs = 1;
       IceType DestType = Dest->getType();
       IceString SrcSubstring = (Src0RM->getType() == IceType_i64 ? "64" : "32");
       IceString DstSubstring = (DestType == IceType_f32 ? "f" : "d");
@@ -1944,7 +1944,7 @@ void TargetX8632::lowerSwitch(const InstSwitch *Inst) {
 }
 
 void TargetX8632::lowerUnreachable(const InstUnreachable *Inst) {
-  IceSize_t MaxSrcs = 0;
+  const IceSize_t MaxSrcs = 0;
   Variable *Dest = NULL;
   InstCall *Call = makeHelperCall("ice_unreachable", Dest, MaxSrcs);
   lowerCall(Call);
