@@ -765,7 +765,7 @@ void InstX8632Fstp::emit(const IceCfg *Cfg, uint32_t Option) const {
   // memory.  Hack this by creating a temporary stack slot, spilling
   // st(0) there, loading it into the xmm register, and deallocating
   // the stack slot.
-  uint32_t Width = iceTypeWidthInBytes(getDest()->getType());
+  uint32_t Width = typeWidthInBytes(getDest()->getType());
   Str << "\tsub\tesp, " << Width << "\n";
   Str << "\tfstp\t" << (Width == 8 ? "q" : "d") << "word ptr [esp]\n";
   Str << "\tmovs" << (Width == 8 ? "d" : "s") << "\t";
@@ -803,9 +803,9 @@ void InstX8632Push::emit(const IceCfg *Cfg, uint32_t Option) const {
   if ((Type == IceType_f32 || Type == IceType_f64) && Var && Var->hasReg()) {
     // The xmm registers can't be directly pushed, so we fake it by
     // decrementing esp and then storing to [esp].
-    Str << "\tsub\tesp, " << iceTypeWidthInBytes(Type) << "\n";
+    Str << "\tsub\tesp, " << typeWidthInBytes(Type) << "\n";
     if (!SuppressStackAdjustment)
-      Cfg->getTarget()->updateStackAdjustment(iceTypeWidthInBytes(Type));
+      Cfg->getTarget()->updateStackAdjustment(typeWidthInBytes(Type));
     Str << "\tmov" << (Type == IceType_f32 ? "ss\td" : "sd\tq")
         << "word ptr [esp], ";
     getSrc(0)->emit(Cfg, Option);

@@ -182,7 +182,7 @@ void Variable::emit(const IceCfg *Cfg, uint32_t Option) const {
     Str << Cfg->getTarget()->getRegName(RegNum, getType());
     return;
   }
-  switch (iceTypeWidthInBytes(getType())) {
+  switch (typeWidthInBytes(getType())) {
   case 1:
     Str << "byte";
     break;

@@ -46,7 +46,7 @@ enum IceOptLevel {
   IceOpt_2
 };
 
-size_t iceTypeWidthInBytes(IceType Type);
+size_t typeWidthInBytes(IceType Type);
 
 template <> IceOstream &operator<<(class IceOstream &Str, const IceType &Type);
 

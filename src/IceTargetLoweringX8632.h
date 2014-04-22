@@ -42,7 +42,7 @@ public:
     return IsEbpBasedFrame ? Reg_ebp : Reg_esp;
   }
   virtual size_t typeWidthInBytesOnStack(IceType Type) {
-    return (iceTypeWidthInBytes(Type) + 3) & ~3;
+    return (typeWidthInBytes(Type) + 3) & ~3;
   }
   virtual void addProlog(CfgNode *Node);
   virtual void addEpilog(CfgNode *Node);

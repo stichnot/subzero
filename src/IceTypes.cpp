@@ -34,7 +34,7 @@ const uint32_t TypeAttributesSize =
 
 } // end anonymous namespace
 
-size_t iceTypeWidthInBytes(IceType Type) {
+size_t typeWidthInBytes(IceType Type) {
   size_t Width = 0;
   uint32_t Index = static_cast<uint32_t>(Type);
   if (Index < TypeAttributesSize) {
