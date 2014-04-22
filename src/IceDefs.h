@@ -134,6 +134,7 @@ inline IceOstream &operator<<(IceOstream &Str, const T &Val) {
 // thread-safe.
 extern IceOstream *GlobalStr;
 
+// TODO: Implement in terms of std::chrono after switching to C++11.
 class IceTimer {
 public:
   IceTimer() : Start(llvm::TimeRecord::getCurrentTime(false)) {}
