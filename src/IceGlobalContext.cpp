@@ -148,11 +148,11 @@ Constant *GlobalContext::getConstantDouble(double ConstantDouble) {
   return ConstPool->Doubles.getOrAdd(this, IceType_f64, ConstantDouble);
 }
 
-Constant *GlobalContext::getConstantSym(IceType Type, const void *Handle,
-                                        int64_t Offset, const IceString &Name,
+Constant *GlobalContext::getConstantSym(IceType Type, int64_t Offset,
+                                        const IceString &Name,
                                         bool SuppressMangling) {
   return ConstPool->Relocatables.getOrAdd(
-      this, Type, RelocatableTuple(Handle, Offset, Name, SuppressMangling));
+      this, Type, RelocatableTuple(Offset, Name, SuppressMangling));
 }
 
 void IceTimer::printElapsedUs(GlobalContext *Ctx, const IceString &Tag) const {

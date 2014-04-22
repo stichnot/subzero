@@ -65,9 +65,8 @@ public:
   Constant *getConstantInt(IceType Type, uint64_t ConstantInt64);
   Constant *getConstantFloat(float Value);
   Constant *getConstantDouble(double Value);
-  // Returns a symbolic constant.  Handle is currently unused but is
-  // reserved to hold something LLVM-specific to facilitate linking.
-  Constant *getConstantSym(IceType Type, const void *Handle, int64_t Offset,
+  // Returns a symbolic constant.
+  Constant *getConstantSym(IceType Type, int64_t Offset,
                            const IceString &Name = "",
                            bool SuppressMangling = false);
 

@@ -179,7 +179,7 @@ private:
   Ice::Operand *convertValue(const Value *Op) {
     if (const Constant *Const = dyn_cast<Constant>(Op)) {
       if (const GlobalValue *GV = dyn_cast<GlobalValue>(Const)) {
-        return Ctx->getConstantSym(convertType(GV->getType()), GV, 0,
+        return Ctx->getConstantSym(convertType(GV->getType()), 0,
                                    GV->getName());
       } else if (const ConstantInt *CI = dyn_cast<ConstantInt>(Const)) {
         return Ctx->getConstantInt(convertIntegerType(CI->getType()),

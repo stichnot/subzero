@@ -540,9 +540,8 @@ Operand *TargetX8632::hiOperand(Operand *Operand) {
                    llvm::dyn_cast<ConstantRelocatable>(Offset)) {
       // TODO: This creates a new entry in the constant pool, instead
       // of reusing the existing entry.
-      Offset =
-          Ctx->getConstantSym(IceType_i32, SymOffset->getHandle(),
-                              4 + SymOffset->getOffset(), SymOffset->getName());
+      Offset = Ctx->getConstantSym(IceType_i32, 4 + SymOffset->getOffset(),
+                                   SymOffset->getName());
     }
     return OperandX8632Mem::create(Cfg, IceType_i32, Mem->getBase(), Offset,
                                    Mem->getIndex(), Mem->getShift());

@@ -141,15 +141,13 @@ class RelocatableTuple {
   RelocatableTuple &operator=(const RelocatableTuple &) LLVM_DELETED_FUNCTION;
 
 public:
-  RelocatableTuple(const void *Handle, const int64_t Offset,
-                   const IceString &Name, bool SuppressMangling)
-      : Handle(Handle), Offset(Offset), Name(Name),
-        SuppressMangling(SuppressMangling) {}
+  RelocatableTuple(const int64_t Offset, const IceString &Name,
+                   bool SuppressMangling)
+      : Offset(Offset), Name(Name), SuppressMangling(SuppressMangling) {}
   RelocatableTuple(const RelocatableTuple &Other)
-      : Handle(Other.Handle), Offset(Other.Offset), Name(Other.Name),
+      : Offset(Other.Offset), Name(Other.Name),
         SuppressMangling(Other.SuppressMangling) {}
 
-  const void *Handle;
   const int64_t Offset;
   const IceString Name;
   bool SuppressMangling;
@@ -162,9 +160,8 @@ public:
   static ConstantRelocatable *create(GlobalContext *Ctx, IceType Type,
                                      const RelocatableTuple &Tuple) {
     return new (Ctx->allocate<ConstantRelocatable>()) ConstantRelocatable(
-        Type, Tuple.Handle, Tuple.Offset, Tuple.Name, Tuple.SuppressMangling);
+        Type, Tuple.Offset, Tuple.Name, Tuple.SuppressMangling);
   }
-  const void *getHandle() const { return Handle; }
   int64_t getOffset() const { return Offset; }
   IceString getName() const { return Name; }
   void setSuppressMangling(bool Value) { SuppressMangling = Value; }
@@ -178,17 +175,16 @@ public:
   }
 
 private:
-  ConstantRelocatable(IceType Type, const void *Handle, int64_t Offset,
-                      const IceString &Name, bool SuppressMangling)
-      : Constant(kConstRelocatable, Type), Handle(Handle), Offset(Offset),
-        Name(Name), SuppressMangling(SuppressMangling) {}
+  ConstantRelocatable(IceType Type, int64_t Offset, const IceString &Name,
+                      bool SuppressMangling)
+      : Constant(kConstRelocatable, Type), Offset(Offset), Name(Name),
+        SuppressMangling(SuppressMangling) {}
   ConstantRelocatable(const ConstantRelocatable &) LLVM_DELETED_FUNCTION;
   ConstantRelocatable &
   operator=(const ConstantRelocatable &) LLVM_DELETED_FUNCTION;
   virtual ~ConstantRelocatable() {}
-  const void *const Handle; // opaque handle e.g. to LLVM
-  const int64_t Offset;     // fixed offset to add
-  const IceString Name;     // optional for debug/dump
+  const int64_t Offset; // fixed offset to add
+  const IceString Name; // optional for debug/dump
   bool SuppressMangling;
 };
 
