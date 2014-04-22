@@ -69,8 +69,15 @@ bool Inst::isLastUse(const Operand *TestSrc) const {
 void Inst::updateVars(CfgNode *Node) {
   if (Dest)
     Dest->setDefinition(this, Node);
-  for (uint32_t I = 0; I < getSrcSize(); ++I) {
-    getSrc(I)->setUse(this, Node);
+
+  IceSize_t VarIndex = 0;
+  for (IceSize_t I = 0; I < getSrcSize(); ++I) {
+    Operand *Src = getSrc(I);
+    IceSize_t NumVars = Src->getNumVars();
+    for (IceSize_t J = 0; J < NumVars; ++J, ++VarIndex) {
+      Variable *Var = Src->getVar(J);
+      Var->setUse(this, Node);
+    }
   }
 }
 

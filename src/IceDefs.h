@@ -56,6 +56,11 @@ typedef std::vector<Operand *> OperandList;
 typedef std::vector<Variable *> VarList;
 typedef std::vector<CfgNode *> NodeList;
 
+// IceSize_t is for holding small-ish limits like number of source
+// operands in an instruction.  It is used instead of size_t (which
+// may be 64-bits wide) when we want to save space.
+typedef uint32_t IceSize_t;
+
 enum LivenessMode {
   // Lightweight version of live-range-end calculation.  Marks the
   // last use of variables whose definition and uses are completely

@@ -49,7 +49,6 @@ public:
     assert(I < getNumVars());
     return Vars[I];
   }
-  virtual void setUse(const Inst *Inst, const CfgNode *Node) {}
   virtual void emit(const IceCfg *Cfg, uint32_t Option) const = 0;
   virtual void dump(const IceCfg *Cfg) const = 0;
 

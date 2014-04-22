@@ -53,7 +53,6 @@ public:
   Constant *getOffset() const { return Offset; }
   Variable *getIndex() const { return Index; }
   uint32_t getShift() const { return Shift; }
-  virtual void setUse(const Inst *Inst, const CfgNode *Node);
   virtual void emit(const IceCfg *Cfg, uint32_t Option) const;
   virtual void dump(const IceCfg *Cfg) const;
 

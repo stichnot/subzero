@@ -60,15 +60,6 @@ OperandX8632Mem::OperandX8632Mem(IceCfg *Cfg, IceType Type, Variable *Base,
   }
 }
 
-void OperandX8632Mem::setUse(const Inst *Inst, const CfgNode *Node) {
-  if (getBase())
-    getBase()->setUse(Inst, Node);
-  if (getOffset())
-    getOffset()->setUse(Inst, Node);
-  if (getIndex())
-    getIndex()->setUse(Inst, Node);
-}
-
 InstX8632Mul::InstX8632Mul(IceCfg *Cfg, Variable *Dest, Variable *Source1,
                            Operand *Source2)
     : InstX8632(Cfg, InstX8632::Mul, 2, Dest) {
