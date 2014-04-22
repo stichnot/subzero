@@ -21,11 +21,11 @@
 
 namespace Ice {
 
-// TypePool maps constants of type KeyType (e.g. float) to pointers
-// to type ValueType (e.g. ConstantFloat).  KeyType values are
-// compared using memcmp() because of potential NaN values in KeyType
-// values.  TODO: allow a custom KeyType comparator for a KeyType
-// containing e.g. a non-pooled string.
+// TypePool maps constants of type KeyType (e.g. float) to pointers to
+// type ValueType (e.g. ConstantFloat).  KeyType values are compared
+// using memcmp() because of potential NaN values in KeyType values.
+// TODO: allow a custom KeyType comparator for a KeyType containing
+// e.g. a non-pooled string.
 template <typename KeyType, typename ValueType> class TypePool {
   TypePool(const TypePool &) LLVM_DELETED_FUNCTION;
   TypePool &operator=(const TypePool &) LLVM_DELETED_FUNCTION;

@@ -92,6 +92,8 @@ public:
 
 private:
   ContainerType Entries;
+  ValueTranslation(const ValueTranslation &) LLVM_DELETED_FUNCTION;
+  ValueTranslation &operator=(const ValueTranslation &) LLVM_DELETED_FUNCTION;
 };
 
 enum IceVerbose {
@@ -120,6 +122,10 @@ public:
   IceOstream(llvm::raw_ostream *Stream) : Stream(Stream) {}
 
   llvm::raw_ostream *Stream;
+
+private:
+  IceOstream(const IceOstream &) LLVM_DELETED_FUNCTION;
+  IceOstream &operator=(const IceOstream &) LLVM_DELETED_FUNCTION;
 };
 
 template <typename T>
@@ -149,6 +155,8 @@ public:
 
 private:
   const llvm::TimeRecord Start;
+  IceTimer(const IceTimer &) LLVM_DELETED_FUNCTION;
+  IceTimer &operator=(const IceTimer &) LLVM_DELETED_FUNCTION;
 };
 
 } // end of namespace Ice
