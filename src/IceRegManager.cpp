@@ -26,11 +26,12 @@
 
 namespace Ice {
 
-RegManagerEntry::RegManagerEntry(IceCfg *Cfg, Variable *Var, IceSize_t NumReg)
+RegManagerEntry::RegManagerEntry(IceCfg * /*Cfg*/, Variable *Var,
+                                 IceSize_t /*NumReg*/)
     : Var(Var) {}
 
-RegManagerEntry::RegManagerEntry(IceCfg *Cfg, const RegManagerEntry &Other,
-                                 IceSize_t NumReg)
+RegManagerEntry::RegManagerEntry(IceCfg * /*Cfg*/, const RegManagerEntry &Other,
+                                 IceSize_t /*NumReg*/)
     : Var(Other.Var), Available(Other.Available) {}
 
 // An Operand is loaded into this virtual register.  Its Available set
@@ -88,7 +89,7 @@ RegManager::RegManager(const RegManager &Other)
 }
 
 // Prefer[0] is highest preference, Prefer[1] is second, etc.
-Variable *RegManager::getRegister(IceType Type, const OperandList &Prefer,
+Variable *RegManager::getRegister(IceType /*Type*/, const OperandList &Prefer,
                                   const VarList &Avoid)
     // TODO: "Avoid" is actually a set of virtual or physical registers.
     // Wait - no it's not.  For an Arithmetic instruction, the load of the

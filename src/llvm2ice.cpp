@@ -533,7 +533,7 @@ private:
     return Ice::InstAlloca::create(Cfg, ByteCount, Align, Dest);
   }
 
-  Ice::Inst *convertUnreachableInstruction(const UnreachableInst *Inst) {
+  Ice::Inst *convertUnreachableInstruction(const UnreachableInst * /*Inst*/) {
     return Ice::InstUnreachable::create(Cfg);
   }
 
@@ -673,7 +673,7 @@ int main(int argc, char **argv) {
       Cfg->dump();
     } else {
       Ice::IceTimer TTranslate;
-      Cfg->translate(TargetArch);
+      Cfg->translate();
       if (SubzeroTimingEnabled) {
         std::cerr << "[Subzero timing] Translate function "
                   << Cfg->getFunctionName() << ": "

@@ -1496,16 +1496,11 @@ const struct {
 #define X(A, B, C, D)                                                          \
   { InstIcmp::A, InstX8632Br::B, InstX8632Br::C, InstX8632Br::D }
     // Eq and Ne are placeholders to ensure TableIcmp64[i].Cond==i
-    { InstIcmp::Eq },
-    { InstIcmp::Ne },
-    X(Ugt, Br_a, Br_b, Br_a),
-    X(Uge, Br_a, Br_b, Br_ae),
-    X(Ult, Br_b, Br_a, Br_b),
-    X(Ule, Br_b, Br_a, Br_be),
-    X(Sgt, Br_g, Br_l, Br_a),
-    X(Sge, Br_g, Br_l, Br_ae),
-    X(Slt, Br_l, Br_g, Br_b),
-    X(Sle, Br_l, Br_g, Br_be),
+    X(Eq, Br_None, Br_None, Br_None), X(Ne, Br_None, Br_None, Br_None),
+    X(Ugt, Br_a, Br_b, Br_a),         X(Uge, Br_a, Br_b, Br_ae),
+    X(Ult, Br_b, Br_a, Br_b),         X(Ule, Br_b, Br_a, Br_be),
+    X(Sgt, Br_g, Br_l, Br_a),         X(Sge, Br_g, Br_l, Br_ae),
+    X(Slt, Br_l, Br_g, Br_b),         X(Sle, Br_l, Br_g, Br_be),
   };
 #undef X
 const size_t TableIcmp64Size = sizeof(TableIcmp64) / sizeof(*TableIcmp64);
@@ -1615,8 +1610,9 @@ bool isAdd(const Inst *Inst) {
   return false;
 }
 
-void computeAddressOpt(IceCfg *Cfg, Variable *&Base, Variable *&Index,
+void computeAddressOpt(IceCfg * /*Cfg*/, Variable *&Base, Variable *&Index,
                        int32_t &Shift, int32_t &Offset) {
+  (void)Offset; // TODO: pattern-match for non-zero offsets.
   if (Base == NULL)
     return;
   // If the Base has more than one use or is live across multiple
@@ -1807,7 +1803,7 @@ void TargetX8632::doAddressOptLoad() {
   }
 }
 
-void TargetX8632::lowerPhi(const InstPhi *Inst) {
+void TargetX8632::lowerPhi(const InstPhi * /*Inst*/) {
   Cfg->setError("Phi lowering not implemented");
 }
 
@@ -1943,7 +1939,7 @@ void TargetX8632::lowerSwitch(const InstSwitch *Inst) {
   _br(Inst->getLabelDefault());
 }
 
-void TargetX8632::lowerUnreachable(const InstUnreachable *Inst) {
+void TargetX8632::lowerUnreachable(const InstUnreachable * /*Inst*/) {
   const IceSize_t MaxSrcs = 0;
   Variable *Dest = NULL;
   InstCall *Call = makeHelperCall("ice_unreachable", Dest, MaxSrcs);

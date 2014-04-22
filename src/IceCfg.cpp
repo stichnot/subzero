@@ -92,7 +92,7 @@ bool IceCfg::hasComputedFrame() const {
   return getTarget() && getTarget()->hasComputedFrame();
 }
 
-void IceCfg::translate(IceTargetArch TargetArch) {
+void IceCfg::translate() {
   IceOstream &Str = Ctx->getStrDump();
   if (hasError())
     return;

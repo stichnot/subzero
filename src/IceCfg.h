@@ -77,7 +77,7 @@ public:
   bool hasComputedFrame() const;
 
   // Passes over the CFG.
-  void translate(IceTargetArch TargetArch);
+  void translate();
   // After the CFG is fully constructed, iterate over the nodes and
   // compute the predecessor edges, in the form of
   // CfgNode::InEdges[].

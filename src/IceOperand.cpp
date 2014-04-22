@@ -175,7 +175,7 @@ Variable Variable::asType(IceType Type) {
 // ======================== dump routines ======================== //
 
 // TODO: This should be handed by the TargetLowering subclass.
-void Variable::emit(const IceCfg *Cfg, uint32_t Option) const {
+void Variable::emit(const IceCfg *Cfg, uint32_t /*Option*/) const {
   IceOstream &Str = Cfg->getContext()->getStrEmit();
   assert(DefNode == NULL || DefNode == Cfg->getCurrentNode());
   if (hasReg()) {
@@ -237,7 +237,7 @@ void Variable::dump(const IceCfg *Cfg) const {
   }
 }
 
-void ConstantRelocatable::emit(const IceCfg *Cfg, uint32_t Option) const {
+void ConstantRelocatable::emit(const IceCfg *Cfg, uint32_t /*Option*/) const {
   IceOstream &Str = Cfg->getContext()->getStrEmit();
   if (SuppressMangling)
     Str << Name;

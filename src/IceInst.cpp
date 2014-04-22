@@ -431,7 +431,7 @@ void Inst::dumpDecorated(const IceCfg *Cfg) const {
   Str << "\n";
 }
 
-void Inst::emit(const IceCfg *Cfg, uint32_t Option) const {
+void Inst::emit(const IceCfg *Cfg, uint32_t /*Option*/) const {
   IceOstream &Str = Cfg->getContext()->getStrEmit();
   Str << "??? ";
   dump(Cfg);

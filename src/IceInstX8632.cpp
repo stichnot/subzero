@@ -206,7 +206,7 @@ void InstX8632::dump(const IceCfg *Cfg) const {
   Inst::dump(Cfg);
 }
 
-void InstX8632Label::emit(const IceCfg *Cfg, uint32_t Option) const {
+void InstX8632Label::emit(const IceCfg *Cfg, uint32_t /*Option*/) const {
   IceOstream &Str = Cfg->getContext()->getStrEmit();
   Str << getName(Cfg) << ":\n";
 }
@@ -216,7 +216,7 @@ void InstX8632Label::dump(const IceCfg *Cfg) const {
   Str << getName(Cfg) << ":";
 }
 
-void InstX8632Br::emit(const IceCfg *Cfg, uint32_t Option) const {
+void InstX8632Br::emit(const IceCfg *Cfg, uint32_t /*Option*/) const {
   IceOstream &Str = Cfg->getContext()->getStrEmit();
   Str << "\t";
   switch (Condition) {
@@ -518,7 +518,7 @@ void InstX8632Shrd::dump(const IceCfg *Cfg) const {
   dumpSources(Cfg);
 }
 
-void InstX8632Cdq::emit(const IceCfg *Cfg, uint32_t Option) const {
+void InstX8632Cdq::emit(const IceCfg *Cfg, uint32_t /*Option*/) const {
   IceOstream &Str = Cfg->getContext()->getStrEmit();
   assert(getSrcSize() == 1);
   Str << "\tcdq\n";
@@ -830,7 +830,7 @@ void InstX8632Push::dump(const IceCfg *Cfg) const {
   dumpSources(Cfg);
 }
 
-void InstX8632Ret::emit(const IceCfg *Cfg, uint32_t Option) const {
+void InstX8632Ret::emit(const IceCfg *Cfg, uint32_t /*Option*/) const {
   IceOstream &Str = Cfg->getContext()->getStrEmit();
   Str << "\tret\n";
 }
@@ -938,7 +938,7 @@ void OperandX8632Mem::dump(const IceCfg *Cfg) const {
   Str << "]";
 }
 
-void VariableSplit::emit(const IceCfg *Cfg, uint32_t Option) const {
+void VariableSplit::emit(const IceCfg *Cfg, uint32_t /*Option*/) const {
   IceOstream &Str = Cfg->getContext()->getStrEmit();
   assert(Var->getLocalUseNode() == NULL ||
          Var->getLocalUseNode() == Cfg->getCurrentNode());

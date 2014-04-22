@@ -108,7 +108,7 @@ public:
         ConstantPrimitive(Type, Value);
   }
   T getValue() const { return Value; }
-  virtual void emit(const IceCfg *Cfg, uint32_t Option) const {
+  virtual void emit(const IceCfg *Cfg, uint32_t /*Option*/) const {
     IceOstream &Str = Cfg->getContext()->getStrEmit();
     Str << getValue();
   }
