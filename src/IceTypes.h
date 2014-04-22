@@ -18,17 +18,19 @@
 
 namespace Ice {
 
+#define ICETYPE_TABLE                                                          \
+  /* enum value,  size in bytes, printable string */                           \
+  X(IceType_void, 0, "void") X(IceType_i1, 1, "i1") X(IceType_i8, 1, "i8")     \
+      X(IceType_i16, 2, "i16") X(IceType_i32, 4, "i32")                        \
+      X(IceType_i64, 8, "i64") X(IceType_f32, 4, "float")                      \
+      X(IceType_f64, 8, "double") X(IceType_NUM, 0, "<invalid>")
+
+#define X(tag, size, str) tag,
+
 enum IceType {
-  IceType_void,
-  IceType_i1,
-  IceType_i8,
-  IceType_i16,
-  IceType_i32,
-  IceType_i64,
-  IceType_f32,
-  IceType_f64,
-  IceType_NUM
+  ICETYPE_TABLE
 };
+#undef X
 
 enum IceTargetArch {
   IceTarget_X8632,

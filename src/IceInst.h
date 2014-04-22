@@ -153,33 +153,26 @@ private:
   const uint32_t Align;
 };
 
+#define ICEINSTARITHMETIC_TABLE                                                \
+  /* enum value, printable string, commutative */                              \
+  X(Add, "add", true) X(Fadd, "fadd", false) X(Sub, "sub", false)              \
+      X(Fsub, "fsub", false) X(Mul, "mul", true) X(Fmul, "fmul", false)        \
+      X(Udiv, "udiv", false) X(Sdiv, "sdiv", false) X(Fdiv, "fdiv", false)     \
+      X(Urem, "urem", false) X(Srem, "srem", false) X(Frem, "frem", false)     \
+      X(Shl, "shl", false) X(Lshr, "lshr", false) X(Ashr, "ashr", false)       \
+      X(And, "and", true) X(Or, "or", true) X(Xor, "xor", true)
+
 // Binary arithmetic instruction.  The source operands are captured in
 // getSrc(0) and getSrc(1).
 class InstArithmetic : public Inst {
 public:
+#define X(tag, str, commutative) tag,
+
   enum OpKind {
-    // Ordered by http://llvm.org/docs/LangRef.html#binary-operations
-    Add,
-    Fadd,
-    Sub,
-    Fsub,
-    Mul,
-    Fmul,
-    Udiv,
-    Sdiv,
-    Fdiv,
-    Urem,
-    Srem,
-    Frem,
-    // Ordered by http://llvm.org/docs/LangRef.html#bitwise-binary-operations
-    Shl,
-    Lshr,
-    Ashr,
-    And,
-    Or,
-    Xor,
-    OpKind_NUM
+    ICEINSTARITHMETIC_TABLE OpKind_NUM
   };
+#undef X
+
   static InstArithmetic *create(IceCfg *Cfg, OpKind Op, Variable *Dest,
                                 Operand *Source1, Operand *Source2) {
     return new (Cfg->allocateInst<InstArithmetic>())
@@ -294,24 +287,22 @@ private:
   const bool Tail;
 };
 
+#define ICEINSTCAST_TABLE                                                      \
+  /* enum value, printable string */                                           \
+  X(Trunc, "trunc") X(Zext, "zext") X(Sext, "sext") X(Fptrunc, "fptrunc")      \
+      X(Fpext, "fpext") X(Fptoui, "fptoui") X(Fptosi, "fptosi")                \
+      X(Uitofp, "uitofp") X(Sitofp, "sitofp") X(Bitcast, "bitcast")
+
 // Cast instruction (a.k.a. conversion operation).
 class InstCast : public Inst {
 public:
+#define X(tag, str) tag,
+
   enum OpKind {
-    // Ordered by http://llvm.org/docs/LangRef.html#conversion-operations
-    Trunc,
-    Zext,
-    Sext,
-    Fptrunc,
-    Fpext,
-    Fptoui,
-    Fptosi,
-    Uitofp,
-    Sitofp,
-    Ptrtoint,
-    Inttoptr,
-    Bitcast
+    ICEINSTCAST_TABLE
   };
+#undef X
+
   static InstCast *create(IceCfg *Cfg, OpKind CastKind, Variable *Dest,
                           Operand *Source) {
     return new (Cfg->allocateInst<InstCast>())
@@ -328,29 +319,24 @@ private:
   OpKind CastKind;
 };
 
+#define ICEINSTFCMP_TABLE                                                      \
+  /* enum value, printable string */                                           \
+  X(False, "false") X(Oeq, "oeq") X(Ogt, "ogt") X(Oge, "oge") X(Olt, "olt")    \
+      X(Ole, "ole") X(One, "one") X(Ord, "ord") X(Ueq, "ueq") X(Ugt, "ugt")    \
+      X(Uge, "uge") X(Ult, "ult") X(Ule, "ule") X(Une, "une") X(Uno, "uno")    \
+      X(True, "true")
+
 // Floating-point comparison instruction.  The source operands are
 // captured in getSrc(0) and getSrc(1).
 class InstFcmp : public Inst {
 public:
+#define X(tag, str) tag,
+
   enum FCond {
-    // Ordered by http://llvm.org/docs/LangRef.html#id254
-    False,
-    Oeq,
-    Ogt,
-    Oge,
-    Olt,
-    Ole,
-    One,
-    Ord,
-    Ueq,
-    Ugt,
-    Uge,
-    Ult,
-    Ule,
-    Une,
-    Uno,
-    True
+    ICEINSTFCMP_TABLE
   };
+#undef X
+
   static InstFcmp *create(IceCfg *Cfg, FCond Condition, Variable *Dest,
                           Operand *Source1, Operand *Source2) {
     return new (Cfg->allocateInst<InstFcmp>())
@@ -368,24 +354,22 @@ private:
   FCond Condition;
 };
 
+#define ICEINSTICMP_TABLE                                                      \
+  /* enum value, printable string */                                           \
+  X(Eq, "eq") X(Ne, "ne") X(Ugt, "ugt") X(Uge, "uge") X(Ult, "ult")            \
+      X(Ule, "ule") X(Sgt, "sgt") X(Sge, "sge") X(Slt, "slt") X(Sle, "sle")
+
 // Integer comparison instruction.  The source operands are captured
 // in getSrc(0) and getSrc(1).
 class InstIcmp : public Inst {
 public:
+#define X(tag, str) tag,
+
   enum ICond {
-    // Ordered by http://llvm.org/docs/LangRef.html#id249
-    Eq,
-    Ne,
-    Ugt,
-    Uge,
-    Ult,
-    Ule,
-    Sgt,
-    Sge,
-    Slt,
-    Sle,
-    None // not part of LLVM; used for unconditional branch
+    ICEINSTICMP_TABLE None // not part of LLVM; used for unconditional branch
   };
+#undef X
+
   static InstIcmp *create(IceCfg *Cfg, ICond Condition, Variable *Dest,
                           Operand *Source1, Operand *Source2) {
     return new (Cfg->allocateInst<InstIcmp>())

@@ -172,18 +172,19 @@ InstArithmetic::InstArithmetic(IceCfg *Cfg, OpKind Op, Variable *Dest,
 }
 
 bool InstArithmetic::isCommutative() const {
+#define X(tag, str, commutative)                                               \
+  case tag:                                                                    \
+    return commutative;
+
   switch (getOp()) {
-  case Add:
-  case Fadd:
-  case Mul:
-  case Fmul:
-  case And:
-  case Or:
-  case Xor:
-    return true;
-  default:
-    return false;
+  case OpKind_NUM:
+    break;
+    ICEINSTARITHMETIC_TABLE
   }
+#undef X
+
+  assert(0); // should be unreachable
+  return false;
 }
 
 InstAssign::InstAssign(IceCfg *Cfg, Variable *Dest, Operand *Source)
@@ -487,65 +488,20 @@ void InstArithmetic::dump(const IceCfg *Cfg) const {
   IceOstream &Str = Cfg->getContext()->getStrDump();
   dumpDest(Cfg);
   Str << " = ";
+
+#define X(tag, str, commutative)                                               \
+  case tag:                                                                    \
+    Str << str;                                                                \
+    break;
+
   switch (getOp()) {
-  case Add:
-    Str << "add";
-    break;
-  case Fadd:
-    Str << "fadd";
-    break;
-  case Sub:
-    Str << "sub";
-    break;
-  case Fsub:
-    Str << "fsub";
-    break;
-  case Mul:
-    Str << "mul";
-    break;
-  case Fmul:
-    Str << "fmul";
-    break;
-  case Udiv:
-    Str << "udiv";
-    break;
-  case Sdiv:
-    Str << "sdiv";
-    break;
-  case Fdiv:
-    Str << "fdiv";
-    break;
-  case Urem:
-    Str << "urem";
-    break;
-  case Srem:
-    Str << "srem";
-    break;
-  case Frem:
-    Str << "frem";
-    break;
-  case Shl:
-    Str << "shl";
-    break;
-  case Lshr:
-    Str << "lshr";
-    break;
-  case Ashr:
-    Str << "ashr";
-    break;
-  case And:
-    Str << "and";
-    break;
-  case Or:
-    Str << "or";
-    break;
-  case Xor:
-    Str << "xor";
-    break;
   case OpKind_NUM:
     Str << "invalid";
     break;
+    ICEINSTARITHMETIC_TABLE
   }
+#undef X
+
   Str << " " << getDest()->getType() << " ";
   dumpSources(Cfg);
 }
@@ -598,91 +554,44 @@ void InstCast::dump(const IceCfg *Cfg) const {
   IceOstream &Str = Cfg->getContext()->getStrDump();
   dumpDest(Cfg);
   Str << " = ";
+
+#define X(tag, str)                                                            \
+  case tag:                                                                    \
+    Str << str;                                                                \
+    break;
+
   switch (getCastKind()) {
+    ICEINSTCAST_TABLE
   default:
     Str << "UNKNOWN";
     assert(0);
     break;
-  case Trunc:
-    Str << "trunc";
-    break;
-  case Zext:
-    Str << "zext";
-    break;
-  case Sext:
-    Str << "sext";
-    break;
-  case Fptrunc:
-    Str << "fptrunc";
-    break;
-  case Fpext:
-    Str << "fpext";
-    break;
-  case Fptoui:
-    Str << "fptoui";
-    break;
-  case Fptosi:
-    Str << "fptosi";
-    break;
-  case Uitofp:
-    Str << "uitofp";
-    break;
-  case Sitofp:
-    Str << "sitofp";
-    break;
-  case Inttoptr:
-    Str << "inttoptr";
-    break;
-  case Bitcast:
-    Str << "bitcast";
-    break;
   }
+#undef X
+
   Str << " " << getSrc(0)->getType() << " ";
   dumpSources(Cfg);
   Str << " to " << getDest()->getType();
-  if (getCastKind() == Inttoptr)
-    Str << "*";
 }
 
 void InstIcmp::dump(const IceCfg *Cfg) const {
   IceOstream &Str = Cfg->getContext()->getStrDump();
   dumpDest(Cfg);
   Str << " = icmp ";
+
+#define X(tag, str)                                                            \
+  case tag:                                                                    \
+    Str << str;                                                                \
+    break;
+
   switch (getCondition()) {
-  case Eq:
-    Str << "eq";
-    break;
-  case Ne:
-    Str << "ne";
-    break;
-  case Ugt:
-    Str << "ugt";
-    break;
-  case Uge:
-    Str << "uge";
-    break;
-  case Ult:
-    Str << "ult";
-    break;
-  case Ule:
-    Str << "ule";
-    break;
-  case Sgt:
-    Str << "sgt";
-    break;
-  case Sge:
-    Str << "sge";
-    break;
-  case Slt:
-    Str << "slt";
-    break;
-  case Sle:
-    Str << "sle";
-    break;
   case None: // shouldn't happen
     Str << "<none>";
     break;
+    ICEINSTICMP_TABLE
   }
+#undef X
+
   Str << " " << getSrc(0)->getType() << " ";
   dumpSources(Cfg);
 }
@@ -692,56 +601,14 @@ void InstFcmp::dump(const IceCfg *Cfg) const {
   dumpDest(Cfg);
   Str << " = fcmp ";
 
-  switch (getCondition()) {
-  case False:
-    Str << "false";
+#define X(tag, str)                                                            \
+  case tag:                                                                    \
+    Str << str;                                                                \
     break;
-  case Oeq:
-    Str << "oeq";
-    break;
-  case Ogt:
-    Str << "ogt";
-    break;
-  case Oge:
-    Str << "oge";
-    break;
-  case Olt:
-    Str << "olt";
-    break;
-  case Ole:
-    Str << "ole";
-    break;
-  case One:
-    Str << "one";
-    break;
-  case Ord:
-    Str << "ord";
-    break;
-  case Ueq:
-    Str << "ueq";
-    break;
-  case Ugt:
-    Str << "ugt";
-    break;
-  case Uge:
-    Str << "uge";
-    break;
-  case Ult:
-    Str << "ult";
-    break;
-  case Ule:
-    Str << "ule";
-    break;
-  case Une:
-    Str << "une";
-    break;
-  case Uno:
-    Str << "uno";
-    break;
-  case True:
-    Str << "true";
-    break;
-  }
+
+  switch (getCondition()) { ICEINSTFCMP_TABLE }
+#undef X
+
   Str << " " << getSrc(0)->getType() << " ";
   dumpSources(Cfg);
 }
