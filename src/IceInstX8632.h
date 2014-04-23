@@ -217,23 +217,22 @@ private:
   IceSize_t Number; // used only for unique label string generation
 };
 
+#define ICEINSTX8632BR_TABLE                                                   \
+  /* enum value, dump, emit */                                                 \
+  X(Br_a, "a", "ja") X(Br_ae, "ae", "jae") X(Br_b, "b", "jb")                  \
+      X(Br_be, "be", "jbe") X(Br_e, "e", "je") X(Br_g, "g", "jg")              \
+      X(Br_ge, "ge", "jge") X(Br_l, "l", "jl") X(Br_le, "le", "jle")           \
+      X(Br_ne, "ne", "jne") X(Br_np, "np", "jnp") X(Br_p, "p", "jp")
+
 class InstX8632Br : public InstX8632 {
 public:
+#define X(tag, dump, emit) tag,
+
   enum BrCond {
-    Br_a,
-    Br_ae,
-    Br_b,
-    Br_be,
-    Br_e,
-    Br_g,
-    Br_ge,
-    Br_l,
-    Br_le,
-    Br_ne,
-    Br_np,
-    Br_p,
-    Br_None
+    ICEINSTX8632BR_TABLE Br_None
   };
+#undef X
+
   static InstX8632Br *create(IceCfg *Cfg, CfgNode *TargetTrue,
                              CfgNode *TargetFalse, BrCond Condition) {
     return new (Cfg->allocate<InstX8632Br>())

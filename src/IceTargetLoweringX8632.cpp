@@ -29,29 +29,26 @@ TargetX8632::TargetX8632(IceCfg *Cfg)
       LocalsSizeBytes(0), NextLabelNumber(0), ComputedLiveRanges(false),
       PhysicalRegisters(VarList(Reg_NUM)) {
   llvm::SmallBitVector IntegerRegisters(Reg_NUM);
-  llvm::SmallBitVector IntegerRegistersNonI8(Reg_NUM);
+  llvm::SmallBitVector IntegerRegistersI8(Reg_NUM);
   llvm::SmallBitVector FloatRegisters(Reg_NUM);
   llvm::SmallBitVector InvalidRegisters(Reg_NUM);
-  for (IceSize_t i = Reg_eax; i <= Reg_edi; ++i)
-    IntegerRegisters[i] = true;
-  IntegerRegistersNonI8[Reg_eax] = true;
-  IntegerRegistersNonI8[Reg_ecx] = true;
-  IntegerRegistersNonI8[Reg_edx] = true;
-  IntegerRegistersNonI8[Reg_ebx] = true;
-  for (IceSize_t i = Reg_xmm0; i <= Reg_xmm7; ++i)
-    FloatRegisters[i] = true;
+  ScratchRegs.resize(Reg_NUM);
+#define X(val, init, name, name16, name8, scratch, preserved, stackptr,        \
+          frameptr, isI8, isInt, isFP)                                         \
+  IntegerRegisters[val] = isInt;                                               \
+  IntegerRegistersI8[val] = isI8;                                              \
+  FloatRegisters[val] = isFP;                                                  \
+  ScratchRegs[val] = scratch;
+  REGX8632_TABLE;
+#undef X
   TypeToRegisterSet[IceType_void] = InvalidRegisters;
-  TypeToRegisterSet[IceType_i1] = IntegerRegistersNonI8;
-  TypeToRegisterSet[IceType_i8] = IntegerRegistersNonI8;
+  TypeToRegisterSet[IceType_i1] = IntegerRegistersI8;
+  TypeToRegisterSet[IceType_i8] = IntegerRegistersI8;
   TypeToRegisterSet[IceType_i16] = IntegerRegisters;
   TypeToRegisterSet[IceType_i32] = IntegerRegisters;
   TypeToRegisterSet[IceType_i64] = IntegerRegisters;
   TypeToRegisterSet[IceType_f32] = FloatRegisters;
   TypeToRegisterSet[IceType_f64] = FloatRegisters;
-  ScratchRegs = FloatRegisters;
-  ScratchRegs[Reg_eax] = true;
-  ScratchRegs[Reg_ecx] = true;
-  ScratchRegs[Reg_edx] = true;
 }
 
 void TargetX8632::translateO2() {
@@ -182,10 +179,12 @@ void TargetX8632::translateOm1() {
   Cfg->dump();
 }
 
-IceString TargetX8632::RegNames[] = { "eax",  "ecx",  "edx",  "ebx",  "esp",
-                                      "ebp",  "esi",  "edi",  "???",  "xmm0",
-                                      "xmm1", "xmm2", "xmm3", "xmm4", "xmm5",
-                                      "xmm6", "xmm7" };
+#define X(val, init, name, name16, name8, scratch, preserved, stackptr,        \
+          frameptr, isI8, isInt, isFP)                                         \
+  name,
+
+IceString TargetX8632::RegNames[] = { REGX8632_TABLE };
+#undef X
 
 Variable *TargetX8632::getPhysicalRegister(IceSize_t RegNum) {
   assert(RegNum < PhysicalRegisters.size());
@@ -201,17 +200,25 @@ Variable *TargetX8632::getPhysicalRegister(IceSize_t RegNum) {
 
 IceString TargetX8632::getRegName(IceSize_t RegNum, IceType Type) const {
   assert(RegNum < Reg_NUM);
-  static IceString RegNames8[] = { "al", "cl", "dl", "bl", "??",
-                                   "??", "??", "??", "ah" };
-  static IceString RegNames16[] = { "ax", "cx", "dx", "bx",
-                                    "sp", "bp", "si", "di" };
+  static IceString RegNames8[] = {
+#define X(val, init, name, name16, name8, scratch, preserved, stackptr,        \
+          frameptr, isI8, isInt, isFP)                                         \
+  "" name8,
+    REGX8632_TABLE
+#undef X
+  };
+  static IceString RegNames16[] = {
+#define X(val, init, name, name16, name8, scratch, preserved, stackptr,        \
+          frameptr, isI8, isInt, isFP)                                         \
+  "" name16,
+    REGX8632_TABLE
+#undef X
+  };
   switch (Type) {
   case IceType_i1:
   case IceType_i8:
-    assert(RegNum < (sizeof(RegNames8) / sizeof(*RegNames8)));
     return RegNames8[RegNum];
   case IceType_i16:
-    assert(RegNum < (sizeof(RegNames16) / sizeof(*RegNames16)));
     return RegNames16[RegNum];
   default:
     return RegNames[RegNum];
@@ -553,27 +560,30 @@ Operand *TargetX8632::hiOperand(Operand *Operand) {
 llvm::SmallBitVector TargetX8632::getRegisterSet(RegSetMask Include,
                                                  RegSetMask Exclude) const {
   llvm::SmallBitVector Registers(Reg_NUM);
-  bool Scratch = Include & ~Exclude & RegSet_CallerSave;
-  bool Preserved = Include & ~Exclude & RegSet_CalleeSave;
-  Registers[Reg_eax] = Scratch;
-  Registers[Reg_ecx] = Scratch;
-  Registers[Reg_edx] = Scratch;
-  Registers[Reg_ebx] = Preserved;
-  Registers[Reg_esp] = Include & ~Exclude & RegSet_StackPointer;
-  // ebp counts as both preserved and frame pointer
-  Registers[Reg_ebp] = Include & (RegSet_CalleeSave | RegSet_FramePointer);
-  if (Exclude & (RegSet_CalleeSave | RegSet_FramePointer))
-    Registers[Reg_ebp] = false;
-  Registers[Reg_esi] = Preserved;
-  Registers[Reg_edi] = Preserved;
-  Registers[Reg_xmm0] = Scratch;
-  Registers[Reg_xmm1] = Scratch;
-  Registers[Reg_xmm2] = Scratch;
-  Registers[Reg_xmm3] = Scratch;
-  Registers[Reg_xmm4] = Scratch;
-  Registers[Reg_xmm5] = Scratch;
-  Registers[Reg_xmm6] = Scratch;
-  Registers[Reg_xmm7] = Scratch;
+
+#define X(val, init, name, name16, name8, scratch, preserved, stackptr,        \
+          frameptr, isI8, isInt, isFP)                                         \
+  if (scratch && (Include & RegSet_CallerSave))                                \
+    Registers[val] = true;                                                     \
+  if (preserved && (Include & RegSet_CalleeSave))                              \
+    Registers[val] = true;                                                     \
+  if (stackptr && (Include & RegSet_StackPointer))                             \
+    Registers[val] = true;                                                     \
+  if (frameptr && (Include & RegSet_FramePointer))                             \
+    Registers[val] = true;                                                     \
+  if (scratch && (Exclude & RegSet_CallerSave))                                \
+    Registers[val] = false;                                                    \
+  if (preserved && (Exclude & RegSet_CalleeSave))                              \
+    Registers[val] = false;                                                    \
+  if (stackptr && (Exclude & RegSet_StackPointer))                             \
+    Registers[val] = false;                                                    \
+  if (frameptr && (Exclude & RegSet_FramePointer))                             \
+    Registers[val] = false;
+
+  REGX8632_TABLE
+
+#undef X
+
   return Registers;
 }
 
@@ -1396,24 +1406,39 @@ namespace {
 // cases it is possible to swap the operands in the comparison and have a single
 // conditional branch.  Since it's quite tedious to validate the table by hand,
 // good execution tests are helpful.
+
+// TODO: Integrate FCMPX8632_TABLE and ICEINSTFCMP_TABLE.
+#define FCMPX8632_TABLE                                                        \
+  /* val, dflt, swap, C1, C2 */                                                \
+  X(False, 0, false, Br_None, Br_None) /* no line break clang-format */        \
+      X(Oeq, 0, false, Br_ne, Br_p)    /* no line break clang-format */           \
+      X(Ogt, 1, false, Br_a, Br_None)  /* no line break clang-format */         \
+      X(Oge, 1, false, Br_ae, Br_None) /* no line break clang-format */        \
+      X(Olt, 1, true, Br_a, Br_None)   /* no line break clang-format */          \
+      X(Ole, 1, true, Br_ae, Br_None)  /* no line break clang-format */         \
+      X(One, 1, false, Br_ne, Br_None) /* no line break clang-format */        \
+      X(Ord, 1, false, Br_np, Br_None) /* no line break clang-format */        \
+      X(Ueq, 1, false, Br_e, Br_None)  /* no line break clang-format */         \
+      X(Ugt, 1, true, Br_b, Br_None)   /* no line break clang-format */          \
+      X(Uge, 1, true, Br_be, Br_None)  /* no line break clang-format */         \
+      X(Ult, 1, false, Br_b, Br_None)  /* no line break clang-format */         \
+      X(Ule, 1, false, Br_be, Br_None) /* no line break clang-format */        \
+      X(Une, 1, false, Br_ne, Br_p)    /* no line break clang-format */           \
+      X(Uno, 1, false, Br_p, Br_None)  /* no line break clang-format */         \
+      X(True, 1, false, Br_None, Br_None)
+
 const struct {
   InstFcmp::FCond Cond;
   uint32_t Default;
   bool SwapOperands;
   InstX8632Br::BrCond C1, C2;
 } TableFcmp[] = {
-#define X(A, B, C, D, E)                                                       \
-  { InstFcmp::A, B, C, InstX8632Br::D, InstX8632Br::E }
-    X(False, 0, false, Br_None, Br_None), X(Oeq, 0, false, Br_ne, Br_p),
-    X(Ogt, 1, false, Br_a, Br_None),      X(Oge, 1, false, Br_ae, Br_None),
-    X(Olt, 1, true, Br_a, Br_None),       X(Ole, 1, true, Br_ae, Br_None),
-    X(One, 1, false, Br_ne, Br_None),     X(Ord, 1, false, Br_np, Br_None),
-    X(Ueq, 1, false, Br_e, Br_None),      X(Ugt, 1, true, Br_b, Br_None),
-    X(Uge, 1, true, Br_be, Br_None),      X(Ult, 1, false, Br_b, Br_None),
-    X(Ule, 1, false, Br_be, Br_None),     X(Une, 1, false, Br_ne, Br_p),
-    X(Uno, 1, false, Br_p, Br_None),      X(True, 1, false, Br_None, Br_None)
-  };
+#define X(val, dflt, swap, C1, C2)                                             \
+  { InstFcmp::val, dflt, swap, InstX8632Br::C1, InstX8632Br::C2 }              \
+  ,
+    FCMPX8632_TABLE
 #undef X
+  };
 const size_t TableFcmpSize = sizeof(TableFcmp) / sizeof(*TableFcmp);
 
 } // anonymous namespace
@@ -1473,16 +1498,31 @@ namespace {
 // The following table summarizes the logic for lowering the icmp instruction
 // for i32 and narrower types.  Each icmp condition has a clear mapping to an
 // x86 conditional branch instruction.
+
+// TODO: Integrate ICMPX8632_TABLE and ICEINSTICMP_TABLE.
+#define ICMPX8632_TABLE                                                        \
+  /* val, C_32, C1_64, C2_64, C3_64 */                                         \
+  X(Eq, Br_e, Br_None, Br_None, Br_None)      /* no clang-format line break */      \
+      X(Ne, Br_ne, Br_None, Br_None, Br_None) /* no clang-format line break */ \
+      X(Ugt, Br_a, Br_a, Br_b, Br_a)          /* no clang-format line break */          \
+      X(Uge, Br_ae, Br_a, Br_b, Br_ae)        /* no clang-format line break */        \
+      X(Ult, Br_b, Br_b, Br_a, Br_b)          /* no clang-format line break */          \
+      X(Ule, Br_be, Br_b, Br_a, Br_be)        /* no clang-format line break */        \
+      X(Sgt, Br_g, Br_g, Br_l, Br_a)          /* no clang-format line break */          \
+      X(Sge, Br_ge, Br_g, Br_l, Br_ae)        /* no clang-format line break */        \
+      X(Slt, Br_l, Br_l, Br_g, Br_b)          /* no clang-format line break */          \
+      X(Sle, Br_le, Br_l, Br_g, Br_be)        /* no clang-format line break */
+
 const struct {
   InstIcmp::ICond Cond;
   InstX8632Br::BrCond Mapping;
 } TableIcmp32[] = {
-#define X(A, B)                                                                \
-  { InstIcmp::A, InstX8632Br::B }
-    X(Eq, Br_e),   X(Ne, Br_ne), X(Ugt, Br_a),  X(Uge, Br_ae), X(Ult, Br_b),
-    X(Ule, Br_be), X(Sgt, Br_g), X(Sge, Br_ge), X(Slt, Br_l),  X(Sle, Br_le),
-  };
+#define X(val, C_32, C1_64, C2_64, C3_64)                                      \
+  { InstIcmp::val, InstX8632Br::C_32 }                                         \
+  ,
+    ICMPX8632_TABLE
 #undef X
+  };
 const size_t TableIcmp32Size = sizeof(TableIcmp32) / sizeof(*TableIcmp32);
 
 // The following table summarizes the logic for lowering the icmp instruction
@@ -1493,16 +1533,12 @@ const struct {
   InstIcmp::ICond Cond;
   InstX8632Br::BrCond C1, C2, C3;
 } TableIcmp64[] = {
-#define X(A, B, C, D)                                                          \
-  { InstIcmp::A, InstX8632Br::B, InstX8632Br::C, InstX8632Br::D }
-    // Eq and Ne are placeholders to ensure TableIcmp64[i].Cond==i
-    X(Eq, Br_None, Br_None, Br_None), X(Ne, Br_None, Br_None, Br_None),
-    X(Ugt, Br_a, Br_b, Br_a),         X(Uge, Br_a, Br_b, Br_ae),
-    X(Ult, Br_b, Br_a, Br_b),         X(Ule, Br_b, Br_a, Br_be),
-    X(Sgt, Br_g, Br_l, Br_a),         X(Sge, Br_g, Br_l, Br_ae),
-    X(Slt, Br_l, Br_g, Br_b),         X(Sle, Br_l, Br_g, Br_be),
-  };
+#define X(val, C_32, C1_64, C2_64, C3_64)                                       \
+  { InstIcmp::val, InstX8632Br::C1_64, InstX8632Br::C2_64, InstX8632Br::C3_64 } \
+  ,
+    ICMPX8632_TABLE
 #undef X
+  };
 const size_t TableIcmp64Size = sizeof(TableIcmp64) / sizeof(*TableIcmp64);
 
 InstX8632Br::BrCond getIcmp32Mapping(InstIcmp::ICond Cond) {
@@ -2018,6 +2054,7 @@ Variable *TargetX8632::makeReg(IceType Type, int32_t RegNum) {
 void TargetX8632::postLower() {
   if (Ctx->getOptLevel() != IceOpt_m1)
     return;
+  // TODO: Avoid recomputing WhiteList every instruction.
   llvm::SmallBitVector WhiteList = getRegisterSet(RegSet_All, RegSet_None);
   // Make one pass to black-list pre-colored registers.  TODO: If
   // there was some prior register allocation pass that made register

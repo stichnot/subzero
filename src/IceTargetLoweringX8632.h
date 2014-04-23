@@ -22,6 +22,27 @@
 
 namespace Ice {
 
+#define REGX8632_TABLE                                                         \
+  /* val, init, name, name16, name8, scratch, preserved, stackptr, frameptr,   \
+     isI8, isInt, isFP */                                                      \
+  X(Reg_eax, = 0, "eax", "ax", "al", 1, 0, 0, 0, 1, 1, 0)                      \
+      X(Reg_ecx, = Reg_eax + 1, "ecx", "cx", "cl", 1, 0, 0, 0, 1, 1, 0)        \
+      X(Reg_edx, = Reg_eax + 2, "edx", "dx", "dl", 1, 0, 0, 0, 1, 1, 0)        \
+      X(Reg_ebx, = Reg_eax + 3, "ebx", "bx", "bl", 0, 1, 0, 0, 1, 1, 0)        \
+      X(Reg_esp, = Reg_eax + 4, "esp", "sp", , 0, 0, 1, 0, 0, 1, 0)            \
+      X(Reg_ebp, = Reg_eax + 5, "ebp", "bp", , 0, 1, 0, 1, 0, 1, 0)            \
+      X(Reg_esi, = Reg_eax + 6, "esi", "si", , 0, 1, 0, 0, 0, 1, 0)            \
+      X(Reg_edi, = Reg_eax + 7, "edi", "di", , 0, 1, 0, 0, 0, 1, 0)            \
+      X(Reg_ah, , "???", , "ah", 0, 0, 0, 0, 1, 0, 0)                          \
+      X(Reg_xmm0, , "xmm0", , , 1, 0, 0, 0, 0, 0, 1)                           \
+      X(Reg_xmm1, = Reg_xmm0 + 1, "xmm1", , , 1, 0, 0, 0, 0, 0, 1)             \
+      X(Reg_xmm2, = Reg_xmm0 + 2, "xmm2", , , 1, 0, 0, 0, 0, 0, 1)             \
+      X(Reg_xmm3, = Reg_xmm0 + 3, "xmm3", , , 1, 0, 0, 0, 0, 0, 1)             \
+      X(Reg_xmm4, = Reg_xmm0 + 4, "xmm4", , , 1, 0, 0, 0, 0, 0, 1)             \
+      X(Reg_xmm5, = Reg_xmm0 + 5, "xmm5", , , 1, 0, 0, 0, 0, 0, 1)             \
+      X(Reg_xmm6, = Reg_xmm0 + 6, "xmm6", , , 1, 0, 0, 0, 0, 0, 1)             \
+      X(Reg_xmm7, = Reg_xmm0 + 7, "xmm7", , , 1, 0, 0, 0, 0, 0, 1)
+
 class TargetX8632 : public TargetLowering {
 public:
   static TargetX8632 *create(IceCfg *Cfg) { return new TargetX8632(Cfg); }
@@ -57,26 +78,14 @@ public:
                            int32_t BasicFrameOffset, int32_t &InArgsSizeBytes);
   Operand *loOperand(Operand *Operand);
   Operand *hiOperand(Operand *Operand);
+#define X(val, init, name, name16, name8, scratch, preserved, stackptr,        \
+          frameptr, isI8, isInt, isFP)                                         \
+  val init,
+
   enum Registers {
-    Reg_eax = 0,
-    Reg_ecx = Reg_eax + 1,
-    Reg_edx = Reg_eax + 2,
-    Reg_ebx = Reg_eax + 3,
-    Reg_esp = Reg_eax + 4,
-    Reg_ebp = Reg_eax + 5,
-    Reg_esi = Reg_eax + 6,
-    Reg_edi = Reg_eax + 7,
-    Reg_ah, // special hack for 8-bit div instruction
-    Reg_xmm0,
-    Reg_xmm1 = Reg_xmm0 + 1,
-    Reg_xmm2 = Reg_xmm0 + 2,
-    Reg_xmm3 = Reg_xmm0 + 3,
-    Reg_xmm4 = Reg_xmm0 + 4,
-    Reg_xmm5 = Reg_xmm0 + 5,
-    Reg_xmm6 = Reg_xmm0 + 6,
-    Reg_xmm7 = Reg_xmm0 + 7,
-    Reg_NUM
+    REGX8632_TABLE Reg_NUM
   };
+#undef X
 
 protected:
   TargetX8632(IceCfg *Cfg);
