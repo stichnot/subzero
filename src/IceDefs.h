@@ -83,28 +83,6 @@ enum LivenessMode {
   Liveness_RangesFull
 };
 
-// This is a convenience templated class that provides a mapping
-// between a parameterized type and small unsigned integers.
-template <typename T, typename Cmp = std::less<T> > class ValueTranslation {
-public:
-  typedef typename std::map<const T, SizeT, Cmp> ContainerType;
-  ValueTranslation() {}
-  void clear() { Entries.clear(); }
-  SizeT translate(const T &Value) {
-    typename ContainerType::const_iterator Iter = Entries.find(Value);
-    if (Iter != Entries.end())
-      return Iter->second;
-    SizeT Index = Entries.size();
-    Entries[Value] = Index;
-    return Index;
-  }
-
-private:
-  ContainerType Entries;
-  ValueTranslation(const ValueTranslation &) LLVM_DELETED_FUNCTION;
-  ValueTranslation &operator=(const ValueTranslation &) LLVM_DELETED_FUNCTION;
-};
-
 enum VerboseItem {
   IceV_None = 0,
   IceV_Instructions = 1 << 0,

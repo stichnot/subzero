@@ -24,23 +24,25 @@ namespace Ice {
 // TypePool maps constants of type KeyType (e.g. float) to pointers to
 // type ValueType (e.g. ConstantFloat).  KeyType values are compared
 // using memcmp() because of potential NaN values in KeyType values.
-// TODO: allow a custom KeyType comparator for a KeyType containing
-// e.g. a non-pooled string.
-template <typename KeyType, typename ValueType> class TypePool {
+// KeyTypeHasFP indicates whether KeyType is a floating-point type
+// whose values need to be compared using memcmp() for NaN
+// correctness.  TODO: use std::is_floating_point<KeyType> instead of
+// KeyTypeHasFP with C++11.
+template <typename KeyType, typename ValueType, bool KeyTypeHasFP = false>
+class TypePool {
   TypePool(const TypePool &) LLVM_DELETED_FUNCTION;
   TypePool &operator=(const TypePool &) LLVM_DELETED_FUNCTION;
 
 public:
   TypePool() {}
   ValueType *getOrAdd(GlobalContext *Ctx, Type Ty, KeyType Key) {
-    SizeT Index = KeyToIndex.translate(TupleType(Ty, Key));
-    if (Index >= Pool.size()) {
-      Pool.resize(Index + 1);
-      Pool[Index] = ValueType::create(Ctx, Ty, Key);
-    }
-    ValueType *Constant = Pool[Index];
-    assert(Constant);
-    return Constant;
+    TupleType TupleKey = std::make_pair(Ty, Key);
+    typename ContainerType::const_iterator Iter = Pool.find(TupleKey);
+    if (Iter != Pool.end())
+      return Iter->second;
+    ValueType *Result = ValueType::create(Ctx, Ty, Key);
+    Pool[TupleKey] = Result;
+    return Result;
   }
 
 private:
@@ -49,11 +51,13 @@ private:
     bool operator()(const TupleType &A, const TupleType &B) {
       if (A.first != B.first)
         return A.first < B.first;
-      return memcmp(&A.second, &B.second, sizeof(KeyType)) < 0;
+      if (KeyTypeHasFP)
+        return memcmp(&A.second, &B.second, sizeof(KeyType)) < 0;
+      return A.second < B.second;
     }
   };
-  ValueTranslation<TupleType, TupleCompare> KeyToIndex;
-  std::vector<ValueType *> Pool;
+  typedef std::map<const TupleType, ValueType *, TupleCompare> ContainerType;
+  ContainerType Pool;
 };
 
 // The global constant pool bundles individual pools of each type of
@@ -64,8 +68,8 @@ class ConstantPool {
 
 public:
   ConstantPool() {}
-  TypePool<float, ConstantFloat> Floats;
-  TypePool<double, ConstantDouble> Doubles;
+  TypePool<float, ConstantFloat, true> Floats;
+  TypePool<double, ConstantDouble, true> Doubles;
   TypePool<uint64_t, ConstantInteger> Integers;
   TypePool<RelocatableTuple, ConstantRelocatable> Relocatables;
 };
