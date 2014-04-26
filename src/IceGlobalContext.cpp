@@ -83,6 +83,9 @@ GlobalContext::GlobalContext(llvm::raw_ostream *OsDump,
 // the "prefix" namespace.  For other symbols, just prepend the
 // prefix.
 IceString GlobalContext::mangleName(const IceString &Name) const {
+  // TODO: Add explicit tests (beyond the implicit tests in the linker
+  // that come from the cross tests).
+  //
   // An already-nested name like foo::bar() gets pushed down one
   // level, making it equivalent to Prefix::foo::bar().
   //   _ZN3foo3barExyz ==> _ZN6Prefix3foo3barExyz
