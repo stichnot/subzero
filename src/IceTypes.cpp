@@ -18,14 +18,16 @@ namespace Ice {
 
 namespace {
 
-#define X(tag, size, str)                                                      \
-  { size, str }                                                                \
-  ,
-
 const struct {
   size_t TypeWidthInBytes;
   IceString DisplayString;
-} TypeAttributes[] = { ICETYPE_TABLE };
+} TypeAttributes[] = {
+#define X(tag, size, str)                                                      \
+  { size, str }                                                                \
+  ,
+    ICETYPE_TABLE
+#undef X
+  };
 
 #undef X
 
