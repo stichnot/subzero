@@ -637,7 +637,7 @@ void InstFcmp::dump(const Cfg *Func) const {
 void InstLoad::dump(const Cfg *Func) const {
   Ostream &Str = Func->getContext()->getStrDump();
   dumpDest(Func);
-  IceType Ty = getDest()->getType();
+  Type Ty = getDest()->getType();
   Str << " = load " << Ty << "* ";
   dumpSources(Func);
   switch (Ty) {
@@ -655,7 +655,7 @@ void InstLoad::dump(const Cfg *Func) const {
 
 void InstStore::dump(const Cfg *Func) const {
   Ostream &Str = Func->getContext()->getStrDump();
-  IceType Ty = getData()->getType();
+  Type Ty = getData()->getType();
   Str << "store " << Ty << " ";
   getData()->dump(Func);
   Str << ", " << Ty << "* ";
@@ -676,7 +676,7 @@ void InstStore::dump(const Cfg *Func) const {
 
 void InstSwitch::dump(const Cfg *Func) const {
   Ostream &Str = Func->getContext()->getStrDump();
-  IceType Ty = getComparison()->getType();
+  Type Ty = getComparison()->getType();
   Str << "switch " << Ty << " ";
   getSrc(0)->dump(Func);
   Str << ", label %" << getLabelDefault()->getName() << " [\n";
@@ -702,7 +702,7 @@ void InstPhi::dump(const Cfg *Func) const {
 
 void InstRet::dump(const Cfg *Func) const {
   Ostream &Str = Func->getContext()->getStrDump();
-  IceType Ty = hasRetValue() ? getRetValue()->getType() : IceType_void;
+  Type Ty = hasRetValue() ? getRetValue()->getType() : IceType_void;
   Str << "ret " << Ty;
   if (hasRetValue()) {
     Str << " ";

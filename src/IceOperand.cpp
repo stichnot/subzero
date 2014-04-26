@@ -165,7 +165,7 @@ IceString Variable::getName() const {
   return buf;
 }
 
-Variable Variable::asType(IceType Ty) {
+Variable Variable::asType(Type Ty) {
   Variable V(Ty, DefNode, Number, Name);
   V.RegNum = RegNum;
   V.StackOffset = StackOffset;

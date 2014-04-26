@@ -102,7 +102,7 @@ private:
   // LLVM values (instructions, etc.) are mapped directly to ICE variables.
   // mapValueToIceVar has a version that forces an ICE type on the variable,
   // and a version that just uses convertType on V.
-  Ice::Variable *mapValueToIceVar(const Value *V, Ice::IceType IceTy) {
+  Ice::Variable *mapValueToIceVar(const Value *V, Ice::Type IceTy) {
     if (IceTy == Ice::IceType_void)
       return NULL;
     if (VarMap.find(V) == VarMap.end()) {
@@ -123,7 +123,7 @@ private:
     return NodeMap[BB];
   }
 
-  Ice::IceType convertIntegerType(const IntegerType *IntTy) const {
+  Ice::Type convertIntegerType(const IntegerType *IntTy) const {
     switch (IntTy->getBitWidth()) {
     case 1:
       return Ice::IceType_i1;
@@ -142,7 +142,7 @@ private:
     }
   }
 
-  Ice::IceType convertType(const Type *Ty) const {
+  Ice::Type convertType(const Type *Ty) const {
     switch (Ty->getTypeID()) {
     case Type::VoidTyID:
       return Ice::IceType_void;
@@ -185,7 +185,7 @@ private:
         return Ctx->getConstantInt(convertIntegerType(CI->getType()),
                                    CI->getZExtValue());
       } else if (const ConstantFP *CFP = dyn_cast<ConstantFP>(Const)) {
-        Ice::IceType Type = convertType(CFP->getType());
+        Ice::Type Type = convertType(CFP->getType());
         if (Type == Ice::IceType_f32)
           return Ctx->getConstantFloat(CFP->getValueAPF().convertToFloat());
         else if (Type == Ice::IceType_f64)
@@ -552,7 +552,7 @@ private:
   Ice::GlobalContext *Ctx;
   Ice::Cfg *Func;
   Ice::CfgNode *CurrentNode;
-  Ice::IceType SubzeroPointerType;
+  Ice::Type SubzeroPointerType;
   std::map<const Value *, Ice::Variable *> VarMap;
   std::map<const BasicBlock *, Ice::CfgNode *> NodeMap;
 };

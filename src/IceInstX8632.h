@@ -35,7 +35,7 @@ public:
   void dump(const Cfg *Func) const;
 
 protected:
-  OperandX8632(OperandTypeX8632 Kind, IceType Ty)
+  OperandX8632(OperandTypeX8632 Kind, Type Ty)
       : Operand(static_cast<OperandKind>(Kind), Ty) {}
   virtual ~OperandX8632() {}
 
@@ -46,7 +46,7 @@ private:
 
 class OperandX8632Mem : public OperandX8632 {
 public:
-  static OperandX8632Mem *create(Cfg *Func, IceType Ty, Variable *Base,
+  static OperandX8632Mem *create(Cfg *Func, Type Ty, Variable *Base,
                                  Constant *Offset, Variable *Index = NULL,
                                  uint32_t Shift = 0) {
     return new (Func->allocate<OperandX8632Mem>())
@@ -64,7 +64,7 @@ public:
   }
 
 private:
-  OperandX8632Mem(Cfg *Func, IceType Ty, Variable *Base, Constant *Offset,
+  OperandX8632Mem(Cfg *Func, Type Ty, Variable *Base, Constant *Offset,
                   Variable *Index, uint32_t Shift);
   OperandX8632Mem(const OperandX8632Mem &) LLVM_DELETED_FUNCTION;
   OperandX8632Mem &operator=(const OperandX8632Mem &) LLVM_DELETED_FUNCTION;

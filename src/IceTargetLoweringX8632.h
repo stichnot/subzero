@@ -51,17 +51,17 @@ public:
   virtual void translateO2();
 
   virtual Variable *getPhysicalRegister(SizeT RegNum);
-  virtual IceString getRegName(SizeT RegNum, IceType Ty) const;
+  virtual IceString getRegName(SizeT RegNum, Type Ty) const;
   virtual llvm::SmallBitVector getRegisterSet(RegSetMask Include,
                                               RegSetMask Exclude) const;
-  virtual const llvm::SmallBitVector &getRegisterSetForType(IceType Ty) const {
+  virtual const llvm::SmallBitVector &getRegisterSetForType(Type Ty) const {
     return TypeToRegisterSet[Ty];
   }
   virtual bool hasFramePointer() const { return IsEbpBasedFrame; }
   virtual SizeT getFrameOrStackReg() const {
     return IsEbpBasedFrame ? Reg_ebp : Reg_esp;
   }
-  virtual size_t typeWidthInBytesOnStack(IceType Ty) {
+  virtual size_t typeWidthInBytesOnStack(Type Ty) {
     return (typeWidthInBytes(Ty) + 3) & ~3;
   }
   virtual void addProlog(CfgNode *Node);
@@ -122,12 +122,12 @@ protected:
                     int32_t RegNum = Variable::NoRegister);
   Variable *legalizeToVar(Operand *From, bool AllowOverlap = false,
                           int32_t RegNum = Variable::NoRegister);
-  Variable *makeReg(IceType Ty, int32_t RegNum = Variable::NoRegister);
+  Variable *makeReg(Type Ty, int32_t RegNum = Variable::NoRegister);
   InstCall *makeHelperCall(const IceString &Name, Variable *Dest,
                            SizeT MaxSrcs) {
     bool SuppressMangling = true;
     bool Tailcall = false;
-    IceType Ty = Dest ? Dest->getType() : IceType_void;
+    Type Ty = Dest ? Dest->getType() : IceType_void;
     Constant *CallTarget = Ctx->getConstantSym(Ty, 0, Name, SuppressMangling);
     InstCall *Call =
         InstCall::create(Func, MaxSrcs, Dest, CallTarget, Tailcall);

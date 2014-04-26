@@ -34,7 +34,7 @@ const size_t TypeAttributesSize =
 
 } // end anonymous namespace
 
-size_t typeWidthInBytes(IceType Ty) {
+size_t typeWidthInBytes(Type Ty) {
   size_t Width = 0;
   size_t Index = static_cast<size_t>(Ty);
   if (Index < TypeAttributesSize) {
@@ -46,7 +46,7 @@ size_t typeWidthInBytes(IceType Ty) {
 
 // ======================== Dump routines ======================== //
 
-template <> Ostream &operator<<(Ostream &Str, const IceType &Ty) {
+template <> Ostream &operator<<(Ostream &Str, const Type &Ty) {
   size_t Index = static_cast<size_t>(Ty);
   if (Index < TypeAttributesSize) {
     Str << TypeAttributes[Index].DisplayString;

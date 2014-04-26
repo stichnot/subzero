@@ -22,7 +22,7 @@
 namespace Ice {
 
 // XXX kill this
-static const char *OpcodeTypeFromIceType(IceType type) {
+static const char *OpcodeTypeFromIceType(Type type) {
   switch (type) {
   default:
     return "U";
@@ -38,7 +38,7 @@ static const char *OpcodeTypeFromIceType(IceType type) {
   }
 }
 
-OperandX8632Mem::OperandX8632Mem(Cfg *Func, IceType Ty, Variable *Base,
+OperandX8632Mem::OperandX8632Mem(Cfg *Func, Type Ty, Variable *Base,
                                  Constant *Offset, Variable *Index,
                                  uint32_t Shift)
     : OperandX8632(kMem, Ty), Base(Base), Offset(Offset), Index(Index),
@@ -472,7 +472,7 @@ void InstX8632Cdq::dump(const Cfg *Func) const {
   dumpSources(Func);
 }
 
-static IceString getCvtTypeString(IceType Ty) {
+static IceString getCvtTypeString(Type Ty) {
   switch (Ty) {
   case IceType_i1:
   case IceType_i8:
@@ -739,7 +739,7 @@ void InstX8632Pop::dump(const Cfg *Func) const {
 void InstX8632Push::emit(const Cfg *Func, uint32_t Option) const {
   Ostream &Str = Func->getContext()->getStrEmit();
   assert(getSrcSize() == 1);
-  IceType Ty = getSrc(0)->getType();
+  Type Ty = getSrc(0)->getType();
   Variable *Var = llvm::dyn_cast<Variable>(getSrc(0));
   if ((Ty == IceType_f32 || Ty == IceType_f64) && Var && Var->hasReg()) {
     // The xmm registers can't be directly pushed, so we fake it by
@@ -778,7 +778,7 @@ void InstX8632Ret::emit(const Cfg *Func, uint32_t /*Option*/) const {
 
 void InstX8632Ret::dump(const Cfg *Func) const {
   Ostream &Str = Func->getContext()->getStrDump();
-  IceType Ty = (getSrcSize() == 0 ? IceType_void : getSrc(0)->getType());
+  Type Ty = (getSrcSize() == 0 ? IceType_void : getSrc(0)->getType());
   Str << "ret." << Ty << " ";
   dumpSources(Func);
 }

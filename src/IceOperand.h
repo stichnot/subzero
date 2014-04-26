@@ -38,7 +38,7 @@ public:
     kTarget
   };
   OperandKind getKind() const { return Kind; }
-  IceType getType() const { return Ty; }
+  Type getType() const { return Ty; }
 
   // Every Operand keeps an array of the Variables referenced in
   // the operand.  This is so that the liveness operations can get
@@ -62,8 +62,8 @@ public:
   virtual ~Operand() {}
 
 protected:
-  Operand(OperandKind Kind, IceType Ty) : Ty(Ty), Kind(Kind) {}
-  const IceType Ty;
+  Operand(OperandKind Kind, Type Ty) : Ty(Ty), Kind(Kind) {}
+  const Type Ty;
   const OperandKind Kind;
   // Vars and NumVars are initialized by the derived class.
   SizeT NumVars;
@@ -88,7 +88,7 @@ public:
   }
 
 protected:
-  Constant(OperandKind Kind, IceType Ty) : Operand(Kind, Ty) {
+  Constant(OperandKind Kind, Type Ty) : Operand(Kind, Ty) {
     Vars = NULL;
     NumVars = 0;
   }
@@ -103,7 +103,7 @@ private:
 template <typename T, Operand::OperandKind K>
 class ConstantPrimitive : public Constant {
 public:
-  static ConstantPrimitive *create(GlobalContext *Ctx, IceType Ty, T Value) {
+  static ConstantPrimitive *create(GlobalContext *Ctx, Type Ty, T Value) {
     return new (Ctx->allocate<ConstantPrimitive>())
         ConstantPrimitive(Ty, Value);
   }
@@ -122,7 +122,7 @@ public:
   }
 
 private:
-  ConstantPrimitive(IceType Ty, T Value) : Constant(K, Ty), Value(Value) {}
+  ConstantPrimitive(Type Ty, T Value) : Constant(K, Ty), Value(Value) {}
   ConstantPrimitive(const ConstantPrimitive &) LLVM_DELETED_FUNCTION;
   ConstantPrimitive &operator=(const ConstantPrimitive &) LLVM_DELETED_FUNCTION;
   virtual ~ConstantPrimitive() {}
@@ -157,7 +157,7 @@ public:
 // a fixed offset.
 class ConstantRelocatable : public Constant {
 public:
-  static ConstantRelocatable *create(GlobalContext *Ctx, IceType Ty,
+  static ConstantRelocatable *create(GlobalContext *Ctx, Type Ty,
                                      const RelocatableTuple &Tuple) {
     return new (Ctx->allocate<ConstantRelocatable>()) ConstantRelocatable(
         Ty, Tuple.Offset, Tuple.Name, Tuple.SuppressMangling);
@@ -175,7 +175,7 @@ public:
   }
 
 private:
-  ConstantRelocatable(IceType Ty, int64_t Offset, const IceString &Name,
+  ConstantRelocatable(Type Ty, int64_t Offset, const IceString &Name,
                       bool SuppressMangling)
       : Constant(kConstRelocatable, Ty), Offset(Offset), Name(Name),
         SuppressMangling(SuppressMangling) {}
@@ -267,8 +267,8 @@ Ostream &operator<<(Ostream &Str, const LiveRange &L);
 // have a non-negative RegNum field.
 class Variable : public Operand {
 public:
-  static Variable *create(Cfg *Func, IceType Ty, const CfgNode *Node,
-                          SizeT Index, const IceString &Name) {
+  static Variable *create(Cfg *Func, Type Ty, const CfgNode *Node, SizeT Index,
+                          const IceString &Name) {
     return new (Func->allocate<Variable>()) Variable(Ty, Node, Index, Name);
   }
 
@@ -336,7 +336,7 @@ public:
   // Creates a temporary copy of the variable with a different type.
   // Used primarily for syntactic correctness of textual assembly
   // emission.
-  Variable asType(IceType Ty);
+  Variable asType(Type Ty);
 
   virtual bool isPooled() const { return true; }
 
@@ -351,7 +351,7 @@ public:
   virtual ~Variable() {}
 
 private:
-  Variable(IceType Ty, const CfgNode *Node, SizeT Index, const IceString &Name)
+  Variable(Type Ty, const CfgNode *Node, SizeT Index, const IceString &Name)
       : Operand(kVariable, Ty), Number(Index), Name(Name), DefInst(NULL),
         DefNode(Node), IsArgument(false), StackOffset(0), RegNum(NoRegister),
         RegNumTmp(NoRegister), Weight(1), RegisterPreference(NULL),

@@ -62,12 +62,11 @@ public:
   // Manage Constants.
   // getConstant*() functions are not const because they might add
   // something to the constant pool.
-  Constant *getConstantInt(IceType Ty, uint64_t ConstantInt64);
+  Constant *getConstantInt(Type Ty, uint64_t ConstantInt64);
   Constant *getConstantFloat(float Value);
   Constant *getConstantDouble(double Value);
   // Returns a symbolic constant.
-  Constant *getConstantSym(IceType Ty, int64_t Offset,
-                           const IceString &Name = "",
+  Constant *getConstantSym(Type Ty, int64_t Offset, const IceString &Name = "",
                            bool SuppressMangling = false);
 
   // Allocate data of type T using the global allocator.

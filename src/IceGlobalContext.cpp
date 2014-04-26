@@ -32,7 +32,7 @@ template <typename KeyType, typename ValueType> class TypePool {
 
 public:
   TypePool() {}
-  ValueType *getOrAdd(GlobalContext *Ctx, IceType Ty, KeyType Key) {
+  ValueType *getOrAdd(GlobalContext *Ctx, Type Ty, KeyType Key) {
     SizeT Index = KeyToIndex.translate(TupleType(Ty, Key));
     if (Index >= Pool.size()) {
       Pool.resize(Index + 1);
@@ -44,7 +44,7 @@ public:
   }
 
 private:
-  typedef std::pair<IceType, KeyType> TupleType;
+  typedef std::pair<Type, KeyType> TupleType;
   struct TupleCompare {
     bool operator()(const TupleType &A, const TupleType &B) {
       if (A.first != B.first)
@@ -136,7 +136,7 @@ IceString GlobalContext::mangleName(const IceString &Name) const {
 
 GlobalContext::~GlobalContext() {}
 
-Constant *GlobalContext::getConstantInt(IceType Ty, uint64_t ConstantInt64) {
+Constant *GlobalContext::getConstantInt(Type Ty, uint64_t ConstantInt64) {
   return ConstPool->Integers.getOrAdd(this, Ty, ConstantInt64);
 }
 
@@ -148,7 +148,7 @@ Constant *GlobalContext::getConstantDouble(double ConstantDouble) {
   return ConstPool->Doubles.getOrAdd(this, IceType_f64, ConstantDouble);
 }
 
-Constant *GlobalContext::getConstantSym(IceType Ty, int64_t Offset,
+Constant *GlobalContext::getConstantSym(Type Ty, int64_t Offset,
                                         const IceString &Name,
                                         bool SuppressMangling) {
   return ConstPool->Relocatables.getOrAdd(

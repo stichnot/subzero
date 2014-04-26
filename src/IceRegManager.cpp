@@ -89,7 +89,7 @@ RegManager::RegManager(const RegManager &Other)
 }
 
 // Prefer[0] is highest preference, Prefer[1] is second, etc.
-Variable *RegManager::getRegister(IceType /*Ty*/, const OperandList &Prefer,
+Variable *RegManager::getRegister(Type /*Ty*/, const OperandList &Prefer,
                                   const VarList &Avoid)
     // TODO: "Avoid" is actually a set of virtual or physical registers.
     // Wait - no it's not.  For an Arithmetic instruction, the load of the

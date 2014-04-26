@@ -198,7 +198,7 @@ Variable *TargetX8632::getPhysicalRegister(SizeT RegNum) {
   return Reg;
 }
 
-IceString TargetX8632::getRegName(SizeT RegNum, IceType Ty) const {
+IceString TargetX8632::getRegName(SizeT RegNum, Type Ty) const {
   assert(RegNum < Reg_NUM);
   static IceString RegNames8[] = {
 #define X(val, init, name, name16, name8, scratch, preserved, stackptr,        \
@@ -236,7 +236,7 @@ void TargetX8632::setArgOffsetAndCopy(Variable *Arg, Variable *FramePtr,
                                       int32_t &InArgsSizeBytes) {
   Variable *Lo = Arg->getLo();
   Variable *Hi = Arg->getHi();
-  IceType Ty = Arg->getType();
+  Type Ty = Arg->getType();
   if (Lo && Hi && Ty == IceType_i64) {
     assert(Lo->getType() != IceType_i64); // don't want infinite recursion
     assert(Hi->getType() != IceType_i64); // don't want infinite recursion
@@ -961,7 +961,7 @@ void TargetX8632::lowerArithmetic(const InstArithmetic *Inst) {
       break;
     case InstArithmetic::Frem: {
       const SizeT MaxSrcs = 2;
-      IceType Ty = Dest->getType();
+      Type Ty = Dest->getType();
       InstCall *Call =
           makeHelperCall(Ty == IceType_f32 ? "fmodf" : "fmod", Dest, MaxSrcs);
       Call->addArg(Src0);
@@ -1218,7 +1218,7 @@ void TargetX8632::lowerCast(const InstCast *Inst) {
       // not needed for x86-64.
       split64(Dest);
       const SizeT MaxSrcs = 1;
-      IceType SrcType = Inst->getSrc(0)->getType();
+      Type SrcType = Inst->getSrc(0)->getType();
       InstCall *Call = makeHelperCall(
           SrcType == IceType_f32 ? "cvtftosi64" : "cvtdtosi64", Dest, MaxSrcs);
       Call->addArg(Inst->getSrc(0));
@@ -1238,8 +1238,8 @@ void TargetX8632::lowerCast(const InstCast *Inst) {
       // Use a helper for both x86-32 and x86-64.
       split64(Dest);
       const SizeT MaxSrcs = 1;
-      IceType DestType = Dest->getType();
-      IceType SrcType = Src0RM->getType();
+      Type DestType = Dest->getType();
+      Type SrcType = Src0RM->getType();
       IceString DstSubstring = (DestType == IceType_i64 ? "64" : "32");
       IceString SrcSubstring = (SrcType == IceType_f32 ? "f" : "d");
       // Possibilities are cvtftoui32, cvtdtoui32, cvtftoui64, cvtdtoui64
@@ -1262,7 +1262,7 @@ void TargetX8632::lowerCast(const InstCast *Inst) {
     if (Src0RM->getType() == IceType_i64) {
       // Use a helper for x86-32.
       const SizeT MaxSrcs = 1;
-      IceType DestType = Dest->getType();
+      Type DestType = Dest->getType();
       InstCall *Call = makeHelperCall(
           DestType == IceType_f32 ? "cvtsi64tof" : "cvtsi64tod", Dest, MaxSrcs);
       Call->addArg(Inst->getSrc(0));
@@ -1286,7 +1286,7 @@ void TargetX8632::lowerCast(const InstCast *Inst) {
       // Use a helper for x86-32 and x86-64.  Also use a helper for
       // i32 on x86-32.
       const SizeT MaxSrcs = 1;
-      IceType DestType = Dest->getType();
+      Type DestType = Dest->getType();
       IceString SrcSubstring = (Src0RM->getType() == IceType_i64 ? "64" : "32");
       IceString DstSubstring = (DestType == IceType_f32 ? "f" : "d");
       // Possibilities are cvtui32tof, cvtui32tod, cvtui64tof, cvtui64tod
@@ -1320,8 +1320,8 @@ void TargetX8632::lowerCast(const InstCast *Inst) {
       assert(0 && "Unexpected Bitcast dest type");
     case IceType_i32:
     case IceType_f32: {
-      IceType DestType = Dest->getType();
-      IceType SrcType = Src0RM->getType();
+      Type DestType = Dest->getType();
+      Type SrcType = Src0RM->getType();
       assert((DestType == IceType_i32 && SrcType == IceType_f32) ||
              (DestType == IceType_f32 && SrcType == IceType_i32));
       // a.i32 = bitcast b.f32 ==>
@@ -1770,7 +1770,7 @@ void TargetX8632::lowerLoad(const InstLoad *Inst) {
   // OperandX8632Mem operand.  Note that the address mode
   // optimization already creates an OperandX8632Mem operand, so it
   // doesn't need another level of transformation.
-  IceType Ty = Inst->getDest()->getType();
+  Type Ty = Inst->getDest()->getType();
   Operand *Src0 = Inst->getSourceAddress();
   // Address mode optimization already creates an OperandX8632Mem
   // operand, so it doesn't need another level of transformation.
@@ -2042,7 +2042,7 @@ Variable *TargetX8632::legalizeToVar(Operand *From, bool AllowOverlap,
   return llvm::cast<Variable>(legalize(From, Legal_Reg, AllowOverlap, RegNum));
 }
 
-Variable *TargetX8632::makeReg(IceType Type, int32_t RegNum) {
+Variable *TargetX8632::makeReg(Type Type, int32_t RegNum) {
   Variable *Reg = Func->makeVariable(Type, Context.getNode());
   if (RegNum == Variable::NoRegister)
     Reg->setWeightInfinite();

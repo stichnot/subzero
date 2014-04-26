@@ -27,7 +27,7 @@ namespace Ice {
 
 #define X(tag, size, str) tag,
 
-enum IceType {
+enum Type {
   ICETYPE_TABLE
 };
 #undef X
@@ -46,9 +46,9 @@ enum IceOptLevel {
   IceOpt_2
 };
 
-size_t typeWidthInBytes(IceType Ty);
+size_t typeWidthInBytes(Type Ty);
 
-template <> Ostream &operator<<(class Ostream &Str, const IceType &Ty);
+template <> Ostream &operator<<(class Ostream &Str, const Type &Ty);
 
 } // end of namespace Ice
 

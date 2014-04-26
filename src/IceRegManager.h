@@ -102,7 +102,7 @@ public:
   }
   // TODO: Are these Variable instances duplicated across
   // RegManager objects?
-  Variable *getRegister(IceType Ty, const OperandList &Prefer,
+  Variable *getRegister(Type Ty, const OperandList &Prefer,
                         const VarList &Avoid) const;
   bool registerContains(const Variable *Reg, const Operand *Op) const;
   void notifyLoad(Inst *Inst, bool IsAssign = true);
