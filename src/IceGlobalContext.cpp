@@ -92,7 +92,7 @@ IceString GlobalContext::mangleName(const IceString &Name) const {
   //   _Z3barxyz ==> ZN6Prefix3barExyz
   // An unmangled, extern "C" style name, gets a simple prefix:
   //   bar ==> Prefixbar
-  if (getTestPrefix() == "")
+  if (getTestPrefix().empty())
     return Name;
 
   unsigned PrefixLength = getTestPrefix().length();

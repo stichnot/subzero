@@ -28,7 +28,7 @@ CfgNode::CfgNode(Cfg *Func, SizeT LabelNumber, IceString Name)
 // Returns the name the node was created with.  If no name was given,
 // it synthesizes a (hopefully) unique name.
 IceString CfgNode::getName() const {
-  if (Name != "")
+  if (!Name.empty())
     return Name;
   const static size_t BufLen = 30;
   char buf[BufLen];

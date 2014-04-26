@@ -157,7 +157,7 @@ void Variable::setIsArg(Cfg *Func) {
 }
 
 IceString Variable::getName() const {
-  if (Name != "")
+  if (!Name.empty())
     return Name;
   const static size_t BufLen = 30;
   char buf[BufLen];
