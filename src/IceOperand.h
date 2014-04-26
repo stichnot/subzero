@@ -372,7 +372,10 @@ private:
   Inst *DefInst;
   // DefNode is the node where this variable was produced, and is
   // reset to NULL if it is used outside that node.  This is used for
-  // detecting isMultiblockLife().
+  // detecting isMultiblockLife().  TODO: Collapse this to a single
+  // bit and use a separate pass to calculate the values across the
+  // Cfg.  This saves space in the Variable, and removes the fragility
+  // of incrementally computing and maintaining the information.
   const CfgNode *DefNode;
   bool IsArgument;
   // StackOffset is the canonical location on stack (only if
