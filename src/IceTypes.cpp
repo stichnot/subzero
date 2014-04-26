@@ -46,7 +46,7 @@ size_t typeWidthInBytes(IceType Type) {
 
 // ======================== Dump routines ======================== //
 
-template <> IceOstream &operator<<(IceOstream &Str, const IceType &Type) {
+template <> Ostream &operator<<(Ostream &Str, const IceType &Type) {
   size_t Index = static_cast<size_t>(Type);
   if (Index < TypeAttributesSize) {
     Str << TypeAttributes[Index].DisplayString;

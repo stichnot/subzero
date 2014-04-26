@@ -22,7 +22,7 @@
 
 namespace Ice {
 
-IceOstream *GlobalStr = NULL;
+Ostream *GlobalStr = NULL;
 bool Cfg::HasEmittedFirstMethod = false;
 
 Cfg::Cfg(GlobalContext *Ctx)
@@ -93,7 +93,7 @@ bool Cfg::hasComputedFrame() const {
 }
 
 void Cfg::translate() {
-  IceOstream &Str = Ctx->getStrDump();
+  Ostream &Str = Ctx->getStrDump();
   if (hasError())
     return;
 
@@ -316,7 +316,7 @@ bool Cfg::validateLiveness() const {
 // ======================== Dump routines ======================== //
 
 void Cfg::emit(uint32_t Option) {
-  IceOstream &Str = Ctx->getStrEmit();
+  Ostream &Str = Ctx->getStrEmit();
   IceTimer T_emit;
   if (!HasEmittedFirstMethod) {
     HasEmittedFirstMethod = true;
@@ -347,7 +347,7 @@ void Cfg::emit(uint32_t Option) {
 }
 
 void Cfg::dump() {
-  IceOstream &Str = Ctx->getStrDump();
+  Ostream &Str = Ctx->getStrDump();
   setCurrentNode(getEntryNode());
   // Print function name+args
   if (getContext()->isVerbose(IceV_Instructions)) {

@@ -118,32 +118,32 @@ enum IceVerbose {
 };
 typedef uint32_t IceVerboseMask;
 
-// The IceOstream class wraps an output stream and a Cfg pointer, so
+// The Ostream class wraps an output stream and a Cfg pointer, so
 // that dump routines have access to the Cfg object and can print
 // labels and variable names.
 
-class IceOstream {
+class Ostream {
 public:
-  IceOstream(llvm::raw_ostream *Stream) : Stream(Stream) {}
+  Ostream(llvm::raw_ostream *Stream) : Stream(Stream) {}
 
   llvm::raw_ostream *Stream;
 
 private:
-  IceOstream(const IceOstream &) LLVM_DELETED_FUNCTION;
-  IceOstream &operator=(const IceOstream &) LLVM_DELETED_FUNCTION;
+  Ostream(const Ostream &) LLVM_DELETED_FUNCTION;
+  Ostream &operator=(const Ostream &) LLVM_DELETED_FUNCTION;
 };
 
 template <typename T>
-inline IceOstream &operator<<(IceOstream &Str, const T &Val) {
+inline Ostream &operator<<(Ostream &Str, const T &Val) {
   if (Str.Stream)
     (*Str.Stream) << Val;
   return Str;
 }
 
 // GlobalStr is just for debugging, in situations where the
-// Cfg/IceOstream objects aren't otherwise available.  Not
+// Cfg/Ostream objects aren't otherwise available.  Not
 // thread-safe.
-extern IceOstream *GlobalStr;
+extern Ostream *GlobalStr;
 
 // TODO: Implement in terms of std::chrono after switching to C++11.
 class IceTimer {

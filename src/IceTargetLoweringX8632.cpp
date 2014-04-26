@@ -53,7 +53,7 @@ TargetX8632::TargetX8632(Cfg *Func)
 
 void TargetX8632::translateO2() {
   GlobalContext *Context = Func->getContext();
-  IceOstream &Str = Context->getStrDump();
+  Ostream &Str = Context->getStrDump();
   IceTimer T_placePhiLoads;
   Func->placePhiLoads();
   if (Func->hasError())
@@ -140,7 +140,7 @@ void TargetX8632::translateO2() {
 
 void TargetX8632::translateOm1() {
   GlobalContext *Context = Func->getContext();
-  IceOstream &Str = Context->getStrDump();
+  Ostream &Str = Context->getStrDump();
   IceTimer T_placePhiLoads;
   Func->placePhiLoads();
   if (Func->hasError())

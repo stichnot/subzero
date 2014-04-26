@@ -176,7 +176,7 @@ Variable Variable::asType(IceType Type) {
 
 // TODO: This should be handed by the TargetLowering subclass.
 void Variable::emit(const Cfg *Func, uint32_t /*Option*/) const {
-  IceOstream &Str = Func->getContext()->getStrEmit();
+  Ostream &Str = Func->getContext()->getStrEmit();
   assert(DefNode == NULL || DefNode == Func->getCurrentNode());
   if (hasReg()) {
     Str << Func->getTarget()->getRegName(RegNum, getType());
@@ -211,7 +211,7 @@ void Variable::emit(const Cfg *Func, uint32_t /*Option*/) const {
 }
 
 void Variable::dump(const Cfg *Func) const {
-  IceOstream &Str = Func->getContext()->getStrDump();
+  Ostream &Str = Func->getContext()->getStrDump();
   const CfgNode *CurrentNode = Func->getCurrentNode();
   (void)CurrentNode; // used only in assert()
   assert(CurrentNode == NULL || DefNode == NULL || DefNode == CurrentNode);
@@ -238,7 +238,7 @@ void Variable::dump(const Cfg *Func) const {
 }
 
 void ConstantRelocatable::emit(const Cfg *Func, uint32_t /*Option*/) const {
-  IceOstream &Str = Func->getContext()->getStrEmit();
+  Ostream &Str = Func->getContext()->getStrEmit();
   if (SuppressMangling)
     Str << Name;
   else
@@ -251,13 +251,13 @@ void ConstantRelocatable::emit(const Cfg *Func, uint32_t /*Option*/) const {
 }
 
 void ConstantRelocatable::dump(const Cfg *Func) const {
-  IceOstream &Str = Func->getContext()->getStrDump();
+  Ostream &Str = Func->getContext()->getStrDump();
   Str << "@" << Name;
   if (Offset)
     Str << "+" << Offset;
 }
 
-void LiveRange::dump(IceOstream &Str) const {
+void LiveRange::dump(Ostream &Str) const {
   Str << "(weight=" << Weight << ") ";
   for (RangeType::const_iterator I = Range.begin(), E = Range.end(); I != E;
        ++I) {
@@ -267,12 +267,12 @@ void LiveRange::dump(IceOstream &Str) const {
   }
 }
 
-IceOstream &operator<<(IceOstream &Str, const LiveRange &L) {
+Ostream &operator<<(Ostream &Str, const LiveRange &L) {
   L.dump(Str);
   return Str;
 }
 
-IceOstream &operator<<(IceOstream &Str, const RegWeight &W) {
+Ostream &operator<<(Ostream &Str, const RegWeight &W) {
   if (W.getWeight() == RegWeight::Inf)
     Str << "Inf";
   else

@@ -46,8 +46,8 @@ public:
   void addVerbose(IceVerboseMask Mask) { VerboseMask |= Mask; }
   void subVerbose(IceVerboseMask Mask) { VerboseMask &= ~Mask; }
 
-  IceOstream &getStrDump() { return StrDump; }
-  IceOstream &getStrEmit() { return StrEmit; }
+  Ostream &getStrDump() { return StrDump; }
+  Ostream &getStrEmit() { return StrEmit; }
 
   IceTargetArch getTargetArch() const { return TargetArch; }
   IceOptLevel getOptLevel() const { return OptLevel; }
@@ -74,8 +74,8 @@ public:
   template <typename T> T *allocate() { return Allocator.Allocate<T>(); }
 
 private:
-  IceOstream StrDump; // Stream for dumping / diagnostics
-  IceOstream StrEmit; // Stream for code emission
+  Ostream StrDump; // Stream for dumping / diagnostics
+  Ostream StrEmit; // Stream for code emission
 
   llvm::BumpPtrAllocator Allocator;
   IceVerboseMask VerboseMask;

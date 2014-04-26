@@ -109,11 +109,11 @@ public:
   }
   T getValue() const { return Value; }
   virtual void emit(const Cfg *Func, uint32_t /*Option*/) const {
-    IceOstream &Str = Func->getContext()->getStrEmit();
+    Ostream &Str = Func->getContext()->getStrEmit();
     Str << getValue();
   }
   virtual void dump(const Cfg *Func) const {
-    IceOstream &Str = Func->getContext()->getStrDump();
+    Ostream &Str = Func->getContext()->getStrDump();
     Str << getValue();
   }
 
@@ -211,7 +211,7 @@ public:
 private:
   uint32_t Weight;
 };
-IceOstream &operator<<(IceOstream &Str, const RegWeight &W);
+Ostream &operator<<(Ostream &Str, const RegWeight &W);
 bool operator<(const RegWeight &A, const RegWeight &B);
 bool operator<=(const RegWeight &A, const RegWeight &B);
 bool operator==(const RegWeight &A, const RegWeight &B);
@@ -241,7 +241,7 @@ public:
   RegWeight getWeight() const { return Weight; }
   void setWeight(const RegWeight &NewWeight) { Weight = NewWeight; }
   void addWeight(uint32_t Delta) { Weight.addWeight(Delta); }
-  void dump(IceOstream &Str) const;
+  void dump(Ostream &Str) const;
 
   // Defining USE_SET uses std::set to hold the segments instead of
   // std::list.  Using std::list will be slightly faster, but is more
@@ -260,7 +260,7 @@ private:
   RegWeight Weight;
 };
 
-IceOstream &operator<<(IceOstream &Str, const LiveRange &L);
+Ostream &operator<<(Ostream &Str, const LiveRange &L);
 
 // Variable represents an operand that is register-allocated or
 // stack-allocated.  If it is register-allocated, it will ultimately

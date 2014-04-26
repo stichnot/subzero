@@ -39,7 +39,7 @@ void LinearScan::scan(const llvm::SmallBitVector &RegMaskFull) {
   Handled.clear();
   Inactive.clear();
   Active.clear();
-  IceOstream &Str = Func->getContext()->getStrDump();
+  Ostream &Str = Func->getContext()->getStrDump();
   Func->setCurrentNode(NULL);
 
   // Gather the live ranges of all variables and add them to the
@@ -416,7 +416,7 @@ void LinearScan::scan(const llvm::SmallBitVector &RegMaskFull) {
 // ======================== Dump routines ======================== //
 
 void LiveRangeWrapper::dump(const Cfg *Func) const {
-  IceOstream &Str = Func->getContext()->getStrDump();
+  Ostream &Str = Func->getContext()->getStrDump();
   const static size_t BufLen = 30;
   char buf[BufLen];
   snprintf(buf, BufLen, "%2d", Var->getRegNumTmp());
@@ -426,7 +426,7 @@ void LiveRangeWrapper::dump(const Cfg *Func) const {
 }
 
 void LinearScan::dump(Cfg *Func) const {
-  IceOstream &Str = Func->getContext()->getStrDump();
+  Ostream &Str = Func->getContext()->getStrDump();
   if (!Func->getContext()->isVerbose(IceV_LinearScan))
     return;
   Func->setCurrentNode(NULL);
