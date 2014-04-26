@@ -28,7 +28,9 @@
 
 #include "llvm/ADT/BitVector.h"
 #include "llvm/ADT/SmallBitVector.h"
+#include "llvm/ADT/STLExtras.h"
 #include "llvm/Support/Casting.h"
+#include "llvm/Support/Compiler.h" // LLVM_STATIC_ASSERT
 #include "llvm/Support/raw_ostream.h"
 #include "llvm/Support/Timer.h"
 

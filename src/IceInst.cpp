@@ -412,13 +412,12 @@ void Inst::dumpDecorated(const Cfg *Func) const {
       (isDeleted() || isRedundantAssign()))
     return;
   if (Func->getContext()->isVerbose(IceV_InstNumbers)) {
-    const static size_t BufLen = 30;
-    char buf[BufLen];
+    char buf[30];
     int32_t Number = getNumber();
     if (Number < 0)
-      snprintf(buf, BufLen, "[XXX]");
+      snprintf(buf, llvm::array_lengthof(buf), "[XXX]");
     else
-      snprintf(buf, BufLen, "[%3d]", Number);
+      snprintf(buf, llvm::array_lengthof(buf), "[%3d]", Number);
     Str << buf;
   }
   Str << "  ";

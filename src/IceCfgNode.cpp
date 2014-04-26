@@ -30,9 +30,8 @@ CfgNode::CfgNode(Cfg *Func, SizeT LabelNumber, IceString Name)
 IceString CfgNode::getName() const {
   if (!Name.empty())
     return Name;
-  const static size_t BufLen = 30;
-  char buf[BufLen];
-  snprintf(buf, BufLen, "__%u", getIndex());
+  char buf[30];
+  snprintf(buf, llvm::array_lengthof(buf), "__%u", getIndex());
   return buf;
 }
 
