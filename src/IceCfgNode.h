@@ -1,4 +1,4 @@
-//===- subzero/src/CfgNode.h - Control flow graph node -------*- C++ -*-===//
+//===- subzero/src/IceCfgNode.h - Control flow graph node -------*- C++ -*-===//
 //
 //                        The Subzero Code Generator
 //
@@ -22,7 +22,7 @@ namespace Ice {
 
 class CfgNode {
 public:
-  static CfgNode *create(IceCfg *Func, IceSize_t LabelIndex,
+  static CfgNode *create(Cfg *Func, IceSize_t LabelIndex,
                          IceString Name = "") {
     return new (Func->allocate<CfgNode>()) CfgNode(Func, LabelIndex, Name);
   }
@@ -60,14 +60,14 @@ public:
   void genCode();
   bool liveness(LivenessMode Mode, Liveness *Liveness);
   void livenessPostprocess(LivenessMode Mode, Liveness *Liveness);
-  void emit(IceCfg *Func, uint32_t Option) const;
-  void dump(IceCfg *Func) const;
+  void emit(Cfg *Func, uint32_t Option) const;
+  void dump(Cfg *Func) const;
 
 private:
-  CfgNode(IceCfg *Func, IceSize_t LabelIndex, IceString Name);
+  CfgNode(Cfg *Func, IceSize_t LabelIndex, IceString Name);
   CfgNode(const CfgNode &) LLVM_DELETED_FUNCTION;
   CfgNode &operator=(const CfgNode &) LLVM_DELETED_FUNCTION;
-  IceCfg *const Func;
+  Cfg *const Func;
   const IceSize_t Number; // label index
   IceString Name;         // for dumping only
   bool HasReturn;         // does this block need an epilog?

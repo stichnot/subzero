@@ -24,7 +24,7 @@
 
 namespace Ice {
 
-TargetX8632::TargetX8632(IceCfg *Func)
+TargetX8632::TargetX8632(Cfg *Func)
     : TargetLowering(Func), IsEbpBasedFrame(false), FrameSizeLocals(0),
       LocalsSizeBytes(0), NextLabelNumber(0), ComputedLiveRanges(false),
       PhysicalRegisters(VarList(Reg_NUM)) {
@@ -1646,7 +1646,7 @@ bool isAdd(const Inst *Inst) {
   return false;
 }
 
-void computeAddressOpt(IceCfg * /*Func*/, Variable *&Base, Variable *&Index,
+void computeAddressOpt(Cfg * /*Func*/, Variable *&Base, Variable *&Index,
                        int32_t &Shift, int32_t &Offset) {
   (void)Offset; // TODO: pattern-match for non-zero offsets.
   if (Base == NULL)

@@ -63,10 +63,10 @@ public:
     SubzeroPointerType = Ice::IceType_i32;
   }
 
-  Ice::IceCfg *convertFunction(const Function *F) {
+  Ice::Cfg *convertFunction(const Function *F) {
     VarMap.clear();
     NodeMap.clear();
-    Func = new Ice::IceCfg(Ctx);
+    Func = new Ice::Cfg(Ctx);
     Func->setFunctionName(F->getName());
     Func->setReturnType(convertType(F->getReturnType()));
     Func->setInternal(F->hasInternalLinkage());
@@ -550,7 +550,7 @@ private:
 private:
   // Data
   Ice::GlobalContext *Ctx;
-  Ice::IceCfg *Func;
+  Ice::Cfg *Func;
   Ice::CfgNode *CurrentNode;
   Ice::IceType SubzeroPointerType;
   std::map<const Value *, Ice::Variable *> VarMap;
@@ -659,7 +659,7 @@ int main(int argc, char **argv) {
     LLVM2ICEConverter FunctionConverter(&Ctx);
 
     Ice::IceTimer TConvert;
-    Ice::IceCfg *Func = FunctionConverter.convertFunction(I);
+    Ice::Cfg *Func = FunctionConverter.convertFunction(I);
     if (DisableInternal)
       Func->setInternal(false);
 

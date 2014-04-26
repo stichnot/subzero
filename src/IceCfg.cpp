@@ -7,8 +7,8 @@
 //
 //===----------------------------------------------------------------------===//
 //
-// This file implements the IceCfg class, including constant pool
-// management.
+// This file implements the Cfg class, which manages individual
+// functions.
 //
 //===----------------------------------------------------------------------===//
 
@@ -23,9 +23,9 @@
 namespace Ice {
 
 IceOstream *GlobalStr = NULL;
-bool IceCfg::HasEmittedFirstMethod = false;
+bool Cfg::HasEmittedFirstMethod = false;
 
-IceCfg::IceCfg(GlobalContext *Ctx)
+Cfg::Cfg(GlobalContext *Ctx)
     : Ctx(Ctx), FunctionName(""), ReturnType(IceType_void),
       IsInternalLinkage(false), HasError(false), ErrorMessage(""), Entry(NULL),
       NextInstNumber(1), Live(NULL),
@@ -34,22 +34,22 @@ IceCfg::IceCfg(GlobalContext *Ctx)
   GlobalStr = &Ctx->getStrDump();
 }
 
-IceCfg::~IceCfg() {}
+Cfg::~Cfg() {}
 
-void IceCfg::setError(const IceString &Message) {
+void Cfg::setError(const IceString &Message) {
   HasError = true;
   ErrorMessage = Message;
   Ctx->getStrDump() << "ICE translation error: " << ErrorMessage << "\n";
 }
 
-CfgNode *IceCfg::makeNode(const IceString &Name) {
+CfgNode *Cfg::makeNode(const IceString &Name) {
   IceSize_t LabelIndex = Nodes.size();
   CfgNode *Node = CfgNode::create(this, LabelIndex, Name);
   Nodes.push_back(Node);
   return Node;
 }
 
-CfgNode *IceCfg::splitEdge(CfgNode *From, CfgNode *To) {
+CfgNode *Cfg::splitEdge(CfgNode *From, CfgNode *To) {
   // Create the new node.
   IceString NewNodeName = "s__" + From->getName() + "__" + To->getName();
   CfgNode *NewNode = makeNode(NewNodeName);
@@ -74,25 +74,25 @@ CfgNode *IceCfg::splitEdge(CfgNode *From, CfgNode *To) {
 
 // Create a new Variable with a particular type and an optional
 // name.  The Node argument is the node where the variable is defined.
-Variable *IceCfg::makeVariable(IceType Type, const CfgNode *Node,
+Variable *Cfg::makeVariable(IceType Type, const CfgNode *Node,
                                const IceString &Name) {
   IceSize_t Index = Variables.size();
   Variables.push_back(Variable::create(this, Type, Node, Index, Name));
   return Variables[Index];
 }
 
-void IceCfg::addArg(Variable *Arg) {
+void Cfg::addArg(Variable *Arg) {
   Arg->setIsArg(this);
   Args.push_back(Arg);
 }
 
 // Returns whether the stack frame layout has been computed yet.  This
 // is used for dumping the stack frame location of Variables.
-bool IceCfg::hasComputedFrame() const {
+bool Cfg::hasComputedFrame() const {
   return getTarget() && getTarget()->hasComputedFrame();
 }
 
-void IceCfg::translate() {
+void Cfg::translate() {
   IceOstream &Str = Ctx->getStrDump();
   if (hasError())
     return;
@@ -112,13 +112,13 @@ void IceCfg::translate() {
   dump();
 }
 
-void IceCfg::computePredecessors() {
+void Cfg::computePredecessors() {
   for (NodeList::iterator I = Nodes.begin(), E = Nodes.end(); I != E; ++I) {
     (*I)->computePredecessors();
   }
 }
 
-void IceCfg::renumberInstructions() {
+void Cfg::renumberInstructions() {
   NextInstNumber = 1;
   for (NodeList::iterator I = Nodes.begin(), E = Nodes.end(); I != E; ++I) {
     (*I)->renumberInstructions();
@@ -126,34 +126,34 @@ void IceCfg::renumberInstructions() {
 }
 
 // placePhiLoads() must be called before placePhiStores().
-void IceCfg::placePhiLoads() {
+void Cfg::placePhiLoads() {
   for (NodeList::iterator I = Nodes.begin(), E = Nodes.end(); I != E; ++I) {
     (*I)->placePhiLoads();
   }
 }
 
 // placePhiStores() must be called after placePhiLoads().
-void IceCfg::placePhiStores() {
+void Cfg::placePhiStores() {
   for (NodeList::iterator I = Nodes.begin(), E = Nodes.end(); I != E; ++I) {
     (*I)->placePhiStores();
   }
 }
 
-void IceCfg::deletePhis() {
+void Cfg::deletePhis() {
   for (NodeList::iterator I = Nodes.begin(), E = Nodes.end(); I != E; ++I) {
     (*I)->deletePhis();
   }
 }
 
-void IceCfg::doAddressOpt() {
+void Cfg::doAddressOpt() {
   for (NodeList::iterator I = Nodes.begin(), E = Nodes.end(); I != E; ++I) {
     (*I)->doAddressOpt();
   }
 }
 
-void IceCfg::genCode() {
+void Cfg::genCode() {
   if (getTarget() == NULL) {
-    setError("IceCfg::makeTarget() wasn't called.");
+    setError("Cfg::makeTarget() wasn't called.");
     return;
   }
   for (NodeList::iterator I = Nodes.begin(), E = Nodes.end(); I != E; ++I) {
@@ -162,7 +162,7 @@ void IceCfg::genCode() {
 }
 
 // Compute the stack frame layout.
-void IceCfg::genFrame() {
+void Cfg::genFrame() {
   getTarget()->addProlog(Entry);
   // TODO: Consider folding epilog generation into the final
   // emission/assembly pass to avoid an extra iteration over the node
@@ -174,7 +174,7 @@ void IceCfg::genFrame() {
   }
 }
 
-void IceCfg::liveness(LivenessMode Mode) {
+void Cfg::liveness(LivenessMode Mode) {
   if (Mode == Liveness_LREndLightweight) {
     // Lightweight liveness is a quick single pass and doesn't need to
     // iterate until convergence.
@@ -270,7 +270,7 @@ void IceCfg::liveness(LivenessMode Mode) {
 
 // Traverse every Variable of every Inst and verify that it
 // appears within the Variable's computed live range.
-bool IceCfg::validateLiveness() const {
+bool Cfg::validateLiveness() const {
   bool Valid = true;
   for (NodeList::const_iterator I1 = Nodes.begin(), E1 = Nodes.end(); I1 != E1;
        ++I1) {
@@ -315,7 +315,7 @@ bool IceCfg::validateLiveness() const {
 
 // ======================== Dump routines ======================== //
 
-void IceCfg::emit(uint32_t Option) {
+void Cfg::emit(uint32_t Option) {
   IceOstream &Str = Ctx->getStrEmit();
   IceTimer T_emit;
   if (!HasEmittedFirstMethod) {
@@ -346,7 +346,7 @@ void IceCfg::emit(uint32_t Option) {
   T_emit.printElapsedUs(Ctx, "emit()");
 }
 
-void IceCfg::dump() {
+void Cfg::dump() {
   IceOstream &Str = Ctx->getStrDump();
   setCurrentNode(getEntryNode());
   // Print function name+args

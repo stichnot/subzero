@@ -51,7 +51,7 @@ void LoweringContext::advance(InstList::iterator &I) {
 }
 
 TargetLowering *TargetLowering::createLowering(IceTargetArch Target,
-                                               IceCfg *Func) {
+                                               Cfg *Func) {
   // These statements can be #ifdef'd to specialize the code generator
   // to a subset of the available targets.
   if (Target == IceTarget_X8632)

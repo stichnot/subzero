@@ -29,7 +29,7 @@ namespace Ice {
 // two interfering variables to share the same register in certain
 // cases.
 //
-// Requires running IceCfg::liveness(Liveness_RangesFull) in
+// Requires running Cfg::liveness(Liveness_RangesFull) in
 // preparation.  Results are assigned to Variable::RegNum for each
 // Variable.
 void LinearScan::scan(const llvm::SmallBitVector &RegMaskFull) {
@@ -415,7 +415,7 @@ void LinearScan::scan(const llvm::SmallBitVector &RegMaskFull) {
 
 // ======================== Dump routines ======================== //
 
-void LiveRangeWrapper::dump(const IceCfg *Func) const {
+void LiveRangeWrapper::dump(const Cfg *Func) const {
   IceOstream &Str = Func->getContext()->getStrDump();
   const static size_t BufLen = 30;
   char buf[BufLen];
@@ -425,7 +425,7 @@ void LiveRangeWrapper::dump(const IceCfg *Func) const {
   Str << "  Range=" << range();
 }
 
-void LinearScan::dump(IceCfg *Func) const {
+void LinearScan::dump(Cfg *Func) const {
   IceOstream &Str = Func->getContext()->getStrDump();
   if (!Func->getContext()->isVerbose(IceV_LinearScan))
     return;

@@ -45,7 +45,7 @@ namespace Ice {
 
 class TargetX8632 : public TargetLowering {
 public:
-  static TargetX8632 *create(IceCfg *Func) { return new TargetX8632(Func); }
+  static TargetX8632 *create(Cfg *Func) { return new TargetX8632(Func); }
 
   virtual void translateOm1();
   virtual void translateO2();
@@ -88,7 +88,7 @@ public:
 #undef X
 
 protected:
-  TargetX8632(IceCfg *Func);
+  TargetX8632(Cfg *Func);
 
   virtual void postLower();
 

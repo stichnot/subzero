@@ -49,8 +49,8 @@ public:
     assert(I < getNumVars());
     return Vars[I];
   }
-  virtual void emit(const IceCfg *Func, uint32_t Option) const = 0;
-  virtual void dump(const IceCfg *Func) const = 0;
+  virtual void emit(const Cfg *Func, uint32_t Option) const = 0;
+  virtual void dump(const Cfg *Func) const = 0;
 
   // Query whether this object was allocated in isolation, or added to
   // some higher-level pool.  This determines whether a containing
@@ -79,8 +79,8 @@ private:
 class Constant : public Operand {
 public:
   virtual bool isPooled() const { return true; }
-  virtual void emit(const IceCfg *Func, uint32_t Option) const = 0;
-  virtual void dump(const IceCfg *Func) const = 0;
+  virtual void emit(const Cfg *Func, uint32_t Option) const = 0;
+  virtual void dump(const Cfg *Func) const = 0;
 
   static bool classof(const Operand *Operand) {
     OperandKind Kind = Operand->getKind();
@@ -108,11 +108,11 @@ public:
         ConstantPrimitive(Type, Value);
   }
   T getValue() const { return Value; }
-  virtual void emit(const IceCfg *Func, uint32_t /*Option*/) const {
+  virtual void emit(const Cfg *Func, uint32_t /*Option*/) const {
     IceOstream &Str = Func->getContext()->getStrEmit();
     Str << getValue();
   }
-  virtual void dump(const IceCfg *Func) const {
+  virtual void dump(const Cfg *Func) const {
     IceOstream &Str = Func->getContext()->getStrDump();
     Str << getValue();
   }
@@ -166,8 +166,8 @@ public:
   IceString getName() const { return Name; }
   void setSuppressMangling(bool Value) { SuppressMangling = Value; }
   bool getSuppressMangling() const { return SuppressMangling; }
-  virtual void emit(const IceCfg *Func, uint32_t Option) const;
-  virtual void dump(const IceCfg *Func) const;
+  virtual void emit(const Cfg *Func, uint32_t Option) const;
+  virtual void dump(const Cfg *Func) const;
 
   static bool classof(const Operand *Operand) {
     OperandKind Kind = Operand->getKind();
@@ -267,7 +267,7 @@ IceOstream &operator<<(IceOstream &Str, const LiveRange &L);
 // have a non-negative RegNum field.
 class Variable : public Operand {
 public:
-  static Variable *create(IceCfg *Func, IceType Type, const CfgNode *Node,
+  static Variable *create(Cfg *Func, IceType Type, const CfgNode *Node,
                           IceSize_t Index, const IceString &Name) {
     return new (Func->allocate<Variable>()) Variable(Type, Node, Index, Name);
   }
@@ -284,7 +284,7 @@ public:
   void setUse(const Inst *Inst, const CfgNode *Node);
 
   bool getIsArg() const { return IsArgument; }
-  void setIsArg(IceCfg *Func);
+  void setIsArg(Cfg *Func);
 
   int32_t getStackOffset() const { return StackOffset; }
   void setStackOffset(int32_t Offset) { StackOffset = Offset; }
@@ -340,8 +340,8 @@ public:
 
   virtual bool isPooled() const { return true; }
 
-  virtual void emit(const IceCfg *Func, uint32_t Option) const;
-  virtual void dump(const IceCfg *Func) const;
+  virtual void emit(const Cfg *Func, uint32_t Option) const;
+  virtual void dump(const Cfg *Func) const;
 
   static bool classof(const Operand *Operand) {
     return Operand->getKind() == kVariable;

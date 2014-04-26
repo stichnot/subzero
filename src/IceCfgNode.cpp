@@ -1,4 +1,4 @@
-//===- subzero/src/CfgNode.cpp - Basic block (node) implementation -----===//
+//===- subzero/src/IceCfgNode.cpp - Basic block (node) implementation -----===//
 //
 //                        The Subzero Code Generator
 //
@@ -7,8 +7,8 @@
 //
 //===----------------------------------------------------------------------===//
 //
-// This file implements the CfgNode class, including the
-// complexities of instruction insertion and in-edge calculation.
+// This file implements the CfgNode class, including the complexities
+// of instruction insertion and in-edge calculation.
 //
 //===----------------------------------------------------------------------===//
 
@@ -22,7 +22,7 @@
 
 namespace Ice {
 
-CfgNode::CfgNode(IceCfg *Func, IceSize_t LabelNumber, IceString Name)
+CfgNode::CfgNode(Cfg *Func, IceSize_t LabelNumber, IceString Name)
     : Func(Func), Number(LabelNumber), Name(Name), HasReturn(false) {}
 
 // Returns the name the node was created with.  If no name was given,
@@ -71,7 +71,7 @@ void CfgNode::renumberInstructions() {
 // Inserts this node between the From and To nodes.  Just updates the
 // in-edge/out-edge structure without doing anything to the CFG
 // linearization, as this is handled by the calling function
-// IceCfg::splitEdge().
+// Cfg::splitEdge().
 void CfgNode::splitEdge(CfgNode *From, CfgNode *To) {
   // Find the out-edge position.
   NodeList::iterator Iout = From->OutEdges.begin();
@@ -407,7 +407,7 @@ void CfgNode::livenessPostprocess(LivenessMode Mode, Liveness *Liveness) {
 
 // ======================== Dump routines ======================== //
 
-void CfgNode::emit(IceCfg *Func, uint32_t Option) const {
+void CfgNode::emit(Cfg *Func, uint32_t Option) const {
   Func->setCurrentNode(this);
   IceOstream &Str = Func->getContext()->getStrEmit();
   if (Func->getEntryNode() == this) {
@@ -434,7 +434,7 @@ void CfgNode::emit(IceCfg *Func, uint32_t Option) const {
   }
 }
 
-void CfgNode::dump(IceCfg *Func) const {
+void CfgNode::dump(Cfg *Func) const {
   Func->setCurrentNode(this);
   IceOstream &Str = Func->getContext()->getStrDump();
   Liveness *Liveness = Func->getLiveness();

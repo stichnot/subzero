@@ -76,7 +76,7 @@ private:
 
 class TargetLowering {
 public:
-  static TargetLowering *createLowering(IceTargetArch Target, IceCfg *Func);
+  static TargetLowering *createLowering(IceTargetArch Target, Cfg *Func);
   void translate() {
     switch (Ctx->getOptLevel()) {
     case IceOpt_m1:
@@ -153,7 +153,7 @@ public:
   virtual ~TargetLowering() {}
 
 protected:
-  TargetLowering(IceCfg *Func)
+  TargetLowering(Cfg *Func)
       : Func(Func), Ctx(Func->getContext()), HasComputedFrame(false),
         StackAdjustment(0) {}
   virtual void lowerAlloca(const InstAlloca *Inst) = 0;
@@ -182,7 +182,7 @@ protected:
   // subsequent global register allocation pass.
   virtual void postLower() {}
 
-  IceCfg *Func;
+  Cfg *Func;
   GlobalContext *Ctx;
   bool HasComputedFrame;
   // StackAdjustment keeps track of the current stack offset from its

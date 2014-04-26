@@ -146,7 +146,7 @@ void Variable::replaceDefinition(Inst *Inst, const CfgNode *Node) {
   setDefinition(Inst, Node);
 }
 
-void Variable::setIsArg(IceCfg *Func) {
+void Variable::setIsArg(Cfg *Func) {
   IsArgument = true;
   if (DefNode == NULL)
     return;
@@ -175,7 +175,7 @@ Variable Variable::asType(IceType Type) {
 // ======================== dump routines ======================== //
 
 // TODO: This should be handed by the TargetLowering subclass.
-void Variable::emit(const IceCfg *Func, uint32_t /*Option*/) const {
+void Variable::emit(const Cfg *Func, uint32_t /*Option*/) const {
   IceOstream &Str = Func->getContext()->getStrEmit();
   assert(DefNode == NULL || DefNode == Func->getCurrentNode());
   if (hasReg()) {
@@ -210,7 +210,7 @@ void Variable::emit(const IceCfg *Func, uint32_t /*Option*/) const {
   Str << "]";
 }
 
-void Variable::dump(const IceCfg *Func) const {
+void Variable::dump(const Cfg *Func) const {
   IceOstream &Str = Func->getContext()->getStrDump();
   const CfgNode *CurrentNode = Func->getCurrentNode();
   (void)CurrentNode; // used only in assert()
@@ -237,7 +237,7 @@ void Variable::dump(const IceCfg *Func) const {
   }
 }
 
-void ConstantRelocatable::emit(const IceCfg *Func, uint32_t /*Option*/) const {
+void ConstantRelocatable::emit(const Cfg *Func, uint32_t /*Option*/) const {
   IceOstream &Str = Func->getContext()->getStrEmit();
   if (SuppressMangling)
     Str << Name;
@@ -250,7 +250,7 @@ void ConstantRelocatable::emit(const IceCfg *Func, uint32_t /*Option*/) const {
   }
 }
 
-void ConstantRelocatable::dump(const IceCfg *Func) const {
+void ConstantRelocatable::dump(const Cfg *Func) const {
   IceOstream &Str = Func->getContext()->getStrDump();
   Str << "@" << Name;
   if (Offset)

@@ -34,7 +34,7 @@
 
 namespace Ice {
 
-class IceCfg;
+class Cfg;
 class CfgNode;
 class Constant;
 class GlobalContext;
@@ -118,9 +118,9 @@ enum IceVerbose {
 };
 typedef uint32_t IceVerboseMask;
 
-// The IceOstream class wraps an output stream and an IceCfg pointer,
-// so that dump routines have access to the IceCfg object and can
-// print labels and variable names.
+// The IceOstream class wraps an output stream and a Cfg pointer, so
+// that dump routines have access to the Cfg object and can print
+// labels and variable names.
 
 class IceOstream {
 public:
@@ -141,7 +141,7 @@ inline IceOstream &operator<<(IceOstream &Str, const T &Val) {
 }
 
 // GlobalStr is just for debugging, in situations where the
-// IceCfg/IceOstream objects aren't otherwise available.  Not
+// Cfg/IceOstream objects aren't otherwise available.  Not
 // thread-safe.
 extern IceOstream *GlobalStr;
 

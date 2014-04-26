@@ -7,8 +7,8 @@
 //
 //===----------------------------------------------------------------------===//
 //
-// This file declares the IceCfg class, which represents the control
-// flow graph and the overall per-function compilation context.
+// This file declares the Cfg class, which represents the control flow
+// graph and the overall per-function compilation context.
 //
 //===----------------------------------------------------------------------===//
 
@@ -24,10 +24,10 @@
 
 namespace Ice {
 
-class IceCfg {
+class Cfg {
 public:
-  IceCfg(GlobalContext *Ctx);
-  ~IceCfg();
+  Cfg(GlobalContext *Ctx);
+  ~Cfg();
 
   GlobalContext *getContext() const { return Ctx; }
 
@@ -146,8 +146,8 @@ private:
   // once per function.
   static bool HasEmittedFirstMethod;
 
-  IceCfg(const IceCfg &) LLVM_DELETED_FUNCTION;
-  IceCfg &operator=(const IceCfg &) LLVM_DELETED_FUNCTION;
+  Cfg(const Cfg &) LLVM_DELETED_FUNCTION;
+  Cfg &operator=(const Cfg &) LLVM_DELETED_FUNCTION;
 };
 
 } // end of namespace Ice

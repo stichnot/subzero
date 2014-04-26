@@ -63,11 +63,11 @@ namespace Ice {
 
 class RegManagerEntry {
 public:
-  static RegManagerEntry *create(IceCfg *Func, Variable *Var,
+  static RegManagerEntry *create(Cfg *Func, Variable *Var,
                                  IceSize_t NumReg) {
     return new RegManagerEntry(Func, Var, NumReg);
   }
-  static RegManagerEntry *create(IceCfg *Func, const RegManagerEntry &Other,
+  static RegManagerEntry *create(Cfg *Func, const RegManagerEntry &Other,
                                  IceSize_t NumReg) {
     return new RegManagerEntry(Func, Other, NumReg);
   }
@@ -75,11 +75,11 @@ public:
   void store(Inst *Inst);
   bool contains(const Operand *Operand) const;
   Variable *getVar() const { return Var; }
-  void dump(const IceCfg *Func) const;
+  void dump(const Cfg *Func) const;
 
 private:
-  RegManagerEntry(IceCfg *Func, Variable *Var, IceSize_t NumReg);
-  RegManagerEntry(IceCfg *Func, const RegManagerEntry &Other, IceSize_t NumReg);
+  RegManagerEntry(Cfg *Func, Variable *Var, IceSize_t NumReg);
+  RegManagerEntry(Cfg *Func, const RegManagerEntry &Other, IceSize_t NumReg);
 
   // Virtual register.
   Variable *const Var;
@@ -93,7 +93,7 @@ class RegManager {
 public:
   typedef std::vector<RegManagerEntry *> QueueType;
   // Initialize a brand new register manager.
-  static RegManager *create(IceCfg *Func, CfgNode *Node, IceSize_t NumReg) {
+  static RegManager *create(Cfg *Func, CfgNode *Node, IceSize_t NumReg) {
     return new RegManager(Func, Node, NumReg);
   }
   // Capture the predecessor's end-of-block state for an extended
@@ -108,17 +108,17 @@ public:
   bool registerContains(const Variable *Reg, const Operand *Op) const;
   void notifyLoad(Inst *Inst, bool IsAssign = true);
   void notifyStore(Inst *Inst);
-  void dump(const IceCfg *Func) const;
+  void dump(const Cfg *Func) const;
 
 private:
-  RegManager(IceCfg *Func, CfgNode *Node, IceSize_t NumReg);
+  RegManager(Cfg *Func, CfgNode *Node, IceSize_t NumReg);
   RegManager(const RegManager &Other);
   const IceSize_t NumReg;
   // The LRU register queue.  The front element is the least recently
   // used and the next to be assigned.
   // TODO: Multiple queues by type.
   QueueType Queue;
-  IceCfg *Func;
+  Cfg *Func;
 };
 
 } // end of namespace Ice

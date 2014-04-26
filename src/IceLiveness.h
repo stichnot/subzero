@@ -52,7 +52,7 @@ private:
 
 class Liveness {
 public:
-  Liveness(IceCfg *Func, LivenessMode Mode)
+  Liveness(Cfg *Func, LivenessMode Mode)
       : Func(Func), Mode(Mode), NumGlobals(0) {}
   void init();
   Variable *getVariable(IceSize_t LiveIndex, const CfgNode *Node) const;
@@ -78,10 +78,10 @@ public:
                     uint32_t WeightDelta);
 
 private:
-  IceCfg *Func;
+  Cfg *Func;
   LivenessMode Mode;
   IceSize_t NumGlobals;
-  // Size of Nodes is IceCfg::Nodes.size().
+  // Size of Nodes is Cfg::Nodes.size().
   std::vector<LivenessNode> Nodes;
   // VarToLiveMap maps an Variable's Variable::Number to its
   // live index within its basic block.
