@@ -19,6 +19,13 @@
 #include "IceDefs.h"
 #include "IceTypes.h"
 
+// TODO: The Cfg structure, and instructions in particular, need to be
+// validated for things like valid operand types, valid branch
+// targets, proper ordering of Phi and non-Phi instructions, etc.
+// Most of the validity checking will be done in the bitcode reader.
+// We need a list of everything that should be validated, and tests
+// for each.
+
 namespace Ice {
 
 class Inst {
