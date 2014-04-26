@@ -60,7 +60,7 @@ llvm2ice: $(OBJS)
 	$(CXX) $(LDFLAGS) -o $@ $^ $(LLVM_LDFLAGS) -ldl -lcurses
 
 # TODO: Be more precise than "*.h" here and elsewhere.
-$(OBJS): build/%.o: src/%.cpp src/*.h
+$(OBJS): build/%.o: src/%.cpp src/*.h src/*.def
 	$(CXX) -c $(CXXFLAGS) $< -o $@
 
 $(OBJS): | build
