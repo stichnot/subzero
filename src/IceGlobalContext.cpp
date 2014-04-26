@@ -71,11 +71,10 @@ public:
 };
 
 GlobalContext::GlobalContext(llvm::raw_ostream *OsDump,
-                             llvm::raw_ostream *OsEmit,
-                             IceVerboseMask VerboseMask,
+                             llvm::raw_ostream *OsEmit, VerboseMask Mask,
                              IceTargetArch TargetArch, IceOptLevel OptLevel,
                              IceString TestPrefix)
-    : StrDump(OsDump), StrEmit(OsEmit), VerboseMask(VerboseMask),
+    : StrDump(OsDump), StrEmit(OsEmit), VMask(Mask),
       ConstPool(new ConstantPool()), TargetArch(TargetArch), OptLevel(OptLevel),
       TestPrefix(TestPrefix) {}
 

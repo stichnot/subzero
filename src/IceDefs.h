@@ -105,7 +105,7 @@ private:
   ValueTranslation &operator=(const ValueTranslation &) LLVM_DELETED_FUNCTION;
 };
 
-enum IceVerbose {
+enum VerboseItem {
   IceV_None = 0,
   IceV_Instructions = 1 << 0,
   IceV_Deleted = 1 << 1,
@@ -120,7 +120,7 @@ enum IceVerbose {
   IceV_Timing = 1 << 10,
   IceV_All = ~IceV_None
 };
-typedef uint32_t IceVerboseMask;
+typedef uint32_t VerboseMask;
 
 // The Ostream class wraps an output stream and a Cfg pointer, so
 // that dump routines have access to the Cfg object and can print

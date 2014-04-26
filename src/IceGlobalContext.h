@@ -30,7 +30,7 @@ namespace Ice {
 class GlobalContext {
 public:
   GlobalContext(llvm::raw_ostream *OsDump, llvm::raw_ostream *OsEmit,
-                IceVerboseMask VerboseMask, IceTargetArch TargetArch,
+                VerboseMask Mask, IceTargetArch TargetArch,
                 IceOptLevel OptLevel, IceString TestPrefix);
   ~GlobalContext();
 
@@ -39,12 +39,12 @@ public:
   // options at all are set.  IceV_Timing is treated specially, so
   // that running with just IceV_Timing verbosity doesn't trigger an
   // avalanche of extra output.
-  bool isVerbose(IceVerboseMask Mask = (IceV_All & ~IceV_Timing)) const {
-    return VerboseMask & Mask;
+  bool isVerbose(VerboseMask Mask = (IceV_All & ~IceV_Timing)) const {
+    return VMask & Mask;
   }
-  void setVerbose(IceVerboseMask Mask) { VerboseMask = Mask; }
-  void addVerbose(IceVerboseMask Mask) { VerboseMask |= Mask; }
-  void subVerbose(IceVerboseMask Mask) { VerboseMask &= ~Mask; }
+  void setVerbose(VerboseMask Mask) { VMask = Mask; }
+  void addVerbose(VerboseMask Mask) { VMask |= Mask; }
+  void subVerbose(VerboseMask Mask) { VMask &= ~Mask; }
 
   Ostream &getStrDump() { return StrDump; }
   Ostream &getStrEmit() { return StrEmit; }
@@ -77,7 +77,7 @@ private:
   Ostream StrEmit; // Stream for code emission
 
   llvm::BumpPtrAllocator Allocator;
-  IceVerboseMask VerboseMask;
+  VerboseMask VMask;
   llvm::OwningPtr<class ConstantPool> ConstPool;
   const IceTargetArch TargetArch;
   const IceOptLevel OptLevel;

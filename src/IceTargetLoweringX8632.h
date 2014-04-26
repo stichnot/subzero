@@ -128,8 +128,7 @@ protected:
     bool SuppressMangling = true;
     Type Ty = Dest ? Dest->getType() : IceType_void;
     Constant *CallTarget = Ctx->getConstantSym(Ty, 0, Name, SuppressMangling);
-    InstCall *Call =
-        InstCall::create(Func, MaxSrcs, Dest, CallTarget);
+    InstCall *Call = InstCall::create(Func, MaxSrcs, Dest, CallTarget);
     return Call;
   }
 

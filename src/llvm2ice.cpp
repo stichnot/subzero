@@ -518,8 +518,8 @@ private:
     unsigned NumArgs = Inst->getNumArgOperands();
     // Note: Subzero doesn't (yet) do anything special with the Tail
     // flag in the bitcode, i.e. CallInst::isTailCall().
-    Ice::InstCall *NewInst = Ice::InstCall::create(
-        Func, NumArgs, Dest, CallTarget);
+    Ice::InstCall *NewInst =
+        Ice::InstCall::create(Func, NumArgs, Dest, CallTarget);
     for (unsigned i = 0; i < NumArgs; ++i) {
       NewInst->addArg(convertOperand(Inst, i));
     }
@@ -559,7 +559,7 @@ private:
   std::map<const BasicBlock *, Ice::CfgNode *> NodeMap;
 };
 
-static cl::list<Ice::IceVerbose> VerboseList(
+static cl::list<Ice::VerboseItem> VerboseList(
     "verbose", cl::CommaSeparated,
     cl::desc("Verbose options (can be comma-separated):"),
     cl::values(
@@ -635,7 +635,7 @@ int main(int argc, char **argv) {
     return 1;
   }
 
-  Ice::IceVerboseMask VerboseMask = Ice::IceV_None;
+  Ice::VerboseMask VerboseMask = Ice::IceV_None;
   for (unsigned i = 0; i != VerboseList.size(); ++i)
     VerboseMask |= VerboseList[i];
 
