@@ -152,7 +152,7 @@ public:
   virtual void dump(const Cfg *Func) const;
 
 protected:
-  InstX8632(Cfg *Func, InstKindX8632 Kind, IceSize_t Maxsrcs, Variable *Dest)
+  InstX8632(Cfg *Func, InstKindX8632 Kind, SizeT Maxsrcs, Variable *Dest)
       : InstTarget(Func, static_cast<InstKind>(Kind), Maxsrcs, Dest) {}
   virtual ~InstX8632() {}
   static bool isClassof(const Inst *Inst, InstKindX8632 MyKind) {
@@ -214,7 +214,7 @@ private:
   InstX8632Label(const InstX8632Label &) LLVM_DELETED_FUNCTION;
   InstX8632Label &operator=(const InstX8632Label &) LLVM_DELETED_FUNCTION;
   virtual ~InstX8632Label() {}
-  IceSize_t Number; // used only for unique label string generation
+  SizeT Number; // used only for unique label string generation
 };
 
 #define ICEINSTX8632BR_TABLE                                                   \
@@ -271,8 +271,8 @@ private:
 
 class InstX8632Call : public InstX8632 {
 public:
-  static InstX8632Call *create(Cfg *Func, Variable *Dest,
-                               Operand *CallTarget, bool Tail) {
+  static InstX8632Call *create(Cfg *Func, Variable *Dest, Operand *CallTarget,
+                               bool Tail) {
     return new (Func->allocate<InstX8632Call>())
         InstX8632Call(Func, Dest, CallTarget, Tail);
   }
@@ -345,8 +345,7 @@ public:
   static bool classof(const Inst *Inst) { return isClassof(Inst, K); }
 
 private:
-  InstX8632Ternop(Cfg *Func, Variable *Dest, Operand *Source1,
-                  Operand *Source2)
+  InstX8632Ternop(Cfg *Func, Variable *Dest, Operand *Source1, Operand *Source2)
       : InstX8632(Func, K, 3, Dest) {
     addSource(Dest);
     addSource(Source1);
@@ -388,8 +387,7 @@ public:
   static bool classof(const Inst *Inst) { return isClassof(Inst, Mul); }
 
 private:
-  InstX8632Mul(Cfg *Func, Variable *Dest, Variable *Source1,
-               Operand *Source2);
+  InstX8632Mul(Cfg *Func, Variable *Dest, Variable *Source1, Operand *Source2);
   InstX8632Mul(const InstX8632Mul &) LLVM_DELETED_FUNCTION;
   InstX8632Mul &operator=(const InstX8632Mul &) LLVM_DELETED_FUNCTION;
   virtual ~InstX8632Mul() {}
@@ -508,8 +506,7 @@ private:
 
 class InstX8632Test : public InstX8632 {
 public:
-  static InstX8632Test *create(Cfg *Func, Operand *Source1,
-                               Operand *Source2) {
+  static InstX8632Test *create(Cfg *Func, Operand *Source1, Operand *Source2) {
     return new (Func->allocate<InstX8632Test>())
         InstX8632Test(Func, Source1, Source2);
   }
@@ -529,8 +526,7 @@ private:
 // for liveness that there is no Dest operand.
 class InstX8632Store : public InstX8632 {
 public:
-  static InstX8632Store *create(Cfg *Func, Operand *Value,
-                                OperandX8632 *Mem) {
+  static InstX8632Store *create(Cfg *Func, Operand *Value, OperandX8632 *Mem) {
     return new (Func->allocate<InstX8632Store>())
         InstX8632Store(Func, Value, Mem);
   }

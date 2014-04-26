@@ -51,7 +51,7 @@ OperandX8632Mem::OperandX8632Mem(Cfg *Func, IceType Type, Variable *Base,
     ++NumVars;
   if (NumVars) {
     Vars = Func->allocateArrayOf<Variable *>(NumVars);
-    IceSize_t I = 0;
+    SizeT I = 0;
     if (Base)
       Vars[I++] = Base;
     if (Index)
@@ -94,9 +94,8 @@ IceString InstX8632Label::getName(const Cfg *Func) const {
   return ".L" + Func->getFunctionName() + "$__" + buf;
 }
 
-InstX8632Br::InstX8632Br(Cfg *Func, CfgNode *TargetTrue,
-                         CfgNode *TargetFalse, InstX8632Label *Label,
-                         InstX8632Br::BrCond Condition)
+InstX8632Br::InstX8632Br(Cfg *Func, CfgNode *TargetTrue, CfgNode *TargetFalse,
+                         InstX8632Label *Label, InstX8632Br::BrCond Condition)
     : InstX8632(Func, InstX8632::Br, 0, NULL), Condition(Condition),
       TargetTrue(TargetTrue), TargetFalse(TargetFalse), Label(Label) {}
 
@@ -338,32 +337,27 @@ template <> const char *InstX8632Shl::Opcode = "shl";
 template <> const char *InstX8632Shr::Opcode = "shr";
 template <> const char *InstX8632Sar::Opcode = "sar";
 
-template <>
-void InstX8632Addss::emit(const Cfg *Func, uint32_t Option) const {
+template <> void InstX8632Addss::emit(const Cfg *Func, uint32_t Option) const {
   IceEmitTwoAddress(getDest()->getType() == IceType_f32 ? "addss" : "addsd",
                     this, Func, Option);
 }
 
-template <>
-void InstX8632Subss::emit(const Cfg *Func, uint32_t Option) const {
+template <> void InstX8632Subss::emit(const Cfg *Func, uint32_t Option) const {
   IceEmitTwoAddress(getDest()->getType() == IceType_f32 ? "subss" : "subsd",
                     this, Func, Option);
 }
 
-template <>
-void InstX8632Mulss::emit(const Cfg *Func, uint32_t Option) const {
+template <> void InstX8632Mulss::emit(const Cfg *Func, uint32_t Option) const {
   IceEmitTwoAddress(getDest()->getType() == IceType_f32 ? "mulss" : "mulsd",
                     this, Func, Option);
 }
 
-template <>
-void InstX8632Divss::emit(const Cfg *Func, uint32_t Option) const {
+template <> void InstX8632Divss::emit(const Cfg *Func, uint32_t Option) const {
   IceEmitTwoAddress(getDest()->getType() == IceType_f32 ? "divss" : "divsd",
                     this, Func, Option);
 }
 
-template <>
-void InstX8632Imul::emit(const Cfg *Func, uint32_t Option) const {
+template <> void InstX8632Imul::emit(const Cfg *Func, uint32_t Option) const {
   IceOstream &Str = Func->getContext()->getStrEmit();
   assert(getSrcSize() == 2);
   if (getDest()->getType() == IceType_i8) {

@@ -22,7 +22,7 @@
 
 namespace Ice {
 
-CfgNode::CfgNode(Cfg *Func, IceSize_t LabelNumber, IceString Name)
+CfgNode::CfgNode(Cfg *Func, SizeT LabelNumber, IceString Name)
     : Func(Func), Number(LabelNumber), Name(Name), HasReturn(false) {}
 
 // Returns the name the node was created with.  If no name was given,
@@ -237,7 +237,7 @@ void CfgNode::genCode() {
 // (If it changes, the node's predecessors need to be processed
 // again.)
 bool CfgNode::liveness(LivenessMode Mode, Liveness *Liveness) {
-  IceSize_t NumVars;
+  SizeT NumVars;
   if (Mode == Liveness_LREndLightweight)
     NumVars = Func->getNumVariables();
   else
@@ -299,7 +299,7 @@ bool CfgNode::liveness(LivenessMode Mode, Liveness *Liveness) {
       IceOstream &Str = Func->getContext()->getStrDump();
       Func->setCurrentNode(NULL);
       Str << "LiveOrig-Live =";
-      for (IceSize_t i = Live.size(); i < LiveOrig.size(); ++i) {
+      for (SizeT i = Live.size(); i < LiveOrig.size(); ++i) {
         if (LiveOrig.test(i)) {
           Str << " ";
           Liveness->getVariable(i, this)->dump(Func);
@@ -360,8 +360,8 @@ void CfgNode::livenessPostprocess(LivenessMode Mode, Liveness *Liveness) {
     if (Mode == Liveness_RangesFull) {
       if (InstFakeKill *Kill = llvm::dyn_cast<InstFakeKill>(Inst)) {
         if (!Kill->getLinked()->isDeleted()) {
-          IceSize_t NumSrcs = Inst->getSrcSize();
-          for (IceSize_t i = 0; i < NumSrcs; ++i) {
+          SizeT NumSrcs = Inst->getSrcSize();
+          for (SizeT i = 0; i < NumSrcs; ++i) {
             Variable *Var = llvm::cast<Variable>(Inst->getSrc(i));
             int32_t InstNumber = Inst->getNumber();
             Liveness->addLiveRange(Var, InstNumber, InstNumber, 1);
@@ -373,13 +373,13 @@ void CfgNode::livenessPostprocess(LivenessMode Mode, Liveness *Liveness) {
   if (Mode != Liveness_RangesFull)
     return;
 
-  IceSize_t NumVars = Liveness->getLocalSize(this);
-  IceSize_t NumGlobals = Liveness->getGlobalSize();
+  SizeT NumVars = Liveness->getLocalSize(this);
+  SizeT NumGlobals = Liveness->getGlobalSize();
   llvm::BitVector &LiveIn = Liveness->getLiveIn(this);
   llvm::BitVector &LiveOut = Liveness->getLiveOut(this);
   std::vector<int> &LiveBegin = Liveness->getLiveBegin(this);
   std::vector<int> &LiveEnd = Liveness->getLiveEnd(this);
-  for (IceSize_t i = 0; i < NumVars; ++i) {
+  for (SizeT i = 0; i < NumVars; ++i) {
     // Deal with the case where the variable is both live-in and
     // live-out, but LiveEnd comes before LiveBegin.  In this case, we
     // need to add two segments to the live range because there is a
@@ -458,7 +458,7 @@ void CfgNode::dump(Cfg *Func) const {
     LiveIn = Liveness->getLiveIn(this);
   if (Func->getContext()->isVerbose(IceV_Liveness) && !LiveIn.empty()) {
     Str << "    // LiveIn:";
-    for (IceSize_t i = 0; i < LiveIn.size(); ++i) {
+    for (SizeT i = 0; i < LiveIn.size(); ++i) {
       if (LiveIn[i]) {
         Str << " %" << Liveness->getVariable(i, this)->getName();
       }
@@ -484,7 +484,7 @@ void CfgNode::dump(Cfg *Func) const {
     LiveOut = Liveness->getLiveOut(this);
   if (Func->getContext()->isVerbose(IceV_Liveness) && !LiveOut.empty()) {
     Str << "    // LiveOut:";
-    for (IceSize_t i = 0; i < LiveOut.size(); ++i) {
+    for (SizeT i = 0; i < LiveOut.size(); ++i) {
       if (LiveOut[i]) {
         Str << " %" << Liveness->getVariable(i, this)->getName();
       }

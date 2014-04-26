@@ -27,12 +27,11 @@
 namespace Ice {
 
 RegManagerEntry::RegManagerEntry(Cfg * /*Func*/, Variable *Var,
-                                 IceSize_t /*NumReg*/)
+                                 SizeT /*NumReg*/)
     : Var(Var) {}
 
-RegManagerEntry::RegManagerEntry(Cfg * /*Func*/,
-                                 const RegManagerEntry &Other,
-                                 IceSize_t /*NumReg*/)
+RegManagerEntry::RegManagerEntry(Cfg * /*Func*/, const RegManagerEntry &Other,
+                                 SizeT /*NumReg*/)
     : Var(Other.Var), Available(Other.Available) {}
 
 // An Operand is loaded into this virtual register.  Its Available set
@@ -69,10 +68,10 @@ bool RegManagerEntry::contains(const Operand *Operand) const {
   return false;
 }
 
-RegManager::RegManager(Cfg *Func, CfgNode *Node, IceSize_t NumReg)
+RegManager::RegManager(Cfg *Func, CfgNode *Node, SizeT NumReg)
     : NumReg(NumReg), Func(Func) {
   // TODO: Config flag to use physical registers directly.
-  for (IceSize_t i = 0; i < NumReg; ++i) {
+  for (SizeT i = 0; i < NumReg; ++i) {
     const static size_t BufLen = 100;
     char Buf[BufLen];
     snprintf(Buf, BufLen, "r%u_%u", i + 1, Node->getIndex());

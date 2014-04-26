@@ -56,10 +56,10 @@ typedef std::vector<Operand *> OperandList;
 typedef std::vector<Variable *> VarList;
 typedef std::vector<CfgNode *> NodeList;
 
-// IceSize_t is for holding small-ish limits like number of source
+// SizeT is for holding small-ish limits like number of source
 // operands in an instruction.  It is used instead of size_t (which
 // may be 64-bits wide) when we want to save space.
-typedef uint32_t IceSize_t;
+typedef uint32_t SizeT;
 
 enum LivenessMode {
   // Lightweight version of live-range-end calculation.  Marks the
@@ -83,14 +83,14 @@ enum LivenessMode {
 // between a parameterized type and small unsigned integers.
 template <typename T, typename Cmp = std::less<T> > class ValueTranslation {
 public:
-  typedef typename std::map<const T, IceSize_t, Cmp> ContainerType;
+  typedef typename std::map<const T, SizeT, Cmp> ContainerType;
   ValueTranslation() {}
   void clear() { Entries.clear(); }
-  IceSize_t translate(const T &Value) {
+  SizeT translate(const T &Value) {
     typename ContainerType::const_iterator Iter = Entries.find(Value);
     if (Iter != Entries.end())
       return Iter->second;
-    IceSize_t Index = Entries.size();
+    SizeT Index = Entries.size();
     Entries[Value] = Index;
     return Index;
   }

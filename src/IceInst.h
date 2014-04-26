@@ -59,8 +59,8 @@ public:
 
   Variable *getDest() const { return Dest; }
 
-  IceSize_t getSrcSize() const { return NumSrcs; }
-  Operand *getSrc(IceSize_t I) const {
+  SizeT getSrcSize() const { return NumSrcs; }
+  Operand *getSrc(SizeT I) const {
     assert(I < getSrcSize());
     return Srcs[I];
   }
@@ -97,13 +97,13 @@ public:
   virtual ~Inst();
 
 protected:
-  Inst(Cfg *Func, InstKind Kind, IceSize_t MaxSrcs, Variable *Dest);
+  Inst(Cfg *Func, InstKind Kind, SizeT MaxSrcs, Variable *Dest);
   void addSource(Operand *Src) {
     assert(Src);
     assert(NumSrcs < MaxSrcs);
     Srcs[NumSrcs++] = Src;
   }
-  void setLastUse(IceSize_t VarIndex) {
+  void setLastUse(SizeT VarIndex) {
     if (VarIndex < 8 * sizeof(LiveRangesEnded))
       LiveRangesEnded |= (1u << VarIndex);
   }
@@ -122,8 +122,8 @@ protected:
   bool HasSideEffects;
 
   Variable *Dest;
-  const IceSize_t MaxSrcs; // only used for assert
-  IceSize_t NumSrcs;
+  const SizeT MaxSrcs; // only used for assert
+  SizeT NumSrcs;
   Operand **Srcs;
 
   uint32_t LiveRangesEnded; // only first 32 src operands tracked, sorry
@@ -250,8 +250,7 @@ public:
 
 private:
   // Conditional branch
-  InstBr(Cfg *Func, Operand *Source, CfgNode *TargetTrue,
-         CfgNode *TargetFalse);
+  InstBr(Cfg *Func, Operand *Source, CfgNode *TargetTrue, CfgNode *TargetFalse);
   // Unconditional branch
   InstBr(Cfg *Func, CfgNode *Target);
   InstBr(const InstBr &) LLVM_DELETED_FUNCTION;
@@ -269,21 +268,21 @@ public:
   // The Tail argument represents the "tail" marker from the original
   // bitcode instruction (which doesn't necessarily mean that this
   // call must be executed as a tail call).
-  static InstCall *create(Cfg *Func, IceSize_t NumArgs, Variable *Dest,
+  static InstCall *create(Cfg *Func, SizeT NumArgs, Variable *Dest,
                           Operand *CallTarget, bool Tail) {
     return new (Func->allocateInst<InstCall>())
         InstCall(Func, NumArgs, Dest, CallTarget, Tail);
   }
   void addArg(Operand *Arg) { addSource(Arg); }
   Operand *getCallTarget() const { return getSrc(0); }
-  Operand *getArg(IceSize_t I) const { return getSrc(I + 1); }
-  IceSize_t getNumArgs() const { return getSrcSize() - 1; }
+  Operand *getArg(SizeT I) const { return getSrc(I + 1); }
+  SizeT getNumArgs() const { return getSrcSize() - 1; }
   bool isTail() const { return Tail; }
   virtual void dump(const Cfg *Func) const;
   static bool classof(const Inst *Inst) { return Inst->getKind() == Call; }
 
 private:
-  InstCall(Cfg *Func, IceSize_t NumArgs, Variable *Dest, Operand *CallTarget,
+  InstCall(Cfg *Func, SizeT NumArgs, Variable *Dest, Operand *CallTarget,
            bool Tail)
       : Inst(Func, Inst::Call, NumArgs + 1, Dest), Tail(Tail) {
     // Set HasSideEffects so that the call instruction can't be
@@ -423,7 +422,7 @@ private:
 // the Phi source operand is getSrc(I).
 class InstPhi : public Inst {
 public:
-  static InstPhi *create(Cfg *Func, IceSize_t MaxSrcs, Variable *Dest) {
+  static InstPhi *create(Cfg *Func, SizeT MaxSrcs, Variable *Dest) {
     return new (Func->allocateInst<InstPhi>()) InstPhi(Func, MaxSrcs, Dest);
   }
   void addArgument(Operand *Source, CfgNode *Label);
@@ -435,7 +434,7 @@ public:
   static bool classof(const Inst *Inst) { return Inst->getKind() == Phi; }
 
 private:
-  InstPhi(Cfg *Func, IceSize_t MaxSrcs, Variable *Dest);
+  InstPhi(Cfg *Func, SizeT MaxSrcs, Variable *Dest);
   InstPhi(const InstPhi &) LLVM_DELETED_FUNCTION;
   InstPhi &operator=(const InstPhi &) LLVM_DELETED_FUNCTION;
   virtual ~InstPhi() {
@@ -519,30 +518,29 @@ private:
 // getSrc(0).
 class InstSwitch : public Inst {
 public:
-  static InstSwitch *create(Cfg *Func, IceSize_t NumCases, Operand *Source,
+  static InstSwitch *create(Cfg *Func, SizeT NumCases, Operand *Source,
                             CfgNode *LabelDefault) {
     return new (Func->allocateInst<InstSwitch>())
         InstSwitch(Func, NumCases, Source, LabelDefault);
   }
   Operand *getComparison() const { return getSrc(0); }
   CfgNode *getLabelDefault() const { return LabelDefault; }
-  IceSize_t getNumCases() const { return NumCases; }
-  uint64_t getValue(IceSize_t I) const {
+  SizeT getNumCases() const { return NumCases; }
+  uint64_t getValue(SizeT I) const {
     assert(I < NumCases);
     return Values[I];
   }
-  CfgNode *getLabel(IceSize_t I) const {
+  CfgNode *getLabel(SizeT I) const {
     assert(I < NumCases);
     return Labels[I];
   }
-  void addBranch(IceSize_t CaseIndex, uint64_t Value, CfgNode *Label);
+  void addBranch(SizeT CaseIndex, uint64_t Value, CfgNode *Label);
   virtual NodeList getTerminatorEdges() const;
   virtual void dump(const Cfg *Func) const;
   static bool classof(const Inst *Inst) { return Inst->getKind() == Switch; }
 
 private:
-  InstSwitch(Cfg *Func, IceSize_t NumCases, Operand *Source,
-             CfgNode *LabelDefault);
+  InstSwitch(Cfg *Func, SizeT NumCases, Operand *Source, CfgNode *LabelDefault);
   InstSwitch(const InstSwitch &) LLVM_DELETED_FUNCTION;
   InstSwitch &operator=(const InstSwitch &) LLVM_DELETED_FUNCTION;
   virtual ~InstSwitch() {
@@ -553,9 +551,9 @@ private:
   }
 
   CfgNode *LabelDefault;
-  IceSize_t NumCases; // not including the default case
-  uint64_t *Values;   // size is NumCases
-  CfgNode **Labels;   // size is NumCases
+  SizeT NumCases;   // not including the default case
+  uint64_t *Values; // size is NumCases
+  CfgNode **Labels; // size is NumCases
 };
 
 // Unreachable instruction.  This is a terminator instruction with no
@@ -592,8 +590,7 @@ private:
 // dest wouldn't be properly initialized.
 class InstFakeDef : public Inst {
 public:
-  static InstFakeDef *create(Cfg *Func, Variable *Dest,
-                             Variable *Src = NULL) {
+  static InstFakeDef *create(Cfg *Func, Variable *Dest, Variable *Src = NULL) {
     return new (Func->allocateInst<InstFakeDef>()) InstFakeDef(Func, Dest, Src);
   }
   virtual void emit(const Cfg *Func, uint32_t Option) const;
@@ -669,7 +666,7 @@ public:
   static bool classof(const Inst *Inst) { return Inst->getKind() >= Target; }
 
 protected:
-  InstTarget(Cfg *Func, InstKind Kind, IceSize_t MaxSrcs, Variable *Dest)
+  InstTarget(Cfg *Func, InstKind Kind, SizeT MaxSrcs, Variable *Dest)
       : Inst(Func, Kind, MaxSrcs, Dest) {
     assert(Kind >= Target);
   }

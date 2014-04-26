@@ -50,8 +50,8 @@ public:
   virtual void translateOm1();
   virtual void translateO2();
 
-  virtual Variable *getPhysicalRegister(IceSize_t RegNum);
-  virtual IceString getRegName(IceSize_t RegNum, IceType Type) const;
+  virtual Variable *getPhysicalRegister(SizeT RegNum);
+  virtual IceString getRegName(SizeT RegNum, IceType Type) const;
   virtual llvm::SmallBitVector getRegisterSet(RegSetMask Include,
                                               RegSetMask Exclude) const;
   virtual const llvm::SmallBitVector &
@@ -59,7 +59,7 @@ public:
     return TypeToRegisterSet[Type];
   }
   virtual bool hasFramePointer() const { return IsEbpBasedFrame; }
-  virtual IceSize_t getFrameOrStackReg() const {
+  virtual SizeT getFrameOrStackReg() const {
     return IsEbpBasedFrame ? Reg_ebp : Reg_esp;
   }
   virtual size_t typeWidthInBytesOnStack(IceType Type) {
@@ -67,7 +67,7 @@ public:
   }
   virtual void addProlog(CfgNode *Node);
   virtual void addEpilog(CfgNode *Node);
-  IceSize_t makeNextLabelNumber() { return NextLabelNumber++; }
+  SizeT makeNextLabelNumber() { return NextLabelNumber++; }
   // Ensure that a 64-bit Variable has been split into 2 32-bit
   // Variables, creating them if necessary.  This is needed for all
   // I64 operations, and it is needed for pushing F64 arguments for
@@ -125,7 +125,7 @@ protected:
                           int32_t RegNum = Variable::NoRegister);
   Variable *makeReg(IceType Type, int32_t RegNum = Variable::NoRegister);
   InstCall *makeHelperCall(const IceString &Name, Variable *Dest,
-                           IceSize_t MaxSrcs) {
+                           SizeT MaxSrcs) {
     bool SuppressMangling = true;
     bool Tailcall = false;
     IceType Type = Dest ? Dest->getType() : IceType_void;
@@ -267,7 +267,7 @@ protected:
   llvm::SmallBitVector TypeToRegisterSet[IceType_NUM];
   llvm::SmallBitVector ScratchRegs;
   llvm::SmallBitVector RegsUsed;
-  IceSize_t NextLabelNumber;
+  SizeT NextLabelNumber;
   bool ComputedLiveRanges;
   VarList PhysicalRegisters;
   static IceString RegNames[];

@@ -63,12 +63,11 @@ namespace Ice {
 
 class RegManagerEntry {
 public:
-  static RegManagerEntry *create(Cfg *Func, Variable *Var,
-                                 IceSize_t NumReg) {
+  static RegManagerEntry *create(Cfg *Func, Variable *Var, SizeT NumReg) {
     return new RegManagerEntry(Func, Var, NumReg);
   }
   static RegManagerEntry *create(Cfg *Func, const RegManagerEntry &Other,
-                                 IceSize_t NumReg) {
+                                 SizeT NumReg) {
     return new RegManagerEntry(Func, Other, NumReg);
   }
   void load(Inst *Inst);
@@ -78,8 +77,8 @@ public:
   void dump(const Cfg *Func) const;
 
 private:
-  RegManagerEntry(Cfg *Func, Variable *Var, IceSize_t NumReg);
-  RegManagerEntry(Cfg *Func, const RegManagerEntry &Other, IceSize_t NumReg);
+  RegManagerEntry(Cfg *Func, Variable *Var, SizeT NumReg);
+  RegManagerEntry(Cfg *Func, const RegManagerEntry &Other, SizeT NumReg);
 
   // Virtual register.
   Variable *const Var;
@@ -93,7 +92,7 @@ class RegManager {
 public:
   typedef std::vector<RegManagerEntry *> QueueType;
   // Initialize a brand new register manager.
-  static RegManager *create(Cfg *Func, CfgNode *Node, IceSize_t NumReg) {
+  static RegManager *create(Cfg *Func, CfgNode *Node, SizeT NumReg) {
     return new RegManager(Func, Node, NumReg);
   }
   // Capture the predecessor's end-of-block state for an extended
@@ -111,9 +110,9 @@ public:
   void dump(const Cfg *Func) const;
 
 private:
-  RegManager(Cfg *Func, CfgNode *Node, IceSize_t NumReg);
+  RegManager(Cfg *Func, CfgNode *Node, SizeT NumReg);
   RegManager(const RegManager &Other);
-  const IceSize_t NumReg;
+  const SizeT NumReg;
   // The LRU register queue.  The front element is the least recently
   // used and the next to be assigned.
   // TODO: Multiple queues by type.

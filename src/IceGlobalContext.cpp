@@ -33,7 +33,7 @@ template <typename KeyType, typename ValueType> class TypePool {
 public:
   TypePool() {}
   ValueType *getOrAdd(GlobalContext *Ctx, IceType Type, KeyType Key) {
-    IceSize_t Index = KeyToIndex.translate(TupleType(Type, Key));
+    SizeT Index = KeyToIndex.translate(TupleType(Type, Key));
     if (Index >= Pool.size()) {
       Pool.resize(Index + 1);
       Pool[Index] = ValueType::create(Ctx, Type, Key);

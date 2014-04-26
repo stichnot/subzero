@@ -118,12 +118,12 @@ public:
   // register.  This is generally used to get very direct access to
   // the register such as in the prolog or epilog or for marking
   // scratch registers as killed by a call.
-  virtual Variable *getPhysicalRegister(IceSize_t RegNum) = 0;
+  virtual Variable *getPhysicalRegister(SizeT RegNum) = 0;
   // Returns a printable name for the register.
-  virtual IceString getRegName(IceSize_t RegNum, IceType Type) const = 0;
+  virtual IceString getRegName(SizeT RegNum, IceType Type) const = 0;
 
   virtual bool hasFramePointer() const { return false; }
-  virtual IceSize_t getFrameOrStackReg() const = 0;
+  virtual SizeT getFrameOrStackReg() const = 0;
   virtual size_t typeWidthInBytesOnStack(IceType Type) = 0;
   bool hasComputedFrame() const { return HasComputedFrame; }
   int32_t getStackAdjustment() const { return StackAdjustment; }
