@@ -45,9 +45,12 @@ if __name__ == '__main__':
     # Filter certain lines and patterns from the input, and collect
     # the remainder into llc_out.
     llc_out = []
+    tail_call = re.compile(' tail call ');
     trailing_comment = re.compile(';.*')
     ignore_pattern = re.compile('^ *$|^declare|^@')
     for line in bitcode:
+        # Convert tail call into regular (non-tail) call.
+        line = tail_call.sub(' call ', line)
         # Remove trailing comments and spaces.
         line = trailing_comment.sub('', line).rstrip()
         # Ignore blanks lines, forward declarations, and variable definitions.
@@ -62,6 +65,7 @@ if __name__ == '__main__':
     ignore_pattern = re.compile(
         '|'.join([' -[0-9]',                # negative constants
                   ' (float|double) [-0-9]', # FP constants
+                  ' (float|double) %\w+, [-0-9]',
                   ' inttoptr ',             # inttoptr pointer types
                   ' ptrtoint '              # ptrtoint pointer types
                   ]))

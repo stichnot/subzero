@@ -99,9 +99,8 @@ InstX8632Br::InstX8632Br(Cfg *Func, CfgNode *TargetTrue, CfgNode *TargetFalse,
     : InstX8632(Func, InstX8632::Br, 0, NULL), Condition(Condition),
       TargetTrue(TargetTrue), TargetFalse(TargetFalse), Label(Label) {}
 
-InstX8632Call::InstX8632Call(Cfg *Func, Variable *Dest, Operand *CallTarget,
-                             bool Tail)
-    : InstX8632(Func, InstX8632::Call, 1, Dest), Tail(Tail) {
+InstX8632Call::InstX8632Call(Cfg *Func, Variable *Dest, Operand *CallTarget)
+    : InstX8632(Func, InstX8632::Call, 1, Dest) {
   HasSideEffects = true;
   addSource(CallTarget);
 }
@@ -280,8 +279,6 @@ void InstX8632Call::emit(const Cfg *Func, uint32_t Option) const {
   assert(getSrcSize() == 1);
   Str << "\tcall\t";
   getCallTarget()->emit(Func, Option);
-  if (Tail)
-    Str << "\t# tail";
   Str << "\n";
   Func->getTarget()->resetStackAdjustment();
 }
@@ -292,8 +289,6 @@ void InstX8632Call::dump(const Cfg *Func) const {
     dumpDest(Func);
     Str << " = ";
   }
-  if (Tail)
-    Str << "tail ";
   Str << "call ";
   getCallTarget()->dump(Func);
 }

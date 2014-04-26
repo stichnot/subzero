@@ -551,8 +551,6 @@ void InstCall::dump(const Cfg *Func) const {
     dumpDest(Func);
     Str << " = ";
   }
-  if (Tail)
-    Str << "tail ";
   Str << "call ";
   if (getDest())
     Str << getDest()->getType();

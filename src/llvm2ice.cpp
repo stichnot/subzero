@@ -516,8 +516,10 @@ private:
     Ice::Variable *Dest = mapValueToIceVar(Inst);
     Ice::Operand *CallTarget = convertValue(Inst->getCalledValue());
     unsigned NumArgs = Inst->getNumArgOperands();
+    // Note: Subzero doesn't (yet) do anything special with the Tail
+    // flag in the bitcode, i.e. CallInst::isTailCall().
     Ice::InstCall *NewInst = Ice::InstCall::create(
-        Func, NumArgs, Dest, CallTarget, Inst->isTailCall());
+        Func, NumArgs, Dest, CallTarget);
     for (unsigned i = 0; i < NumArgs; ++i) {
       NewInst->addArg(convertOperand(Inst, i));
     }

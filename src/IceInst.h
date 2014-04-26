@@ -265,26 +265,21 @@ private:
 // arg I is captured as getSrc(I+1).
 class InstCall : public Inst {
 public:
-  // The Tail argument represents the "tail" marker from the original
-  // bitcode instruction (which doesn't necessarily mean that this
-  // call must be executed as a tail call).
   static InstCall *create(Cfg *Func, SizeT NumArgs, Variable *Dest,
-                          Operand *CallTarget, bool Tail) {
+                          Operand *CallTarget) {
     return new (Func->allocateInst<InstCall>())
-        InstCall(Func, NumArgs, Dest, CallTarget, Tail);
+        InstCall(Func, NumArgs, Dest, CallTarget);
   }
   void addArg(Operand *Arg) { addSource(Arg); }
   Operand *getCallTarget() const { return getSrc(0); }
   Operand *getArg(SizeT I) const { return getSrc(I + 1); }
   SizeT getNumArgs() const { return getSrcSize() - 1; }
-  bool isTail() const { return Tail; }
   virtual void dump(const Cfg *Func) const;
   static bool classof(const Inst *Inst) { return Inst->getKind() == Call; }
 
 private:
-  InstCall(Cfg *Func, SizeT NumArgs, Variable *Dest, Operand *CallTarget,
-           bool Tail)
-      : Inst(Func, Inst::Call, NumArgs + 1, Dest), Tail(Tail) {
+  InstCall(Cfg *Func, SizeT NumArgs, Variable *Dest, Operand *CallTarget)
+      : Inst(Func, Inst::Call, NumArgs + 1, Dest) {
     // Set HasSideEffects so that the call instruction can't be
     // dead-code eliminated.  Don't set this for a deletable intrinsic
     // call.
@@ -294,7 +289,6 @@ private:
   InstCall(const InstCall &) LLVM_DELETED_FUNCTION;
   InstCall &operator=(const InstCall &) LLVM_DELETED_FUNCTION;
   virtual ~InstCall() {}
-  const bool Tail;
 };
 
 #define ICEINSTCAST_TABLE                                                      \

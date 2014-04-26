@@ -271,10 +271,9 @@ private:
 
 class InstX8632Call : public InstX8632 {
 public:
-  static InstX8632Call *create(Cfg *Func, Variable *Dest, Operand *CallTarget,
-                               bool Tail) {
+  static InstX8632Call *create(Cfg *Func, Variable *Dest, Operand *CallTarget) {
     return new (Func->allocate<InstX8632Call>())
-        InstX8632Call(Func, Dest, CallTarget, Tail);
+        InstX8632Call(Func, Dest, CallTarget);
   }
   Operand *getCallTarget() const { return getSrc(0); }
   virtual void emit(const Cfg *Func, uint32_t Option) const;
@@ -282,11 +281,10 @@ public:
   static bool classof(const Inst *Inst) { return isClassof(Inst, Call); }
 
 private:
-  InstX8632Call(Cfg *Func, Variable *Dest, Operand *CallTarget, bool Tail);
+  InstX8632Call(Cfg *Func, Variable *Dest, Operand *CallTarget);
   InstX8632Call(const InstX8632Call &) LLVM_DELETED_FUNCTION;
   InstX8632Call &operator=(const InstX8632Call &) LLVM_DELETED_FUNCTION;
   virtual ~InstX8632Call() {}
-  const bool Tail;
 };
 
 void IceEmitTwoAddress(const char *Opcode, const Inst *Inst, const Cfg *Func,

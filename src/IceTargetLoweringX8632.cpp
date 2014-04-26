@@ -1070,7 +1070,7 @@ void TargetX8632::lowerCall(const InstCall *Instr) {
     }
   }
   Operand *CallTarget = legalize(Instr->getCallTarget());
-  Inst *NewCall = InstX8632Call::create(Func, eax, CallTarget, Instr->isTail());
+  Inst *NewCall = InstX8632Call::create(Func, eax, CallTarget);
   Context.insert(NewCall);
   if (edx)
     Context.insert(InstFakeDef::create(Func, edx));
