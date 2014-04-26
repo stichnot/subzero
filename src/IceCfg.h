@@ -111,6 +111,21 @@ public:
     return Allocator.Allocate<T>(NumElems);
   }
 
+  // Deallocate data that was allocated via allocate<T>().
+  template <typename T> void deallocate(T *Object) {
+    // Do nothing for the arena-based Allocator.
+  }
+
+  // Deallocate data that was allocated via allocateInst<T>().
+  template <typename T> void deallocateInst(T *Instr) {
+    // Do nothing for the arena-based Allocator.
+  }
+
+  // Deallocate data that was allocated via allocateArrayOf<T>().
+  template <typename T> void deallocateArrayOf(T *Array) {
+    // Do nothing for the arena-based Allocator.
+  }
+
 private:
   // TODO: for now, everything is allocated from the same allocator. In the
   // future we may want to split this to several allocators, for example in
