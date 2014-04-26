@@ -32,11 +32,11 @@ template <typename KeyType, typename ValueType> class TypePool {
 
 public:
   TypePool() {}
-  ValueType *getOrAdd(GlobalContext *Ctx, IceType Type, KeyType Key) {
-    SizeT Index = KeyToIndex.translate(TupleType(Type, Key));
+  ValueType *getOrAdd(GlobalContext *Ctx, IceType Ty, KeyType Key) {
+    SizeT Index = KeyToIndex.translate(TupleType(Ty, Key));
     if (Index >= Pool.size()) {
       Pool.resize(Index + 1);
-      Pool[Index] = ValueType::create(Ctx, Type, Key);
+      Pool[Index] = ValueType::create(Ctx, Ty, Key);
     }
     ValueType *Constant = Pool[Index];
     assert(Constant);
@@ -136,8 +136,8 @@ IceString GlobalContext::mangleName(const IceString &Name) const {
 
 GlobalContext::~GlobalContext() {}
 
-Constant *GlobalContext::getConstantInt(IceType Type, uint64_t ConstantInt64) {
-  return ConstPool->Integers.getOrAdd(this, Type, ConstantInt64);
+Constant *GlobalContext::getConstantInt(IceType Ty, uint64_t ConstantInt64) {
+  return ConstPool->Integers.getOrAdd(this, Ty, ConstantInt64);
 }
 
 Constant *GlobalContext::getConstantFloat(float ConstantFloat) {
@@ -148,11 +148,11 @@ Constant *GlobalContext::getConstantDouble(double ConstantDouble) {
   return ConstPool->Doubles.getOrAdd(this, IceType_f64, ConstantDouble);
 }
 
-Constant *GlobalContext::getConstantSym(IceType Type, int64_t Offset,
+Constant *GlobalContext::getConstantSym(IceType Ty, int64_t Offset,
                                         const IceString &Name,
                                         bool SuppressMangling) {
   return ConstPool->Relocatables.getOrAdd(
-      this, Type, RelocatableTuple(Offset, Name, SuppressMangling));
+      this, Ty, RelocatableTuple(Offset, Name, SuppressMangling));
 }
 
 void IceTimer::printElapsedUs(GlobalContext *Ctx, const IceString &Tag) const {

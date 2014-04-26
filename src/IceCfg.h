@@ -34,7 +34,7 @@ public:
   // Manage the name and return type of the function being translated.
   void setFunctionName(const IceString &Name) { FunctionName = Name; }
   IceString getFunctionName() const { return FunctionName; }
-  void setReturnType(IceType Type) { ReturnType = Type; }
+  void setReturnType(IceType Ty) { ReturnType = Ty; }
 
   // Manage the "internal" attribute of the function.
   void setInternal(bool Internal) { IsInternalLinkage = Internal; }
@@ -62,7 +62,7 @@ public:
   int32_t newInstNumber() { return NextInstNumber++; }
 
   // Manage Variables.
-  Variable *makeVariable(IceType Type, const CfgNode *Node,
+  Variable *makeVariable(IceType Ty, const CfgNode *Node,
                          const IceString &Name = "");
   SizeT getNumVariables() const { return Variables.size(); }
   const VarList &getVariables() const { return Variables; }

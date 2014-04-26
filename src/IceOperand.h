@@ -38,7 +38,7 @@ public:
     kTarget
   };
   OperandKind getKind() const { return Kind; }
-  IceType getType() const { return Type; }
+  IceType getType() const { return Ty; }
 
   // Every Operand keeps an array of the Variables referenced in
   // the operand.  This is so that the liveness operations can get
@@ -62,8 +62,8 @@ public:
   virtual ~Operand() {}
 
 protected:
-  Operand(OperandKind Kind, IceType Type) : Type(Type), Kind(Kind) {}
-  const IceType Type;
+  Operand(OperandKind Kind, IceType Ty) : Ty(Ty), Kind(Kind) {}
+  const IceType Ty;
   const OperandKind Kind;
   // Vars and NumVars are initialized by the derived class.
   SizeT NumVars;
@@ -88,7 +88,7 @@ public:
   }
 
 protected:
-  Constant(OperandKind Kind, IceType Type) : Operand(Kind, Type) {
+  Constant(OperandKind Kind, IceType Ty) : Operand(Kind, Ty) {
     Vars = NULL;
     NumVars = 0;
   }
@@ -103,9 +103,9 @@ private:
 template <typename T, Operand::OperandKind K>
 class ConstantPrimitive : public Constant {
 public:
-  static ConstantPrimitive *create(GlobalContext *Ctx, IceType Type, T Value) {
+  static ConstantPrimitive *create(GlobalContext *Ctx, IceType Ty, T Value) {
     return new (Ctx->allocate<ConstantPrimitive>())
-        ConstantPrimitive(Type, Value);
+        ConstantPrimitive(Ty, Value);
   }
   T getValue() const { return Value; }
   virtual void emit(const Cfg *Func, uint32_t /*Option*/) const {
@@ -122,7 +122,7 @@ public:
   }
 
 private:
-  ConstantPrimitive(IceType Type, T Value) : Constant(K, Type), Value(Value) {}
+  ConstantPrimitive(IceType Ty, T Value) : Constant(K, Ty), Value(Value) {}
   ConstantPrimitive(const ConstantPrimitive &) LLVM_DELETED_FUNCTION;
   ConstantPrimitive &operator=(const ConstantPrimitive &) LLVM_DELETED_FUNCTION;
   virtual ~ConstantPrimitive() {}
@@ -157,10 +157,10 @@ public:
 // a fixed offset.
 class ConstantRelocatable : public Constant {
 public:
-  static ConstantRelocatable *create(GlobalContext *Ctx, IceType Type,
+  static ConstantRelocatable *create(GlobalContext *Ctx, IceType Ty,
                                      const RelocatableTuple &Tuple) {
     return new (Ctx->allocate<ConstantRelocatable>()) ConstantRelocatable(
-        Type, Tuple.Offset, Tuple.Name, Tuple.SuppressMangling);
+        Ty, Tuple.Offset, Tuple.Name, Tuple.SuppressMangling);
   }
   int64_t getOffset() const { return Offset; }
   IceString getName() const { return Name; }
@@ -175,9 +175,9 @@ public:
   }
 
 private:
-  ConstantRelocatable(IceType Type, int64_t Offset, const IceString &Name,
+  ConstantRelocatable(IceType Ty, int64_t Offset, const IceString &Name,
                       bool SuppressMangling)
-      : Constant(kConstRelocatable, Type), Offset(Offset), Name(Name),
+      : Constant(kConstRelocatable, Ty), Offset(Offset), Name(Name),
         SuppressMangling(SuppressMangling) {}
   ConstantRelocatable(const ConstantRelocatable &) LLVM_DELETED_FUNCTION;
   ConstantRelocatable &
@@ -267,9 +267,9 @@ Ostream &operator<<(Ostream &Str, const LiveRange &L);
 // have a non-negative RegNum field.
 class Variable : public Operand {
 public:
-  static Variable *create(Cfg *Func, IceType Type, const CfgNode *Node,
+  static Variable *create(Cfg *Func, IceType Ty, const CfgNode *Node,
                           SizeT Index, const IceString &Name) {
-    return new (Func->allocate<Variable>()) Variable(Type, Node, Index, Name);
+    return new (Func->allocate<Variable>()) Variable(Ty, Node, Index, Name);
   }
 
   SizeT getIndex() const { return Number; }
@@ -336,7 +336,7 @@ public:
   // Creates a temporary copy of the variable with a different type.
   // Used primarily for syntactic correctness of textual assembly
   // emission.
-  Variable asType(IceType Type);
+  Variable asType(IceType Ty);
 
   virtual bool isPooled() const { return true; }
 
@@ -351,9 +351,8 @@ public:
   virtual ~Variable() {}
 
 private:
-  Variable(IceType Type, const CfgNode *Node, SizeT Index,
-           const IceString &Name)
-      : Operand(kVariable, Type), Number(Index), Name(Name), DefInst(NULL),
+  Variable(IceType Ty, const CfgNode *Node, SizeT Index, const IceString &Name)
+      : Operand(kVariable, Ty), Number(Index), Name(Name), DefInst(NULL),
         DefNode(Node), IsArgument(false), StackOffset(0), RegNum(NoRegister),
         RegNumTmp(NoRegister), Weight(1), RegisterPreference(NULL),
         AllowRegisterOverlap(false), LoVar(NULL), HiVar(NULL) {

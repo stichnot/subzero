@@ -133,8 +133,7 @@ private:
   Ostream &operator=(const Ostream &) LLVM_DELETED_FUNCTION;
 };
 
-template <typename T>
-inline Ostream &operator<<(Ostream &Str, const T &Val) {
+template <typename T> inline Ostream &operator<<(Ostream &Str, const T &Val) {
   if (Str.Stream)
     (*Str.Stream) << Val;
   return Str;

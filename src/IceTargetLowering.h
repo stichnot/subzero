@@ -120,11 +120,11 @@ public:
   // scratch registers as killed by a call.
   virtual Variable *getPhysicalRegister(SizeT RegNum) = 0;
   // Returns a printable name for the register.
-  virtual IceString getRegName(SizeT RegNum, IceType Type) const = 0;
+  virtual IceString getRegName(SizeT RegNum, IceType Ty) const = 0;
 
   virtual bool hasFramePointer() const { return false; }
   virtual SizeT getFrameOrStackReg() const = 0;
-  virtual size_t typeWidthInBytesOnStack(IceType Type) = 0;
+  virtual size_t typeWidthInBytesOnStack(IceType Ty) = 0;
   bool hasComputedFrame() const { return HasComputedFrame; }
   int32_t getStackAdjustment() const { return StackAdjustment; }
   void updateStackAdjustment(int32_t Offset) { StackAdjustment += Offset; }
@@ -144,7 +144,7 @@ public:
   virtual llvm::SmallBitVector getRegisterSet(RegSetMask Include,
                                               RegSetMask Exclude) const = 0;
   virtual const llvm::SmallBitVector &
-  getRegisterSetForType(IceType Type) const = 0;
+  getRegisterSetForType(IceType Ty) const = 0;
   void regAlloc();
 
   virtual void addProlog(CfgNode *Node) = 0;

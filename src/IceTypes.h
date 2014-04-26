@@ -46,9 +46,9 @@ enum IceOptLevel {
   IceOpt_2
 };
 
-size_t typeWidthInBytes(IceType Type);
+size_t typeWidthInBytes(IceType Ty);
 
-template <> Ostream &operator<<(class Ostream &Str, const IceType &Type);
+template <> Ostream &operator<<(class Ostream &Str, const IceType &Ty);
 
 } // end of namespace Ice
 

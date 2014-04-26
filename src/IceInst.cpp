@@ -637,10 +637,10 @@ void InstFcmp::dump(const Cfg *Func) const {
 void InstLoad::dump(const Cfg *Func) const {
   Ostream &Str = Func->getContext()->getStrDump();
   dumpDest(Func);
-  IceType Type = getDest()->getType();
-  Str << " = load " << Type << "* ";
+  IceType Ty = getDest()->getType();
+  Str << " = load " << Ty << "* ";
   dumpSources(Func);
-  switch (Type) {
+  switch (Ty) {
   case IceType_f32:
     Str << ", align 4";
     break;
@@ -655,13 +655,13 @@ void InstLoad::dump(const Cfg *Func) const {
 
 void InstStore::dump(const Cfg *Func) const {
   Ostream &Str = Func->getContext()->getStrDump();
-  IceType Type = getData()->getType();
-  Str << "store " << Type << " ";
+  IceType Ty = getData()->getType();
+  Str << "store " << Ty << " ";
   getData()->dump(Func);
-  Str << ", " << Type << "* ";
+  Str << ", " << Ty << "* ";
   getAddr()->dump(Func);
   Str << ", align ";
-  switch (Type) {
+  switch (Ty) {
   case IceType_f32:
     Str << "4";
     break;
@@ -676,12 +676,12 @@ void InstStore::dump(const Cfg *Func) const {
 
 void InstSwitch::dump(const Cfg *Func) const {
   Ostream &Str = Func->getContext()->getStrDump();
-  IceType Type = getComparison()->getType();
-  Str << "switch " << Type << " ";
+  IceType Ty = getComparison()->getType();
+  Str << "switch " << Ty << " ";
   getSrc(0)->dump(Func);
   Str << ", label %" << getLabelDefault()->getName() << " [\n";
   for (SizeT I = 0; I < getNumCases(); ++I) {
-    Str << "    " << Type << " " << getValue(I) << ", label %"
+    Str << "    " << Ty << " " << getValue(I) << ", label %"
         << getLabel(I)->getName() << "\n";
   }
   Str << "  ]";
@@ -702,8 +702,8 @@ void InstPhi::dump(const Cfg *Func) const {
 
 void InstRet::dump(const Cfg *Func) const {
   Ostream &Str = Func->getContext()->getStrDump();
-  IceType Type = hasRetValue() ? getRetValue()->getType() : IceType_void;
-  Str << "ret " << Type;
+  IceType Ty = hasRetValue() ? getRetValue()->getType() : IceType_void;
+  Str << "ret " << Ty;
   if (hasRetValue()) {
     Str << " ";
     dumpSources(Func);

@@ -38,10 +38,10 @@ static const char *OpcodeTypeFromIceType(IceType type) {
   }
 }
 
-OperandX8632Mem::OperandX8632Mem(Cfg *Func, IceType Type, Variable *Base,
+OperandX8632Mem::OperandX8632Mem(Cfg *Func, IceType Ty, Variable *Base,
                                  Constant *Offset, Variable *Index,
                                  uint32_t Shift)
-    : OperandX8632(kMem, Type), Base(Base), Offset(Offset), Index(Index),
+    : OperandX8632(kMem, Ty), Base(Base), Offset(Offset), Index(Index),
       Shift(Shift) {
   Vars = NULL;
   NumVars = 0;
@@ -472,8 +472,8 @@ void InstX8632Cdq::dump(const Cfg *Func) const {
   dumpSources(Func);
 }
 
-static IceString getCvtTypeString(IceType Type) {
-  switch (Type) {
+static IceString getCvtTypeString(IceType Ty) {
+  switch (Ty) {
   case IceType_i1:
   case IceType_i8:
   case IceType_i16:
@@ -739,19 +739,19 @@ void InstX8632Pop::dump(const Cfg *Func) const {
 void InstX8632Push::emit(const Cfg *Func, uint32_t Option) const {
   Ostream &Str = Func->getContext()->getStrEmit();
   assert(getSrcSize() == 1);
-  IceType Type = getSrc(0)->getType();
+  IceType Ty = getSrc(0)->getType();
   Variable *Var = llvm::dyn_cast<Variable>(getSrc(0));
-  if ((Type == IceType_f32 || Type == IceType_f64) && Var && Var->hasReg()) {
+  if ((Ty == IceType_f32 || Ty == IceType_f64) && Var && Var->hasReg()) {
     // The xmm registers can't be directly pushed, so we fake it by
     // decrementing esp and then storing to [esp].
-    Str << "\tsub\tesp, " << typeWidthInBytes(Type) << "\n";
+    Str << "\tsub\tesp, " << typeWidthInBytes(Ty) << "\n";
     if (!SuppressStackAdjustment)
-      Func->getTarget()->updateStackAdjustment(typeWidthInBytes(Type));
-    Str << "\tmov" << (Type == IceType_f32 ? "ss\td" : "sd\tq")
+      Func->getTarget()->updateStackAdjustment(typeWidthInBytes(Ty));
+    Str << "\tmov" << (Ty == IceType_f32 ? "ss\td" : "sd\tq")
         << "word ptr [esp], ";
     getSrc(0)->emit(Func, Option);
     Str << "\n";
-  } else if (Type == IceType_f64 && (!Var || !Var->hasReg())) {
+  } else if (Ty == IceType_f64 && (!Var || !Var->hasReg())) {
     // A double on the stack has to be pushed as two halves.  Push the
     // upper half followed by the lower half for little-endian.  TODO:
     // implement.
@@ -778,8 +778,8 @@ void InstX8632Ret::emit(const Cfg *Func, uint32_t /*Option*/) const {
 
 void InstX8632Ret::dump(const Cfg *Func) const {
   Ostream &Str = Func->getContext()->getStrDump();
-  IceType Type = (getSrcSize() == 0 ? IceType_void : getSrc(0)->getType());
-  Str << "ret." << Type << " ";
+  IceType Ty = (getSrcSize() == 0 ? IceType_void : getSrc(0)->getType());
+  Str << "ret." << Ty << " ";
   dumpSources(Func);
 }
 

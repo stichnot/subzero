@@ -198,7 +198,7 @@ Variable *TargetX8632::getPhysicalRegister(SizeT RegNum) {
   return Reg;
 }
 
-IceString TargetX8632::getRegName(SizeT RegNum, IceType Type) const {
+IceString TargetX8632::getRegName(SizeT RegNum, IceType Ty) const {
   assert(RegNum < Reg_NUM);
   static IceString RegNames8[] = {
 #define X(val, init, name, name16, name8, scratch, preserved, stackptr,        \
@@ -214,7 +214,7 @@ IceString TargetX8632::getRegName(SizeT RegNum, IceType Type) const {
     REGX8632_TABLE
 #undef X
   };
-  switch (Type) {
+  switch (Ty) {
   case IceType_i1:
   case IceType_i8:
     return RegNames8[RegNum];
@@ -236,8 +236,8 @@ void TargetX8632::setArgOffsetAndCopy(Variable *Arg, Variable *FramePtr,
                                       int32_t &InArgsSizeBytes) {
   Variable *Lo = Arg->getLo();
   Variable *Hi = Arg->getHi();
-  IceType Type = Arg->getType();
-  if (Lo && Hi && Type == IceType_i64) {
+  IceType Ty = Arg->getType();
+  if (Lo && Hi && Ty == IceType_i64) {
     assert(Lo->getType() != IceType_i64); // don't want infinite recursion
     assert(Hi->getType() != IceType_i64); // don't want infinite recursion
     setArgOffsetAndCopy(Lo, FramePtr, BasicFrameOffset, InArgsSizeBytes);
@@ -246,13 +246,13 @@ void TargetX8632::setArgOffsetAndCopy(Variable *Arg, Variable *FramePtr,
   }
   Arg->setStackOffset(BasicFrameOffset + InArgsSizeBytes);
   if (Arg->hasReg()) {
-    assert(Type != IceType_i64);
+    assert(Ty != IceType_i64);
     OperandX8632Mem *Mem = OperandX8632Mem::create(
-        Func, Type, FramePtr,
+        Func, Ty, FramePtr,
         Ctx->getConstantInt(IceType_i32, Arg->getStackOffset()));
     _mov(Arg, Mem);
   }
-  InArgsSizeBytes += typeWidthInBytesOnStack(Type);
+  InArgsSizeBytes += typeWidthInBytesOnStack(Ty);
 }
 
 void TargetX8632::addProlog(CfgNode *Node) {
@@ -961,9 +961,9 @@ void TargetX8632::lowerArithmetic(const InstArithmetic *Inst) {
       break;
     case InstArithmetic::Frem: {
       const SizeT MaxSrcs = 2;
-      IceType Type = Dest->getType();
+      IceType Ty = Dest->getType();
       InstCall *Call =
-          makeHelperCall(Type == IceType_f32 ? "fmodf" : "fmod", Dest, MaxSrcs);
+          makeHelperCall(Ty == IceType_f32 ? "fmodf" : "fmod", Dest, MaxSrcs);
       Call->addArg(Src0);
       Call->addArg(Src1);
       return lowerCall(Call);
@@ -1770,7 +1770,7 @@ void TargetX8632::lowerLoad(const InstLoad *Inst) {
   // OperandX8632Mem operand.  Note that the address mode
   // optimization already creates an OperandX8632Mem operand, so it
   // doesn't need another level of transformation.
-  IceType Type = Inst->getDest()->getType();
+  IceType Ty = Inst->getDest()->getType();
   Operand *Src0 = Inst->getSourceAddress();
   // Address mode optimization already creates an OperandX8632Mem
   // operand, so it doesn't need another level of transformation.
@@ -1778,7 +1778,7 @@ void TargetX8632::lowerLoad(const InstLoad *Inst) {
     Variable *Base = llvm::dyn_cast<Variable>(Src0);
     Constant *Offset = llvm::dyn_cast<Constant>(Src0);
     assert(Base || Offset);
-    Src0 = OperandX8632Mem::create(Func, Type, Base, Offset);
+    Src0 = OperandX8632Mem::create(Func, Ty, Base, Offset);
   }
 
   // Fuse this load with a subsequent Arithmetic instruction in the

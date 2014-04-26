@@ -74,10 +74,10 @@ CfgNode *Cfg::splitEdge(CfgNode *From, CfgNode *To) {
 
 // Create a new Variable with a particular type and an optional
 // name.  The Node argument is the node where the variable is defined.
-Variable *Cfg::makeVariable(IceType Type, const CfgNode *Node,
+Variable *Cfg::makeVariable(IceType Ty, const CfgNode *Node,
                             const IceString &Name) {
   SizeT Index = Variables.size();
-  Variables.push_back(Variable::create(this, Type, Node, Index, Name));
+  Variables.push_back(Variable::create(this, Ty, Node, Index, Name));
   return Variables[Index];
 }
 
