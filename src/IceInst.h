@@ -80,7 +80,8 @@ public:
     // All valid terminator instructions override this method.  For
     // the default implementation, we assert in case some CfgNode
     // is constructed without a terminator instruction at the end.
-    assert(0);
+    llvm_unreachable(
+        "getTerminatorEdges() called on a non-terminator instruction");
     return NodeList();
   }
 
@@ -141,7 +142,8 @@ private:
 };
 
 // Alloca instruction.  This captures the size in bytes as getSrc(0),
-// and the alignment.
+// and the required alignment in bytes.  The alignment must be either
+// 0 (no alignment required) or a power of 2.
 class InstAlloca : public Inst {
 public:
   static InstAlloca *create(Cfg *Func, Operand *ByteCount, uint32_t Align,
