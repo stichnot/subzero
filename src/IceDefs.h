@@ -16,9 +16,11 @@
 #ifndef SUBZERO_SRC_ICEDEFS_H
 #define SUBZERO_SRC_ICEDEFS_H
 
-#include <cassert>
 #include <stdint.h>
-#include <cstdio> // snprintf
+
+#include <cassert>
+#include <cstdio>     // snprintf
+#include <functional> // std::less
 
 #include <list>
 #include <map>
