@@ -154,7 +154,7 @@ Constant *GlobalContext::getConstantSym(Type Ty, int64_t Offset,
       this, Ty, RelocatableTuple(Offset, Name, SuppressMangling));
 }
 
-void IceTimer::printElapsedUs(GlobalContext *Ctx, const IceString &Tag) const {
+void Timer::printElapsedUs(GlobalContext *Ctx, const IceString &Tag) const {
   if (Ctx->isVerbose(IceV_Timing)) {
     // Prefixing with '#' allows timing strings to be included
     // without error in textual assembly output.

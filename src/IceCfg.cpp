@@ -101,7 +101,7 @@ void Cfg::translate() {
     Str << "================ Initial CFG ================\n";
   dump();
 
-  IceTimer T_translate;
+  Timer T_translate;
   // The set of translation passes and their order are determined by
   // the target.
   getTarget()->translate();
@@ -221,7 +221,7 @@ void Cfg::liveness(LivenessMode Mode) {
         Var->resetLiveRange();
     }
   }
-  IceTimer T_liveRange;
+  Timer T_liveRange;
   // Make a final pass over instructions to delete dead instructions
   // and build each Variable's live range.
   for (NodeList::iterator I = Nodes.begin(), E = Nodes.end(); I != E; ++I) {
@@ -317,7 +317,7 @@ bool Cfg::validateLiveness() const {
 
 void Cfg::emit(uint32_t Option) {
   Ostream &Str = Ctx->getStrEmit();
-  IceTimer T_emit;
+  Timer T_emit;
   if (!HasEmittedFirstMethod) {
     HasEmittedFirstMethod = true;
     // Print a helpful command for assembling the output.

@@ -54,22 +54,22 @@ TargetX8632::TargetX8632(Cfg *Func)
 void TargetX8632::translateO2() {
   GlobalContext *Context = Func->getContext();
   Ostream &Str = Context->getStrDump();
-  IceTimer T_placePhiLoads;
+  Timer T_placePhiLoads;
   Func->placePhiLoads();
   if (Func->hasError())
     return;
   T_placePhiLoads.printElapsedUs(Context, "placePhiLoads()");
-  IceTimer T_placePhiStores;
+  Timer T_placePhiStores;
   Func->placePhiStores();
   if (Func->hasError())
     return;
   T_placePhiStores.printElapsedUs(Context, "placePhiStores()");
-  IceTimer T_deletePhis;
+  Timer T_deletePhis;
   Func->deletePhis();
   if (Func->hasError())
     return;
   T_deletePhis.printElapsedUs(Context, "deletePhis()");
-  IceTimer T_renumber1;
+  Timer T_renumber1;
   Func->renumberInstructions();
   if (Func->hasError())
     return;
@@ -78,11 +78,11 @@ void TargetX8632::translateO2() {
     Str << "================ After Phi lowering ================\n";
   Func->dump();
 
-  IceTimer T_doAddressOpt;
+  Timer T_doAddressOpt;
   Func->doAddressOpt();
   T_doAddressOpt.printElapsedUs(Context, "doAddressOpt()");
   // Liveness may be incorrect after address mode optimization.
-  IceTimer T_renumber2;
+  Timer T_renumber2;
   Func->renumberInstructions();
   if (Func->hasError())
     return;
@@ -91,7 +91,7 @@ void TargetX8632::translateO2() {
   // calculation, i.e. Liveness_LREndLightweight.  However, for
   // some reason that slows down the rest of the translation.
   // Investigate.
-  IceTimer T_liveness1;
+  Timer T_liveness1;
   Func->liveness(Liveness_LREndFull);
   if (Func->hasError())
     return;
@@ -99,17 +99,17 @@ void TargetX8632::translateO2() {
   if (Context->isVerbose())
     Str << "================ After x86 address mode opt ================\n";
   Func->dump();
-  IceTimer T_genCode;
+  Timer T_genCode;
   Func->genCode();
   if (Func->hasError())
     return;
   T_genCode.printElapsedUs(Context, "genCode()");
-  IceTimer T_renumber3;
+  Timer T_renumber3;
   Func->renumberInstructions();
   if (Func->hasError())
     return;
   T_renumber3.printElapsedUs(Context, "renumberInstructions()");
-  IceTimer T_liveness2;
+  Timer T_liveness2;
   Func->liveness(Liveness_RangesFull);
   if (Func->hasError())
     return;
@@ -119,7 +119,7 @@ void TargetX8632::translateO2() {
     Str << "================ After initial x8632 codegen ================\n";
   Func->dump();
 
-  IceTimer T_regAlloc;
+  Timer T_regAlloc;
   regAlloc();
   if (Func->hasError())
     return;
@@ -128,7 +128,7 @@ void TargetX8632::translateO2() {
     Str << "================ After linear scan regalloc ================\n";
   Func->dump();
 
-  IceTimer T_genFrame;
+  Timer T_genFrame;
   Func->genFrame();
   if (Func->hasError())
     return;
@@ -141,17 +141,17 @@ void TargetX8632::translateO2() {
 void TargetX8632::translateOm1() {
   GlobalContext *Context = Func->getContext();
   Ostream &Str = Context->getStrDump();
-  IceTimer T_placePhiLoads;
+  Timer T_placePhiLoads;
   Func->placePhiLoads();
   if (Func->hasError())
     return;
   T_placePhiLoads.printElapsedUs(Context, "placePhiLoads()");
-  IceTimer T_placePhiStores;
+  Timer T_placePhiStores;
   Func->placePhiStores();
   if (Func->hasError())
     return;
   T_placePhiStores.printElapsedUs(Context, "placePhiStores()");
-  IceTimer T_deletePhis;
+  Timer T_deletePhis;
   Func->deletePhis();
   if (Func->hasError())
     return;
@@ -160,7 +160,7 @@ void TargetX8632::translateOm1() {
     Str << "================ After Phi lowering ================\n";
   Func->dump();
 
-  IceTimer T_genCode;
+  Timer T_genCode;
   Func->genCode();
   if (Func->hasError())
     return;
@@ -169,7 +169,7 @@ void TargetX8632::translateOm1() {
     Str << "================ After initial x8632 codegen ================\n";
   Func->dump();
 
-  IceTimer T_genFrame;
+  Timer T_genFrame;
   Func->genFrame();
   if (Func->hasError())
     return;

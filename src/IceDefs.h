@@ -149,9 +149,9 @@ template <typename T> inline Ostream &operator<<(Ostream &Str, const T &Val) {
 extern Ostream *GlobalStr;
 
 // TODO: Implement in terms of std::chrono after switching to C++11.
-class IceTimer {
+class Timer {
 public:
-  IceTimer() : Start(llvm::TimeRecord::getCurrentTime(false)) {}
+  Timer() : Start(llvm::TimeRecord::getCurrentTime(false)) {}
   uint64_t getElapsedNs() const { return getElapsedSec() * 1000 * 1000 * 1000; }
   uint64_t getElapsedUs() const { return getElapsedSec() * 1000 * 1000; }
   uint64_t getElapsedMs() const { return getElapsedSec() * 1000; }
@@ -163,8 +163,8 @@ public:
 
 private:
   const llvm::TimeRecord Start;
-  IceTimer(const IceTimer &) LLVM_DELETED_FUNCTION;
-  IceTimer &operator=(const IceTimer &) LLVM_DELETED_FUNCTION;
+  Timer(const Timer &) LLVM_DELETED_FUNCTION;
+  Timer &operator=(const Timer &) LLVM_DELETED_FUNCTION;
 };
 
 } // end of namespace Ice

@@ -621,7 +621,7 @@ int main(int argc, char **argv) {
   Module *Mod;
 
   {
-    Ice::IceTimer T;
+    Ice::Timer T;
     Mod = ParseIRFile(IRFilename, Err, getGlobalContext());
 
     if (SubzeroTimingEnabled) {
@@ -660,7 +660,7 @@ int main(int argc, char **argv) {
       continue;
     LLVM2ICEConverter FunctionConverter(&Ctx);
 
-    Ice::IceTimer TConvert;
+    Ice::Timer TConvert;
     Ice::Cfg *Func = FunctionConverter.convertFunction(I);
     if (DisableInternal)
       Func->setInternal(false);
@@ -674,7 +674,7 @@ int main(int argc, char **argv) {
     if (DisableTranslation) {
       Func->dump();
     } else {
-      Ice::IceTimer TTranslate;
+      Ice::Timer TTranslate;
       Func->translate();
       if (SubzeroTimingEnabled) {
         std::cerr << "[Subzero timing] Translate function "
@@ -686,7 +686,7 @@ int main(int argc, char **argv) {
       }
       uint32_t AsmFormat = 0;
 
-      Ice::IceTimer TEmit;
+      Ice::Timer TEmit;
       Func->emit(AsmFormat);
       if (SubzeroTimingEnabled) {
         std::cerr << "[Subzero timing] Emit function "
