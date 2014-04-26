@@ -26,11 +26,12 @@
 
 namespace Ice {
 
-RegManagerEntry::RegManagerEntry(IceCfg * /*Cfg*/, Variable *Var,
+RegManagerEntry::RegManagerEntry(IceCfg * /*Func*/, Variable *Var,
                                  IceSize_t /*NumReg*/)
     : Var(Var) {}
 
-RegManagerEntry::RegManagerEntry(IceCfg * /*Cfg*/, const RegManagerEntry &Other,
+RegManagerEntry::RegManagerEntry(IceCfg * /*Func*/,
+                                 const RegManagerEntry &Other,
                                  IceSize_t /*NumReg*/)
     : Var(Other.Var), Available(Other.Available) {}
 
@@ -68,23 +69,23 @@ bool RegManagerEntry::contains(const Operand *Operand) const {
   return false;
 }
 
-RegManager::RegManager(IceCfg *Cfg, CfgNode *Node, IceSize_t NumReg)
-    : NumReg(NumReg), Cfg(Cfg) {
+RegManager::RegManager(IceCfg *Func, CfgNode *Node, IceSize_t NumReg)
+    : NumReg(NumReg), Func(Func) {
   // TODO: Config flag to use physical registers directly.
   for (IceSize_t i = 0; i < NumReg; ++i) {
     const static size_t BufLen = 100;
     char Buf[BufLen];
     snprintf(Buf, BufLen, "r%u_%u", i + 1, Node->getIndex());
-    Variable *Reg = Cfg->makeVariable(IceType_i32, Node, Buf);
-    Queue.push_back(RegManagerEntry::create(Cfg, Reg, NumReg));
+    Variable *Reg = Func->makeVariable(IceType_i32, Node, Buf);
+    Queue.push_back(RegManagerEntry::create(Func, Reg, NumReg));
   }
 }
 
 RegManager::RegManager(const RegManager &Other)
-    : NumReg(Other.NumReg), Cfg(Other.Cfg) {
+    : NumReg(Other.NumReg), Func(Other.Func) {
   for (QueueType::const_iterator I = Other.Queue.begin(), E = Other.Queue.end();
        I != E; ++I) {
-    Queue.push_back(RegManagerEntry::create(Cfg, **I, NumReg));
+    Queue.push_back(RegManagerEntry::create(Func, **I, NumReg));
   }
 }
 
@@ -179,15 +180,15 @@ void RegManager::notifyStore(Inst *Inst) {
 
 // ======================== Dump routines ======================== //
 
-void RegManager::dump(const IceCfg *Cfg) const {
+void RegManager::dump(const IceCfg *Func) const {
   for (QueueType::const_iterator I = Queue.begin(), E = Queue.end(); I != E;
        ++I) {
-    (*I)->dump(Cfg);
+    (*I)->dump(Func);
   }
 }
 
-void RegManagerEntry::dump(const IceCfg *Cfg) const {
-  IceOstream &Str = Cfg->getContext()->getStrDump();
+void RegManagerEntry::dump(const IceCfg *Func) const {
+  IceOstream &Str = Func->getContext()->getStrDump();
   Str << " " << getVar() << "={";
   for (OperandList::const_iterator I = Available.begin(), E = Available.end();
        I != E; ++I) {

@@ -63,22 +63,23 @@ namespace Ice {
 
 class RegManagerEntry {
 public:
-  static RegManagerEntry *create(IceCfg *Cfg, Variable *Var, IceSize_t NumReg) {
-    return new RegManagerEntry(Cfg, Var, NumReg);
-  }
-  static RegManagerEntry *create(IceCfg *Cfg, const RegManagerEntry &Other,
+  static RegManagerEntry *create(IceCfg *Func, Variable *Var,
                                  IceSize_t NumReg) {
-    return new RegManagerEntry(Cfg, Other, NumReg);
+    return new RegManagerEntry(Func, Var, NumReg);
+  }
+  static RegManagerEntry *create(IceCfg *Func, const RegManagerEntry &Other,
+                                 IceSize_t NumReg) {
+    return new RegManagerEntry(Func, Other, NumReg);
   }
   void load(Inst *Inst);
   void store(Inst *Inst);
   bool contains(const Operand *Operand) const;
   Variable *getVar() const { return Var; }
-  void dump(const IceCfg *Cfg) const;
+  void dump(const IceCfg *Func) const;
 
 private:
-  RegManagerEntry(IceCfg *Cfg, Variable *Var, IceSize_t NumReg);
-  RegManagerEntry(IceCfg *Cfg, const RegManagerEntry &Other, IceSize_t NumReg);
+  RegManagerEntry(IceCfg *Func, Variable *Var, IceSize_t NumReg);
+  RegManagerEntry(IceCfg *Func, const RegManagerEntry &Other, IceSize_t NumReg);
 
   // Virtual register.
   Variable *const Var;
@@ -92,8 +93,8 @@ class RegManager {
 public:
   typedef std::vector<RegManagerEntry *> QueueType;
   // Initialize a brand new register manager.
-  static RegManager *create(IceCfg *Cfg, CfgNode *Node, IceSize_t NumReg) {
-    return new RegManager(Cfg, Node, NumReg);
+  static RegManager *create(IceCfg *Func, CfgNode *Node, IceSize_t NumReg) {
+    return new RegManager(Func, Node, NumReg);
   }
   // Capture the predecessor's end-of-block state for an extended
   // basic block.
@@ -107,17 +108,17 @@ public:
   bool registerContains(const Variable *Reg, const Operand *Op) const;
   void notifyLoad(Inst *Inst, bool IsAssign = true);
   void notifyStore(Inst *Inst);
-  void dump(const IceCfg *Cfg) const;
+  void dump(const IceCfg *Func) const;
 
 private:
-  RegManager(IceCfg *Cfg, CfgNode *Node, IceSize_t NumReg);
+  RegManager(IceCfg *Func, CfgNode *Node, IceSize_t NumReg);
   RegManager(const RegManager &Other);
   const IceSize_t NumReg;
   // The LRU register queue.  The front element is the least recently
   // used and the next to be assigned.
   // TODO: Multiple queues by type.
   QueueType Queue;
-  IceCfg *Cfg;
+  IceCfg *Func;
 };
 
 } // end of namespace Ice

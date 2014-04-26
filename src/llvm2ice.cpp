@@ -57,7 +57,7 @@ template <typename T> static std::string LLVMObjectAsString(const T *O) {
 class LLVM2ICEConverter {
 public:
   LLVM2ICEConverter(Ice::GlobalContext *Ctx)
-      : Ctx(Ctx), Cfg(NULL), CurrentNode(NULL) {
+      : Ctx(Ctx), Func(NULL), CurrentNode(NULL) {
     // All PNaCl pointer widths are 32 bits because of the sandbox
     // model.
     SubzeroPointerType = Ice::IceType_i32;
@@ -66,17 +66,17 @@ public:
   Ice::IceCfg *convertFunction(const Function *F) {
     VarMap.clear();
     NodeMap.clear();
-    Cfg = new Ice::IceCfg(Ctx);
-    Cfg->setFunctionName(F->getName());
-    Cfg->setReturnType(convertType(F->getReturnType()));
-    Cfg->setInternal(F->hasInternalLinkage());
+    Func = new Ice::IceCfg(Ctx);
+    Func->setFunctionName(F->getName());
+    Func->setReturnType(convertType(F->getReturnType()));
+    Func->setInternal(F->hasInternalLinkage());
 
     // The initial definition/use of each arg is the entry node.
     CurrentNode = mapBasicBlockToNode(&F->getEntryBlock());
     for (Function::const_arg_iterator ArgI = F->arg_begin(),
                                       ArgE = F->arg_end();
          ArgI != ArgE; ++ArgI) {
-      Cfg->addArg(mapValueToIceVar(ArgI));
+      Func->addArg(mapValueToIceVar(ArgI));
     }
 
     // Make an initial pass through the block list just to resolve the
@@ -92,10 +92,10 @@ public:
       CurrentNode = mapBasicBlockToNode(BBI);
       convertBasicBlock(BBI);
     }
-    Cfg->setEntryNode(mapBasicBlockToNode(&F->getEntryBlock()));
-    Cfg->computePredecessors();
+    Func->setEntryNode(mapBasicBlockToNode(&F->getEntryBlock()));
+    Func->computePredecessors();
 
-    return Cfg;
+    return Func;
   }
 
 private:
@@ -107,7 +107,7 @@ private:
       return NULL;
     if (VarMap.find(V) == VarMap.end()) {
       assert(CurrentNode);
-      VarMap[V] = Cfg->makeVariable(IceTy, CurrentNode, V->getName());
+      VarMap[V] = Func->makeVariable(IceTy, CurrentNode, V->getName());
     }
     return VarMap[V];
   }
@@ -118,7 +118,7 @@ private:
 
   Ice::CfgNode *mapBasicBlockToNode(const BasicBlock *BB) {
     if (NodeMap.find(BB) == NodeMap.end()) {
-      NodeMap[BB] = Cfg->makeNode(BB->getName());
+      NodeMap[BB] = Func->makeNode(BB->getName());
     }
     return NodeMap[BB];
   }
@@ -309,13 +309,13 @@ private:
   Ice::Inst *convertLoadInstruction(const LoadInst *Inst) {
     Ice::Operand *Src = convertOperand(Inst, 0);
     Ice::Variable *Dest = mapValueToIceVar(Inst);
-    return Ice::InstLoad::create(Cfg, Dest, Src);
+    return Ice::InstLoad::create(Func, Dest, Src);
   }
 
   Ice::Inst *convertStoreInstruction(const StoreInst *Inst) {
     Ice::Operand *Addr = convertOperand(Inst, 1);
     Ice::Operand *Val = convertOperand(Inst, 0);
-    return Ice::InstStore::create(Cfg, Val, Addr);
+    return Ice::InstStore::create(Func, Val, Addr);
   }
 
   Ice::Inst *convertArithInstruction(const Instruction *Inst,
@@ -324,13 +324,13 @@ private:
     Ice::Operand *Src0 = convertOperand(Inst, 0);
     Ice::Operand *Src1 = convertOperand(Inst, 1);
     Ice::Variable *Dest = mapValueToIceVar(BinOp);
-    return Ice::InstArithmetic::create(Cfg, Opcode, Dest, Src0, Src1);
+    return Ice::InstArithmetic::create(Func, Opcode, Dest, Src0, Src1);
   }
 
   Ice::Inst *convertPHINodeInstruction(const PHINode *Inst) {
     unsigned NumValues = Inst->getNumIncomingValues();
     Ice::InstPhi *IcePhi =
-        Ice::InstPhi::create(Cfg, NumValues, mapValueToIceVar(Inst));
+        Ice::InstPhi::create(Func, NumValues, mapValueToIceVar(Inst));
     for (unsigned N = 0, E = NumValues; N != E; ++N) {
       IcePhi->addArgument(convertOperand(Inst, N),
                           mapBasicBlockToNode(Inst->getIncomingBlock(N)));
@@ -345,31 +345,31 @@ private:
       BasicBlock *BBElse = Inst->getSuccessor(1);
       Ice::CfgNode *NodeThen = mapBasicBlockToNode(BBThen);
       Ice::CfgNode *NodeElse = mapBasicBlockToNode(BBElse);
-      return Ice::InstBr::create(Cfg, Src, NodeThen, NodeElse);
+      return Ice::InstBr::create(Func, Src, NodeThen, NodeElse);
     } else {
       BasicBlock *BBSucc = Inst->getSuccessor(0);
-      return Ice::InstBr::create(Cfg, mapBasicBlockToNode(BBSucc));
+      return Ice::InstBr::create(Func, mapBasicBlockToNode(BBSucc));
     }
   }
 
   Ice::Inst *convertIntToPtrInstruction(const IntToPtrInst *Inst) {
     Ice::Operand *Src = convertOperand(Inst, 0);
     Ice::Variable *Dest = mapValueToIceVar(Inst, SubzeroPointerType);
-    return Ice::InstAssign::create(Cfg, Dest, Src);
+    return Ice::InstAssign::create(Func, Dest, Src);
   }
 
   Ice::Inst *convertPtrToIntInstruction(const PtrToIntInst *Inst) {
     Ice::Operand *Src = convertOperand(Inst, 0);
     Ice::Variable *Dest = mapValueToIceVar(Inst);
-    return Ice::InstAssign::create(Cfg, Dest, Src);
+    return Ice::InstAssign::create(Func, Dest, Src);
   }
 
   Ice::Inst *convertRetInstruction(const ReturnInst *Inst) {
     Ice::Operand *RetOperand = convertOperand(Inst, 0);
     if (RetOperand) {
-      return Ice::InstRet::create(Cfg, RetOperand);
+      return Ice::InstRet::create(Func, RetOperand);
     } else {
-      return Ice::InstRet::create(Cfg);
+      return Ice::InstRet::create(Func);
     }
   }
 
@@ -377,7 +377,7 @@ private:
                                     Ice::InstCast::OpKind CastKind) {
     Ice::Operand *Src = convertOperand(Inst, 0);
     Ice::Variable *Dest = mapValueToIceVar(Inst);
-    return Ice::InstCast::create(Cfg, CastKind, Dest, Src);
+    return Ice::InstCast::create(Func, CastKind, Dest, Src);
   }
 
   Ice::Inst *convertICmpInstruction(const ICmpInst *Inst) {
@@ -421,7 +421,7 @@ private:
       break;
     }
 
-    return Ice::InstIcmp::create(Cfg, Cond, Dest, Src0, Src1);
+    return Ice::InstIcmp::create(Func, Cond, Dest, Src0, Src1);
   }
 
   Ice::Inst *convertFCmpInstruction(const FCmpInst *Inst) {
@@ -485,7 +485,7 @@ private:
       break;
     }
 
-    return Ice::InstFcmp::create(Cfg, Cond, Dest, Src0, Src1);
+    return Ice::InstFcmp::create(Func, Cond, Dest, Src0, Src1);
   }
 
   Ice::Inst *convertSelectInstruction(const SelectInst *Inst) {
@@ -493,7 +493,7 @@ private:
     Ice::Operand *Cond = convertValue(Inst->getCondition());
     Ice::Operand *Source1 = convertValue(Inst->getTrueValue());
     Ice::Operand *Source2 = convertValue(Inst->getFalseValue());
-    return Ice::InstSelect::create(Cfg, Dest, Cond, Source1, Source2);
+    return Ice::InstSelect::create(Func, Dest, Cond, Source1, Source2);
   }
 
   Ice::Inst *convertSwitchInstruction(const SwitchInst *Inst) {
@@ -501,7 +501,7 @@ private:
     Ice::CfgNode *LabelDefault = mapBasicBlockToNode(Inst->getDefaultDest());
     unsigned NumCases = Inst->getNumCases();
     Ice::InstSwitch *Switch =
-        Ice::InstSwitch::create(Cfg, NumCases, Source, LabelDefault);
+        Ice::InstSwitch::create(Func, NumCases, Source, LabelDefault);
     unsigned CurrentCase = 0;
     for (SwitchInst::ConstCaseIt I = Inst->case_begin(), E = Inst->case_end();
          I != E; ++I, ++CurrentCase) {
@@ -517,7 +517,7 @@ private:
     Ice::Operand *CallTarget = convertValue(Inst->getCalledValue());
     unsigned NumArgs = Inst->getNumArgOperands();
     Ice::InstCall *NewInst = Ice::InstCall::create(
-        Cfg, NumArgs, Dest, CallTarget, Inst->isTailCall());
+        Func, NumArgs, Dest, CallTarget, Inst->isTailCall());
     for (unsigned i = 0; i < NumArgs; ++i) {
       NewInst->addArg(convertOperand(Inst, i));
     }
@@ -530,11 +530,11 @@ private:
     uint32_t Align = Inst->getAlignment();
     Ice::Variable *Dest = mapValueToIceVar(Inst, SubzeroPointerType);
 
-    return Ice::InstAlloca::create(Cfg, ByteCount, Align, Dest);
+    return Ice::InstAlloca::create(Func, ByteCount, Align, Dest);
   }
 
   Ice::Inst *convertUnreachableInstruction(const UnreachableInst * /*Inst*/) {
-    return Ice::InstUnreachable::create(Cfg);
+    return Ice::InstUnreachable::create(Func);
   }
 
   Ice::CfgNode *convertBasicBlock(const BasicBlock *BB) {
@@ -550,7 +550,7 @@ private:
 private:
   // Data
   Ice::GlobalContext *Ctx;
-  Ice::IceCfg *Cfg;
+  Ice::IceCfg *Func;
   Ice::CfgNode *CurrentNode;
   Ice::IceType SubzeroPointerType;
   std::map<const Value *, Ice::Variable *> VarMap;
@@ -659,36 +659,37 @@ int main(int argc, char **argv) {
     LLVM2ICEConverter FunctionConverter(&Ctx);
 
     Ice::IceTimer TConvert;
-    Ice::IceCfg *Cfg = FunctionConverter.convertFunction(I);
+    Ice::IceCfg *Func = FunctionConverter.convertFunction(I);
     if (DisableInternal)
-      Cfg->setInternal(false);
+      Func->setInternal(false);
 
     if (SubzeroTimingEnabled) {
       std::cerr << "[Subzero timing] Convert function "
-                << Cfg->getFunctionName() << ": " << TConvert.getElapsedSec()
+                << Func->getFunctionName() << ": " << TConvert.getElapsedSec()
                 << " sec\n";
     }
 
     if (DisableTranslation) {
-      Cfg->dump();
+      Func->dump();
     } else {
       Ice::IceTimer TTranslate;
-      Cfg->translate();
+      Func->translate();
       if (SubzeroTimingEnabled) {
         std::cerr << "[Subzero timing] Translate function "
-                  << Cfg->getFunctionName() << ": "
+                  << Func->getFunctionName() << ": "
                   << TTranslate.getElapsedSec() << " sec\n";
       }
-      if (Cfg->hasError()) {
-        errs() << "ICE translation error: " << Cfg->getError() << "\n";
+      if (Func->hasError()) {
+        errs() << "ICE translation error: " << Func->getError() << "\n";
       }
       uint32_t AsmFormat = 0;
 
       Ice::IceTimer TEmit;
-      Cfg->emit(AsmFormat);
+      Func->emit(AsmFormat);
       if (SubzeroTimingEnabled) {
-        std::cerr << "[Subzero timing] Emit function " << Cfg->getFunctionName()
-                  << ": " << TEmit.getElapsedSec() << " sec\n";
+        std::cerr << "[Subzero timing] Emit function "
+                  << Func->getFunctionName() << ": " << TEmit.getElapsedSec()
+                  << " sec\n";
       }
     }
   }

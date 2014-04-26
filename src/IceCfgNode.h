@@ -22,16 +22,16 @@ namespace Ice {
 
 class CfgNode {
 public:
-  static CfgNode *create(IceCfg *Cfg, IceSize_t LabelIndex,
+  static CfgNode *create(IceCfg *Func, IceSize_t LabelIndex,
                          IceString Name = "") {
-    return new (Cfg->allocate<CfgNode>()) CfgNode(Cfg, LabelIndex, Name);
+    return new (Func->allocate<CfgNode>()) CfgNode(Func, LabelIndex, Name);
   }
 
   // Access the label number and name for this node.
   IceSize_t getIndex() const { return Number; }
   IceString getName() const;
   IceString getAsmName() const {
-    return ".L" + Cfg->getFunctionName() + "$" + getName();
+    return ".L" + Func->getFunctionName() + "$" + getName();
   }
 
   // The HasReturn flag indicates that this node contains a return
@@ -60,14 +60,14 @@ public:
   void genCode();
   bool liveness(LivenessMode Mode, Liveness *Liveness);
   void livenessPostprocess(LivenessMode Mode, Liveness *Liveness);
-  void emit(IceCfg *Cfg, uint32_t Option) const;
-  void dump(IceCfg *Cfg) const;
+  void emit(IceCfg *Func, uint32_t Option) const;
+  void dump(IceCfg *Func) const;
 
 private:
-  CfgNode(IceCfg *Cfg, IceSize_t LabelIndex, IceString Name);
+  CfgNode(IceCfg *Func, IceSize_t LabelIndex, IceString Name);
   CfgNode(const CfgNode &) LLVM_DELETED_FUNCTION;
   CfgNode &operator=(const CfgNode &) LLVM_DELETED_FUNCTION;
-  IceCfg *const Cfg;
+  IceCfg *const Func;
   const IceSize_t Number; // label index
   IceString Name;         // for dumping only
   bool HasReturn;         // does this block need an epilog?

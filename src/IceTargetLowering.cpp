@@ -51,20 +51,20 @@ void LoweringContext::advance(InstList::iterator &I) {
 }
 
 TargetLowering *TargetLowering::createLowering(IceTargetArch Target,
-                                               IceCfg *Cfg) {
+                                               IceCfg *Func) {
   // These statements can be #ifdef'd to specialize the code generator
   // to a subset of the available targets.
   if (Target == IceTarget_X8632)
-    return TargetX8632::create(Cfg);
+    return TargetX8632::create(Func);
 #if 0
   if (Target == IceTarget_X8664)
-    return IceTargetX8664::create(Cfg);
+    return IceTargetX8664::create(Func);
   if (Target == IceTarget_ARM32)
-    return IceTargetARM32::create(Cfg);
+    return IceTargetARM32::create(Func);
   if (Target == IceTarget_ARM64)
-    return IceTargetARM64::create(Cfg);
+    return IceTargetARM64::create(Func);
 #endif
-  Cfg->setError("Unsupported target");
+  Func->setError("Unsupported target");
   return NULL;
 }
 
@@ -144,7 +144,7 @@ void TargetLowering::lower() {
   case Inst::Target:
     // These are all Target instruction types and shouldn't be
     // encountered at this stage.
-    Cfg->setError("Can't lower unsupported instruction type");
+    Func->setError("Can't lower unsupported instruction type");
     break;
   }
   Inst->setDeleted();
@@ -160,7 +160,7 @@ void TargetLowering::lower() {
 // registers could potentially be parameterized if we want to restrict
 // registers e.g. for performance testing.
 void TargetLowering::regAlloc() {
-  LinearScan LinearScan(Cfg);
+  LinearScan LinearScan(Func);
   RegSetMask RegInclude = RegSet_None;
   RegSetMask RegExclude = RegSet_None;
   RegInclude |= RegSet_CallerSave;

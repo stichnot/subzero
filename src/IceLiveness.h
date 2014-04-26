@@ -52,8 +52,8 @@ private:
 
 class Liveness {
 public:
-  Liveness(IceCfg *Cfg, LivenessMode Mode)
-      : Cfg(Cfg), Mode(Mode), NumGlobals(0) {}
+  Liveness(IceCfg *Func, LivenessMode Mode)
+      : Func(Func), Mode(Mode), NumGlobals(0) {}
   void init();
   Variable *getVariable(IceSize_t LiveIndex, const CfgNode *Node) const;
   IceSize_t getLiveIndex(const Variable *Var) const;
@@ -78,7 +78,7 @@ public:
                     uint32_t WeightDelta);
 
 private:
-  IceCfg *Cfg;
+  IceCfg *Func;
   LivenessMode Mode;
   IceSize_t NumGlobals;
   // Size of Nodes is IceCfg::Nodes.size().

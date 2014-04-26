@@ -24,8 +24,8 @@
 
 namespace Ice {
 
-TargetX8632::TargetX8632(IceCfg *Cfg)
-    : TargetLowering(Cfg), IsEbpBasedFrame(false), FrameSizeLocals(0),
+TargetX8632::TargetX8632(IceCfg *Func)
+    : TargetLowering(Func), IsEbpBasedFrame(false), FrameSizeLocals(0),
       LocalsSizeBytes(0), NextLabelNumber(0), ComputedLiveRanges(false),
       PhysicalRegisters(VarList(Reg_NUM)) {
   llvm::SmallBitVector IntegerRegisters(Reg_NUM);
@@ -52,39 +52,39 @@ TargetX8632::TargetX8632(IceCfg *Cfg)
 }
 
 void TargetX8632::translateO2() {
-  GlobalContext *Context = Cfg->getContext();
+  GlobalContext *Context = Func->getContext();
   IceOstream &Str = Context->getStrDump();
   IceTimer T_placePhiLoads;
-  Cfg->placePhiLoads();
-  if (Cfg->hasError())
+  Func->placePhiLoads();
+  if (Func->hasError())
     return;
   T_placePhiLoads.printElapsedUs(Context, "placePhiLoads()");
   IceTimer T_placePhiStores;
-  Cfg->placePhiStores();
-  if (Cfg->hasError())
+  Func->placePhiStores();
+  if (Func->hasError())
     return;
   T_placePhiStores.printElapsedUs(Context, "placePhiStores()");
   IceTimer T_deletePhis;
-  Cfg->deletePhis();
-  if (Cfg->hasError())
+  Func->deletePhis();
+  if (Func->hasError())
     return;
   T_deletePhis.printElapsedUs(Context, "deletePhis()");
   IceTimer T_renumber1;
-  Cfg->renumberInstructions();
-  if (Cfg->hasError())
+  Func->renumberInstructions();
+  if (Func->hasError())
     return;
   T_renumber1.printElapsedUs(Context, "renumberInstructions()");
   if (Context->isVerbose())
     Str << "================ After Phi lowering ================\n";
-  Cfg->dump();
+  Func->dump();
 
   IceTimer T_doAddressOpt;
-  Cfg->doAddressOpt();
+  Func->doAddressOpt();
   T_doAddressOpt.printElapsedUs(Context, "doAddressOpt()");
   // Liveness may be incorrect after address mode optimization.
   IceTimer T_renumber2;
-  Cfg->renumberInstructions();
-  if (Cfg->hasError())
+  Func->renumberInstructions();
+  if (Func->hasError())
     return;
   T_renumber2.printElapsedUs(Context, "renumberInstructions()");
   // TODO: It should be sufficient to use the fastest liveness
@@ -92,91 +92,91 @@ void TargetX8632::translateO2() {
   // some reason that slows down the rest of the translation.
   // Investigate.
   IceTimer T_liveness1;
-  Cfg->liveness(Liveness_LREndFull);
-  if (Cfg->hasError())
+  Func->liveness(Liveness_LREndFull);
+  if (Func->hasError())
     return;
   T_liveness1.printElapsedUs(Context, "liveness()");
   if (Context->isVerbose())
     Str << "================ After x86 address mode opt ================\n";
-  Cfg->dump();
+  Func->dump();
   IceTimer T_genCode;
-  Cfg->genCode();
-  if (Cfg->hasError())
+  Func->genCode();
+  if (Func->hasError())
     return;
   T_genCode.printElapsedUs(Context, "genCode()");
   IceTimer T_renumber3;
-  Cfg->renumberInstructions();
-  if (Cfg->hasError())
+  Func->renumberInstructions();
+  if (Func->hasError())
     return;
   T_renumber3.printElapsedUs(Context, "renumberInstructions()");
   IceTimer T_liveness2;
-  Cfg->liveness(Liveness_RangesFull);
-  if (Cfg->hasError())
+  Func->liveness(Liveness_RangesFull);
+  if (Func->hasError())
     return;
   T_liveness2.printElapsedUs(Context, "liveness()");
   ComputedLiveRanges = true;
   if (Context->isVerbose())
     Str << "================ After initial x8632 codegen ================\n";
-  Cfg->dump();
+  Func->dump();
 
   IceTimer T_regAlloc;
   regAlloc();
-  if (Cfg->hasError())
+  if (Func->hasError())
     return;
   T_regAlloc.printElapsedUs(Context, "regAlloc()");
   if (Context->isVerbose())
     Str << "================ After linear scan regalloc ================\n";
-  Cfg->dump();
+  Func->dump();
 
   IceTimer T_genFrame;
-  Cfg->genFrame();
-  if (Cfg->hasError())
+  Func->genFrame();
+  if (Func->hasError())
     return;
   T_genFrame.printElapsedUs(Context, "genFrame()");
   if (Context->isVerbose())
     Str << "================ After stack frame mapping ================\n";
-  Cfg->dump();
+  Func->dump();
 }
 
 void TargetX8632::translateOm1() {
-  GlobalContext *Context = Cfg->getContext();
+  GlobalContext *Context = Func->getContext();
   IceOstream &Str = Context->getStrDump();
   IceTimer T_placePhiLoads;
-  Cfg->placePhiLoads();
-  if (Cfg->hasError())
+  Func->placePhiLoads();
+  if (Func->hasError())
     return;
   T_placePhiLoads.printElapsedUs(Context, "placePhiLoads()");
   IceTimer T_placePhiStores;
-  Cfg->placePhiStores();
-  if (Cfg->hasError())
+  Func->placePhiStores();
+  if (Func->hasError())
     return;
   T_placePhiStores.printElapsedUs(Context, "placePhiStores()");
   IceTimer T_deletePhis;
-  Cfg->deletePhis();
-  if (Cfg->hasError())
+  Func->deletePhis();
+  if (Func->hasError())
     return;
   T_deletePhis.printElapsedUs(Context, "deletePhis()");
   if (Context->isVerbose())
     Str << "================ After Phi lowering ================\n";
-  Cfg->dump();
+  Func->dump();
 
   IceTimer T_genCode;
-  Cfg->genCode();
-  if (Cfg->hasError())
+  Func->genCode();
+  if (Func->hasError())
     return;
   T_genCode.printElapsedUs(Context, "genCode()");
   if (Context->isVerbose())
     Str << "================ After initial x8632 codegen ================\n";
-  Cfg->dump();
+  Func->dump();
 
   IceTimer T_genFrame;
-  Cfg->genFrame();
-  if (Cfg->hasError())
+  Func->genFrame();
+  if (Func->hasError())
     return;
   T_genFrame.printElapsedUs(Context, "genFrame()");
   if (Context->isVerbose())
     Str << "================ After stack frame mapping ================\n";
-  Cfg->dump();
+  Func->dump();
 }
 
 #define X(val, init, name, name16, name8, scratch, preserved, stackptr,        \
@@ -191,7 +191,7 @@ Variable *TargetX8632::getPhysicalRegister(IceSize_t RegNum) {
   Variable *Reg = PhysicalRegisters[RegNum];
   if (Reg == NULL) {
     CfgNode *Node = NULL; // NULL means multi-block lifetime
-    Reg = Cfg->makeVariable(IceType_i32, Node);
+    Reg = Func->makeVariable(IceType_i32, Node);
     Reg->setRegNum(RegNum);
     PhysicalRegisters[RegNum] = Reg;
   }
@@ -248,7 +248,7 @@ void TargetX8632::setArgOffsetAndCopy(Variable *Arg, Variable *FramePtr,
   if (Arg->hasReg()) {
     assert(Type != IceType_i64);
     OperandX8632Mem *Mem = OperandX8632Mem::create(
-        Cfg, Type, FramePtr,
+        Func, Type, FramePtr,
         Ctx->getConstantInt(IceType_i32, Arg->getStackOffset()));
     _mov(Arg, Mem);
   }
@@ -286,13 +286,13 @@ void TargetX8632::addProlog(CfgNode *Node) {
       getRegisterSet(RegSet_CalleeSave, RegSet_None);
 
   int32_t GlobalsSize = 0;
-  std::vector<int> LocalsSize(Cfg->getNumNodes());
+  std::vector<int> LocalsSize(Func->getNumNodes());
 
   // Prepass.  Compute RegsUsed, PreservedRegsSizeBytes, and
   // LocalsSizeBytes.
   RegsUsed = llvm::SmallBitVector(CalleeSaves.size());
-  const VarList &Variables = Cfg->getVariables();
-  const VarList &Args = Cfg->getArgs();
+  const VarList &Variables = Func->getVariables();
+  const VarList &Args = Func->getArgs();
   for (VarList::const_iterator I = Variables.begin(), E = Variables.end();
        I != E; ++I) {
     Variable *Var = *I;
@@ -424,13 +424,13 @@ void TargetX8632::addProlog(CfgNode *Node) {
   this->FrameSizeLocals = NextStackOffset;
   this->HasComputedFrame = true;
 
-  if (Cfg->getContext()->isVerbose(IceV_Frame)) {
-    Cfg->getContext()->getStrDump() << "LocalsSizeBytes=" << LocalsSizeBytes
-                                    << "\n"
-                                    << "InArgsSizeBytes=" << InArgsSizeBytes
-                                    << "\n"
-                                    << "PreservedRegsSizeBytes="
-                                    << PreservedRegsSizeBytes << "\n";
+  if (Func->getContext()->isVerbose(IceV_Frame)) {
+    Func->getContext()->getStrDump() << "LocalsSizeBytes=" << LocalsSizeBytes
+                                     << "\n"
+                                     << "InArgsSizeBytes=" << InArgsSizeBytes
+                                     << "\n"
+                                     << "PreservedRegsSizeBytes="
+                                     << PreservedRegsSizeBytes << "\n";
   }
 }
 
@@ -493,14 +493,14 @@ void TargetX8632::split64(Variable *Var) {
     return;
   }
   assert(Hi == NULL);
-  Lo = Cfg->makeVariable(IceType_i32, Context.getNode(),
-                         Var->getName() + "__lo");
-  Hi = Cfg->makeVariable(IceType_i32, Context.getNode(),
-                         Var->getName() + "__hi");
+  Lo = Func->makeVariable(IceType_i32, Context.getNode(),
+                          Var->getName() + "__lo");
+  Hi = Func->makeVariable(IceType_i32, Context.getNode(),
+                          Var->getName() + "__hi");
   Var->setLoHi(Lo, Hi);
   if (Var->getIsArg()) {
-    Lo->setIsArg(Cfg);
-    Hi->setIsArg(Cfg);
+    Lo->setIsArg(Func);
+    Hi->setIsArg(Func);
   }
 }
 
@@ -517,7 +517,7 @@ Operand *TargetX8632::loOperand(Operand *Operand) {
     return Ctx->getConstantInt(IceType_i32, Const->getValue() & Mask);
   }
   if (OperandX8632Mem *Mem = llvm::dyn_cast<OperandX8632Mem>(Operand)) {
-    return OperandX8632Mem::create(Cfg, IceType_i32, Mem->getBase(),
+    return OperandX8632Mem::create(Func, IceType_i32, Mem->getBase(),
                                    Mem->getOffset(), Mem->getIndex(),
                                    Mem->getShift());
   }
@@ -550,7 +550,7 @@ Operand *TargetX8632::hiOperand(Operand *Operand) {
       Offset = Ctx->getConstantSym(IceType_i32, 4 + SymOffset->getOffset(),
                                    SymOffset->getName());
     }
-    return OperandX8632Mem::create(Cfg, IceType_i32, Mem->getBase(), Offset,
+    return OperandX8632Mem::create(Func, IceType_i32, Mem->getBase(), Offset,
                                    Mem->getIndex(), Mem->getShift());
   }
   assert(0 && "Unsupported operand type");
@@ -673,7 +673,7 @@ void TargetX8632::lowerArithmetic(const InstArithmetic *Inst) {
       _mul(T_4Lo, T_3, Src1Lo);
       // The mul instruction produces two dest variables, edx:eax.  We
       // create a fake definition of edx to account for this.
-      Context.insert(InstFakeDef::create(Cfg, T_4Hi, T_4Lo));
+      Context.insert(InstFakeDef::create(Func, T_4Hi, T_4Lo));
       _mov(DestLo, T_4Lo);
       _add(T_4Hi, T_1);
       _add(T_4Hi, T_2);
@@ -699,7 +699,7 @@ void TargetX8632::lowerArithmetic(const InstArithmetic *Inst) {
       Variable *T_1 = NULL, *T_2 = NULL, *T_3 = NULL;
       Constant *BitTest = Ctx->getConstantInt(IceType_i32, 0x20);
       Constant *Zero = Ctx->getConstantInt(IceType_i32, 0);
-      InstX8632Label *Label = InstX8632Label::create(Cfg, this);
+      InstX8632Label *Label = InstX8632Label::create(Func, this);
       _mov(T_1, Src1Lo, Reg_ecx);
       _mov(T_2, Src0Lo);
       _mov(T_3, Src0Hi);
@@ -710,7 +710,7 @@ void TargetX8632::lowerArithmetic(const InstArithmetic *Inst) {
       // Because of the intra-block control flow, we need to fake a use
       // of T_3 to prevent its earlier definition from being dead-code
       // eliminated in the presence of its later definition.
-      Context.insert(InstFakeUse::create(Cfg, T_3));
+      Context.insert(InstFakeUse::create(Func, T_3));
       _mov(T_3, T_2);
       _mov(T_2, Zero);
       Context.insert(Label);
@@ -735,7 +735,7 @@ void TargetX8632::lowerArithmetic(const InstArithmetic *Inst) {
       Variable *T_1 = NULL, *T_2 = NULL, *T_3 = NULL;
       Constant *BitTest = Ctx->getConstantInt(IceType_i32, 0x20);
       Constant *Zero = Ctx->getConstantInt(IceType_i32, 0);
-      InstX8632Label *Label = InstX8632Label::create(Cfg, this);
+      InstX8632Label *Label = InstX8632Label::create(Func, this);
       _mov(T_1, Src1Lo, Reg_ecx);
       _mov(T_2, Src0Lo);
       _mov(T_3, Src0Hi);
@@ -746,7 +746,7 @@ void TargetX8632::lowerArithmetic(const InstArithmetic *Inst) {
       // Because of the intra-block control flow, we need to fake a use
       // of T_3 to prevent its earlier definition from being dead-code
       // eliminated in the presence of its later definition.
-      Context.insert(InstFakeUse::create(Cfg, T_2));
+      Context.insert(InstFakeUse::create(Func, T_2));
       _mov(T_2, T_3);
       _mov(T_3, Zero);
       Context.insert(Label);
@@ -771,7 +771,7 @@ void TargetX8632::lowerArithmetic(const InstArithmetic *Inst) {
       Variable *T_1 = NULL, *T_2 = NULL, *T_3 = NULL;
       Constant *BitTest = Ctx->getConstantInt(IceType_i32, 0x20);
       Constant *SignExtend = Ctx->getConstantInt(IceType_i32, 0x1f);
-      InstX8632Label *Label = InstX8632Label::create(Cfg, this);
+      InstX8632Label *Label = InstX8632Label::create(Func, this);
       _mov(T_1, Src1Lo, Reg_ecx);
       _mov(T_2, Src0Lo);
       _mov(T_3, Src0Hi);
@@ -782,7 +782,7 @@ void TargetX8632::lowerArithmetic(const InstArithmetic *Inst) {
       // Because of the intra-block control flow, we need to fake a use
       // of T_3 to prevent its earlier definition from being dead-code
       // eliminated in the presence of its later definition.
-      Context.insert(InstFakeUse::create(Cfg, T_2));
+      Context.insert(InstFakeUse::create(Func, T_2));
       _mov(T_2, T_3);
       _sar(T_3, SignExtend);
       Context.insert(Label);
@@ -898,7 +898,7 @@ void TargetX8632::lowerArithmetic(const InstArithmetic *Inst) {
         _mov(T, Src0, Reg_eax);
         _mov(T_ah, Zero, Reg_ah);
         _div(T_ah, Src1, T);
-        Context.insert(InstFakeUse::create(Cfg, T_ah));
+        Context.insert(InstFakeUse::create(Func, T_ah));
         _mov(Dest, T);
       } else {
         // TODO: fix for 8-bit, see Urem
@@ -1070,14 +1070,14 @@ void TargetX8632::lowerCall(const InstCall *Instr) {
     }
   }
   Operand *CallTarget = legalize(Instr->getCallTarget());
-  Inst *NewCall = InstX8632Call::create(Cfg, eax, CallTarget, Instr->isTail());
+  Inst *NewCall = InstX8632Call::create(Func, eax, CallTarget, Instr->isTail());
   Context.insert(NewCall);
   if (edx)
-    Context.insert(InstFakeDef::create(Cfg, edx));
+    Context.insert(InstFakeDef::create(Func, edx));
 
   // Add the appropriate offset to esp.
   if (StackOffset) {
-    Variable *esp = Cfg->getTarget()->getPhysicalRegister(Reg_esp);
+    Variable *esp = Func->getTarget()->getPhysicalRegister(Reg_esp);
     _add(esp, Ctx->getConstantInt(IceType_i32, StackOffset));
   }
 
@@ -1085,16 +1085,16 @@ void TargetX8632::lowerCall(const InstCall *Instr) {
   VarList KilledRegs;
   for (IceSize_t i = 0; i < ScratchRegs.size(); ++i) {
     if (ScratchRegs[i])
-      KilledRegs.push_back(Cfg->getTarget()->getPhysicalRegister(i));
+      KilledRegs.push_back(Func->getTarget()->getPhysicalRegister(i));
   }
   if (!KilledRegs.empty()) {
-    Inst *Kill = InstFakeKill::create(Cfg, KilledRegs, NewCall);
+    Inst *Kill = InstFakeKill::create(Func, KilledRegs, NewCall);
     Context.insert(Kill);
   }
 
   // Generate a FakeUse to keep the call live if necessary.
   if (Instr->hasSideEffects() && eax) {
-    Inst *FakeUse = InstFakeUse::create(Cfg, eax);
+    Inst *FakeUse = InstFakeUse::create(Func, eax);
     Context.insert(FakeUse);
   }
 
@@ -1137,7 +1137,7 @@ void TargetX8632::lowerCast(const InstCast *Inst) {
   Operand *Src0RM = legalize(Inst->getSrc(0), Legal_Reg | Legal_Mem, true);
   switch (CastKind) {
   default:
-    Cfg->setError("Cast type not supported");
+    Func->setError("Cast type not supported");
     return;
   case InstCast::Sext:
     if (Dest->getType() == IceType_i64) {
@@ -1310,7 +1310,7 @@ void TargetX8632::lowerCast(const InstCast *Inst) {
     break;
   case InstCast::Bitcast:
     if (Dest->getType() == Src0RM->getType()) {
-      InstAssign *Assign = InstAssign::create(Cfg, Dest, Src0RM);
+      InstAssign *Assign = InstAssign::create(Func, Dest, Src0RM);
       lowerAssign(Assign);
       assert(0 && "Pointer bitcasts aren't lowered correctly.");
       return;
@@ -1331,7 +1331,7 @@ void TargetX8632::lowerCast(const InstCast *Inst) {
       Variable *T = NULL;
       // TODO: Should be able to force a spill setup by calling legalize() with
       // Legal_Mem and not Legal_Reg or Legal_Imm.
-      Variable *Spill = Cfg->makeVariable(SrcType, Context.getNode());
+      Variable *Spill = Func->makeVariable(SrcType, Context.getNode());
       Spill->setWeight(RegWeight::Zero);
       Spill->setPreferredRegister(Dest, true);
       _mov(T, Src0RM);
@@ -1346,7 +1346,7 @@ void TargetX8632::lowerCast(const InstCast *Inst) {
       //   a_lo.i32 = t_lo.i32
       //   t_hi.i32 = hi(s.f64)
       //   a_hi.i32 = t_hi.i32
-      Variable *Spill = Cfg->makeVariable(IceType_f64, Context.getNode());
+      Variable *Spill = Func->makeVariable(IceType_f64, Context.getNode());
       Spill->setWeight(RegWeight::Zero);
       Spill->setPreferredRegister(llvm::dyn_cast<Variable>(Src0RM), true);
       _mov(Spill, Src0RM);
@@ -1356,9 +1356,9 @@ void TargetX8632::lowerCast(const InstCast *Inst) {
       Variable *T_Lo = makeReg(IceType_i32);
       Variable *T_Hi = makeReg(IceType_i32);
       VariableSplit *SpillLo =
-          VariableSplit::create(Cfg, Spill, VariableSplit::Low);
+          VariableSplit::create(Func, Spill, VariableSplit::Low);
       VariableSplit *SpillHi =
-          VariableSplit::create(Cfg, Spill, VariableSplit::High);
+          VariableSplit::create(Func, Spill, VariableSplit::High);
 
       _mov(T_Lo, SpillLo);
       _mov(DestLo, T_Lo);
@@ -1374,17 +1374,17 @@ void TargetX8632::lowerCast(const InstCast *Inst) {
       //   t_hi.i32 = b_hi.i32
       //   hi(s.f64) = t_hi.i32
       //   a.f64 = s.f64
-      Variable *Spill = Cfg->makeVariable(IceType_f64, Context.getNode());
+      Variable *Spill = Func->makeVariable(IceType_f64, Context.getNode());
       Spill->setWeight(RegWeight::Zero);
       Spill->setPreferredRegister(Dest, true);
 
-      Context.insert(InstFakeDef::create(Cfg, Spill));
+      Context.insert(InstFakeDef::create(Func, Spill));
 
       Variable *T_Lo = NULL, *T_Hi = NULL;
       VariableSplit *SpillLo =
-          VariableSplit::create(Cfg, Spill, VariableSplit::Low);
+          VariableSplit::create(Func, Spill, VariableSplit::Low);
       VariableSplit *SpillHi =
-          VariableSplit::create(Cfg, Spill, VariableSplit::High);
+          VariableSplit::create(Func, Spill, VariableSplit::High);
       _mov(T_Lo, loOperand(Src0RM));
       _store(T_Lo, SpillLo);
       _mov(T_Hi, hiOperand(Src0RM));
@@ -1480,12 +1480,12 @@ void TargetX8632::lowerFcmp(const InstFcmp *Inst) {
       Ctx->getConstantInt(IceType_i32, TableFcmp[Index].Default);
   _mov(Dest, Default);
   if (HasC1) {
-    InstX8632Label *Label = InstX8632Label::create(Cfg, this);
+    InstX8632Label *Label = InstX8632Label::create(Func, this);
     _br(TableFcmp[Index].C1, Label);
     if (HasC2) {
       _br(TableFcmp[Index].C2, Label);
     }
-    Context.insert(InstFakeUse::create(Cfg, Dest));
+    Context.insert(InstFakeUse::create(Func, Dest));
     Constant *NonDefault =
         Ctx->getConstantInt(IceType_i32, !TableFcmp[Index].Default);
     _mov(Dest, NonDefault);
@@ -1599,18 +1599,18 @@ void TargetX8632::lowerIcmp(const InstIcmp *Inst) {
     Operand *Src1LoRI = legalize(loOperand(Src1), Legal_Reg | Legal_Imm);
     Operand *Src1HiRI = legalize(hiOperand(Src1), Legal_Reg | Legal_Imm);
     if (Condition == InstIcmp::Eq || Condition == InstIcmp::Ne) {
-      InstX8632Label *Label = InstX8632Label::create(Cfg, this);
+      InstX8632Label *Label = InstX8632Label::create(Func, this);
       _mov(Dest, (Condition == InstIcmp::Eq ? Zero : One));
       _cmp(loOperand(Src0), Src1LoRI);
       _br(InstX8632Br::Br_ne, Label);
       _cmp(hiOperand(Src0), Src1HiRI);
       _br(InstX8632Br::Br_ne, Label);
-      Context.insert(InstFakeUse::create(Cfg, Dest));
+      Context.insert(InstFakeUse::create(Func, Dest));
       _mov(Dest, (Condition == InstIcmp::Eq ? One : Zero));
       Context.insert(Label);
     } else {
-      InstX8632Label *LabelFalse = InstX8632Label::create(Cfg, this);
-      InstX8632Label *LabelTrue = InstX8632Label::create(Cfg, this);
+      InstX8632Label *LabelFalse = InstX8632Label::create(Func, this);
+      InstX8632Label *LabelTrue = InstX8632Label::create(Func, this);
       _mov(Dest, One);
       _cmp(hiOperand(Src0), Src1HiRI);
       _br(TableIcmp64[Index].C1, LabelTrue);
@@ -1618,7 +1618,7 @@ void TargetX8632::lowerIcmp(const InstIcmp *Inst) {
       _cmp(loOperand(Src0), Src1LoRI);
       _br(TableIcmp64[Index].C3, LabelTrue);
       Context.insert(LabelFalse);
-      Context.insert(InstFakeUse::create(Cfg, Dest));
+      Context.insert(InstFakeUse::create(Func, Dest));
       _mov(Dest, Zero);
       Context.insert(LabelTrue);
     }
@@ -1627,11 +1627,11 @@ void TargetX8632::lowerIcmp(const InstIcmp *Inst) {
   // cmp b, c
   Operand *Src0New =
       legalize(Src0, IsSrc1ImmOrReg ? Legal_All : Legal_Reg, true);
-  InstX8632Label *Label = InstX8632Label::create(Cfg, this);
+  InstX8632Label *Label = InstX8632Label::create(Func, this);
   _cmp(Src0New, Src1);
   _mov(Dest, One);
   _br(getIcmp32Mapping(Inst->getCondition()), Label);
-  Context.insert(InstFakeUse::create(Cfg, Dest));
+  Context.insert(InstFakeUse::create(Func, Dest));
   _mov(Dest, Zero);
   Context.insert(Label);
 }
@@ -1646,7 +1646,7 @@ bool isAdd(const Inst *Inst) {
   return false;
 }
 
-void computeAddressOpt(IceCfg * /*Cfg*/, Variable *&Base, Variable *&Index,
+void computeAddressOpt(IceCfg * /*Func*/, Variable *&Base, Variable *&Index,
                        int32_t &Shift, int32_t &Offset) {
   (void)Offset; // TODO: pattern-match for non-zero offsets.
   if (Base == NULL)
@@ -1778,7 +1778,7 @@ void TargetX8632::lowerLoad(const InstLoad *Inst) {
     Variable *Base = llvm::dyn_cast<Variable>(Src0);
     Constant *Offset = llvm::dyn_cast<Constant>(Src0);
     assert(Base || Offset);
-    Src0 = OperandX8632Mem::create(Cfg, Type, Base, Offset);
+    Src0 = OperandX8632Mem::create(Func, Type, Base, Offset);
   }
 
   // Fuse this load with a subsequent Arithmetic instruction in the
@@ -1802,11 +1802,11 @@ void TargetX8632::lowerLoad(const InstLoad *Inst) {
     Variable *Src1Arith = llvm::dyn_cast<Variable>(Arith->getSrc(1));
     if (Src1Arith == DestLoad && Arith->isLastUse(Src1Arith) &&
         DestLoad != Src0Arith) {
-      NewArith = InstArithmetic::create(Cfg, Arith->getOp(), Arith->getDest(),
+      NewArith = InstArithmetic::create(Func, Arith->getOp(), Arith->getDest(),
                                         Arith->getSrc(0), Src0);
     } else if (Src0Arith == DestLoad && Arith->isCommutative() &&
                Arith->isLastUse(Src0Arith) && DestLoad != Src1Arith) {
-      NewArith = InstArithmetic::create(Cfg, Arith->getOp(), Arith->getDest(),
+      NewArith = InstArithmetic::create(Func, Arith->getOp(), Arith->getDest(),
                                         Arith->getSrc(1), Src0);
     }
     if (NewArith) {
@@ -1817,7 +1817,7 @@ void TargetX8632::lowerLoad(const InstLoad *Inst) {
     }
   }
 
-  InstAssign *Assign = InstAssign::create(Cfg, Inst->getDest(), Src0);
+  InstAssign *Assign = InstAssign::create(Func, Inst->getDest(), Src0);
   lowerAssign(Assign);
 }
 
@@ -1829,18 +1829,18 @@ void TargetX8632::doAddressOptLoad() {
   int32_t Shift = 0;
   int32_t Offset = 0; // TODO: make Constant
   Variable *Base = llvm::dyn_cast<Variable>(Addr);
-  computeAddressOpt(Cfg, Base, Index, Shift, Offset);
+  computeAddressOpt(Func, Base, Index, Shift, Offset);
   if (Base && Addr != Base) {
     Constant *OffsetOp = Ctx->getConstantInt(IceType_i32, Offset);
-    Addr = OperandX8632Mem::create(Cfg, Dest->getType(), Base, OffsetOp, Index,
+    Addr = OperandX8632Mem::create(Func, Dest->getType(), Base, OffsetOp, Index,
                                    Shift);
     Inst->setDeleted();
-    Context.insert(InstLoad::create(Cfg, Dest, Addr));
+    Context.insert(InstLoad::create(Func, Dest, Addr));
   }
 }
 
 void TargetX8632::lowerPhi(const InstPhi * /*Inst*/) {
-  Cfg->setError("Phi lowering not implemented");
+  Func->setError("Phi lowering not implemented");
 }
 
 void TargetX8632::lowerRet(const InstRet *Inst) {
@@ -1851,7 +1851,7 @@ void TargetX8632::lowerRet(const InstRet *Inst) {
       Variable *eax = legalizeToVar(loOperand(Src0), false, Reg_eax);
       Variable *edx = legalizeToVar(hiOperand(Src0), false, Reg_edx);
       Reg = eax;
-      Context.insert(InstFakeUse::create(Cfg, edx));
+      Context.insert(InstFakeUse::create(Func, edx));
     } else if (Src0->getType() == IceType_f32 ||
                Src0->getType() == IceType_f64) {
       _fld(Src0);
@@ -1865,8 +1865,8 @@ void TargetX8632::lowerRet(const InstRet *Inst) {
   // eliminated.  TODO: Are there more places where the fake use
   // should be inserted?  E.g. "void f(int n){while(1) g(n);}" may not
   // have a ret instruction.
-  Variable *esp = Cfg->getTarget()->getPhysicalRegister(Reg_esp);
-  Context.insert(InstFakeUse::create(Cfg, esp));
+  Variable *esp = Func->getTarget()->getPhysicalRegister(Reg_esp);
+  Context.insert(InstFakeUse::create(Func, esp));
 }
 
 void TargetX8632::lowerSelect(const InstSelect *Inst) {
@@ -1876,7 +1876,7 @@ void TargetX8632::lowerSelect(const InstSelect *Inst) {
   Operand *SrcF = Inst->getFalseOperand();
   Operand *Condition = legalize(Inst->getCondition());
   Constant *Zero = Ctx->getConstantInt(IceType_i32, 0);
-  InstX8632Label *Label = InstX8632Label::create(Cfg, this);
+  InstX8632Label *Label = InstX8632Label::create(Func, this);
 
   if (Dest->getType() == IceType_i64) {
     Variable *DestLo = llvm::cast<Variable>(loOperand(Dest));
@@ -1887,8 +1887,8 @@ void TargetX8632::lowerSelect(const InstSelect *Inst) {
     _mov(DestLo, SrcLoRI);
     _mov(DestHi, SrcHiRI);
     _br(InstX8632Br::Br_ne, Label);
-    Context.insert(InstFakeUse::create(Cfg, DestLo));
-    Context.insert(InstFakeUse::create(Cfg, DestHi));
+    Context.insert(InstFakeUse::create(Func, DestLo));
+    Context.insert(InstFakeUse::create(Func, DestHi));
     Operand *SrcFLo = loOperand(SrcF);
     Operand *SrcFHi = hiOperand(SrcF);
     SrcLoRI = legalize(SrcFLo, Legal_Reg | Legal_Imm, true);
@@ -1900,7 +1900,7 @@ void TargetX8632::lowerSelect(const InstSelect *Inst) {
     SrcT = legalize(SrcT, Legal_Reg | Legal_Imm, true);
     _mov(Dest, SrcT);
     _br(InstX8632Br::Br_ne, Label);
-    Context.insert(InstFakeUse::create(Cfg, Dest));
+    Context.insert(InstFakeUse::create(Func, Dest));
     SrcF = legalize(SrcF, Legal_Reg | Legal_Imm, true);
     _mov(Dest, SrcF);
   }
@@ -1921,7 +1921,7 @@ void TargetX8632::lowerStore(const InstStore *Inst) {
     Variable *Base = llvm::dyn_cast<Variable>(Addr);
     Constant *Offset = llvm::dyn_cast<Constant>(Addr);
     assert(Base || Offset);
-    NewAddr = OperandX8632Mem::create(Cfg, Value->getType(), Base, Offset);
+    NewAddr = OperandX8632Mem::create(Func, Value->getType(), Base, Offset);
   }
   NewAddr = llvm::cast<OperandX8632Mem>(legalize(NewAddr));
 
@@ -1945,13 +1945,13 @@ void TargetX8632::doAddressOptStore() {
   int32_t Shift = 0;
   int32_t Offset = 0; // TODO: make Constant
   Variable *Base = llvm::dyn_cast<Variable>(Addr);
-  computeAddressOpt(Cfg, Base, Index, Shift, Offset);
+  computeAddressOpt(Func, Base, Index, Shift, Offset);
   if (Base && Addr != Base) {
     Constant *OffsetOp = Ctx->getConstantInt(IceType_i32, Offset);
-    Addr = OperandX8632Mem::create(Cfg, Data->getType(), Base, OffsetOp, Index,
+    Addr = OperandX8632Mem::create(Func, Data->getType(), Base, OffsetOp, Index,
                                    Shift);
     Inst->setDeleted();
-    Context.insert(InstStore::create(Cfg, Data, Addr));
+    Context.insert(InstStore::create(Func, Data, Addr));
   }
 }
 
@@ -1999,7 +1999,7 @@ Operand *TargetX8632::legalize(Operand *From, LegalMask Allowed,
     }
     if (Base != RegBase || Index != RegIndex) {
       From =
-          OperandX8632Mem::create(Cfg, Mem->getType(), RegBase,
+          OperandX8632Mem::create(Func, Mem->getType(), RegBase,
                                   Mem->getOffset(), RegIndex, Mem->getShift());
     }
 
@@ -2043,7 +2043,7 @@ Variable *TargetX8632::legalizeToVar(Operand *From, bool AllowOverlap,
 }
 
 Variable *TargetX8632::makeReg(IceType Type, int32_t RegNum) {
-  Variable *Reg = Cfg->makeVariable(Type, Context.getNode());
+  Variable *Reg = Func->makeVariable(Type, Context.getNode());
   if (RegNum == Variable::NoRegister)
     Reg->setWeightInfinite();
   else

@@ -22,8 +22,8 @@
 
 namespace Ice {
 
-CfgNode::CfgNode(IceCfg *Cfg, IceSize_t LabelNumber, IceString Name)
-    : Cfg(Cfg), Number(LabelNumber), Name(Name), HasReturn(false) {}
+CfgNode::CfgNode(IceCfg *Func, IceSize_t LabelNumber, IceString Name)
+    : Func(Func), Number(LabelNumber), Name(Name), HasReturn(false) {}
 
 // Returns the name the node was created with.  If no name was given,
 // it synthesizes a (hopefully) unique name.
@@ -42,7 +42,7 @@ IceString CfgNode::getName() const {
 void CfgNode::appendInst(Inst *Inst) {
   if (InstPhi *Phi = llvm::dyn_cast<InstPhi>(Inst)) {
     if (!Insts.empty()) {
-      Cfg->setError("Phi instruction added to the middle of a block");
+      Func->setError("Phi instruction added to the middle of a block");
       return;
     }
     Phis.push_back(Phi);
@@ -59,12 +59,12 @@ void CfgNode::appendInst(Inst *Inst) {
 // overlap with the range of any other block.
 void CfgNode::renumberInstructions() {
   for (PhiList::const_iterator I = Phis.begin(), E = Phis.end(); I != E; ++I) {
-    (*I)->renumber(Cfg);
+    (*I)->renumber(Func);
   }
   InstList::const_iterator I = Insts.begin(), E = Insts.end();
   while (I != E) {
     Inst *Inst = *I++;
-    Inst->renumber(Cfg);
+    Inst->renumber(Func);
   }
 }
 
@@ -124,7 +124,7 @@ void CfgNode::computePredecessors() {
 // blocks.  Note that this transformation preserves SSA form.
 void CfgNode::placePhiLoads() {
   for (PhiList::iterator I = Phis.begin(), E = Phis.end(); I != E; ++I) {
-    Inst *Inst = (*I)->lower(Cfg, this);
+    Inst *Inst = (*I)->lower(Func, this);
     Insts.insert(Insts.begin(), Inst);
     Inst->updateVars(this);
   }
@@ -182,7 +182,7 @@ void CfgNode::placePhiStores() {
         continue;
       Variable *Dest = (*I2)->getDest();
       assert(Dest);
-      InstAssign *NewInst = InstAssign::create(Cfg, Dest, Operand);
+      InstAssign *NewInst = InstAssign::create(Func, Dest, Operand);
       // If Src is a variable, set the Src and Dest variables to
       // prefer each other for register allocation.
       if (Variable *Src = llvm::dyn_cast<Variable>(Operand)) {
@@ -208,7 +208,7 @@ void CfgNode::deletePhis() {
 // (representing the optimized address mode), then insert the new
 // instruction and delete the old.
 void CfgNode::doAddressOpt() {
-  TargetLowering *Target = Cfg->getTarget();
+  TargetLowering *Target = Func->getTarget();
   LoweringContext &Context = Target->getContext();
   Context.init(this);
   while (!Context.atEnd()) {
@@ -219,7 +219,7 @@ void CfgNode::doAddressOpt() {
 // Drives the target lowering.  Passes the current instruction and the
 // next non-deleted instruction for target lowering.
 void CfgNode::genCode() {
-  TargetLowering *Target = Cfg->getTarget();
+  TargetLowering *Target = Func->getTarget();
   LoweringContext &Context = Target->getContext();
   // Lower only the regular instructions.  Defer the Phi instructions.
   Context.init(this);
@@ -239,7 +239,7 @@ void CfgNode::genCode() {
 bool CfgNode::liveness(LivenessMode Mode, Liveness *Liveness) {
   IceSize_t NumVars;
   if (Mode == Liveness_LREndLightweight)
-    NumVars = Cfg->getNumVariables();
+    NumVars = Func->getNumVariables();
   else
     NumVars = Liveness->getLocalSize(this);
   llvm::BitVector Live(NumVars);
@@ -291,18 +291,18 @@ bool CfgNode::liveness(LivenessMode Mode, Liveness *Liveness) {
     Live.resize(Liveness->getGlobalSize());
     // Non-global arguments in the entry node are allowed to be live on
     // entry.
-    bool IsEntry = (Cfg->getEntryNode() == this);
+    bool IsEntry = (Func->getEntryNode() == this);
     assert(IsEntry || Live == LiveOrig);
     // The following block helps debug why the previous assertion
     // failed.
     if (!(IsEntry || Live == LiveOrig)) {
-      IceOstream &Str = Cfg->getContext()->getStrDump();
-      Cfg->setCurrentNode(NULL);
+      IceOstream &Str = Func->getContext()->getStrDump();
+      Func->setCurrentNode(NULL);
       Str << "LiveOrig-Live =";
       for (IceSize_t i = Live.size(); i < LiveOrig.size(); ++i) {
         if (LiveOrig.test(i)) {
           Str << " ";
-          Liveness->getVariable(i, this)->dump(Cfg);
+          Liveness->getVariable(i, this)->dump(Func);
         }
       }
       Str << "\n";
@@ -407,11 +407,11 @@ void CfgNode::livenessPostprocess(LivenessMode Mode, Liveness *Liveness) {
 
 // ======================== Dump routines ======================== //
 
-void CfgNode::emit(IceCfg *Cfg, uint32_t Option) const {
-  Cfg->setCurrentNode(this);
-  IceOstream &Str = Cfg->getContext()->getStrEmit();
-  if (Cfg->getEntryNode() == this) {
-    Str << Cfg->getContext()->mangleName(Cfg->getFunctionName()) << ":\n";
+void CfgNode::emit(IceCfg *Func, uint32_t Option) const {
+  Func->setCurrentNode(this);
+  IceOstream &Str = Func->getContext()->getStrEmit();
+  if (Func->getEntryNode() == this) {
+    Str << Func->getContext()->mangleName(Func->getFunctionName()) << ":\n";
   }
   Str << getAsmName() << ":\n";
   for (PhiList::const_iterator I = Phis.begin(), E = Phis.end(); I != E; ++I) {
@@ -419,7 +419,7 @@ void CfgNode::emit(IceCfg *Cfg, uint32_t Option) const {
     if (Inst->isDeleted())
       continue;
     // Emitting a Phi instruction should cause an error.
-    Inst->emit(Cfg, Option);
+    Inst->emit(Func, Option);
   }
   for (InstList::const_iterator I = Insts.begin(), E = Insts.end(); I != E;
        ++I) {
@@ -430,19 +430,19 @@ void CfgNode::emit(IceCfg *Cfg, uint32_t Option) const {
     // suppress them.
     if (Inst->isRedundantAssign())
       continue;
-    (*I)->emit(Cfg, Option);
+    (*I)->emit(Func, Option);
   }
 }
 
-void CfgNode::dump(IceCfg *Cfg) const {
-  Cfg->setCurrentNode(this);
-  IceOstream &Str = Cfg->getContext()->getStrDump();
-  Liveness *Liveness = Cfg->getLiveness();
-  if (Cfg->getContext()->isVerbose(IceV_Instructions)) {
+void CfgNode::dump(IceCfg *Func) const {
+  Func->setCurrentNode(this);
+  IceOstream &Str = Func->getContext()->getStrDump();
+  Liveness *Liveness = Func->getLiveness();
+  if (Func->getContext()->isVerbose(IceV_Instructions)) {
     Str << getName() << ":\n";
   }
   // Dump list of predecessor nodes.
-  if (Cfg->getContext()->isVerbose(IceV_Preds) && !InEdges.empty()) {
+  if (Func->getContext()->isVerbose(IceV_Preds) && !InEdges.empty()) {
     Str << "    // preds = ";
     for (NodeList::const_iterator I = InEdges.begin(), E = InEdges.end();
          I != E; ++I) {
@@ -456,7 +456,7 @@ void CfgNode::dump(IceCfg *Cfg) const {
   llvm::BitVector LiveIn;
   if (Liveness)
     LiveIn = Liveness->getLiveIn(this);
-  if (Cfg->getContext()->isVerbose(IceV_Liveness) && !LiveIn.empty()) {
+  if (Func->getContext()->isVerbose(IceV_Liveness) && !LiveIn.empty()) {
     Str << "    // LiveIn:";
     for (IceSize_t i = 0; i < LiveIn.size(); ++i) {
       if (LiveIn[i]) {
@@ -466,23 +466,23 @@ void CfgNode::dump(IceCfg *Cfg) const {
     Str << "\n";
   }
   // Dump each instruction.
-  if (Cfg->getContext()->isVerbose(IceV_Instructions)) {
+  if (Func->getContext()->isVerbose(IceV_Instructions)) {
     for (PhiList::const_iterator I = Phis.begin(), E = Phis.end(); I != E;
          ++I) {
       const Inst *Inst = *I;
-      Inst->dumpDecorated(Cfg);
+      Inst->dumpDecorated(Func);
     }
     InstList::const_iterator I = Insts.begin(), E = Insts.end();
     while (I != E) {
       Inst *Inst = *I++;
-      Inst->dumpDecorated(Cfg);
+      Inst->dumpDecorated(Func);
     }
   }
   // Dump the live-out variables.
   llvm::BitVector LiveOut;
   if (Liveness)
     LiveOut = Liveness->getLiveOut(this);
-  if (Cfg->getContext()->isVerbose(IceV_Liveness) && !LiveOut.empty()) {
+  if (Func->getContext()->isVerbose(IceV_Liveness) && !LiveOut.empty()) {
     Str << "    // LiveOut:";
     for (IceSize_t i = 0; i < LiveOut.size(); ++i) {
       if (LiveOut[i]) {
@@ -492,7 +492,7 @@ void CfgNode::dump(IceCfg *Cfg) const {
     Str << "\n";
   }
   // Dump list of successor nodes.
-  if (Cfg->getContext()->isVerbose(IceV_Succs)) {
+  if (Func->getContext()->isVerbose(IceV_Succs)) {
     Str << "    // succs = ";
     for (NodeList::const_iterator I = OutEdges.begin(), E = OutEdges.end();
          I != E; ++I) {

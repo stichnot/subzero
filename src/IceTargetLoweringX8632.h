@@ -45,7 +45,7 @@ namespace Ice {
 
 class TargetX8632 : public TargetLowering {
 public:
-  static TargetX8632 *create(IceCfg *Cfg) { return new TargetX8632(Cfg); }
+  static TargetX8632 *create(IceCfg *Func) { return new TargetX8632(Func); }
 
   virtual void translateOm1();
   virtual void translateO2();
@@ -88,7 +88,7 @@ public:
 #undef X
 
 protected:
-  TargetX8632(IceCfg *Cfg);
+  TargetX8632(IceCfg *Func);
 
   virtual void postLower();
 
@@ -130,7 +130,8 @@ protected:
     bool Tailcall = false;
     IceType Type = Dest ? Dest->getType() : IceType_void;
     Constant *CallTarget = Ctx->getConstantSym(Type, 0, Name, SuppressMangling);
-    InstCall *Call = InstCall::create(Cfg, MaxSrcs, Dest, CallTarget, Tailcall);
+    InstCall *Call =
+        InstCall::create(Func, MaxSrcs, Dest, CallTarget, Tailcall);
     return Call;
   }
 
@@ -138,55 +139,55 @@ protected:
   // with minimal syntactic overhead, so that the lowering code can
   // look as close to assembly as practical.
   void _adc(Variable *Dest, Operand *Src0) {
-    Context.insert(InstX8632Adc::create(Cfg, Dest, Src0));
+    Context.insert(InstX8632Adc::create(Func, Dest, Src0));
   }
   void _add(Variable *Dest, Operand *Src0) {
-    Context.insert(InstX8632Add::create(Cfg, Dest, Src0));
+    Context.insert(InstX8632Add::create(Func, Dest, Src0));
   }
   void _addss(Variable *Dest, Operand *Src0) {
-    Context.insert(InstX8632Addss::create(Cfg, Dest, Src0));
+    Context.insert(InstX8632Addss::create(Func, Dest, Src0));
   }
   void _and(Variable *Dest, Operand *Src0) {
-    Context.insert(InstX8632And::create(Cfg, Dest, Src0));
+    Context.insert(InstX8632And::create(Func, Dest, Src0));
   }
   void _br(InstX8632Br::BrCond Condition, CfgNode *TargetTrue,
            CfgNode *TargetFalse) {
     Context.insert(
-        InstX8632Br::create(Cfg, TargetTrue, TargetFalse, Condition));
+        InstX8632Br::create(Func, TargetTrue, TargetFalse, Condition));
   }
   void _br(CfgNode *Target) {
-    Context.insert(InstX8632Br::create(Cfg, Target));
+    Context.insert(InstX8632Br::create(Func, Target));
   }
   void _br(InstX8632Br::BrCond Condition, CfgNode *Target) {
-    Context.insert(InstX8632Br::create(Cfg, Target, Condition));
+    Context.insert(InstX8632Br::create(Func, Target, Condition));
   }
   void _br(InstX8632Br::BrCond Condition, InstX8632Label *Label) {
-    Context.insert(InstX8632Br::create(Cfg, Label, Condition));
+    Context.insert(InstX8632Br::create(Func, Label, Condition));
   }
   void _cdq(Variable *Dest, Operand *Src0) {
-    Context.insert(InstX8632Cdq::create(Cfg, Dest, Src0));
+    Context.insert(InstX8632Cdq::create(Func, Dest, Src0));
   }
   void _cmp(Operand *Src0, Operand *Src1) {
-    Context.insert(InstX8632Icmp::create(Cfg, Src0, Src1));
+    Context.insert(InstX8632Icmp::create(Func, Src0, Src1));
   }
   void _cvt(Variable *Dest, Operand *Src0) {
-    Context.insert(InstX8632Cvt::create(Cfg, Dest, Src0));
+    Context.insert(InstX8632Cvt::create(Func, Dest, Src0));
   }
   void _div(Variable *Dest, Operand *Src0, Operand *Src1) {
-    Context.insert(InstX8632Div::create(Cfg, Dest, Src0, Src1));
+    Context.insert(InstX8632Div::create(Func, Dest, Src0, Src1));
   }
   void _divss(Variable *Dest, Operand *Src0) {
-    Context.insert(InstX8632Divss::create(Cfg, Dest, Src0));
+    Context.insert(InstX8632Divss::create(Func, Dest, Src0));
   }
-  void _fld(Operand *Src0) { Context.insert(InstX8632Fld::create(Cfg, Src0)); }
+  void _fld(Operand *Src0) { Context.insert(InstX8632Fld::create(Func, Src0)); }
   void _fstp(Variable *Dest) {
-    Context.insert(InstX8632Fstp::create(Cfg, Dest));
+    Context.insert(InstX8632Fstp::create(Func, Dest));
   }
   void _idiv(Variable *Dest, Operand *Src0, Operand *Src1) {
-    Context.insert(InstX8632Idiv::create(Cfg, Dest, Src0, Src1));
+    Context.insert(InstX8632Idiv::create(Func, Dest, Src0, Src1));
   }
   void _imul(Variable *Dest, Operand *Src0) {
-    Context.insert(InstX8632Imul::create(Cfg, Dest, Src0));
+    Context.insert(InstX8632Imul::create(Func, Dest, Src0));
   }
   // If Dest=NULL is passed in, then a new variable is created, marked
   // as infinite register allocation weight, and returned through the
@@ -196,66 +197,68 @@ protected:
     if (Dest == NULL) {
       Dest = legalizeToVar(Src0, false, RegNum);
     } else {
-      Context.insert(InstX8632Mov::create(Cfg, Dest, Src0));
+      Context.insert(InstX8632Mov::create(Func, Dest, Src0));
     }
   }
   void _movsx(Variable *Dest, Operand *Src0) {
-    Context.insert(InstX8632Movsx::create(Cfg, Dest, Src0));
+    Context.insert(InstX8632Movsx::create(Func, Dest, Src0));
   }
   void _movzx(Variable *Dest, Operand *Src0) {
-    Context.insert(InstX8632Movzx::create(Cfg, Dest, Src0));
+    Context.insert(InstX8632Movzx::create(Func, Dest, Src0));
   }
   void _mul(Variable *Dest, Variable *Src0, Operand *Src1) {
-    Context.insert(InstX8632Mul::create(Cfg, Dest, Src0, Src1));
+    Context.insert(InstX8632Mul::create(Func, Dest, Src0, Src1));
   }
   void _mulss(Variable *Dest, Operand *Src0) {
-    Context.insert(InstX8632Mulss::create(Cfg, Dest, Src0));
+    Context.insert(InstX8632Mulss::create(Func, Dest, Src0));
   }
   void _or(Variable *Dest, Operand *Src0) {
-    Context.insert(InstX8632Or::create(Cfg, Dest, Src0));
+    Context.insert(InstX8632Or::create(Func, Dest, Src0));
   }
-  void _pop(Variable *Dest) { Context.insert(InstX8632Pop::create(Cfg, Dest)); }
+  void _pop(Variable *Dest) {
+    Context.insert(InstX8632Pop::create(Func, Dest));
+  }
   void _push(Operand *Src0, bool SuppressStackAdjustment = false) {
-    Context.insert(InstX8632Push::create(Cfg, Src0, SuppressStackAdjustment));
+    Context.insert(InstX8632Push::create(Func, Src0, SuppressStackAdjustment));
   }
   void _ret(Variable *Src0 = NULL) {
-    Context.insert(InstX8632Ret::create(Cfg, Src0));
+    Context.insert(InstX8632Ret::create(Func, Src0));
   }
   void _sar(Variable *Dest, Operand *Src0) {
-    Context.insert(InstX8632Sar::create(Cfg, Dest, Src0));
+    Context.insert(InstX8632Sar::create(Func, Dest, Src0));
   }
   void _sbb(Variable *Dest, Operand *Src0) {
-    Context.insert(InstX8632Sbb::create(Cfg, Dest, Src0));
+    Context.insert(InstX8632Sbb::create(Func, Dest, Src0));
   }
   void _shl(Variable *Dest, Operand *Src0) {
-    Context.insert(InstX8632Shl::create(Cfg, Dest, Src0));
+    Context.insert(InstX8632Shl::create(Func, Dest, Src0));
   }
   void _shld(Variable *Dest, Variable *Src0, Variable *Src1) {
-    Context.insert(InstX8632Shld::create(Cfg, Dest, Src0, Src1));
+    Context.insert(InstX8632Shld::create(Func, Dest, Src0, Src1));
   }
   void _shr(Variable *Dest, Operand *Src0) {
-    Context.insert(InstX8632Shr::create(Cfg, Dest, Src0));
+    Context.insert(InstX8632Shr::create(Func, Dest, Src0));
   }
   void _shrd(Variable *Dest, Variable *Src0, Variable *Src1) {
-    Context.insert(InstX8632Shrd::create(Cfg, Dest, Src0, Src1));
+    Context.insert(InstX8632Shrd::create(Func, Dest, Src0, Src1));
   }
   void _store(Operand *Value, OperandX8632 *Mem) {
-    Context.insert(InstX8632Store::create(Cfg, Value, Mem));
+    Context.insert(InstX8632Store::create(Func, Value, Mem));
   }
   void _sub(Variable *Dest, Operand *Src0) {
-    Context.insert(InstX8632Sub::create(Cfg, Dest, Src0));
+    Context.insert(InstX8632Sub::create(Func, Dest, Src0));
   }
   void _subss(Variable *Dest, Operand *Src0) {
-    Context.insert(InstX8632Subss::create(Cfg, Dest, Src0));
+    Context.insert(InstX8632Subss::create(Func, Dest, Src0));
   }
   void _test(Operand *Src0, Operand *Src1) {
-    Context.insert(InstX8632Test::create(Cfg, Src0, Src1));
+    Context.insert(InstX8632Test::create(Func, Src0, Src1));
   }
   void _ucomiss(Operand *Src0, Operand *Src1) {
-    Context.insert(InstX8632Ucomiss::create(Cfg, Src0, Src1));
+    Context.insert(InstX8632Ucomiss::create(Func, Src0, Src1));
   }
   void _xor(Variable *Dest, Operand *Src0) {
-    Context.insert(InstX8632Xor::create(Cfg, Dest, Src0));
+    Context.insert(InstX8632Xor::create(Func, Dest, Src0));
   }
 
   bool IsEbpBasedFrame;

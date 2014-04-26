@@ -49,7 +49,7 @@ public:
   InstKind getKind() const { return Kind; }
 
   int32_t getNumber() const { return Number; }
-  void renumber(IceCfg *Cfg);
+  void renumber(IceCfg *Func);
 
   bool isDeleted() const { return Deleted; }
   void setDeleted() { Deleted = true; }
@@ -85,19 +85,19 @@ public:
 
   void liveness(LivenessMode Mode, int32_t InstNumber, llvm::BitVector &Live,
                 Liveness *Liveness, const CfgNode *Node);
-  virtual void emit(const IceCfg *Cfg, uint32_t Option) const;
-  virtual void dump(const IceCfg *Cfg) const;
-  virtual void dumpExtras(const IceCfg *Cfg) const;
-  void dumpDecorated(const IceCfg *Cfg) const;
-  void emitSources(const IceCfg *Cfg, uint32_t Option) const;
-  void dumpSources(const IceCfg *Cfg) const;
-  void dumpDest(const IceCfg *Cfg) const;
+  virtual void emit(const IceCfg *Func, uint32_t Option) const;
+  virtual void dump(const IceCfg *Func) const;
+  virtual void dumpExtras(const IceCfg *Func) const;
+  void dumpDecorated(const IceCfg *Func) const;
+  void emitSources(const IceCfg *Func, uint32_t Option) const;
+  void dumpSources(const IceCfg *Func) const;
+  void dumpDest(const IceCfg *Func) const;
   virtual bool isRedundantAssign() const { return false; }
 
   virtual ~Inst();
 
 protected:
-  Inst(IceCfg *Cfg, InstKind Kind, IceSize_t MaxSrcs, Variable *Dest);
+  Inst(IceCfg *Func, InstKind Kind, IceSize_t MaxSrcs, Variable *Dest);
   void addSource(Operand *Src) {
     assert(Src);
     assert(NumSrcs < MaxSrcs);
@@ -137,18 +137,18 @@ private:
 // and the alignment.
 class InstAlloca : public Inst {
 public:
-  static InstAlloca *create(IceCfg *Cfg, Operand *ByteCount, uint32_t Align,
+  static InstAlloca *create(IceCfg *Func, Operand *ByteCount, uint32_t Align,
                             Variable *Dest) {
-    return new (Cfg->allocateInst<InstAlloca>())
-        InstAlloca(Cfg, ByteCount, Align, Dest);
+    return new (Func->allocateInst<InstAlloca>())
+        InstAlloca(Func, ByteCount, Align, Dest);
   }
   uint32_t getAlign() const { return Align; }
   Operand *getSizeInBytes() const { return getSrc(0); }
-  virtual void dump(const IceCfg *Cfg) const;
+  virtual void dump(const IceCfg *Func) const;
   static bool classof(const Inst *Inst) { return Inst->getKind() == Alloca; }
 
 private:
-  InstAlloca(IceCfg *Cfg, Operand *ByteCount, uint32_t Align, Variable *Dest);
+  InstAlloca(IceCfg *Func, Operand *ByteCount, uint32_t Align, Variable *Dest);
   InstAlloca(const InstAlloca &) LLVM_DELETED_FUNCTION;
   InstAlloca &operator=(const InstAlloca &) LLVM_DELETED_FUNCTION;
   virtual ~InstAlloca() {}
@@ -175,20 +175,20 @@ public:
   };
 #undef X
 
-  static InstArithmetic *create(IceCfg *Cfg, OpKind Op, Variable *Dest,
+  static InstArithmetic *create(IceCfg *Func, OpKind Op, Variable *Dest,
                                 Operand *Source1, Operand *Source2) {
-    return new (Cfg->allocateInst<InstArithmetic>())
-        InstArithmetic(Cfg, Op, Dest, Source1, Source2);
+    return new (Func->allocateInst<InstArithmetic>())
+        InstArithmetic(Func, Op, Dest, Source1, Source2);
   }
   OpKind getOp() const { return Op; }
   bool isCommutative() const;
-  virtual void dump(const IceCfg *Cfg) const;
+  virtual void dump(const IceCfg *Func) const;
   static bool classof(const Inst *Inst) {
     return Inst->getKind() == Arithmetic;
   }
 
 private:
-  InstArithmetic(IceCfg *Cfg, OpKind Op, Variable *Dest, Operand *Source1,
+  InstArithmetic(IceCfg *Func, OpKind Op, Variable *Dest, Operand *Source1,
                  Operand *Source2);
   InstArithmetic(const InstArithmetic &) LLVM_DELETED_FUNCTION;
   InstArithmetic &operator=(const InstArithmetic &) LLVM_DELETED_FUNCTION;
@@ -205,14 +205,15 @@ private:
 // Load instruction.
 class InstAssign : public Inst {
 public:
-  static InstAssign *create(IceCfg *Cfg, Variable *Dest, Operand *Source) {
-    return new (Cfg->allocateInst<InstAssign>()) InstAssign(Cfg, Dest, Source);
+  static InstAssign *create(IceCfg *Func, Variable *Dest, Operand *Source) {
+    return new (Func->allocateInst<InstAssign>())
+        InstAssign(Func, Dest, Source);
   }
-  virtual void dump(const IceCfg *Cfg) const;
+  virtual void dump(const IceCfg *Func) const;
   static bool classof(const Inst *Inst) { return Inst->getKind() == Assign; }
 
 private:
-  InstAssign(IceCfg *Cfg, Variable *Dest, Operand *Source);
+  InstAssign(IceCfg *Func, Variable *Dest, Operand *Source);
   InstAssign(const InstAssign &) LLVM_DELETED_FUNCTION;
   InstAssign &operator=(const InstAssign &) LLVM_DELETED_FUNCTION;
   virtual ~InstAssign() {}
@@ -224,13 +225,13 @@ class InstBr : public Inst {
 public:
   // Create a conditional branch.  If TargetTrue==TargetFalse, it is
   // optimized to an unconditional branch.
-  static InstBr *create(IceCfg *Cfg, Operand *Source, CfgNode *TargetTrue,
+  static InstBr *create(IceCfg *Func, Operand *Source, CfgNode *TargetTrue,
                         CfgNode *TargetFalse) {
-    return new (Cfg->allocateInst<InstBr>())
-        InstBr(Cfg, Source, TargetTrue, TargetFalse);
+    return new (Func->allocateInst<InstBr>())
+        InstBr(Func, Source, TargetTrue, TargetFalse);
   }
-  static InstBr *create(IceCfg *Cfg, CfgNode *Target) {
-    return new (Cfg->allocateInst<InstBr>()) InstBr(Cfg, Target);
+  static InstBr *create(IceCfg *Func, CfgNode *Target) {
+    return new (Func->allocateInst<InstBr>()) InstBr(Func, Target);
   }
   bool isUnconditional() const { return getTargetTrue() == NULL; }
   Operand *getCondition() const {
@@ -244,15 +245,15 @@ public:
     return getTargetFalse();
   }
   virtual NodeList getTerminatorEdges() const;
-  virtual void dump(const IceCfg *Cfg) const;
+  virtual void dump(const IceCfg *Func) const;
   static bool classof(const Inst *Inst) { return Inst->getKind() == Br; }
 
 private:
   // Conditional branch
-  InstBr(IceCfg *Cfg, Operand *Source, CfgNode *TargetTrue,
+  InstBr(IceCfg *Func, Operand *Source, CfgNode *TargetTrue,
          CfgNode *TargetFalse);
   // Unconditional branch
-  InstBr(IceCfg *Cfg, CfgNode *Target);
+  InstBr(IceCfg *Func, CfgNode *Target);
   InstBr(const InstBr &) LLVM_DELETED_FUNCTION;
   InstBr &operator=(const InstBr &) LLVM_DELETED_FUNCTION;
   virtual ~InstBr() {}
@@ -268,23 +269,23 @@ public:
   // The Tail argument represents the "tail" marker from the original
   // bitcode instruction (which doesn't necessarily mean that this
   // call must be executed as a tail call).
-  static InstCall *create(IceCfg *Cfg, IceSize_t NumArgs, Variable *Dest,
+  static InstCall *create(IceCfg *Func, IceSize_t NumArgs, Variable *Dest,
                           Operand *CallTarget, bool Tail) {
-    return new (Cfg->allocateInst<InstCall>())
-        InstCall(Cfg, NumArgs, Dest, CallTarget, Tail);
+    return new (Func->allocateInst<InstCall>())
+        InstCall(Func, NumArgs, Dest, CallTarget, Tail);
   }
   void addArg(Operand *Arg) { addSource(Arg); }
   Operand *getCallTarget() const { return getSrc(0); }
   Operand *getArg(IceSize_t I) const { return getSrc(I + 1); }
   IceSize_t getNumArgs() const { return getSrcSize() - 1; }
   bool isTail() const { return Tail; }
-  virtual void dump(const IceCfg *Cfg) const;
+  virtual void dump(const IceCfg *Func) const;
   static bool classof(const Inst *Inst) { return Inst->getKind() == Call; }
 
 private:
-  InstCall(IceCfg *Cfg, IceSize_t NumArgs, Variable *Dest, Operand *CallTarget,
+  InstCall(IceCfg *Func, IceSize_t NumArgs, Variable *Dest, Operand *CallTarget,
            bool Tail)
-      : Inst(Cfg, Inst::Call, NumArgs + 1, Dest), Tail(Tail) {
+      : Inst(Func, Inst::Call, NumArgs + 1, Dest), Tail(Tail) {
     // Set HasSideEffects so that the call instruction can't be
     // dead-code eliminated.  Don't set this for a deletable intrinsic
     // call.
@@ -313,17 +314,17 @@ public:
   };
 #undef X
 
-  static InstCast *create(IceCfg *Cfg, OpKind CastKind, Variable *Dest,
+  static InstCast *create(IceCfg *Func, OpKind CastKind, Variable *Dest,
                           Operand *Source) {
-    return new (Cfg->allocateInst<InstCast>())
-        InstCast(Cfg, CastKind, Dest, Source);
+    return new (Func->allocateInst<InstCast>())
+        InstCast(Func, CastKind, Dest, Source);
   }
   OpKind getCastKind() const { return CastKind; }
-  virtual void dump(const IceCfg *Cfg) const;
+  virtual void dump(const IceCfg *Func) const;
   static bool classof(const Inst *Inst) { return Inst->getKind() == Cast; }
 
 private:
-  InstCast(IceCfg *Cfg, OpKind CastKind, Variable *Dest, Operand *Source);
+  InstCast(IceCfg *Func, OpKind CastKind, Variable *Dest, Operand *Source);
   InstCast(const InstCast &) LLVM_DELETED_FUNCTION;
   InstCast &operator=(const InstCast &) LLVM_DELETED_FUNCTION;
   virtual ~InstCast() {}
@@ -348,17 +349,17 @@ public:
   };
 #undef X
 
-  static InstFcmp *create(IceCfg *Cfg, FCond Condition, Variable *Dest,
+  static InstFcmp *create(IceCfg *Func, FCond Condition, Variable *Dest,
                           Operand *Source1, Operand *Source2) {
-    return new (Cfg->allocateInst<InstFcmp>())
-        InstFcmp(Cfg, Condition, Dest, Source1, Source2);
+    return new (Func->allocateInst<InstFcmp>())
+        InstFcmp(Func, Condition, Dest, Source1, Source2);
   }
   FCond getCondition() const { return Condition; }
-  virtual void dump(const IceCfg *Cfg) const;
+  virtual void dump(const IceCfg *Func) const;
   static bool classof(const Inst *Inst) { return Inst->getKind() == Fcmp; }
 
 private:
-  InstFcmp(IceCfg *Cfg, FCond Condition, Variable *Dest, Operand *Source1,
+  InstFcmp(IceCfg *Func, FCond Condition, Variable *Dest, Operand *Source1,
            Operand *Source2);
   InstFcmp(const InstFcmp &) LLVM_DELETED_FUNCTION;
   InstFcmp &operator=(const InstFcmp &) LLVM_DELETED_FUNCTION;
@@ -382,17 +383,17 @@ public:
   };
 #undef X
 
-  static InstIcmp *create(IceCfg *Cfg, ICond Condition, Variable *Dest,
+  static InstIcmp *create(IceCfg *Func, ICond Condition, Variable *Dest,
                           Operand *Source1, Operand *Source2) {
-    return new (Cfg->allocateInst<InstIcmp>())
-        InstIcmp(Cfg, Condition, Dest, Source1, Source2);
+    return new (Func->allocateInst<InstIcmp>())
+        InstIcmp(Func, Condition, Dest, Source1, Source2);
   }
   ICond getCondition() const { return Condition; }
-  virtual void dump(const IceCfg *Cfg) const;
+  virtual void dump(const IceCfg *Func) const;
   static bool classof(const Inst *Inst) { return Inst->getKind() == Icmp; }
 
 private:
-  InstIcmp(IceCfg *Cfg, ICond Condition, Variable *Dest, Operand *Source1,
+  InstIcmp(IceCfg *Func, ICond Condition, Variable *Dest, Operand *Source1,
            Operand *Source2);
   InstIcmp(const InstIcmp &) LLVM_DELETED_FUNCTION;
   InstIcmp &operator=(const InstIcmp &) LLVM_DELETED_FUNCTION;
@@ -403,15 +404,16 @@ private:
 // Load instruction.  The source address is captured in getSrc(0);
 class InstLoad : public Inst {
 public:
-  static InstLoad *create(IceCfg *Cfg, Variable *Dest, Operand *SourceAddr) {
-    return new (Cfg->allocateInst<InstLoad>()) InstLoad(Cfg, Dest, SourceAddr);
+  static InstLoad *create(IceCfg *Func, Variable *Dest, Operand *SourceAddr) {
+    return new (Func->allocateInst<InstLoad>())
+        InstLoad(Func, Dest, SourceAddr);
   }
   Operand *getSourceAddress() const { return getSrc(0); }
-  virtual void dump(const IceCfg *Cfg) const;
+  virtual void dump(const IceCfg *Func) const;
   static bool classof(const Inst *Inst) { return Inst->getKind() == Load; }
 
 private:
-  InstLoad(IceCfg *Cfg, Variable *Dest, Operand *SourceAddr);
+  InstLoad(IceCfg *Func, Variable *Dest, Operand *SourceAddr);
   InstLoad(const InstLoad &) LLVM_DELETED_FUNCTION;
   InstLoad &operator=(const InstLoad &) LLVM_DELETED_FUNCTION;
   virtual ~InstLoad() {}
@@ -421,19 +423,19 @@ private:
 // the Phi source operand is getSrc(I).
 class InstPhi : public Inst {
 public:
-  static InstPhi *create(IceCfg *Cfg, IceSize_t MaxSrcs, Variable *Dest) {
-    return new (Cfg->allocateInst<InstPhi>()) InstPhi(Cfg, MaxSrcs, Dest);
+  static InstPhi *create(IceCfg *Func, IceSize_t MaxSrcs, Variable *Dest) {
+    return new (Func->allocateInst<InstPhi>()) InstPhi(Func, MaxSrcs, Dest);
   }
   void addArgument(Operand *Source, CfgNode *Label);
   Operand *getOperandForTarget(CfgNode *Target) const;
   void livenessPhiOperand(llvm::BitVector &Live, CfgNode *Target,
                           Liveness *Liveness);
-  Inst *lower(IceCfg *Cfg, CfgNode *Node);
-  virtual void dump(const IceCfg *Cfg) const;
+  Inst *lower(IceCfg *Func, CfgNode *Node);
+  virtual void dump(const IceCfg *Func) const;
   static bool classof(const Inst *Inst) { return Inst->getKind() == Phi; }
 
 private:
-  InstPhi(IceCfg *Cfg, IceSize_t MaxSrcs, Variable *Dest);
+  InstPhi(IceCfg *Func, IceSize_t MaxSrcs, Variable *Dest);
   InstPhi(const InstPhi &) LLVM_DELETED_FUNCTION;
   InstPhi &operator=(const InstPhi &) LLVM_DELETED_FUNCTION;
   virtual ~InstPhi() {
@@ -453,8 +455,8 @@ private:
 // getSrcSize()==0 and hasRetValue()==false.
 class InstRet : public Inst {
 public:
-  static InstRet *create(IceCfg *Cfg, Operand *Source = NULL) {
-    return new (Cfg->allocateInst<InstRet>()) InstRet(Cfg, Source);
+  static InstRet *create(IceCfg *Func, Operand *Source = NULL) {
+    return new (Func->allocateInst<InstRet>()) InstRet(Func, Source);
   }
   bool hasRetValue() const { return getSrcSize(); }
   Operand *getRetValue() const {
@@ -462,11 +464,11 @@ public:
     return getSrc(0);
   }
   virtual NodeList getTerminatorEdges() const { return NodeList(); }
-  virtual void dump(const IceCfg *Cfg) const;
+  virtual void dump(const IceCfg *Func) const;
   static bool classof(const Inst *Inst) { return Inst->getKind() == Ret; }
 
 private:
-  InstRet(IceCfg *Cfg, Operand *Source);
+  InstRet(IceCfg *Func, Operand *Source);
   InstRet(const InstRet &) LLVM_DELETED_FUNCTION;
   InstRet &operator=(const InstRet &) LLVM_DELETED_FUNCTION;
   virtual ~InstRet() {}
@@ -475,19 +477,19 @@ private:
 // Select instruction.  The condition, true, and false operands are captured.
 class InstSelect : public Inst {
 public:
-  static InstSelect *create(IceCfg *Cfg, Variable *Dest, Operand *Condition,
+  static InstSelect *create(IceCfg *Func, Variable *Dest, Operand *Condition,
                             Operand *SourceTrue, Operand *SourceFalse) {
-    return new (Cfg->allocateInst<InstSelect>())
-        InstSelect(Cfg, Dest, Condition, SourceTrue, SourceFalse);
+    return new (Func->allocateInst<InstSelect>())
+        InstSelect(Func, Dest, Condition, SourceTrue, SourceFalse);
   }
   Operand *getCondition() const { return getSrc(0); }
   Operand *getTrueOperand() const { return getSrc(1); }
   Operand *getFalseOperand() const { return getSrc(2); }
-  virtual void dump(const IceCfg *Cfg) const;
+  virtual void dump(const IceCfg *Func) const;
   static bool classof(const Inst *Inst) { return Inst->getKind() == Select; }
 
 private:
-  InstSelect(IceCfg *Cfg, Variable *Dest, Operand *Condition, Operand *Source1,
+  InstSelect(IceCfg *Func, Variable *Dest, Operand *Condition, Operand *Source1,
              Operand *Source2);
   InstSelect(const InstSelect &) LLVM_DELETED_FUNCTION;
   InstSelect &operator=(const InstSelect &) LLVM_DELETED_FUNCTION;
@@ -498,16 +500,16 @@ private:
 // data operand to be stored into the address.
 class InstStore : public Inst {
 public:
-  static InstStore *create(IceCfg *Cfg, Operand *Data, Operand *Addr) {
-    return new (Cfg->allocateInst<InstStore>()) InstStore(Cfg, Data, Addr);
+  static InstStore *create(IceCfg *Func, Operand *Data, Operand *Addr) {
+    return new (Func->allocateInst<InstStore>()) InstStore(Func, Data, Addr);
   }
   Operand *getAddr() const { return getSrc(1); }
   Operand *getData() const { return getSrc(0); }
-  virtual void dump(const IceCfg *Cfg) const;
+  virtual void dump(const IceCfg *Func) const;
   static bool classof(const Inst *Inst) { return Inst->getKind() == Store; }
 
 private:
-  InstStore(IceCfg *Cfg, Operand *Data, Operand *Addr);
+  InstStore(IceCfg *Func, Operand *Data, Operand *Addr);
   InstStore(const InstStore &) LLVM_DELETED_FUNCTION;
   InstStore &operator=(const InstStore &) LLVM_DELETED_FUNCTION;
   virtual ~InstStore() {}
@@ -517,10 +519,10 @@ private:
 // getSrc(0).
 class InstSwitch : public Inst {
 public:
-  static InstSwitch *create(IceCfg *Cfg, IceSize_t NumCases, Operand *Source,
+  static InstSwitch *create(IceCfg *Func, IceSize_t NumCases, Operand *Source,
                             CfgNode *LabelDefault) {
-    return new (Cfg->allocateInst<InstSwitch>())
-        InstSwitch(Cfg, NumCases, Source, LabelDefault);
+    return new (Func->allocateInst<InstSwitch>())
+        InstSwitch(Func, NumCases, Source, LabelDefault);
   }
   Operand *getComparison() const { return getSrc(0); }
   CfgNode *getLabelDefault() const { return LabelDefault; }
@@ -535,11 +537,11 @@ public:
   }
   void addBranch(IceSize_t CaseIndex, uint64_t Value, CfgNode *Label);
   virtual NodeList getTerminatorEdges() const;
-  virtual void dump(const IceCfg *Cfg) const;
+  virtual void dump(const IceCfg *Func) const;
   static bool classof(const Inst *Inst) { return Inst->getKind() == Switch; }
 
 private:
-  InstSwitch(IceCfg *Cfg, IceSize_t NumCases, Operand *Source,
+  InstSwitch(IceCfg *Func, IceSize_t NumCases, Operand *Source,
              CfgNode *LabelDefault);
   InstSwitch(const InstSwitch &) LLVM_DELETED_FUNCTION;
   InstSwitch &operator=(const InstSwitch &) LLVM_DELETED_FUNCTION;
@@ -560,17 +562,17 @@ private:
 // operands.
 class InstUnreachable : public Inst {
 public:
-  static InstUnreachable *create(IceCfg *Cfg) {
-    return new (Cfg->allocateInst<InstUnreachable>()) InstUnreachable(Cfg);
+  static InstUnreachable *create(IceCfg *Func) {
+    return new (Func->allocateInst<InstUnreachable>()) InstUnreachable(Func);
   }
   virtual NodeList getTerminatorEdges() const { return NodeList(); }
-  virtual void dump(const IceCfg *Cfg) const;
+  virtual void dump(const IceCfg *Func) const;
   static bool classof(const Inst *Inst) {
     return Inst->getKind() == Unreachable;
   }
 
 private:
-  InstUnreachable(IceCfg *Cfg);
+  InstUnreachable(IceCfg *Func);
   InstUnreachable(const InstUnreachable &) LLVM_DELETED_FUNCTION;
   InstUnreachable &operator=(const InstUnreachable &) LLVM_DELETED_FUNCTION;
   virtual ~InstUnreachable() {}
@@ -590,16 +592,16 @@ private:
 // dest wouldn't be properly initialized.
 class InstFakeDef : public Inst {
 public:
-  static InstFakeDef *create(IceCfg *Cfg, Variable *Dest,
+  static InstFakeDef *create(IceCfg *Func, Variable *Dest,
                              Variable *Src = NULL) {
-    return new (Cfg->allocateInst<InstFakeDef>()) InstFakeDef(Cfg, Dest, Src);
+    return new (Func->allocateInst<InstFakeDef>()) InstFakeDef(Func, Dest, Src);
   }
-  virtual void emit(const IceCfg *Cfg, uint32_t Option) const;
-  virtual void dump(const IceCfg *Cfg) const;
+  virtual void emit(const IceCfg *Func, uint32_t Option) const;
+  virtual void dump(const IceCfg *Func) const;
   static bool classof(const Inst *Inst) { return Inst->getKind() == FakeDef; }
 
 private:
-  InstFakeDef(IceCfg *Cfg, Variable *Dest, Variable *Src);
+  InstFakeDef(IceCfg *Func, Variable *Dest, Variable *Src);
   InstFakeDef(const InstFakeDef &) LLVM_DELETED_FUNCTION;
   InstFakeDef &operator=(const InstFakeDef &) LLVM_DELETED_FUNCTION;
   virtual ~InstFakeDef() {}
@@ -612,15 +614,15 @@ private:
 // never be dead-code eliminated.
 class InstFakeUse : public Inst {
 public:
-  static InstFakeUse *create(IceCfg *Cfg, Variable *Src) {
-    return new (Cfg->allocateInst<InstFakeUse>()) InstFakeUse(Cfg, Src);
+  static InstFakeUse *create(IceCfg *Func, Variable *Src) {
+    return new (Func->allocateInst<InstFakeUse>()) InstFakeUse(Func, Src);
   }
-  virtual void emit(const IceCfg *Cfg, uint32_t Option) const;
-  virtual void dump(const IceCfg *Cfg) const;
+  virtual void emit(const IceCfg *Func, uint32_t Option) const;
+  virtual void dump(const IceCfg *Func) const;
   static bool classof(const Inst *Inst) { return Inst->getKind() == FakeUse; }
 
 private:
-  InstFakeUse(IceCfg *Cfg, Variable *Src);
+  InstFakeUse(IceCfg *Func, Variable *Src);
   InstFakeUse(const InstFakeUse &) LLVM_DELETED_FUNCTION;
   InstFakeUse &operator=(const InstFakeUse &) LLVM_DELETED_FUNCTION;
   virtual ~InstFakeUse() {}
@@ -637,18 +639,18 @@ private:
 // gets dead-code eliminated, the FakeKill instruction will as well.
 class InstFakeKill : public Inst {
 public:
-  static InstFakeKill *create(IceCfg *Cfg, const VarList &KilledRegs,
+  static InstFakeKill *create(IceCfg *Func, const VarList &KilledRegs,
                               const Inst *Linked) {
-    return new (Cfg->allocateInst<InstFakeKill>())
-        InstFakeKill(Cfg, KilledRegs, Linked);
+    return new (Func->allocateInst<InstFakeKill>())
+        InstFakeKill(Func, KilledRegs, Linked);
   }
   const Inst *getLinked() const { return Linked; }
-  virtual void emit(const IceCfg *Cfg, uint32_t Option) const;
-  virtual void dump(const IceCfg *Cfg) const;
+  virtual void emit(const IceCfg *Func, uint32_t Option) const;
+  virtual void dump(const IceCfg *Func) const;
   static bool classof(const Inst *Inst) { return Inst->getKind() == FakeKill; }
 
 private:
-  InstFakeKill(IceCfg *Cfg, const VarList &KilledRegs, const Inst *Linked);
+  InstFakeKill(IceCfg *Func, const VarList &KilledRegs, const Inst *Linked);
   InstFakeKill(const InstFakeKill &) LLVM_DELETED_FUNCTION;
   InstFakeKill &operator=(const InstFakeKill &) LLVM_DELETED_FUNCTION;
   virtual ~InstFakeKill() {}
@@ -661,14 +663,14 @@ private:
 // instructions.
 class InstTarget : public Inst {
 public:
-  virtual void emit(const IceCfg *Cfg, uint32_t Option) const = 0;
-  virtual void dump(const IceCfg *Cfg) const;
-  virtual void dumpExtras(const IceCfg *Cfg) const;
+  virtual void emit(const IceCfg *Func, uint32_t Option) const = 0;
+  virtual void dump(const IceCfg *Func) const;
+  virtual void dumpExtras(const IceCfg *Func) const;
   static bool classof(const Inst *Inst) { return Inst->getKind() >= Target; }
 
 protected:
-  InstTarget(IceCfg *Cfg, InstKind Kind, IceSize_t MaxSrcs, Variable *Dest)
-      : Inst(Cfg, Kind, MaxSrcs, Dest) {
+  InstTarget(IceCfg *Func, InstKind Kind, IceSize_t MaxSrcs, Variable *Dest)
+      : Inst(Func, Kind, MaxSrcs, Dest) {
     assert(Kind >= Target);
   }
   InstTarget(const InstTarget &) LLVM_DELETED_FUNCTION;

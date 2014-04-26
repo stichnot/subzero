@@ -38,7 +38,7 @@ public:
     return range().overlaps(Other.range());
   }
   Variable *const Var;
-  void dump(const IceCfg *Cfg) const;
+  void dump(const IceCfg *Func) const;
 
 private:
   // LiveRangeWrapper(const LiveRangeWrapper &) LLVM_DELETED_FUNCTION;
@@ -47,12 +47,12 @@ private:
 
 class LinearScan {
 public:
-  LinearScan(IceCfg *Cfg) : Cfg(Cfg) {}
+  LinearScan(IceCfg *Func) : Func(Func) {}
   void scan(const llvm::SmallBitVector &RegMask);
-  void dump(IceCfg *Cfg) const;
+  void dump(IceCfg *Func) const;
 
 private:
-  IceCfg *const Cfg;
+  IceCfg *const Func;
   // RangeCompare is the comparator for sorting an LiveRangeWrapper
   // by starting point in a std::set<>.  Ties are broken by variable
   // number so that sorting is stable.

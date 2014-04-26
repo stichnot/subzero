@@ -31,8 +31,8 @@ namespace Ice {
 
 void Liveness::init() {
   // Initialize most of the container sizes.
-  IceSize_t NumVars = Cfg->getVariables().size();
-  IceSize_t NumNodes = Cfg->getNumNodes();
+  IceSize_t NumVars = Func->getVariables().size();
+  IceSize_t NumNodes = Func->getNumNodes();
   Nodes.resize(NumNodes);
   VarToLiveMap.resize(NumVars);
   if (Mode == Liveness_RangesFull)
@@ -41,7 +41,7 @@ void Liveness::init() {
   // Count the number of globals, and the number of locals for each
   // block.
   for (IceSize_t i = 0; i < NumVars; ++i) {
-    Variable *Var = Cfg->getVariables()[i];
+    Variable *Var = Func->getVariables()[i];
     if (Var->isMultiblockLife()) {
       ++NumGlobals;
     } else {
@@ -62,7 +62,7 @@ void Liveness::init() {
   // VarToLiveMap.
   IceSize_t TmpNumGlobals = 0;
   for (IceSize_t i = 0; i < NumVars; ++i) {
-    Variable *Var = Cfg->getVariables()[i];
+    Variable *Var = Func->getVariables()[i];
     IceSize_t VarIndex = Var->getIndex();
     IceSize_t LiveIndex;
     if (Var->isMultiblockLife()) {
@@ -79,7 +79,7 @@ void Liveness::init() {
   assert(NumGlobals == TmpNumGlobals);
 
   // Process each node.
-  const NodeList &LNodes = Cfg->getNodes();
+  const NodeList &LNodes = Func->getNodes();
   IceSize_t NumLNodes = LNodes.size();
   for (IceSize_t i = 0; i < NumLNodes; ++i) {
     LivenessNode &Node = Nodes[LNodes[i]->getIndex()];

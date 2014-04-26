@@ -39,8 +39,8 @@ void LinearScan::scan(const llvm::SmallBitVector &RegMaskFull) {
   Handled.clear();
   Inactive.clear();
   Active.clear();
-  IceOstream &Str = Cfg->getContext()->getStrDump();
-  Cfg->setCurrentNode(NULL);
+  IceOstream &Str = Func->getContext()->getStrDump();
+  Func->setCurrentNode(NULL);
 
   // Gather the live ranges of all variables and add them to the
   // Unhandled set.  TODO: Unhandled is a set<> which is based on a
@@ -48,8 +48,8 @@ void LinearScan::scan(const llvm::SmallBitVector &RegMaskFull) {
   // O(N log N) complexity.  N may be proportional to the number of
   // instructions, thanks to temporary generation during lowering.  As
   // a result, it may be useful to design a better data structure for
-  // storing Cfg->getVariables().
-  const VarList &Vars = Cfg->getVariables();
+  // storing Func->getVariables().
+  const VarList &Vars = Func->getVariables();
   for (VarList::const_iterator I = Vars.begin(), E = Vars.end(); I != E; ++I) {
     Variable *Var = *I;
     // Explicitly don't consider zero-weight variables, which are
@@ -81,14 +81,14 @@ void LinearScan::scan(const llvm::SmallBitVector &RegMaskFull) {
   while (!Unhandled.empty()) {
     LiveRangeWrapper Cur = *Unhandled.begin();
     Unhandled.erase(Unhandled.begin());
-    if (Cfg->getContext()->isVerbose(IceV_LinearScan)) {
+    if (Func->getContext()->isVerbose(IceV_LinearScan)) {
       Str << "\nConsidering  ";
-      Cur.dump(Cfg);
+      Cur.dump(Func);
       Str << "\n";
     }
     const llvm::SmallBitVector RegMask =
         RegMaskFull &
-        Cfg->getTarget()->getRegisterSetForType(Cur.Var->getType());
+        Func->getTarget()->getRegisterSetForType(Cur.Var->getType());
 
     // Check for precolored ranges.  If Cur is precolored, it
     // definitely gets that register.  Previously processed live
@@ -98,9 +98,9 @@ void LinearScan::scan(const llvm::SmallBitVector &RegMaskFull) {
     if (Cur.Var->hasReg()) {
       int32_t RegNum = Cur.Var->getRegNum();
       Cur.Var->setRegNumTmp(RegNum);
-      if (Cfg->getContext()->isVerbose(IceV_LinearScan)) {
+      if (Func->getContext()->isVerbose(IceV_LinearScan)) {
         Str << "Precoloring  ";
-        Cur.dump(Cfg);
+        Cur.dump(Func);
         Str << "\n";
       }
       Active.push_back(Cur);
@@ -118,9 +118,9 @@ void LinearScan::scan(const llvm::SmallBitVector &RegMaskFull) {
       bool Moved = false;
       if (Item.endsBefore(Cur)) {
         // Move Item from Active to Handled list.
-        if (Cfg->getContext()->isVerbose(IceV_LinearScan)) {
+        if (Func->getContext()->isVerbose(IceV_LinearScan)) {
           Str << "Expiring     ";
-          Item.dump(Cfg);
+          Item.dump(Func);
           Str << "\n";
         }
         Active.erase(I);
@@ -128,9 +128,9 @@ void LinearScan::scan(const llvm::SmallBitVector &RegMaskFull) {
         Moved = true;
       } else if (!Item.overlaps(Cur)) {
         // Move Item from Active to Inactive list.
-        if (Cfg->getContext()->isVerbose(IceV_LinearScan)) {
+        if (Func->getContext()->isVerbose(IceV_LinearScan)) {
           Str << "Inactivating ";
-          Item.dump(Cfg);
+          Item.dump(Func);
           Str << "\n";
         }
         Active.erase(I);
@@ -154,18 +154,18 @@ void LinearScan::scan(const llvm::SmallBitVector &RegMaskFull) {
       LiveRangeWrapper Item = *I;
       if (Item.endsBefore(Cur)) {
         // Move Item from Inactive to Handled list.
-        if (Cfg->getContext()->isVerbose(IceV_LinearScan)) {
+        if (Func->getContext()->isVerbose(IceV_LinearScan)) {
           Str << "Expiring     ";
-          Item.dump(Cfg);
+          Item.dump(Func);
           Str << "\n";
         }
         Inactive.erase(I);
         Handled.push_back(Item);
       } else if (Item.overlaps(Cur)) {
         // Move Item from Inactive to Active list.
-        if (Cfg->getContext()->isVerbose(IceV_LinearScan)) {
+        if (Func->getContext()->isVerbose(IceV_LinearScan)) {
           Str << "Reactivating ";
-          Item.dump(Cfg);
+          Item.dump(Func);
           Str << "\n";
         }
         Inactive.erase(I);
@@ -215,10 +215,10 @@ void LinearScan::scan(const llvm::SmallBitVector &RegMaskFull) {
     }
 
     // Print info about physical register availability.
-    if (Cfg->getContext()->isVerbose(IceV_LinearScan)) {
+    if (Func->getContext()->isVerbose(IceV_LinearScan)) {
       for (IceSize_t i = 0; i < RegMask.size(); ++i) {
         if (RegMask[i]) {
-          Str << Cfg->getTarget()->getRegName(i, IceType_i32)
+          Str << Func->getTarget()->getRegName(i, IceType_i32)
               << "(U=" << RegUses[i] << ",F=" << Free[i] << ") ";
         }
       }
@@ -233,9 +233,9 @@ void LinearScan::scan(const llvm::SmallBitVector &RegMaskFull) {
       // First choice: a preferred register that is either free or is
       // allowed to overlap with its linked variable.
       Cur.Var->setRegNumTmp(PreferReg);
-      if (Cfg->getContext()->isVerbose(IceV_LinearScan)) {
+      if (Func->getContext()->isVerbose(IceV_LinearScan)) {
         Str << "Preferring   ";
-        Cur.dump(Cfg);
+        Cur.dump(Func);
         Str << "\n";
       }
       assert(RegUses[PreferReg] >= 0);
@@ -247,9 +247,9 @@ void LinearScan::scan(const llvm::SmallBitVector &RegMaskFull) {
       // picking the lowest-numbered available register?
       int32_t RegNum = Free.find_first();
       Cur.Var->setRegNumTmp(RegNum);
-      if (Cfg->getContext()->isVerbose(IceV_LinearScan)) {
+      if (Func->getContext()->isVerbose(IceV_LinearScan)) {
         Str << "Allocating   ";
-        Cur.dump(Cfg);
+        Cur.dump(Func);
         Str << "\n";
       }
       assert(RegUses[RegNum] >= 0);
@@ -308,8 +308,8 @@ void LinearScan::scan(const llvm::SmallBitVector &RegMaskFull) {
         // Handled state.
         Handled.push_back(Cur);
         if (Cur.range().getWeight().isInf()) {
-          Cfg->setError("Unable to find a physical register for an "
-                        "infinite-weight live range");
+          Func->setError("Unable to find a physical register for an "
+                         "infinite-weight live range");
         }
       } else {
         // Evict all live ranges in Active that register number
@@ -320,9 +320,9 @@ void LinearScan::scan(const llvm::SmallBitVector &RegMaskFull) {
           ++Next;
           LiveRangeWrapper Item = *I;
           if (Item.Var->getRegNumTmp() == MinWeightIndex) {
-            if (Cfg->getContext()->isVerbose(IceV_LinearScan)) {
+            if (Func->getContext()->isVerbose(IceV_LinearScan)) {
               Str << "Evicting     ";
-              Item.dump(Cfg);
+              Item.dump(Func);
               Str << "\n";
             }
             --RegUses[MinWeightIndex];
@@ -339,9 +339,9 @@ void LinearScan::scan(const llvm::SmallBitVector &RegMaskFull) {
           ++Next;
           LiveRangeWrapper Item = *I;
           if (Item.Var->getRegNumTmp() == MinWeightIndex) {
-            if (Cfg->getContext()->isVerbose(IceV_LinearScan)) {
+            if (Func->getContext()->isVerbose(IceV_LinearScan)) {
               Str << "Evicting     ";
-              Item.dump(Cfg);
+              Item.dump(Func);
               Str << "\n";
             }
             Item.Var->setRegNumTmp(-1);
@@ -354,14 +354,14 @@ void LinearScan::scan(const llvm::SmallBitVector &RegMaskFull) {
         ++RegUses[MinWeightIndex];
         assert(RegUses[MinWeightIndex] >= 0);
         Active.push_back(Cur);
-        if (Cfg->getContext()->isVerbose(IceV_LinearScan)) {
+        if (Func->getContext()->isVerbose(IceV_LinearScan)) {
           Str << "Allocating   ";
-          Cur.dump(Cfg);
+          Cur.dump(Func);
           Str << "\n";
         }
       }
     }
-    dump(Cfg);
+    dump(Func);
   }
   // Move anything Active or Inactive to Handled for easier handling.
   for (UnorderedRanges::iterator I = Active.begin(), E = Active.end(); I != E;
@@ -378,23 +378,23 @@ void LinearScan::scan(const llvm::SmallBitVector &RegMaskFull) {
     Handled.push_back(*I);
     Inactive.erase(I);
   }
-  dump(Cfg);
+  dump(Func);
 
   // Finish up by assigning RegNumTmp->RegNum for each Variable.
   for (UnorderedRanges::const_iterator I = Handled.begin(), E = Handled.end();
        I != E; ++I) {
     LiveRangeWrapper Item = *I;
     int32_t RegNum = Item.Var->getRegNumTmp();
-    if (Cfg->getContext()->isVerbose(IceV_LinearScan)) {
+    if (Func->getContext()->isVerbose(IceV_LinearScan)) {
       if (!Item.Var->hasRegTmp()) {
         Str << "Not assigning ";
-        Item.Var->dump(Cfg);
+        Item.Var->dump(Func);
         Str << "\n";
       } else {
         Str << (RegNum == Item.Var->getRegNum() ? "Reassigning " : "Assigning ")
-            << Cfg->getTarget()->getRegName(RegNum, IceType_i32) << "(r"
+            << Func->getTarget()->getRegName(RegNum, IceType_i32) << "(r"
             << RegNum << ") to ";
-        Item.Var->dump(Cfg);
+        Item.Var->dump(Func);
         Str << "\n";
       }
     }
@@ -415,44 +415,44 @@ void LinearScan::scan(const llvm::SmallBitVector &RegMaskFull) {
 
 // ======================== Dump routines ======================== //
 
-void LiveRangeWrapper::dump(const IceCfg *Cfg) const {
-  IceOstream &Str = Cfg->getContext()->getStrDump();
+void LiveRangeWrapper::dump(const IceCfg *Func) const {
+  IceOstream &Str = Func->getContext()->getStrDump();
   const static size_t BufLen = 30;
   char buf[BufLen];
   snprintf(buf, BufLen, "%2d", Var->getRegNumTmp());
   Str << "R=" << buf << "  V=";
-  Var->dump(Cfg);
+  Var->dump(Func);
   Str << "  Range=" << range();
 }
 
-void LinearScan::dump(IceCfg *Cfg) const {
-  IceOstream &Str = Cfg->getContext()->getStrDump();
-  if (!Cfg->getContext()->isVerbose(IceV_LinearScan))
+void LinearScan::dump(IceCfg *Func) const {
+  IceOstream &Str = Func->getContext()->getStrDump();
+  if (!Func->getContext()->isVerbose(IceV_LinearScan))
     return;
-  Cfg->setCurrentNode(NULL);
+  Func->setCurrentNode(NULL);
   Str << "**** Current regalloc state:\n";
   Str << "++++++ Handled:\n";
   for (UnorderedRanges::const_iterator I = Handled.begin(), E = Handled.end();
        I != E; ++I) {
-    I->dump(Cfg);
+    I->dump(Func);
     Str << "\n";
   }
   Str << "++++++ Unhandled:\n";
   for (OrderedRanges::const_iterator I = Unhandled.begin(), E = Unhandled.end();
        I != E; ++I) {
-    I->dump(Cfg);
+    I->dump(Func);
     Str << "\n";
   }
   Str << "++++++ Active:\n";
   for (UnorderedRanges::const_iterator I = Active.begin(), E = Active.end();
        I != E; ++I) {
-    I->dump(Cfg);
+    I->dump(Func);
     Str << "\n";
   }
   Str << "++++++ Inactive:\n";
   for (UnorderedRanges::const_iterator I = Inactive.begin(), E = Inactive.end();
        I != E; ++I) {
-    I->dump(Cfg);
+    I->dump(Func);
     Str << "\n";
   }
 }

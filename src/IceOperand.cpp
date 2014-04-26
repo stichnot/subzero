@@ -146,11 +146,11 @@ void Variable::replaceDefinition(Inst *Inst, const CfgNode *Node) {
   setDefinition(Inst, Node);
 }
 
-void Variable::setIsArg(IceCfg *Cfg) {
+void Variable::setIsArg(IceCfg *Func) {
   IsArgument = true;
   if (DefNode == NULL)
     return;
-  CfgNode *Entry = Cfg->getEntryNode();
+  CfgNode *Entry = Func->getEntryNode();
   if (DefNode == Entry)
     return;
   DefNode = NULL;
@@ -175,11 +175,11 @@ Variable Variable::asType(IceType Type) {
 // ======================== dump routines ======================== //
 
 // TODO: This should be handed by the TargetLowering subclass.
-void Variable::emit(const IceCfg *Cfg, uint32_t /*Option*/) const {
-  IceOstream &Str = Cfg->getContext()->getStrEmit();
-  assert(DefNode == NULL || DefNode == Cfg->getCurrentNode());
+void Variable::emit(const IceCfg *Func, uint32_t /*Option*/) const {
+  IceOstream &Str = Func->getContext()->getStrEmit();
+  assert(DefNode == NULL || DefNode == Func->getCurrentNode());
   if (hasReg()) {
-    Str << Cfg->getTarget()->getRegName(RegNum, getType());
+    Str << Func->getTarget()->getRegName(RegNum, getType());
     return;
   }
   switch (typeWidthInBytes(getType())) {
@@ -199,9 +199,9 @@ void Variable::emit(const IceCfg *Cfg, uint32_t /*Option*/) const {
     assert(0);
     break;
   }
-  Str << " ptr [" << Cfg->getTarget()->getRegName(
-                         Cfg->getTarget()->getFrameOrStackReg(), IceType_i32);
-  int32_t Offset = getStackOffset() + Cfg->getTarget()->getStackAdjustment();
+  Str << " ptr [" << Func->getTarget()->getRegName(
+                         Func->getTarget()->getFrameOrStackReg(), IceType_i32);
+  int32_t Offset = getStackOffset() + Func->getTarget()->getStackAdjustment();
   if (Offset) {
     if (Offset > 0)
       Str << "+";
@@ -210,23 +210,23 @@ void Variable::emit(const IceCfg *Cfg, uint32_t /*Option*/) const {
   Str << "]";
 }
 
-void Variable::dump(const IceCfg *Cfg) const {
-  IceOstream &Str = Cfg->getContext()->getStrDump();
-  const CfgNode *CurrentNode = Cfg->getCurrentNode();
+void Variable::dump(const IceCfg *Func) const {
+  IceOstream &Str = Func->getContext()->getStrDump();
+  const CfgNode *CurrentNode = Func->getCurrentNode();
   (void)CurrentNode; // used only in assert()
   assert(CurrentNode == NULL || DefNode == NULL || DefNode == CurrentNode);
-  if (Cfg->getContext()->isVerbose(IceV_RegOrigins) ||
-      (!hasReg() && !Cfg->getTarget()->hasComputedFrame()))
+  if (Func->getContext()->isVerbose(IceV_RegOrigins) ||
+      (!hasReg() && !Func->getTarget()->hasComputedFrame()))
     Str << "%" << getName();
   if (hasReg()) {
-    if (Cfg->getContext()->isVerbose(IceV_RegOrigins))
+    if (Func->getContext()->isVerbose(IceV_RegOrigins))
       Str << ":";
-    Str << Cfg->getTarget()->getRegName(RegNum, getType());
-  } else if (Cfg->getTarget()->hasComputedFrame()) {
-    if (Cfg->getContext()->isVerbose(IceV_RegOrigins))
+    Str << Func->getTarget()->getRegName(RegNum, getType());
+  } else if (Func->getTarget()->hasComputedFrame()) {
+    if (Func->getContext()->isVerbose(IceV_RegOrigins))
       Str << ":";
-    Str << "[" << Cfg->getTarget()->getRegName(
-                      Cfg->getTarget()->getFrameOrStackReg(), IceType_i32);
+    Str << "[" << Func->getTarget()->getRegName(
+                      Func->getTarget()->getFrameOrStackReg(), IceType_i32);
     int32_t Offset = getStackOffset();
     if (Offset) {
       if (Offset > 0)
@@ -237,12 +237,12 @@ void Variable::dump(const IceCfg *Cfg) const {
   }
 }
 
-void ConstantRelocatable::emit(const IceCfg *Cfg, uint32_t /*Option*/) const {
-  IceOstream &Str = Cfg->getContext()->getStrEmit();
+void ConstantRelocatable::emit(const IceCfg *Func, uint32_t /*Option*/) const {
+  IceOstream &Str = Func->getContext()->getStrEmit();
   if (SuppressMangling)
     Str << Name;
   else
-    Str << Cfg->getContext()->mangleName(Name);
+    Str << Func->getContext()->mangleName(Name);
   if (Offset) {
     if (Offset > 0)
       Str << "+";
@@ -250,8 +250,8 @@ void ConstantRelocatable::emit(const IceCfg *Cfg, uint32_t /*Option*/) const {
   }
 }
 
-void ConstantRelocatable::dump(const IceCfg *Cfg) const {
-  IceOstream &Str = Cfg->getContext()->getStrDump();
+void ConstantRelocatable::dump(const IceCfg *Func) const {
+  IceOstream &Str = Func->getContext()->getStrDump();
   Str << "@" << Name;
   if (Offset)
     Str << "+" << Offset;

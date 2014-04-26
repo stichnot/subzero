@@ -76,7 +76,7 @@ private:
 
 class TargetLowering {
 public:
-  static TargetLowering *createLowering(IceTargetArch Target, IceCfg *Cfg);
+  static TargetLowering *createLowering(IceTargetArch Target, IceCfg *Func);
   void translate() {
     switch (Ctx->getOptLevel()) {
     case IceOpt_m1:
@@ -92,21 +92,21 @@ public:
       translateO2();
       break;
     default:
-      Cfg->setError("Target doesn't specify lowering steps.");
+      Func->setError("Target doesn't specify lowering steps.");
       break;
     }
   }
   virtual void translateOm1() {
-    Cfg->setError("Target doesn't specify Om1 lowering steps.");
+    Func->setError("Target doesn't specify Om1 lowering steps.");
   }
   virtual void translateO0() {
-    Cfg->setError("Target doesn't specify O0 lowering steps.");
+    Func->setError("Target doesn't specify O0 lowering steps.");
   }
   virtual void translateO1() {
-    Cfg->setError("Target doesn't specify O1 lowering steps.");
+    Func->setError("Target doesn't specify O1 lowering steps.");
   }
   virtual void translateO2() {
-    Cfg->setError("Target doesn't specify O2 lowering steps.");
+    Func->setError("Target doesn't specify O2 lowering steps.");
   }
 
   // Tries to do address mode optimization on a single instruction.
@@ -153,8 +153,8 @@ public:
   virtual ~TargetLowering() {}
 
 protected:
-  TargetLowering(IceCfg *Cfg)
-      : Cfg(Cfg), Ctx(Cfg->getContext()), HasComputedFrame(false),
+  TargetLowering(IceCfg *Func)
+      : Func(Func), Ctx(Func->getContext()), HasComputedFrame(false),
         StackAdjustment(0) {}
   virtual void lowerAlloca(const InstAlloca *Inst) = 0;
   virtual void lowerArithmetic(const InstArithmetic *Inst) = 0;
@@ -182,7 +182,7 @@ protected:
   // subsequent global register allocation pass.
   virtual void postLower() {}
 
-  IceCfg *Cfg;
+  IceCfg *Func;
   GlobalContext *Ctx;
   bool HasComputedFrame;
   // StackAdjustment keeps track of the current stack offset from its
