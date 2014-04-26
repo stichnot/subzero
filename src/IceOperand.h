@@ -153,6 +153,8 @@ public:
   bool SuppressMangling;
 };
 
+bool operator<(const RelocatableTuple &A, const RelocatableTuple &B);
+
 // ConstantRelocatable represents a symbolic constant combined with
 // a fixed offset.
 class ConstantRelocatable : public Constant {

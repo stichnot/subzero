@@ -20,6 +20,14 @@
 
 namespace Ice {
 
+bool operator<(const RelocatableTuple &A, const RelocatableTuple &B) {
+  if (A.Offset != B.Offset)
+    return A.Offset < B.Offset;
+  if (A.SuppressMangling != B.SuppressMangling)
+    return A.SuppressMangling < B.SuppressMangling;
+  return A.Name < B.Name;
+}
+
 bool operator<(const RegWeight &A, const RegWeight &B) {
   return A.getWeight() < B.getWeight();
 }
