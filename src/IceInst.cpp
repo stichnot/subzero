@@ -23,7 +23,8 @@ namespace Ice {
 
 namespace {
 
-const struct {
+// Using non-anonymous struct so that array_lengthof works.
+const struct _InstArithmeticAttributes {
   const char *DisplayString;
   bool IsCommutative;
 } InstArithmeticAttributes[] = {
@@ -34,9 +35,10 @@ const struct {
 #undef X
   };
 const size_t InstArithmeticAttributesSize =
-    sizeof(InstArithmeticAttributes) / sizeof(*InstArithmeticAttributes);
+    llvm::array_lengthof(InstArithmeticAttributes);
 
-const struct {
+// Using non-anonymous struct so that array_lengthof works.
+const struct _InstCastAttributes {
   const char *DisplayString;
 } InstCastAttributes[] = {
 #define X(tag, str)                                                            \
@@ -45,10 +47,10 @@ const struct {
     ICEINSTCAST_TABLE
 #undef X
   };
-const size_t InstCastAttributesSize =
-    sizeof(InstCastAttributes) / sizeof(*InstCastAttributes);
+const size_t InstCastAttributesSize = llvm::array_lengthof(InstCastAttributes);
 
-const struct {
+// Using non-anonymous struct so that array_lengthof works.
+const struct _InstFcmpAttributes {
   const char *DisplayString;
 } InstFcmpAttributes[] = {
 #define X(tag, str)                                                            \
@@ -57,10 +59,10 @@ const struct {
     ICEINSTFCMP_TABLE
 #undef X
   };
-const size_t InstFcmpAttributesSize =
-    sizeof(InstFcmpAttributes) / sizeof(*InstFcmpAttributes);
+const size_t InstFcmpAttributesSize = llvm::array_lengthof(InstFcmpAttributes);
 
-const struct {
+// Using non-anonymous struct so that array_lengthof works.
+const struct _InstIcmpAttributes {
   const char *DisplayString;
 } InstIcmpAttributes[] = {
 #define X(tag, str)                                                            \
@@ -69,8 +71,7 @@ const struct {
     ICEINSTICMP_TABLE
 #undef X
   };
-const size_t InstIcmpAttributesSize =
-    sizeof(InstIcmpAttributes) / sizeof(*InstIcmpAttributes);
+const size_t InstIcmpAttributesSize = llvm::array_lengthof(InstIcmpAttributes);
 
 } // end of anonymous namespace
 
