@@ -113,20 +113,17 @@ public:
 
   // Deallocate data that was allocated via allocate<T>().
   template <typename T> void deallocate(T *Object) {
-    // Do nothing for the arena-based Allocator.
-    (void)Object;
+    Allocator.Deallocate(Object);
   }
 
   // Deallocate data that was allocated via allocateInst<T>().
   template <typename T> void deallocateInst(T *Instr) {
-    // Do nothing for the arena-based Allocator.
-    (void)Instr;
+    Allocator.Deallocate(Instr);
   }
 
   // Deallocate data that was allocated via allocateArrayOf<T>().
   template <typename T> void deallocateArrayOf(T *Array) {
-    // Do nothing for the arena-based Allocator.
-    (void)Array;
+    Allocator.Deallocate(Array);
   }
 
 private:

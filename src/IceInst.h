@@ -150,22 +150,23 @@ private:
 // 0 (no alignment required) or a power of 2.
 class InstAlloca : public Inst {
 public:
-  static InstAlloca *create(Cfg *Func, Operand *ByteCount, uint32_t Align,
-                            Variable *Dest) {
+  static InstAlloca *create(Cfg *Func, Operand *ByteCount,
+                            uint32_t AlignInBytes, Variable *Dest) {
     return new (Func->allocateInst<InstAlloca>())
-        InstAlloca(Func, ByteCount, Align, Dest);
+        InstAlloca(Func, ByteCount, AlignInBytes, Dest);
   }
-  uint32_t getAlign() const { return Align; }
+  uint32_t getAlignInBytes() const { return AlignInBytes; }
   Operand *getSizeInBytes() const { return getSrc(0); }
   virtual void dump(const Cfg *Func) const;
   static bool classof(const Inst *Inst) { return Inst->getKind() == Alloca; }
 
 private:
-  InstAlloca(Cfg *Func, Operand *ByteCount, uint32_t Align, Variable *Dest);
+  InstAlloca(Cfg *Func, Operand *ByteCount, uint32_t AlignInBytes,
+             Variable *Dest);
   InstAlloca(const InstAlloca &) LLVM_DELETED_FUNCTION;
   InstAlloca &operator=(const InstAlloca &) LLVM_DELETED_FUNCTION;
   virtual ~InstAlloca() {}
-  const uint32_t Align;
+  const uint32_t AlignInBytes;
 };
 
 // Binary arithmetic instruction.  The source operands are captured in

@@ -21,7 +21,7 @@
 namespace Ice {
 
 enum Type {
-#define X(tag, size, str) tag,
+#define X(tag, size, align, str) tag,
   ICETYPE_TABLE
 #undef X
 };
@@ -41,6 +41,7 @@ enum IceOptLevel {
 };
 
 size_t typeWidthInBytes(Type Ty);
+size_t typeAlignInBytes(Type Ty);
 
 template <> Ostream &operator<<(class Ostream &Str, const Type &Ty);
 

@@ -216,11 +216,11 @@ void Inst::liveness(LivenessMode Mode, int32_t InstNumber,
   }
 }
 
-InstAlloca::InstAlloca(Cfg *Func, Operand *ByteCount, uint32_t Align,
+InstAlloca::InstAlloca(Cfg *Func, Operand *ByteCount, uint32_t AlignInBytes,
                        Variable *Dest)
-    : Inst(Func, Inst::Alloca, 1, Dest), Align(Align) {
-  // Verify Align is 0 or a power of 2.
-  assert(Align == 0 || !(Align & (Align - 1)));
+    : Inst(Func, Inst::Alloca, 1, Dest), AlignInBytes(AlignInBytes) {
+  // Verify AlignInBytes is 0 or a power of 2.
+  assert(AlignInBytes == 0 || llvm::isPowerOf2_32(AlignInBytes));
   addSource(ByteCount);
 }
 
@@ -527,7 +527,7 @@ void InstAlloca::dump(const Cfg *Func) const {
   dumpDest(Func);
   Str << " = alloca i8, i32 ";
   getSizeInBytes()->dump(Func);
-  Str << ", align " << Align;
+  Str << ", align " << getAlignInBytes();
 }
 
 void InstArithmetic::dump(const Cfg *Func) const {
@@ -611,17 +611,7 @@ void InstLoad::dump(const Cfg *Func) const {
   Type Ty = getDest()->getType();
   Str << " = load " << Ty << "* ";
   dumpSources(Func);
-  switch (Ty) {
-  case IceType_f32:
-    Str << ", align 4";
-    break;
-  case IceType_f64:
-    Str << ", align 8";
-    break;
-  default:
-    Str << ", align 1";
-    break;
-  }
+  Str << ", align " << typeAlignInBytes(Ty);
 }
 
 void InstStore::dump(const Cfg *Func) const {
@@ -631,18 +621,7 @@ void InstStore::dump(const Cfg *Func) const {
   getData()->dump(Func);
   Str << ", " << Ty << "* ";
   getAddr()->dump(Func);
-  Str << ", align ";
-  switch (Ty) {
-  case IceType_f32:
-    Str << "4";
-    break;
-  case IceType_f64:
-    Str << "8";
-    break;
-  default:
-    Str << "1";
-    break;
-  }
+  Str << ", align " << typeAlignInBytes(Ty);
 }
 
 void InstSwitch::dump(const Cfg *Func) const {

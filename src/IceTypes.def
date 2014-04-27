@@ -15,17 +15,18 @@
 #ifndef SUBZERO_SRC_ICETYPES_DEF
 #define SUBZERO_SRC_ICETYPES_DEF
 
-#define ICETYPE_TABLE                                \
-  /* enum value,  size in bytes, printable string */ \
-  X(IceType_void, 0,             "void")             \
-  X(IceType_i1,   1,             "i1")               \
-  X(IceType_i8,   1,             "i8")               \
-  X(IceType_i16,  2,             "i16")              \
-  X(IceType_i32,  4,             "i32")              \
-  X(IceType_i64,  8,             "i64")              \
-  X(IceType_f32,  4,             "float")            \
-  X(IceType_f64,  8,             "double")           \
-  X(IceType_NUM,  0,             "<invalid>")
-//#define X(tag, size, str)
+#define ICETYPE_TABLE                              \
+  /* enum value,  size, align, printable string */ \
+  /*   (size and alignment in bytes) */            \
+  X(IceType_void, 0,    0,     "void")             \
+  X(IceType_i1,   1,    1,     "i1")               \
+  X(IceType_i8,   1,    1,     "i8")               \
+  X(IceType_i16,  2,    1,     "i16")              \
+  X(IceType_i32,  4,    1,     "i32")              \
+  X(IceType_i64,  8,    1,     "i64")              \
+  X(IceType_f32,  4,    4,     "float")            \
+  X(IceType_f64,  8,    8,     "double")           \
+  X(IceType_NUM,  0,    0,     "<invalid>")
+//#define X(tag, size, align, str)
 
 #endif // SUBZERO_SRC_ICETYPES_DEF

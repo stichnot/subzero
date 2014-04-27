@@ -20,10 +20,11 @@ namespace {
 
 const struct {
   size_t TypeWidthInBytes;
+  size_t TypeAlignInBytes;
   IceString DisplayString;
 } TypeAttributes[] = {
-#define X(tag, size, str)                                                      \
-  { size, str }                                                                \
+#define X(tag, size, align, str)                                               \
+  { size, align, str }                                                         \
   ,
     ICETYPE_TABLE
 #undef X
@@ -44,6 +45,16 @@ size_t typeWidthInBytes(Type Ty) {
   }
   assert(Width && "Invalid type for iceTypeWidthInBytes()");
   return Width;
+}
+
+size_t typeAlignInBytes(Type Ty) {
+  size_t Align = 0;
+  size_t Index = static_cast<size_t>(Ty);
+  if (Index < TypeAttributesSize) {
+    Align = TypeAttributes[Index].TypeAlignInBytes;
+  }
+  assert(Align && "Invalid type for iceTypeAlignInBytes()");
+  return Align;
 }
 
 // ======================== Dump routines ======================== //
