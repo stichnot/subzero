@@ -17,6 +17,7 @@
 #define SUBZERO_SRC_ICEINST_H
 
 #include "IceDefs.h"
+#include "IceInst.def"
 #include "IceTypes.h"
 
 // TODO: The Cfg structure, and instructions in particular, need to be
@@ -102,7 +103,7 @@ public:
   void dumpDest(const Cfg *Func) const;
   virtual bool isRedundantAssign() const { return false; }
 
-  virtual ~Inst();
+  virtual ~Inst() {}
 
 protected:
   Inst(Cfg *Func, InstKind Kind, SizeT MaxSrcs, Variable *Dest);
@@ -116,6 +117,9 @@ protected:
       LiveRangesEnded |= (1u << VarIndex);
   }
   void resetLastUses() { LiveRangesEnded = 0; }
+  // The destroy() method lets the instruction cleanly release any
+  // memory that was allocated via the Cfg's allocator.
+  virtual void destroy(Cfg *Func) { Func->deallocateArrayOf<Operand *>(Srcs); }
 
   const InstKind Kind;
   // Number is the instruction number for describing live ranges.
@@ -164,25 +168,16 @@ private:
   const uint32_t Align;
 };
 
-#define ICEINSTARITHMETIC_TABLE                                                \
-  /* enum value, printable string, commutative */                              \
-  X(Add, "add", true) X(Fadd, "fadd", false) X(Sub, "sub", false)              \
-      X(Fsub, "fsub", false) X(Mul, "mul", true) X(Fmul, "fmul", false)        \
-      X(Udiv, "udiv", false) X(Sdiv, "sdiv", false) X(Fdiv, "fdiv", false)     \
-      X(Urem, "urem", false) X(Srem, "srem", false) X(Frem, "frem", false)     \
-      X(Shl, "shl", false) X(Lshr, "lshr", false) X(Ashr, "ashr", false)       \
-      X(And, "and", true) X(Or, "or", true) X(Xor, "xor", true)
-
 // Binary arithmetic instruction.  The source operands are captured in
 // getSrc(0) and getSrc(1).
 class InstArithmetic : public Inst {
 public:
-#define X(tag, str, commutative) tag,
-
   enum OpKind {
-    ICEINSTARITHMETIC_TABLE OpKind_NUM
-  };
+#define X(tag, str, commutative) tag,
+    ICEINSTARITHMETIC_TABLE
 #undef X
+        OpKind_NUM
+  };
 
   static InstArithmetic *create(Cfg *Func, OpKind Op, Variable *Dest,
                                 Operand *Source1, Operand *Source2) {
@@ -300,21 +295,14 @@ private:
   virtual ~InstCall() {}
 };
 
-#define ICEINSTCAST_TABLE                                                      \
-  /* enum value, printable string */                                           \
-  X(Trunc, "trunc") X(Zext, "zext") X(Sext, "sext") X(Fptrunc, "fptrunc")      \
-      X(Fpext, "fpext") X(Fptoui, "fptoui") X(Fptosi, "fptosi")                \
-      X(Uitofp, "uitofp") X(Sitofp, "sitofp") X(Bitcast, "bitcast")
-
 // Cast instruction (a.k.a. conversion operation).
 class InstCast : public Inst {
 public:
-#define X(tag, str) tag,
-
   enum OpKind {
+#define X(tag, str) tag,
     ICEINSTCAST_TABLE
-  };
 #undef X
+  };
 
   static InstCast *create(Cfg *Func, OpKind CastKind, Variable *Dest,
                           Operand *Source) {
@@ -333,23 +321,15 @@ private:
   const OpKind CastKind;
 };
 
-#define ICEINSTFCMP_TABLE                                                      \
-  /* enum value, printable string */                                           \
-  X(False, "false") X(Oeq, "oeq") X(Ogt, "ogt") X(Oge, "oge") X(Olt, "olt")    \
-      X(Ole, "ole") X(One, "one") X(Ord, "ord") X(Ueq, "ueq") X(Ugt, "ugt")    \
-      X(Uge, "uge") X(Ult, "ult") X(Ule, "ule") X(Une, "une") X(Uno, "uno")    \
-      X(True, "true")
-
 // Floating-point comparison instruction.  The source operands are
 // captured in getSrc(0) and getSrc(1).
 class InstFcmp : public Inst {
 public:
-#define X(tag, str) tag,
-
   enum FCond {
+#define X(tag, str) tag,
     ICEINSTFCMP_TABLE
-  };
 #undef X
+  };
 
   static InstFcmp *create(Cfg *Func, FCond Condition, Variable *Dest,
                           Operand *Source1, Operand *Source2) {
@@ -369,21 +349,16 @@ private:
   const FCond Condition;
 };
 
-#define ICEINSTICMP_TABLE                                                      \
-  /* enum value, printable string */                                           \
-  X(Eq, "eq") X(Ne, "ne") X(Ugt, "ugt") X(Uge, "uge") X(Ult, "ult")            \
-      X(Ule, "ule") X(Sgt, "sgt") X(Sge, "sge") X(Slt, "slt") X(Sle, "sle")
-
 // Integer comparison instruction.  The source operands are captured
 // in getSrc(0) and getSrc(1).
 class InstIcmp : public Inst {
 public:
-#define X(tag, str) tag,
-
   enum ICond {
-    ICEINSTICMP_TABLE None // not part of LLVM; used for unconditional branch
-  };
+#define X(tag, str) tag,
+    ICEINSTICMP_TABLE
 #undef X
+        None // not part of LLVM; used for unconditional branch
+  };
 
   static InstIcmp *create(Cfg *Func, ICond Condition, Variable *Dest,
                           Operand *Source1, Operand *Source2) {
@@ -440,11 +415,11 @@ private:
   InstPhi(Cfg *Func, SizeT MaxSrcs, Variable *Dest);
   InstPhi(const InstPhi &) LLVM_DELETED_FUNCTION;
   InstPhi &operator=(const InstPhi &) LLVM_DELETED_FUNCTION;
-  virtual ~InstPhi() {
-#ifdef ICE_NO_ARENAS
-    delete[] Labels;
-#endif // ICE_NO_ARENAS
+  virtual void destroy(Cfg *Func) {
+    Func->deallocateArrayOf<CfgNode *>(Labels);
+    Inst::destroy(Func);
   }
+  virtual ~InstPhi() {}
 
   // Labels[] duplicates the InEdges[] information in the enclosing
   // CfgNode, but the Phi instruction is created before InEdges[]
@@ -546,12 +521,12 @@ private:
   InstSwitch(Cfg *Func, SizeT NumCases, Operand *Source, CfgNode *LabelDefault);
   InstSwitch(const InstSwitch &) LLVM_DELETED_FUNCTION;
   InstSwitch &operator=(const InstSwitch &) LLVM_DELETED_FUNCTION;
-  virtual ~InstSwitch() {
-#ifdef ICE_NO_ARENAS
-    delete[] Values;
-    delete[] Labels;
-#endif // ICE_NO_ARENAS
+  virtual void destroy(Cfg *Func) {
+    Func->deallocateArrayOf<uint64_t>(Values);
+    Func->deallocateArrayOf<CfgNode *>(Labels);
+    Inst::destroy(Func);
   }
+  virtual ~InstSwitch() {}
 
   CfgNode *LabelDefault;
   SizeT NumCases;   // not including the default case

@@ -21,27 +21,63 @@
 
 namespace Ice {
 
-Inst::Inst(Cfg *Func, InstKind Kind, SizeT MaxSrcs, Variable *Dest)
-    : Kind(Kind), Deleted(false), Dead(false), HasSideEffects(false),
-      Dest(Dest), MaxSrcs(MaxSrcs), NumSrcs(0), LiveRangesEnded(0) {
-  Number = Func->newInstNumber();
-  Srcs = Func->allocateArrayOf<Operand *>(MaxSrcs);
-}
+namespace {
 
-Inst::~Inst() {
-#ifdef ICE_NO_ARENAS
-  for (SizeT i = 0; i < getSrcSize(); ++i) {
-    Operand *Src = getSrc(i);
-    if (Src && !Src->isPooled()) {
-      delete Src;
-    }
-  }
-  delete[] Srcs;
-  if (getDest() && !getDest()->isPooled()) {
-    delete getDest();
-  }
-#endif // ICE_NO_ARENAS
-}
+const struct {
+  const char *DisplayString;
+  bool IsCommutative;
+} InstArithmeticAttributes[] = {
+#define X(tag, str, commutative)                                               \
+  { str, commutative }                                                         \
+  ,
+    ICEINSTARITHMETIC_TABLE
+#undef X
+  };
+const size_t InstArithmeticAttributesSize =
+    sizeof(InstArithmeticAttributes) / sizeof(*InstArithmeticAttributes);
+
+const struct {
+  const char *DisplayString;
+} InstCastAttributes[] = {
+#define X(tag, str)                                                            \
+  { str }                                                                      \
+  ,
+    ICEINSTCAST_TABLE
+#undef X
+  };
+const size_t InstCastAttributesSize =
+    sizeof(InstCastAttributes) / sizeof(*InstCastAttributes);
+
+const struct {
+  const char *DisplayString;
+} InstFcmpAttributes[] = {
+#define X(tag, str)                                                            \
+  { str }                                                                      \
+  ,
+    ICEINSTFCMP_TABLE
+#undef X
+  };
+const size_t InstFcmpAttributesSize =
+    sizeof(InstFcmpAttributes) / sizeof(*InstFcmpAttributes);
+
+const struct {
+  const char *DisplayString;
+} InstIcmpAttributes[] = {
+#define X(tag, str)                                                            \
+  { str }                                                                      \
+  ,
+    ICEINSTICMP_TABLE
+#undef X
+  };
+const size_t InstIcmpAttributesSize =
+    sizeof(InstIcmpAttributes) / sizeof(*InstIcmpAttributes);
+
+} // end of anonymous namespace
+
+Inst::Inst(Cfg *Func, InstKind Kind, SizeT MaxSrcs, Variable *Dest)
+    : Kind(Kind), Number(Func->newInstNumber()), Deleted(false), Dead(false),
+      HasSideEffects(false), Dest(Dest), MaxSrcs(MaxSrcs), NumSrcs(0),
+      Srcs(Func->allocateArrayOf<Operand *>(MaxSrcs)), LiveRangesEnded(0) {}
 
 // Assign the instruction a new number.
 void Inst::renumber(Cfg *Func) {
@@ -183,6 +219,8 @@ void Inst::liveness(LivenessMode Mode, int32_t InstNumber,
 InstAlloca::InstAlloca(Cfg *Func, Operand *ByteCount, uint32_t Align,
                        Variable *Dest)
     : Inst(Func, Inst::Alloca, 1, Dest), Align(Align) {
+  // Verify Align is 0 or a power of 2.
+  assert(Align == 0 || !(Align & (Align - 1)));
   addSource(ByteCount);
 }
 
@@ -194,19 +232,7 @@ InstArithmetic::InstArithmetic(Cfg *Func, OpKind Op, Variable *Dest,
 }
 
 bool InstArithmetic::isCommutative() const {
-#define X(tag, str, commutative)                                               \
-  case tag:                                                                    \
-    return commutative;
-
-  switch (getOp()) {
-  case OpKind_NUM:
-    break;
-    ICEINSTARITHMETIC_TABLE
-  }
-#undef X
-
-  assert(0); // should be unreachable
-  return false;
+  return InstArithmeticAttributes[getOp()].IsCommutative;
 }
 
 InstAssign::InstAssign(Cfg *Func, Variable *Dest, Operand *Source)
@@ -507,22 +533,8 @@ void InstAlloca::dump(const Cfg *Func) const {
 void InstArithmetic::dump(const Cfg *Func) const {
   Ostream &Str = Func->getContext()->getStrDump();
   dumpDest(Func);
-  Str << " = ";
-
-#define X(tag, str, commutative)                                               \
-  case tag:                                                                    \
-    Str << str;                                                                \
-    break;
-
-  switch (getOp()) {
-  case OpKind_NUM:
-    Str << "invalid";
-    break;
-    ICEINSTARITHMETIC_TABLE
-  }
-#undef X
-
-  Str << " " << getDest()->getType() << " ";
+  Str << " = " << InstArithmeticAttributes[getOp()].DisplayString << " "
+      << getDest()->getType() << " ";
   dumpSources(Func);
 }
 
@@ -571,23 +583,8 @@ void InstCall::dump(const Cfg *Func) const {
 void InstCast::dump(const Cfg *Func) const {
   Ostream &Str = Func->getContext()->getStrDump();
   dumpDest(Func);
-  Str << " = ";
-
-#define X(tag, str)                                                            \
-  case tag:                                                                    \
-    Str << str;                                                                \
-    break;
-
-  switch (getCastKind()) {
-    ICEINSTCAST_TABLE
-  default:
-    Str << "UNKNOWN";
-    assert(0);
-    break;
-  }
-#undef X
-
-  Str << " " << getSrc(0)->getType() << " ";
+  Str << " = " << InstCastAttributes[getCastKind()].DisplayString << " "
+      << getSrc(0)->getType() << " ";
   dumpSources(Func);
   Str << " to " << getDest()->getType();
 }
@@ -595,39 +592,16 @@ void InstCast::dump(const Cfg *Func) const {
 void InstIcmp::dump(const Cfg *Func) const {
   Ostream &Str = Func->getContext()->getStrDump();
   dumpDest(Func);
-  Str << " = icmp ";
-
-#define X(tag, str)                                                            \
-  case tag:                                                                    \
-    Str << str;                                                                \
-    break;
-
-  switch (getCondition()) {
-  case None: // shouldn't happen
-    Str << "<none>";
-    break;
-    ICEINSTICMP_TABLE
-  }
-#undef X
-
-  Str << " " << getSrc(0)->getType() << " ";
+  Str << " = icmp " << InstIcmpAttributes[getCondition()].DisplayString << " "
+      << getSrc(0)->getType() << " ";
   dumpSources(Func);
 }
 
 void InstFcmp::dump(const Cfg *Func) const {
   Ostream &Str = Func->getContext()->getStrDump();
   dumpDest(Func);
-  Str << " = fcmp ";
-
-#define X(tag, str)                                                            \
-  case tag:                                                                    \
-    Str << str;                                                                \
-    break;
-
-  switch (getCondition()) { ICEINSTFCMP_TABLE }
-#undef X
-
-  Str << " " << getSrc(0)->getType() << " ";
+  Str << " = fcmp " << InstFcmpAttributes[getCondition()].DisplayString << " "
+      << getSrc(0)->getType() << " ";
   dumpSources(Func);
 }
 
