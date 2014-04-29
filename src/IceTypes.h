@@ -26,18 +26,18 @@ enum Type {
 #undef X
 };
 
-enum IceTargetArch {
-  IceTarget_X8632,
-  IceTarget_X8664,
-  IceTarget_ARM32,
-  IceTarget_ARM64
+enum TargetArch {
+  Target_X8632,
+  Target_X8664,
+  Target_ARM32,
+  Target_ARM64
 };
 
-enum IceOptLevel {
-  IceOpt_m1,
-  IceOpt_0,
-  IceOpt_1,
-  IceOpt_2
+enum OptLevel {
+  Opt_m1,
+  Opt_0,
+  Opt_1,
+  Opt_2
 };
 
 size_t typeWidthInBytes(Type Ty);

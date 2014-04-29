@@ -1,4 +1,4 @@
-//===- subzero/src/Inst.h - High-level instructions ----------*- C++ -*-===//
+//===- subzero/src/IceInst.h - High-level instructions ----------*- C++ -*-===//
 //
 //                        The Subzero Code Generator
 //
@@ -177,7 +177,6 @@ public:
 #define X(tag, str, commutative) tag,
     ICEINSTARITHMETIC_TABLE
 #undef X
-        OpKind_NUM
   };
 
   static InstArithmetic *create(Cfg *Func, OpKind Op, Variable *Dest,
@@ -235,6 +234,7 @@ public:
     return new (Func->allocateInst<InstBr>())
         InstBr(Func, Source, TargetTrue, TargetFalse);
   }
+  // Create an unconditional branch.
   static InstBr *create(Cfg *Func, CfgNode *Target) {
     return new (Func->allocateInst<InstBr>()) InstBr(Func, Target);
   }
@@ -379,7 +379,7 @@ private:
   const ICond Condition;
 };
 
-// Load instruction.  The source address is captured in getSrc(0);
+// Load instruction.  The source address is captured in getSrc(0).
 class InstLoad : public Inst {
 public:
   static InstLoad *create(Cfg *Func, Variable *Dest, Operand *SourceAddr) {
@@ -433,8 +433,8 @@ private:
 // getSrcSize()==0 and hasRetValue()==false.
 class InstRet : public Inst {
 public:
-  static InstRet *create(Cfg *Func, Operand *Source = NULL) {
-    return new (Func->allocateInst<InstRet>()) InstRet(Func, Source);
+  static InstRet *create(Cfg *Func, Operand *RetValue = NULL) {
+    return new (Func->allocateInst<InstRet>()) InstRet(Func, RetValue);
   }
   bool hasRetValue() const { return getSrcSize(); }
   Operand *getRetValue() const {
@@ -446,7 +446,7 @@ public:
   static bool classof(const Inst *Inst) { return Inst->getKind() == Ret; }
 
 private:
-  InstRet(Cfg *Func, Operand *Source);
+  InstRet(Cfg *Func, Operand *RetValue);
   InstRet(const InstRet &) LLVM_DELETED_FUNCTION;
   InstRet &operator=(const InstRet &) LLVM_DELETED_FUNCTION;
   virtual ~InstRet() {}

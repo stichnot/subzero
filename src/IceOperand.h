@@ -1,4 +1,4 @@
-//===- subzero/src/Operand.h - High-level operands -----------*- C++ -*-===//
+//===- subzero/src/IceOperand.h - High-level operands -----------*- C++ -*-===//
 //
 //                        The Subzero Code Generator
 //
@@ -62,7 +62,9 @@ public:
   virtual ~Operand() {}
 
 protected:
-  Operand(OperandKind Kind, Type Ty) : Ty(Ty), Kind(Kind) {}
+  Operand(OperandKind Kind, Type Ty)
+      : Ty(Ty), Kind(Kind), NumVars(0), Vars(NULL) {}
+
   const Type Ty;
   const OperandKind Kind;
   // Vars and NumVars are initialized by the derived class.
@@ -78,7 +80,6 @@ private:
 // constants are allocated from a global arena and are pooled.
 class Constant : public Operand {
 public:
-  virtual bool isPooled() const { return true; }
   virtual void emit(const Cfg *Func, uint32_t Option) const = 0;
   virtual void dump(const Cfg *Func) const = 0;
 
@@ -339,8 +340,6 @@ public:
   // Used primarily for syntactic correctness of textual assembly
   // emission.
   Variable asType(Type Ty);
-
-  virtual bool isPooled() const { return true; }
 
   virtual void emit(const Cfg *Func, uint32_t Option) const;
   virtual void dump(const Cfg *Func) const;

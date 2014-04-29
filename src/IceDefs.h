@@ -21,7 +21,6 @@
 #include <cassert>
 #include <cstdio>     // snprintf
 #include <functional> // std::less
-
 #include <list>
 #include <map>
 #include <set>

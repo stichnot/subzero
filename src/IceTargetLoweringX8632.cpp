@@ -644,7 +644,7 @@ Operand *TargetX8632::loOperand(Operand *Operand) {
     return Var->getLo();
   }
   if (ConstantInteger *Const = llvm::dyn_cast<ConstantInteger>(Operand)) {
-    uint64_t Mask = (1ul << 32) - 1;
+    uint64_t Mask = (1ull << 32) - 1;
     return Ctx->getConstantInt(IceType_i32, Const->getValue() & Mask);
   }
   if (OperandX8632Mem *Mem = llvm::dyn_cast<OperandX8632Mem>(Operand)) {
@@ -953,7 +953,6 @@ void TargetX8632::lowerArithmetic(const InstArithmetic *Inst) {
     case InstArithmetic::Fmul:
     case InstArithmetic::Fdiv:
     case InstArithmetic::Frem:
-    case InstArithmetic::OpKind_NUM:
       assert(0);
       break;
     }
@@ -1099,9 +1098,6 @@ void TargetX8632::lowerArithmetic(const InstArithmetic *Inst) {
       Call->addArg(Src1);
       return lowerCall(Call);
     } break;
-    case InstArithmetic::OpKind_NUM:
-      assert(0);
-      break;
     }
   }
 }
@@ -2078,7 +2074,7 @@ Variable *TargetX8632::makeReg(Type Type, int32_t RegNum) {
 }
 
 void TargetX8632::postLower() {
-  if (Ctx->getOptLevel() != IceOpt_m1)
+  if (Ctx->getOptLevel() != Opt_m1)
     return;
   // TODO: Avoid recomputing WhiteList every instruction.
   llvm::SmallBitVector WhiteList = getRegisterSet(RegSet_All, RegSet_None);

@@ -1,4 +1,4 @@
-//===- subzero/src/GlobalContext.h - Global context defs -----*- C++ -*-===//
+//===- subzero/src/IceGlobalContext.h - Global context defs -----*- C++ -*-===//
 //
 //                        The Subzero Code Generator
 //
@@ -30,8 +30,8 @@ namespace Ice {
 class GlobalContext {
 public:
   GlobalContext(llvm::raw_ostream *OsDump, llvm::raw_ostream *OsEmit,
-                VerboseMask Mask, IceTargetArch TargetArch,
-                IceOptLevel OptLevel, IceString TestPrefix);
+                VerboseMask Mask, TargetArch Arch, OptLevel Opt,
+                IceString TestPrefix);
   ~GlobalContext();
 
   // Returns true if any of the specified options in the verbose mask
@@ -49,8 +49,8 @@ public:
   Ostream &getStrDump() { return StrDump; }
   Ostream &getStrEmit() { return StrEmit; }
 
-  IceTargetArch getTargetArch() const { return TargetArch; }
-  IceOptLevel getOptLevel() const { return OptLevel; }
+  TargetArch getTargetArch() const { return Arch; }
+  OptLevel getOptLevel() const { return Opt; }
 
   // When emitting assembly, we allow a string to be prepended to
   // names of translated functions.  This makes it easier to create an
@@ -79,8 +79,8 @@ private:
   llvm::BumpPtrAllocator Allocator;
   VerboseMask VMask;
   llvm::OwningPtr<class ConstantPool> ConstPool;
-  const IceTargetArch TargetArch;
-  const IceOptLevel OptLevel;
+  const TargetArch Arch;
+  const OptLevel Opt;
   const IceString TestPrefix;
   GlobalContext(const GlobalContext &) LLVM_DELETED_FUNCTION;
   GlobalContext &operator=(const GlobalContext &) LLVM_DELETED_FUNCTION;

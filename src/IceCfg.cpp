@@ -7,8 +7,8 @@
 //
 //===----------------------------------------------------------------------===//
 //
-// This file implements the Cfg class, which manages individual
-// functions.
+// This file implements the Cfg class, including constant pool
+// management.
 //
 //===----------------------------------------------------------------------===//
 

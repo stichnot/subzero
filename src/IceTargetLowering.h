@@ -76,19 +76,19 @@ private:
 
 class TargetLowering {
 public:
-  static TargetLowering *createLowering(IceTargetArch Target, Cfg *Func);
+  static TargetLowering *createLowering(TargetArch Target, Cfg *Func);
   void translate() {
     switch (Ctx->getOptLevel()) {
-    case IceOpt_m1:
+    case Opt_m1:
       translateOm1();
       break;
-    case IceOpt_0:
+    case Opt_0:
       translateO0();
       break;
-    case IceOpt_1:
+    case Opt_1:
       translateO1();
       break;
-    case IceOpt_2:
+    case Opt_2:
       translateO2();
       break;
     default:

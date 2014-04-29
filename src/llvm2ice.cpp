@@ -165,9 +165,9 @@ private:
     return Ice::IceType_void;
   }
 
-  // Given a LLVM instruction and an operand number, produce the Ice::Operand
-  // this
-  // refers to. If there's no such operand, return NULL.
+  // Given a LLVM instruction and an operand number, produce the
+  // Ice::Operand this refers to. If there's no such operand, return
+  // NULL.
   Ice::Operand *convertOperand(const Instruction *Inst, unsigned OpNum) {
     if (OpNum >= Inst->getNumOperands()) {
       return NULL;
@@ -201,7 +201,7 @@ private:
     }
   }
 
-  // Note: this currently assumes a 1x1 mapping between LLVM IR and Ice::Ice
+  // Note: this currently assumes a 1x1 mapping between LLVM IR and Ice
   // instructions.
   Ice::Inst *convertInstruction(const Instruction *Inst) {
     switch (Inst->getOpcode()) {
@@ -577,22 +577,20 @@ static cl::list<Ice::VerboseItem> VerboseList(
         clEnumValN(Ice::IceV_Timing, "time", "Pass timing details"),
         clEnumValN(Ice::IceV_All, "all", "Use all verbose options"),
         clEnumValN(Ice::IceV_None, "none", "No verbosity"), clEnumValEnd));
-static cl::opt<Ice::IceTargetArch>
-TargetArch("target", cl::desc("Target architecture:"),
-           cl::init(Ice::IceTarget_X8632),
-           cl::values(clEnumValN(Ice::IceTarget_X8632, "X8632", "x86-32"),
-                      clEnumValN(Ice::IceTarget_X8664, "X8664", "x86-64"),
-                      clEnumValN(Ice::IceTarget_ARM32, "ARM", "ARM32"),
-                      clEnumValN(Ice::IceTarget_ARM64, "ARM64", "ARM64"),
-                      clEnumValEnd));
-static cl::opt<Ice::IceOptLevel>
-OptLevel(cl::desc("Optimization level"), cl::init(Ice::IceOpt_2),
+static cl::opt<Ice::TargetArch> TargetArch(
+    "target", cl::desc("Target architecture:"), cl::init(Ice::Target_X8632),
+    cl::values(clEnumValN(Ice::Target_X8632, "X8632", "x86-32"),
+               clEnumValN(Ice::Target_X8664, "X8664", "x86-64"),
+               clEnumValN(Ice::Target_ARM32, "ARM", "ARM32"),
+               clEnumValN(Ice::Target_ARM64, "ARM64", "ARM64"), clEnumValEnd));
+static cl::opt<Ice::OptLevel>
+OptLevel(cl::desc("Optimization level"), cl::init(Ice::Opt_2),
          cl::value_desc("level"),
-         cl::values(clEnumValN(Ice::IceOpt_m1, "Om1", "-1"),
-                    clEnumValN(Ice::IceOpt_m1, "O-1", "-1"),
-                    clEnumValN(Ice::IceOpt_0, "O0", "0"),
-                    clEnumValN(Ice::IceOpt_0, "O1", "1"),
-                    clEnumValN(Ice::IceOpt_2, "O2", "2"), clEnumValEnd));
+         cl::values(clEnumValN(Ice::Opt_m1, "Om1", "-1"),
+                    clEnumValN(Ice::Opt_m1, "O-1", "-1"),
+                    clEnumValN(Ice::Opt_0, "O0", "0"),
+                    clEnumValN(Ice::Opt_0, "O1", "1"),
+                    clEnumValN(Ice::Opt_2, "O2", "2"), clEnumValEnd));
 static cl::opt<std::string> IRFilename(cl::Positional, cl::desc("<IR file>"),
                                        cl::Required);
 static cl::opt<std::string> OutputFilename("o", cl::desc("Set output filename"),
@@ -635,9 +633,9 @@ int main(int argc, char **argv) {
     return 1;
   }
 
-  Ice::VerboseMask VerboseMask = Ice::IceV_None;
+  Ice::VerboseMask VMask = Ice::IceV_None;
   for (unsigned i = 0; i != VerboseList.size(); ++i)
-    VerboseMask |= VerboseList[i];
+    VMask |= VerboseList[i];
 
   std::ofstream Ofs;
   if (OutputFilename != "-") {
@@ -653,7 +651,7 @@ int main(int argc, char **argv) {
   raw_os_ostream *Ls = new raw_os_ostream(LogFilename == "-" ? std::cout : Lfs);
   Ls->SetUnbuffered();
 
-  Ice::GlobalContext Ctx(Ls, Os, VerboseMask, TargetArch, OptLevel, TestPrefix);
+  Ice::GlobalContext Ctx(Ls, Os, VMask, TargetArch, OptLevel, TestPrefix);
 
   for (Module::const_iterator I = Mod->begin(), E = Mod->end(); I != E; ++I) {
     if (I->empty())

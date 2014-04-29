@@ -1,4 +1,4 @@
-//===- subzero/src/Inst.cpp - High-level instruction implementation ----===//
+//===- subzero/src/IceInst.cpp - High-level instruction implementation ----===//
 //
 //                        The Subzero Code Generator
 //
@@ -355,10 +355,10 @@ Inst *InstPhi::lower(Cfg *Func, CfgNode *Node) {
   return NewInst;
 }
 
-InstRet::InstRet(Cfg *Func, Operand *Source)
-    : Inst(Func, Ret, Source ? 1 : 0, NULL) {
-  if (Source)
-    addSource(Source);
+InstRet::InstRet(Cfg *Func, Operand *RetValue)
+    : Inst(Func, Ret, RetValue ? 1 : 0, NULL) {
+  if (RetValue)
+    addSource(RetValue);
 }
 
 InstSelect::InstSelect(Cfg *Func, Variable *Dest, Operand *Condition,

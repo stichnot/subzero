@@ -1,4 +1,4 @@
-//===- subzero/src/Operand.cpp - High-level operand implementation -----===//
+//===- subzero/src/IceOperand.cpp - High-level operand implementation -----===//
 //
 //                        The Subzero Code Generator
 //

@@ -50,18 +50,17 @@ void LoweringContext::advance(InstList::iterator &I) {
   }
 }
 
-TargetLowering *TargetLowering::createLowering(IceTargetArch Target,
-                                               Cfg *Func) {
+TargetLowering *TargetLowering::createLowering(TargetArch Target, Cfg *Func) {
   // These statements can be #ifdef'd to specialize the code generator
   // to a subset of the available targets.
-  if (Target == IceTarget_X8632)
+  if (Target == Target_X8632)
     return TargetX8632::create(Func);
 #if 0
-  if (Target == IceTarget_X8664)
+  if (Target == Target_X8664)
     return IceTargetX8664::create(Func);
-  if (Target == IceTarget_ARM32)
+  if (Target == Target_ARM32)
     return IceTargetARM32::create(Func);
-  if (Target == IceTarget_ARM64)
+  if (Target == Target_ARM64)
     return IceTargetARM64::create(Func);
 #endif
   Func->setError("Unsupported target");

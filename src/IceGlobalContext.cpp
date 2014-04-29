@@ -1,4 +1,4 @@
-//===- subzero/src/GlobalContext.cpp - Global context defs ---*- C++ -*-===//
+//===- subzero/src/IceGlobalContext.cpp - Global context defs ---*- C++ -*-===//
 //
 //                        The Subzero Code Generator
 //
@@ -76,10 +76,10 @@ public:
 
 GlobalContext::GlobalContext(llvm::raw_ostream *OsDump,
                              llvm::raw_ostream *OsEmit, VerboseMask Mask,
-                             IceTargetArch TargetArch, IceOptLevel OptLevel,
+                             TargetArch Arch, OptLevel Opt,
                              IceString TestPrefix)
     : StrDump(OsDump), StrEmit(OsEmit), VMask(Mask),
-      ConstPool(new ConstantPool()), TargetArch(TargetArch), OptLevel(OptLevel),
+      ConstPool(new ConstantPool()), Arch(Arch), Opt(Opt),
       TestPrefix(TestPrefix) {}
 
 // In this context, name mangling means to rewrite a symbol using a

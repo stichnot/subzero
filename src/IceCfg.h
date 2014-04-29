@@ -1,4 +1,4 @@
-//===- Subzero/src/IceCfg.h - Control flow graph ----------------*- C++ -*-===//
+//===- subzero/src/IceCfg.h - Control flow graph ----------------*- C++ -*-===//
 //
 //                        The Subzero Code Generator
 //
