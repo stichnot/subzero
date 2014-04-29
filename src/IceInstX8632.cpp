@@ -21,6 +21,23 @@
 
 namespace Ice {
 
+namespace {
+
+const struct _InstX8632BrAttributes {
+  const char *DisplayString;
+  const char *EmitString;
+} InstX8632BrAttributes[] = {
+#define X(tag, dump, emit)                                                     \
+  { dump, emit }                                                               \
+  ,
+    ICEINSTX8632BR_TABLE
+#undef X
+  };
+const size_t InstX8632BrAttributesSize =
+    llvm::array_lengthof(InstX8632BrAttributes);
+
+} // end of anonymous namespace
+
 // XXX kill this
 static const char *OpcodeTypeFromIceType(Type type) {
   switch (type) {
@@ -218,18 +235,12 @@ void InstX8632Label::dump(const Cfg *Func) const {
 void InstX8632Br::emit(const Cfg *Func, uint32_t /*Option*/) const {
   Ostream &Str = Func->getContext()->getStrEmit();
   Str << "\t";
-#define X(tag, dump, emit)                                                     \
-  case tag:                                                                    \
-    Str << emit;                                                               \
-    break;
 
-  switch (Condition) {
-    ICEINSTX8632BR_TABLE
-  case Br_None:
+  if (Condition == Br_None) {
     Str << "jmp";
-    break;
+  } else {
+    Str << InstX8632BrAttributes[Condition].EmitString;
   }
-#undef X
 
   if (Label) {
     Str << "\t" << Label->getName(Func) << "\n";
@@ -249,21 +260,13 @@ void InstX8632Br::dump(const Cfg *Func) const {
   Ostream &Str = Func->getContext()->getStrDump();
   Str << "br ";
 
-#define X(tag, dump, emit)                                                     \
-  case tag:                                                                    \
-    Str << dump;                                                               \
-    break;
-
-  switch (Condition) {
-    ICEINSTX8632BR_TABLE
-  case Br_None:
+  if (Condition == Br_None) {
     Str << "label %"
         << (Label ? Label->getName(Func) : getTargetFalse()->getName());
     return;
-    break;
   }
-#undef X
 
+  Str << InstX8632BrAttributes[Condition].DisplayString;
   if (Label) {
     Str << ", label %" << Label->getName(Func);
   } else {

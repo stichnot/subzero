@@ -18,6 +18,7 @@
 
 #include "IceDefs.h"
 #include "IceInst.h"
+#include "IceInstX8632.def"
 #include "IceOperand.h"
 
 namespace Ice {
@@ -217,21 +218,14 @@ private:
   SizeT Number; // used only for unique label string generation
 };
 
-#define ICEINSTX8632BR_TABLE                                                   \
-  /* enum value, dump, emit */                                                 \
-  X(Br_a, "a", "ja") X(Br_ae, "ae", "jae") X(Br_b, "b", "jb")                  \
-      X(Br_be, "be", "jbe") X(Br_e, "e", "je") X(Br_g, "g", "jg")              \
-      X(Br_ge, "ge", "jge") X(Br_l, "l", "jl") X(Br_le, "le", "jle")           \
-      X(Br_ne, "ne", "jne") X(Br_np, "np", "jnp") X(Br_p, "p", "jp")
-
 class InstX8632Br : public InstX8632 {
 public:
-#define X(tag, dump, emit) tag,
-
   enum BrCond {
-    ICEINSTX8632BR_TABLE Br_None
-  };
+#define X(tag, dump, emit) tag,
+    ICEINSTX8632BR_TABLE
 #undef X
+        Br_None
+  };
 
   static InstX8632Br *create(Cfg *Func, CfgNode *TargetTrue,
                              CfgNode *TargetFalse, BrCond Condition) {

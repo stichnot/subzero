@@ -20,9 +20,139 @@
 #include "IceCfgNode.h"
 #include "IceInstX8632.h"
 #include "IceOperand.h"
+#include "IceTargetLoweringX8632.def"
 #include "IceTargetLoweringX8632.h"
 
 namespace Ice {
+
+namespace {
+
+// The following table summarizes the logic for lowering the fcmp instruction.
+// There is one table entry for each of the 16 conditions.  A comment in
+// lowerFcmp() describes the lowering template.  In the most general case, there
+// is a compare followed by two conditional branches, because some fcmp
+// conditions don't map to a single x86 conditional branch.  However, in many
+// cases it is possible to swap the operands in the comparison and have a single
+// conditional branch.  Since it's quite tedious to validate the table by hand,
+// good execution tests are helpful.
+
+const struct _TableFcmp {
+  InstFcmp::FCond Cond;
+  uint32_t Default;
+  bool SwapOperands;
+  InstX8632Br::BrCond C1, C2;
+} TableFcmp[] = {
+#define X(val, dflt, swap, C1, C2)                                             \
+  { InstFcmp::val, dflt, swap, InstX8632Br::C1, InstX8632Br::C2 }              \
+  ,
+    FCMPX8632_TABLE
+#undef X
+  };
+const size_t TableFcmpSize = llvm::array_lengthof(TableFcmp);
+
+// The following table summarizes the logic for lowering the icmp instruction
+// for i32 and narrower types.  Each icmp condition has a clear mapping to an
+// x86 conditional branch instruction.
+
+const struct _TableIcmp32 {
+  InstIcmp::ICond Cond;
+  InstX8632Br::BrCond Mapping;
+} TableIcmp32[] = {
+#define X(val, C_32, C1_64, C2_64, C3_64)                                      \
+  { InstIcmp::val, InstX8632Br::C_32 }                                         \
+  ,
+    ICMPX8632_TABLE
+#undef X
+  };
+const size_t TableIcmp32Size = llvm::array_lengthof(TableIcmp32);
+
+// The following table summarizes the logic for lowering the icmp instruction
+// for the i64 type.  For Eq and Ne, two separate 32-bit comparisons and
+// conditional branches are needed.  For the other conditions, three separate
+// conditional branches are needed.
+const struct _TableIcmp64 {
+  InstIcmp::ICond Cond;
+  InstX8632Br::BrCond C1, C2, C3;
+} TableIcmp64[] = {
+#define X(val, C_32, C1_64, C2_64, C3_64)                                       \
+  { InstIcmp::val, InstX8632Br::C1_64, InstX8632Br::C2_64, InstX8632Br::C3_64 } \
+  ,
+    ICMPX8632_TABLE
+#undef X
+  };
+const size_t TableIcmp64Size = llvm::array_lengthof(TableIcmp64);
+
+InstX8632Br::BrCond getIcmp32Mapping(InstIcmp::ICond Cond) {
+  size_t Index = static_cast<size_t>(Cond);
+  assert(Index < TableIcmp32Size);
+  assert(TableIcmp32[Index].Cond == Cond);
+  return TableIcmp32[Index].Mapping;
+}
+
+// In some cases, there are x-macros tables for both high-level and
+// low-level instructions/operands that use the same enum key value.
+// The tables are kept separate to maintain a proper separation
+// between abstraction layers.  There is a risk that the tables
+// could get out of sync if enum values are reordered or if entries
+// are added or deleted.  This dummy function uses static_assert to
+// ensure everything is kept in sync.
+void xMacroIntegrityCheck() {
+  // Validate the enum values in FCMPX8632_TABLE.
+  {
+    // Define a temporary set of enum values based on low-level
+    // table entries.
+    enum _tmp_enum {
+#define X(val, dflt, swap, C1, C2) _tmp_##val,
+      FCMPX8632_TABLE
+#undef X
+    };
+// Define a set of constants based on high-level table entries.
+#define X(tag, str) static const int _table1_##tag = InstFcmp::tag;
+    ICEINSTFCMP_TABLE;
+#undef X
+// Define a set of constants based on low-level table entries,
+// and ensure the table entry keys are consistent.
+#define X(val, dflt, swap, C1, C2)                                             \
+  static const int _table2_##val = _tmp_##val;                                 \
+  STATIC_ASSERT(_table1_##val == _table2_##val);
+    FCMPX8632_TABLE;
+#undef X
+// Repeat the static asserts with respect to the high-level
+// table entries in case the high-level table has extra entries.
+#define X(tag, str) STATIC_ASSERT(_table1_##tag == _table2_##tag);
+    ICEINSTFCMP_TABLE;
+#undef X
+  }
+
+  // Validate the enum values in ICMPX8632_TABLE.
+  {
+    // Define a temporary set of enum values based on low-level
+    // table entries.
+    enum _tmp_enum {
+#define X(val, C_32, C1_64, C2_64, C3_64) _tmp_##val,
+      ICMPX8632_TABLE
+#undef X
+    };
+// Define a set of constants based on high-level table entries.
+#define X(tag, str) static const int _table1_##tag = InstIcmp::tag;
+    ICEINSTICMP_TABLE;
+#undef X
+// Define a set of constants based on low-level table entries,
+// and ensure the table entry keys are consistent.
+#define X(val, C_32, C1_64, C2_64, C3_64)                                      \
+  static const int _table2_##val = _tmp_##val;                                 \
+  STATIC_ASSERT(_table1_##val == _table2_##val);
+    ICMPX8632_TABLE;
+#undef X
+// Repeat the static asserts with respect to the high-level
+// table entries in case the high-level table has extra entries.
+#define X(tag, str) STATIC_ASSERT(_table1_##tag == _table2_##tag);
+    ICEINSTICMP_TABLE;
+#undef X
+  }
+}
+
+} // end of anonymous namespace
 
 TargetX8632::TargetX8632(Cfg *Func)
     : TargetLowering(Func), IsEbpBasedFrame(false), FrameSizeLocals(0),
@@ -179,12 +309,13 @@ void TargetX8632::translateOm1() {
   Func->dump();
 }
 
+IceString TargetX8632::RegNames[] = {
 #define X(val, init, name, name16, name8, scratch, preserved, stackptr,        \
           frameptr, isI8, isInt, isFP)                                         \
   name,
-
-IceString TargetX8632::RegNames[] = { REGX8632_TABLE };
+  REGX8632_TABLE
 #undef X
+};
 
 Variable *TargetX8632::getPhysicalRegister(SizeT RegNum) {
   assert(RegNum < PhysicalRegisters.size());
@@ -1009,7 +1140,6 @@ void TargetX8632::lowerBr(const InstBr *Inst) {
 }
 
 void TargetX8632::lowerCall(const InstCall *Instr) {
-  // TODO: what to do about tailcalls?
   // Generate a sequence of push instructions, pushing right to left,
   // keeping track of stack offsets in case a push involves a stack
   // operand and we are using an esp-based frame.
@@ -1396,53 +1526,6 @@ void TargetX8632::lowerCast(const InstCast *Inst) {
   }
 }
 
-namespace {
-
-// The following table summarizes the logic for lowering the fcmp instruction.
-// There is one table entry for each of the 16 conditions.  A comment in
-// lowerFcmp() describes the lowering template.  In the most general case, there
-// is a compare followed by two conditional branches, because some fcmp
-// conditions don't map to a single x86 conditional branch.  However, in many
-// cases it is possible to swap the operands in the comparison and have a single
-// conditional branch.  Since it's quite tedious to validate the table by hand,
-// good execution tests are helpful.
-
-// TODO: Integrate FCMPX8632_TABLE and ICEINSTFCMP_TABLE.
-#define FCMPX8632_TABLE                                                        \
-  /* val, dflt, swap, C1, C2 */                                                \
-  X(False, 0, false, Br_None, Br_None) /* no line break clang-format */        \
-      X(Oeq, 0, false, Br_ne, Br_p)    /* no line break clang-format */           \
-      X(Ogt, 1, false, Br_a, Br_None)  /* no line break clang-format */         \
-      X(Oge, 1, false, Br_ae, Br_None) /* no line break clang-format */        \
-      X(Olt, 1, true, Br_a, Br_None)   /* no line break clang-format */          \
-      X(Ole, 1, true, Br_ae, Br_None)  /* no line break clang-format */         \
-      X(One, 1, false, Br_ne, Br_None) /* no line break clang-format */        \
-      X(Ord, 1, false, Br_np, Br_None) /* no line break clang-format */        \
-      X(Ueq, 1, false, Br_e, Br_None)  /* no line break clang-format */         \
-      X(Ugt, 1, true, Br_b, Br_None)   /* no line break clang-format */          \
-      X(Uge, 1, true, Br_be, Br_None)  /* no line break clang-format */         \
-      X(Ult, 1, false, Br_b, Br_None)  /* no line break clang-format */         \
-      X(Ule, 1, false, Br_be, Br_None) /* no line break clang-format */        \
-      X(Une, 1, false, Br_ne, Br_p)    /* no line break clang-format */           \
-      X(Uno, 1, false, Br_p, Br_None)  /* no line break clang-format */         \
-      X(True, 1, false, Br_None, Br_None)
-
-const struct {
-  InstFcmp::FCond Cond;
-  uint32_t Default;
-  bool SwapOperands;
-  InstX8632Br::BrCond C1, C2;
-} TableFcmp[] = {
-#define X(val, dflt, swap, C1, C2)                                             \
-  { InstFcmp::val, dflt, swap, InstX8632Br::C1, InstX8632Br::C2 }              \
-  ,
-    FCMPX8632_TABLE
-#undef X
-  };
-const size_t TableFcmpSize = sizeof(TableFcmp) / sizeof(*TableFcmp);
-
-} // anonymous namespace
-
 void TargetX8632::lowerFcmp(const InstFcmp *Inst) {
   Operand *Src0 = Inst->getSrc(0);
   Operand *Src1 = Inst->getSrc(1);
@@ -1492,63 +1575,6 @@ void TargetX8632::lowerFcmp(const InstFcmp *Inst) {
     Context.insert(Label);
   }
 }
-
-namespace {
-
-// The following table summarizes the logic for lowering the icmp instruction
-// for i32 and narrower types.  Each icmp condition has a clear mapping to an
-// x86 conditional branch instruction.
-
-// TODO: Integrate ICMPX8632_TABLE and ICEINSTICMP_TABLE.
-#define ICMPX8632_TABLE                                                        \
-  /* val, C_32, C1_64, C2_64, C3_64 */                                         \
-  X(Eq, Br_e, Br_None, Br_None, Br_None)      /* no clang-format line break */      \
-      X(Ne, Br_ne, Br_None, Br_None, Br_None) /* no clang-format line break */ \
-      X(Ugt, Br_a, Br_a, Br_b, Br_a)          /* no clang-format line break */          \
-      X(Uge, Br_ae, Br_a, Br_b, Br_ae)        /* no clang-format line break */        \
-      X(Ult, Br_b, Br_b, Br_a, Br_b)          /* no clang-format line break */          \
-      X(Ule, Br_be, Br_b, Br_a, Br_be)        /* no clang-format line break */        \
-      X(Sgt, Br_g, Br_g, Br_l, Br_a)          /* no clang-format line break */          \
-      X(Sge, Br_ge, Br_g, Br_l, Br_ae)        /* no clang-format line break */        \
-      X(Slt, Br_l, Br_l, Br_g, Br_b)          /* no clang-format line break */          \
-      X(Sle, Br_le, Br_l, Br_g, Br_be)        /* no clang-format line break */
-
-const struct {
-  InstIcmp::ICond Cond;
-  InstX8632Br::BrCond Mapping;
-} TableIcmp32[] = {
-#define X(val, C_32, C1_64, C2_64, C3_64)                                      \
-  { InstIcmp::val, InstX8632Br::C_32 }                                         \
-  ,
-    ICMPX8632_TABLE
-#undef X
-  };
-const size_t TableIcmp32Size = sizeof(TableIcmp32) / sizeof(*TableIcmp32);
-
-// The following table summarizes the logic for lowering the icmp instruction
-// for the i64 type.  For Eq and Ne, two separate 32-bit comparisons and
-// conditional branches are needed.  For the other conditions, three separate
-// conditional branches are needed.
-const struct {
-  InstIcmp::ICond Cond;
-  InstX8632Br::BrCond C1, C2, C3;
-} TableIcmp64[] = {
-#define X(val, C_32, C1_64, C2_64, C3_64)                                       \
-  { InstIcmp::val, InstX8632Br::C1_64, InstX8632Br::C2_64, InstX8632Br::C3_64 } \
-  ,
-    ICMPX8632_TABLE
-#undef X
-  };
-const size_t TableIcmp64Size = sizeof(TableIcmp64) / sizeof(*TableIcmp64);
-
-InstX8632Br::BrCond getIcmp32Mapping(InstIcmp::ICond Cond) {
-  size_t Index = static_cast<size_t>(Cond);
-  assert(Index < TableIcmp32Size);
-  assert(TableIcmp32[Index].Cond == Cond);
-  return TableIcmp32[Index].Mapping;
-}
-
-} // anonymous namespace
 
 void TargetX8632::lowerIcmp(const InstIcmp *Inst) {
   Operand *Src0 = legalize(Inst->getSrc(0));

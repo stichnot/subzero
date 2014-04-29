@@ -36,6 +36,12 @@
 #include "llvm/Support/raw_ostream.h"
 #include "llvm/Support/Timer.h"
 
+// Roll our own static_assert<> in the absence of C++11.  TODO: change
+// to static_assert<> with C++11.
+template <bool> struct staticAssert;
+template <> struct staticAssert<true> {}; // only true is defined
+#define STATIC_ASSERT(x) staticAssert<(x)>()
+
 namespace Ice {
 
 class Cfg;
