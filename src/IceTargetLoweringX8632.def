@@ -15,7 +15,6 @@
 #ifndef SUBZERO_SRC_ICETARGETLOWERINGX8632_DEF
 #define SUBZERO_SRC_ICETARGETLOWERINGX8632_DEF
 
-// TODO: Integrate FCMPX8632_TABLE and ICEINSTFCMP_TABLE.
 #define FCMPX8632_TABLE                  \
   /* val,  dflt, swap, C1,      C2 */    \
   X(False, 0,    0,    Br_None, Br_None) \
@@ -36,7 +35,6 @@
   X(True,  1,    0,    Br_None, Br_None) \
 //#define X(val, dflt, swap, C1, C2)
 
-// TODO: Integrate ICMPX8632_TABLE and ICEINSTICMP_TABLE.
 #define ICMPX8632_TABLE                     \
   /* val, C_32,  C1_64,   C2_64,   C3_64 */ \
   X(Eq,   Br_e,  Br_None, Br_None, Br_None) \
