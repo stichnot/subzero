@@ -19,7 +19,10 @@ UINTOP_TABLE
 SINTOP_TABLE
 #undef X
 
-#define X(inst, op)                                                            \
+float myFrem(float a, float b);
+double myFrem(double a, double b);
+
+#define X(inst, op, func)                                                      \
   float test##inst(float a, float b);                                          \
   double test##inst(double a, double b);
 FPOP_TABLE

@@ -1,5 +1,5 @@
-/* crosstest.py --test=test_arith.cpp --driver=test_arith_main.cpp \
-   --prefix=Subzero_ --output=test_arith */
+/* crosstest.py --test=test_arith.cpp --test=test_arith_frem.ll \
+   --driver=test_arith_main.cpp --prefix=Subzero_ --output=test_arith */
 
 #include <stdint.h>
 
@@ -144,7 +144,7 @@ void testsFp(size_t &TotalTests, size_t &Passes, size_t &Failures) {
     FuncType FuncLlc;
     FuncType FuncSz;
   } Funcs[] = {
-#define X(inst, op)                                                            \
+#define X(inst, op, func)                                                      \
   { STR(inst), (FuncType)test##inst, (FuncType)Subzero_::test##inst }          \
   ,
       FPOP_TABLE

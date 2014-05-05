@@ -23,8 +23,8 @@ UINTOP_TABLE
 SINTOP_TABLE
 #undef X
 
-#define X(inst, op)                                                            \
-  float test##inst(float a, float b) { return a op b; }                        \
-  double test##inst(double a, double b) { return a op b; }
+#define X(inst, op, func)                                                      \
+  float test##inst(float a, float b) { return func(a op b); }                  \
+  double test##inst(double a, double b) { return func(a op b); }
 FPOP_TABLE
 #undef X

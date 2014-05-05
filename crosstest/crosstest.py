@@ -68,7 +68,8 @@ if __name__ == '__main__':
             bitcode = arg
         else:
             bitcode = os.path.join(args.dir, base + '.pnacl.ll')
-            shellcmd(['../pydir/build-pnacl-ir.py', '--dir', args.dir, arg])
+            shellcmd(['../pydir/build-pnacl-ir.py', '--disable-verify',
+                      '--dir', args.dir, arg])
             # Read in the bitcode file, fix it up, and rewrite the file.
             f = open(bitcode)
             ll_lines = f.readlines()
