@@ -60,6 +60,7 @@ OperandX8632Mem::OperandX8632Mem(Cfg *Func, Type Ty, Variable *Base,
                                  uint32_t Shift)
     : OperandX8632(kMem, Ty), Base(Base), Offset(Offset), Index(Index),
       Shift(Shift) {
+  assert(Shift <= 3);
   Vars = NULL;
   NumVars = 0;
   if (Base)

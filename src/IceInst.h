@@ -358,7 +358,6 @@ public:
 #define X(tag, str) tag,
     ICEINSTICMP_TABLE
 #undef X
-        None // not part of LLVM; used for unconditional branch
   };
 
   static InstIcmp *create(Cfg *Func, ICond Condition, Variable *Dest,
