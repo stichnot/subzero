@@ -49,7 +49,7 @@ public:
     assert(I < getNumVars());
     return Vars[I];
   }
-  virtual void emit(const Cfg *Func, uint32_t Option) const = 0;
+  virtual void emit(const Cfg *Func) const = 0;
   virtual void dump(const Cfg *Func) const = 0;
 
   // Query whether this object was allocated in isolation, or added to
@@ -80,7 +80,7 @@ private:
 // constants are allocated from a global arena and are pooled.
 class Constant : public Operand {
 public:
-  virtual void emit(const Cfg *Func, uint32_t Option) const = 0;
+  virtual void emit(const Cfg *Func) const = 0;
   virtual void dump(const Cfg *Func) const = 0;
 
   static bool classof(const Operand *Operand) {
@@ -109,7 +109,7 @@ public:
         ConstantPrimitive(Ty, Value);
   }
   T getValue() const { return Value; }
-  virtual void emit(const Cfg *Func, uint32_t /*Option*/) const {
+  virtual void emit(const Cfg *Func) const {
     Ostream &Str = Func->getContext()->getStrEmit();
     Str << getValue();
   }
@@ -169,7 +169,7 @@ public:
   IceString getName() const { return Name; }
   void setSuppressMangling(bool Value) { SuppressMangling = Value; }
   bool getSuppressMangling() const { return SuppressMangling; }
-  virtual void emit(const Cfg *Func, uint32_t Option) const;
+  virtual void emit(const Cfg *Func) const;
   virtual void dump(const Cfg *Func) const;
 
   static bool classof(const Operand *Operand) {
@@ -341,7 +341,7 @@ public:
   // emission.
   Variable asType(Type Ty);
 
-  virtual void emit(const Cfg *Func, uint32_t Option) const;
+  virtual void emit(const Cfg *Func) const;
   virtual void dump(const Cfg *Func) const;
 
   static bool classof(const Operand *Operand) {
@@ -382,7 +382,7 @@ private:
   // StackOffset is the canonical location on stack (only if
   // RegNum<0 || IsArgument).
   int32_t StackOffset;
-  // RegNum is the allocated register, or -1 if it isn't
+  // RegNum is the allocated register, or NoRegister if it isn't
   // register-allocated.
   int32_t RegNum;
   // RegNumTmp is the tentative assignment during register allocation.

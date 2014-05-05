@@ -18,7 +18,6 @@
 #include "IceLiveness.h"
 #include "IceOperand.h"
 #include "IceTargetLowering.h"
-#include "IceInstX8632.h"
 
 namespace Ice {
 
@@ -145,24 +144,26 @@ void CfgNode::placePhiLoads() {
 // critical edges, add the assignments, and lower them.  This should
 // reduce the amount of shuffling at the end of each block.
 void CfgNode::placePhiStores() {
-  // Find the insertion point.  TODO: This insertion-point logic is
-  // fragile.  It's too closely linked to the branch/compare fusing
-  // code in the target lowering.  And it's wrong if the source
-  // operand of one of the new assignments is equal to the dest
-  // operand of the compare instruction, in which case the compare
-  // result is read (by the assignment) before it is written (by the
-  // compare).  However, this problem should go away with the edge
-  // splitting approach described above.
+  // Find the insertion point.  TODO: After branch/compare fusing is
+  // implemented, try not to insert Phi stores between the compare and
+  // conditional branch instructions, otherwise the branch/compare
+  // pattern matching may fail.  However, the branch/compare sequence
+  // will have to be broken if the compare result is read (by the
+  // assignment) before it is written (by the compare).
   InstList::iterator InsertionPoint = Insts.end();
-  if (InsertionPoint != Insts.begin()) {
-    --InsertionPoint;
-    if (llvm::isa<InstBr>(*InsertionPoint)) {
-      if (InsertionPoint != Insts.begin()) {
-        --InsertionPoint;
-        if (!llvm::isa<InstIcmp>(*InsertionPoint) &&
-            !llvm::isa<InstFcmp>(*InsertionPoint)) {
-          ++InsertionPoint;
-        }
+  // Every block must end in a terminator instruction.
+  assert(InsertionPoint != Insts.begin());
+  --InsertionPoint;
+  // Confirm via assert() that InsertionPoint is a terminator
+  // instruction.  Calling getTerminatorEdges() on a non-terminator
+  // instruction will cause an llvm_unreachable().
+  assert(((*InsertionPoint)->getTerminatorEdges(), true));
+  if (llvm::isa<InstBr>(*InsertionPoint)) {
+    if (InsertionPoint != Insts.begin()) {
+      --InsertionPoint;
+      if (!llvm::isa<InstIcmp>(*InsertionPoint) &&
+          !llvm::isa<InstFcmp>(*InsertionPoint)) {
+        ++InsertionPoint;
       }
     }
   }
@@ -177,8 +178,6 @@ void CfgNode::placePhiStores() {
          I2 != E2; ++I2) {
       Operand *Operand = (*I2)->getOperandForTarget(this);
       assert(Operand);
-      if (Operand == NULL)
-        continue;
       Variable *Dest = (*I2)->getDest();
       assert(Dest);
       InstAssign *NewInst = InstAssign::create(Func, Dest, Operand);
@@ -227,6 +226,7 @@ void CfgNode::genCode() {
     if (llvm::isa<InstRet>(*Orig))
       setHasReturn();
     Target->lower();
+    // Ensure target lowering actually moved the cursor.
     assert(Context.getCur() != Orig);
   }
 }
@@ -406,7 +406,7 @@ void CfgNode::livenessPostprocess(LivenessMode Mode, Liveness *Liveness) {
 
 // ======================== Dump routines ======================== //
 
-void CfgNode::emit(Cfg *Func, uint32_t Option) const {
+void CfgNode::emit(Cfg *Func) const {
   Func->setCurrentNode(this);
   Ostream &Str = Func->getContext()->getStrEmit();
   if (Func->getEntryNode() == this) {
@@ -418,7 +418,7 @@ void CfgNode::emit(Cfg *Func, uint32_t Option) const {
     if (Inst->isDeleted())
       continue;
     // Emitting a Phi instruction should cause an error.
-    Inst->emit(Func, Option);
+    Inst->emit(Func);
   }
   for (InstList::const_iterator I = Insts.begin(), E = Insts.end(); I != E;
        ++I) {
@@ -429,7 +429,7 @@ void CfgNode::emit(Cfg *Func, uint32_t Option) const {
     // suppress them.
     if (Inst->isRedundantAssign())
       continue;
-    (*I)->emit(Func, Option);
+    (*I)->emit(Func);
   }
 }
 

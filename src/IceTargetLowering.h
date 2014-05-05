@@ -1,4 +1,4 @@
-//===- subzero/src/TargetLowering.h - Lowering interface -----*- C++ -*-===//
+//===- subzero/src/IceTargetLowering.h - Lowering interface -----*- C++ -*-===//
 //
 //                        The Subzero Code Generator
 //
@@ -34,6 +34,7 @@ namespace Ice {
 class LoweringContext {
 public:
   LoweringContext() : Node(NULL) {}
+  ~LoweringContext() {}
   void init(CfgNode *Node);
   Inst *getNextInst() const {
     if (Next == End)
@@ -45,9 +46,11 @@ public:
   InstList::iterator getCur() const { return Cur; }
   InstList::iterator getEnd() const { return End; }
   void insert(Inst *Inst);
-  void advanceCur() { advance(Cur); }
+  void advanceCur() { Cur = Next; }
   void advanceNext() { advance(Next); }
+  void setInsertPoint(const InstList::iterator &Position) { Next = Position; }
 
+private:
   // Node is the argument to Inst::updateVars().
   CfgNode *Node;
   // Cur points to the current instruction being considered.  It is
@@ -61,13 +64,10 @@ public:
   // the notion of "next valid instruction" and "new instruction
   // insertion point", to avoid confusion when previously-deleted
   // instructions come between the two points.
-public:
   InstList::iterator Next;
   // End is a copy of Insts.end(), used if Next needs to be advanced.
-private:
   InstList::iterator End;
 
-private:
   void skipDeleted(InstList::iterator &I);
   void advance(InstList::iterator &I);
   LoweringContext(const LoweringContext &) LLVM_DELETED_FUNCTION;
@@ -78,6 +78,7 @@ class TargetLowering {
 public:
   static TargetLowering *createLowering(TargetArch Target, Cfg *Func);
   void translate() {
+    // TODO: consider CRTP for optlevel.
     switch (Ctx->getOptLevel()) {
     case Opt_m1:
       translateOm1();
@@ -145,6 +146,8 @@ public:
                                               RegSetMask Exclude) const = 0;
   virtual const llvm::SmallBitVector &getRegisterSetForType(Type Ty) const = 0;
   void regAlloc();
+
+  virtual void emitVariable(const Variable *Var, const Cfg *Func) const = 0;
 
   virtual void addProlog(CfgNode *Node) = 0;
   virtual void addEpilog(CfgNode *Node) = 0;

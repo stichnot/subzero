@@ -59,6 +59,15 @@ public:
   IceString getTestPrefix() const { return TestPrefix; }
   IceString mangleName(const IceString &Name) const;
 
+  // The purpose of HasEmitted is to add a header comment at the
+  // beginning of assembly code emission, doing it once per file
+  // rather than once per function.
+  bool testAndSetHasEmittedFirstMethod() {
+    bool HasEmitted = HasEmittedFirstMethod;
+    HasEmittedFirstMethod = true;
+    return HasEmitted;
+  }
+
   // Manage Constants.
   // getConstant*() functions are not const because they might add
   // something to the constant pool.
@@ -82,6 +91,7 @@ private:
   const TargetArch Arch;
   const OptLevel Opt;
   const IceString TestPrefix;
+  bool HasEmittedFirstMethod;
   GlobalContext(const GlobalContext &) LLVM_DELETED_FUNCTION;
   GlobalContext &operator=(const GlobalContext &) LLVM_DELETED_FUNCTION;
 };

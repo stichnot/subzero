@@ -1,4 +1,4 @@
-//===- subzero/src/InstX8632.h - Low-level x86 instructions --*- C++ -*-===//
+//===- subzero/src/IceInstX8632.h - Low-level x86 instructions --*- C++ -*-===//
 //
 //                        The Subzero Code Generator
 //
@@ -25,18 +25,20 @@ namespace Ice {
 
 class TargetX8632;
 
+// OperandX8632 extends the Operand hierarchy.  Its subclasses are
+// OperandX8632Mem and VariableSplit.
 class OperandX8632 : public Operand {
 public:
-  enum OperandTypeX8632 {
-    __Start = Operand::kTarget,
+  enum OperandKindX8632 {
+    k__Start = Operand::kTarget,
     kMem,
     kSplit
   };
-  virtual void emit(const Cfg *Func, uint32_t Option) const = 0;
+  virtual void emit(const Cfg *Func) const = 0;
   void dump(const Cfg *Func) const;
 
 protected:
-  OperandX8632(OperandTypeX8632 Kind, Type Ty)
+  OperandX8632(OperandKindX8632 Kind, Type Ty)
       : Operand(static_cast<OperandKind>(Kind), Ty) {}
   virtual ~OperandX8632() {}
 
@@ -45,6 +47,9 @@ private:
   OperandX8632 &operator=(const OperandX8632 &) LLVM_DELETED_FUNCTION;
 };
 
+// OperandX8632Mem represents the m32 addressing mode, with optional
+// base and index registers, a constant offset, and a fixed shift
+// value for the index register.
 class OperandX8632Mem : public OperandX8632 {
 public:
   static OperandX8632Mem *create(Cfg *Func, Type Ty, Variable *Base,
@@ -57,7 +62,7 @@ public:
   Constant *getOffset() const { return Offset; }
   Variable *getIndex() const { return Index; }
   uint32_t getShift() const { return Shift; }
-  virtual void emit(const Cfg *Func, uint32_t Option) const;
+  virtual void emit(const Cfg *Func) const;
   virtual void dump(const Cfg *Func) const;
 
   static bool classof(const Operand *Operand) {
@@ -76,6 +81,12 @@ private:
   uint32_t Shift;
 };
 
+// VariableSplit is a way to treat an f64 memory location as a pair
+// of i32 locations (Low and High).  This is needed for some cases
+// of the Bitcast instruction.  Since it's not possible for integer
+// registers to access the XMM registers and vice versa, the
+// lowering forces the f64 to be spilled to the stack and then
+// accesses through the VariableSplit.
 class VariableSplit : public OperandX8632 {
 public:
   enum Portion {
@@ -85,7 +96,7 @@ public:
   static VariableSplit *create(Cfg *Func, Variable *Var, Portion Part) {
     return new (Func->allocate<VariableSplit>()) VariableSplit(Func, Var, Part);
   }
-  virtual void emit(const Cfg *Func, uint32_t Option) const;
+  virtual void emit(const Cfg *Func) const;
   virtual void dump(const Cfg *Func) const;
 
   static bool classof(const Operand *Operand) {
@@ -94,14 +105,16 @@ public:
 
 private:
   VariableSplit(Cfg *Func, Variable *Var, Portion Part)
-      : OperandX8632(kSplit, IceType_i32), Var(Var), Part(Part) {
+      : OperandX8632(kSplit, IceType_i32), Func(Func), Var(Var), Part(Part) {
+    assert(Var->getType() == IceType_f64);
     Vars = Func->allocateArrayOf<Variable *>(1);
     Vars[0] = Var;
     NumVars = 1;
   }
   VariableSplit(const VariableSplit &) LLVM_DELETED_FUNCTION;
   VariableSplit &operator=(const VariableSplit &) LLVM_DELETED_FUNCTION;
-  virtual ~VariableSplit() {}
+  virtual ~VariableSplit() { Func->deallocateArrayOf<Variable *>(Vars); }
+  Cfg *Func; // Held only for the destructor.
   Variable *Var;
   Portion Part;
 };
@@ -109,7 +122,7 @@ private:
 class InstX8632 : public InstTarget {
 public:
   enum InstKindX8632 {
-    __Start = Inst::Target,
+    k__Start = Inst::Target,
     Adc,
     Add,
     Addss,
@@ -149,7 +162,8 @@ public:
     Ucomiss,
     Xor
   };
-  virtual void emit(const Cfg *Func, uint32_t Option) const = 0;
+  static const char *getWidthString(Type Ty);
+  virtual void emit(const Cfg *Func) const = 0;
   virtual void dump(const Cfg *Func) const;
 
 protected:
@@ -183,10 +197,11 @@ private:
 //     mov c, y
 //   L2:
 //
-// Without knowledge of the intra-block control flow, liveness
-// analysis will determine the "mov c, x" instruction to be dead.  One
-// way to prevent this is to insert a "FakeUse(c)" instruction
-// anywhere between the two "mov c, ..." instructions, e.g.:
+// Labels L1 and L2 are intra-block labels.  Without knowledge of the
+// intra-block control flow, liveness analysis will determine the "mov
+// c, x" instruction to be dead.  One way to prevent this is to insert
+// a "FakeUse(c)" instruction anywhere between the two "mov c, ..."
+// instructions, e.g.:
 //
 //     cmp a, b
 //     br lt, L1
@@ -199,7 +214,7 @@ private:
 //
 // The down-side is that "mov c, x" can never be dead-code eliminated
 // even if there are no uses of c.  As unlikely as this situation is,
-// it would be prevented by running dead code elimination before
+// it may be prevented by running dead code elimination before
 // lowering.
 class InstX8632Label : public InstX8632 {
 public:
@@ -207,7 +222,7 @@ public:
     return new (Func->allocate<InstX8632Label>()) InstX8632Label(Func, Target);
   }
   IceString getName(const Cfg *Func) const;
-  virtual void emit(const Cfg *Func, uint32_t Option) const;
+  virtual void emit(const Cfg *Func) const;
   virtual void dump(const Cfg *Func) const;
 
 private:
@@ -218,6 +233,7 @@ private:
   SizeT Number; // used only for unique label string generation
 };
 
+// Conditional and unconditional branch instruction.
 class InstX8632Br : public InstX8632 {
 public:
   enum BrCond {
@@ -227,19 +243,26 @@ public:
         Br_None
   };
 
+  // Create a conditional branch to a node.
   static InstX8632Br *create(Cfg *Func, CfgNode *TargetTrue,
                              CfgNode *TargetFalse, BrCond Condition) {
     return new (Func->allocate<InstX8632Br>())
         InstX8632Br(Func, TargetTrue, TargetFalse, NULL, Condition);
   }
+  // Create an unconditional branch to a node.
   static InstX8632Br *create(Cfg *Func, CfgNode *Target) {
     return new (Func->allocate<InstX8632Br>())
         InstX8632Br(Func, NULL, Target, NULL, Br_None);
   }
+  // Create a non-terminator conditional branch to a node, with a
+  // fallthrough to the next instruction in the current node.  This is
+  // used for switch lowering.
   static InstX8632Br *create(Cfg *Func, CfgNode *Target, BrCond Condition) {
     return new (Func->allocate<InstX8632Br>())
         InstX8632Br(Func, Target, NULL, NULL, Condition);
   }
+  // Create a conditional intra-block branch (or unconditional, if
+  // Condition==None) to a label in the current block.
   static InstX8632Br *create(Cfg *Func, InstX8632Label *Label,
                              BrCond Condition) {
     return new (Func->allocate<InstX8632Br>())
@@ -247,7 +270,7 @@ public:
   }
   CfgNode *getTargetTrue() const { return TargetTrue; }
   CfgNode *getTargetFalse() const { return TargetFalse; }
-  virtual void emit(const Cfg *Func, uint32_t Option) const;
+  virtual void emit(const Cfg *Func) const;
   virtual void dump(const Cfg *Func) const;
   static bool classof(const Inst *Inst) { return isClassof(Inst, Br); }
 
@@ -263,6 +286,7 @@ private:
   InstX8632Label *Label; // Intra-block branch target
 };
 
+// Call instruction.  Arguments should have already been pushed.
 class InstX8632Call : public InstX8632 {
 public:
   static InstX8632Call *create(Cfg *Func, Variable *Dest, Operand *CallTarget) {
@@ -270,7 +294,7 @@ public:
         InstX8632Call(Func, Dest, CallTarget);
   }
   Operand *getCallTarget() const { return getSrc(0); }
-  virtual void emit(const Cfg *Func, uint32_t Option) const;
+  virtual void emit(const Cfg *Func) const;
   virtual void dump(const Cfg *Func) const;
   static bool classof(const Inst *Inst) { return isClassof(Inst, Call); }
 
@@ -281,18 +305,21 @@ private:
   virtual ~InstX8632Call() {}
 };
 
-void IceEmitTwoAddress(const char *Opcode, const Inst *Inst, const Cfg *Func,
-                       uint32_t Option, bool ShiftHack = false);
+// See the definition of emitTwoAddress() for a description of
+// ShiftHack.
+void emitTwoAddress(const char *Opcode, const Inst *Inst, const Cfg *Func,
+                    bool ShiftHack = false);
 
-template <bool ShiftHack, InstX8632::InstKindX8632 K>
+template <InstX8632::InstKindX8632 K, bool ShiftHack = false>
 class InstX8632Binop : public InstX8632 {
 public:
+  // Create an ordinary binary-op instruction like add or sub.
   static InstX8632Binop *create(Cfg *Func, Variable *Dest, Operand *Source) {
     return new (Func->allocate<InstX8632Binop>())
         InstX8632Binop(Func, Dest, Source);
   }
-  virtual void emit(const Cfg *Func, uint32_t Option) const {
-    IceEmitTwoAddress(Opcode, this, Func, Option, ShiftHack);
+  virtual void emit(const Cfg *Func) const {
+    emitTwoAddress(Opcode, this, Func, ShiftHack);
   }
   virtual void dump(const Cfg *Func) const {
     Ostream &Str = Func->getContext()->getStrDump();
@@ -316,16 +343,17 @@ private:
 
 template <InstX8632::InstKindX8632 K> class InstX8632Ternop : public InstX8632 {
 public:
+  // Create a ternary-op instruction like div or idiv.
   static InstX8632Ternop *create(Cfg *Func, Variable *Dest, Operand *Source1,
                                  Operand *Source2) {
     return new (Func->allocate<InstX8632Ternop>())
         InstX8632Ternop(Func, Dest, Source1, Source2);
   }
-  virtual void emit(const Cfg *Func, uint32_t Option) const {
+  virtual void emit(const Cfg *Func) const {
     Ostream &Str = Func->getContext()->getStrEmit();
     assert(getSrcSize() == 3);
     Str << "\t" << Opcode << "\t";
-    getSrc(1)->emit(Func, Option);
+    getSrc(1)->emit(Func);
     Str << "\n";
   }
   virtual void dump(const Cfg *Func) const {
@@ -349,24 +377,25 @@ private:
   static const char *Opcode;
 };
 
-typedef InstX8632Binop<false, InstX8632::Add> InstX8632Add;
-typedef InstX8632Binop<false, InstX8632::Adc> InstX8632Adc;
-typedef InstX8632Binop<false, InstX8632::Addss> InstX8632Addss;
-typedef InstX8632Binop<false, InstX8632::Sub> InstX8632Sub;
-typedef InstX8632Binop<false, InstX8632::Subss> InstX8632Subss;
-typedef InstX8632Binop<false, InstX8632::Sbb> InstX8632Sbb;
-typedef InstX8632Binop<false, InstX8632::And> InstX8632And;
-typedef InstX8632Binop<false, InstX8632::Or> InstX8632Or;
-typedef InstX8632Binop<false, InstX8632::Xor> InstX8632Xor;
-typedef InstX8632Binop<false, InstX8632::Imul> InstX8632Imul;
-typedef InstX8632Binop<false, InstX8632::Mulss> InstX8632Mulss;
-typedef InstX8632Binop<false, InstX8632::Divss> InstX8632Divss;
-typedef InstX8632Binop<true, InstX8632::Shl> InstX8632Shl;
-typedef InstX8632Binop<true, InstX8632::Shr> InstX8632Shr;
-typedef InstX8632Binop<true, InstX8632::Sar> InstX8632Sar;
+typedef InstX8632Binop<InstX8632::Add> InstX8632Add;
+typedef InstX8632Binop<InstX8632::Adc> InstX8632Adc;
+typedef InstX8632Binop<InstX8632::Addss> InstX8632Addss;
+typedef InstX8632Binop<InstX8632::Sub> InstX8632Sub;
+typedef InstX8632Binop<InstX8632::Subss> InstX8632Subss;
+typedef InstX8632Binop<InstX8632::Sbb> InstX8632Sbb;
+typedef InstX8632Binop<InstX8632::And> InstX8632And;
+typedef InstX8632Binop<InstX8632::Or> InstX8632Or;
+typedef InstX8632Binop<InstX8632::Xor> InstX8632Xor;
+typedef InstX8632Binop<InstX8632::Imul> InstX8632Imul;
+typedef InstX8632Binop<InstX8632::Mulss> InstX8632Mulss;
+typedef InstX8632Binop<InstX8632::Divss> InstX8632Divss;
+typedef InstX8632Binop<InstX8632::Shl, true> InstX8632Shl;
+typedef InstX8632Binop<InstX8632::Shr, true> InstX8632Shr;
+typedef InstX8632Binop<InstX8632::Sar, true> InstX8632Sar;
 typedef InstX8632Ternop<InstX8632::Idiv> InstX8632Idiv;
 typedef InstX8632Ternop<InstX8632::Div> InstX8632Div;
 
+// Mul instruction - unsigned multiply.
 class InstX8632Mul : public InstX8632 {
 public:
   static InstX8632Mul *create(Cfg *Func, Variable *Dest, Variable *Source1,
@@ -374,7 +403,7 @@ public:
     return new (Func->allocate<InstX8632Mul>())
         InstX8632Mul(Func, Dest, Source1, Source2);
   }
-  virtual void emit(const Cfg *Func, uint32_t Option) const;
+  virtual void emit(const Cfg *Func) const;
   virtual void dump(const Cfg *Func) const;
   static bool classof(const Inst *Inst) { return isClassof(Inst, Mul); }
 
@@ -385,6 +414,8 @@ private:
   virtual ~InstX8632Mul() {}
 };
 
+// Shld instruction - shift across a pair of operands.  TODO: Verify
+// that the validator accepts the shld instruction.
 class InstX8632Shld : public InstX8632 {
 public:
   static InstX8632Shld *create(Cfg *Func, Variable *Dest, Variable *Source1,
@@ -392,7 +423,7 @@ public:
     return new (Func->allocate<InstX8632Shld>())
         InstX8632Shld(Func, Dest, Source1, Source2);
   }
-  virtual void emit(const Cfg *Func, uint32_t Option) const;
+  virtual void emit(const Cfg *Func) const;
   virtual void dump(const Cfg *Func) const;
   static bool classof(const Inst *Inst) { return isClassof(Inst, Shld); }
 
@@ -404,6 +435,8 @@ private:
   virtual ~InstX8632Shld() {}
 };
 
+// Shrd instruction - shift across a pair of operands.  TODO: Verify
+// that the validator accepts the shrd instruction.
 class InstX8632Shrd : public InstX8632 {
 public:
   static InstX8632Shrd *create(Cfg *Func, Variable *Dest, Variable *Source1,
@@ -411,7 +444,7 @@ public:
     return new (Func->allocate<InstX8632Shrd>())
         InstX8632Shrd(Func, Dest, Source1, Source2);
   }
-  virtual void emit(const Cfg *Func, uint32_t Option) const;
+  virtual void emit(const Cfg *Func) const;
   virtual void dump(const Cfg *Func) const;
   static bool classof(const Inst *Inst) { return isClassof(Inst, Shrd); }
 
@@ -423,14 +456,14 @@ private:
   virtual ~InstX8632Shrd() {}
 };
 
-// Sign-extend eax into edx
+// Cdq instruction - sign-extend eax into edx
 class InstX8632Cdq : public InstX8632 {
 public:
   static InstX8632Cdq *create(Cfg *Func, Variable *Dest, Operand *Source) {
     return new (Func->allocate<InstX8632Cdq>())
         InstX8632Cdq(Func, Dest, Source);
   }
-  virtual void emit(const Cfg *Func, uint32_t Option) const;
+  virtual void emit(const Cfg *Func) const;
   virtual void dump(const Cfg *Func) const;
   static bool classof(const Inst *Inst) { return isClassof(Inst, Cdq); }
 
@@ -451,7 +484,7 @@ public:
     return new (Func->allocate<InstX8632Cvt>())
         InstX8632Cvt(Func, Dest, Source);
   }
-  virtual void emit(const Cfg *Func, uint32_t Option) const;
+  virtual void emit(const Cfg *Func) const;
   virtual void dump(const Cfg *Func) const;
   static bool classof(const Inst *Inst) { return isClassof(Inst, Cvt); }
 
@@ -462,13 +495,14 @@ private:
   virtual ~InstX8632Cvt() {}
 };
 
+// cmp - Integer compare instruction.
 class InstX8632Icmp : public InstX8632 {
 public:
   static InstX8632Icmp *create(Cfg *Func, Operand *Src1, Operand *Src2) {
     return new (Func->allocate<InstX8632Icmp>())
         InstX8632Icmp(Func, Src1, Src2);
   }
-  virtual void emit(const Cfg *Func, uint32_t Option) const;
+  virtual void emit(const Cfg *Func) const;
   virtual void dump(const Cfg *Func) const;
   static bool classof(const Inst *Inst) { return isClassof(Inst, Icmp); }
 
@@ -479,13 +513,14 @@ private:
   virtual ~InstX8632Icmp() {}
 };
 
+// ucomiss/ucomisd - floating-point compare instruction.
 class InstX8632Ucomiss : public InstX8632 {
 public:
   static InstX8632Ucomiss *create(Cfg *Func, Operand *Src1, Operand *Src2) {
     return new (Func->allocate<InstX8632Ucomiss>())
         InstX8632Ucomiss(Func, Src1, Src2);
   }
-  virtual void emit(const Cfg *Func, uint32_t Option) const;
+  virtual void emit(const Cfg *Func) const;
   virtual void dump(const Cfg *Func) const;
   static bool classof(const Inst *Inst) { return isClassof(Inst, Ucomiss); }
 
@@ -496,13 +531,14 @@ private:
   virtual ~InstX8632Ucomiss() {}
 };
 
+// Test instruction.
 class InstX8632Test : public InstX8632 {
 public:
   static InstX8632Test *create(Cfg *Func, Operand *Source1, Operand *Source2) {
     return new (Func->allocate<InstX8632Test>())
         InstX8632Test(Func, Source1, Source2);
   }
-  virtual void emit(const Cfg *Func, uint32_t Option) const;
+  virtual void emit(const Cfg *Func) const;
   virtual void dump(const Cfg *Func) const;
   static bool classof(const Inst *Inst) { return isClassof(Inst, Test); }
 
@@ -522,7 +558,7 @@ public:
     return new (Func->allocate<InstX8632Store>())
         InstX8632Store(Func, Value, Mem);
   }
-  virtual void emit(const Cfg *Func, uint32_t Option) const;
+  virtual void emit(const Cfg *Func) const;
   virtual void dump(const Cfg *Func) const;
   static bool classof(const Inst *Inst) { return isClassof(Inst, Store); }
 
@@ -533,6 +569,7 @@ private:
   virtual ~InstX8632Store() {}
 };
 
+// Move/assignment instruction - wrapper for mov/movss/movsd.
 class InstX8632Mov : public InstX8632 {
 public:
   static InstX8632Mov *create(Cfg *Func, Variable *Dest, Operand *Source) {
@@ -540,7 +577,7 @@ public:
         InstX8632Mov(Func, Dest, Source);
   }
   virtual bool isRedundantAssign() const;
-  virtual void emit(const Cfg *Func, uint32_t Option) const;
+  virtual void emit(const Cfg *Func) const;
   virtual void dump(const Cfg *Func) const;
   static bool classof(const Inst *Inst) { return isClassof(Inst, Mov); }
 
@@ -551,13 +588,15 @@ private:
   virtual ~InstX8632Mov() {}
 };
 
+// Movsx - copy from a narrower integer type to a wider integer
+// type, with sign extension.
 class InstX8632Movsx : public InstX8632 {
 public:
   static InstX8632Movsx *create(Cfg *Func, Variable *Dest, Operand *Source) {
     return new (Func->allocate<InstX8632Movsx>())
         InstX8632Movsx(Func, Dest, Source);
   }
-  virtual void emit(const Cfg *Func, uint32_t Option) const;
+  virtual void emit(const Cfg *Func) const;
   virtual void dump(const Cfg *Func) const;
   static bool classof(const Inst *Inst) { return isClassof(Inst, Movsx); }
 
@@ -568,13 +607,15 @@ private:
   virtual ~InstX8632Movsx() {}
 };
 
+// Movsx - copy from a narrower integer type to a wider integer
+// type, with zero extension.
 class InstX8632Movzx : public InstX8632 {
 public:
   static InstX8632Movzx *create(Cfg *Func, Variable *Dest, Operand *Source) {
     return new (Func->allocate<InstX8632Movzx>())
         InstX8632Movzx(Func, Dest, Source);
   }
-  virtual void emit(const Cfg *Func, uint32_t Option) const;
+  virtual void emit(const Cfg *Func) const;
   virtual void dump(const Cfg *Func) const;
   static bool classof(const Inst *Inst) { return isClassof(Inst, Movzx); }
 
@@ -585,12 +626,13 @@ private:
   virtual ~InstX8632Movzx() {}
 };
 
+// Fld - load a value onto the x87 FP stack.
 class InstX8632Fld : public InstX8632 {
 public:
   static InstX8632Fld *create(Cfg *Func, Operand *Src) {
     return new (Func->allocate<InstX8632Fld>()) InstX8632Fld(Func, Src);
   }
-  virtual void emit(const Cfg *Func, uint32_t Option) const;
+  virtual void emit(const Cfg *Func) const;
   virtual void dump(const Cfg *Func) const;
   static bool classof(const Inst *Inst) { return isClassof(Inst, Fld); }
 
@@ -601,12 +643,13 @@ private:
   virtual ~InstX8632Fld() {}
 };
 
+// Fstp - store x87 st(0) into memory and pop st(0).
 class InstX8632Fstp : public InstX8632 {
 public:
   static InstX8632Fstp *create(Cfg *Func, Variable *Dest) {
     return new (Func->allocate<InstX8632Fstp>()) InstX8632Fstp(Func, Dest);
   }
-  virtual void emit(const Cfg *Func, uint32_t Option) const;
+  virtual void emit(const Cfg *Func) const;
   virtual void dump(const Cfg *Func) const;
   static bool classof(const Inst *Inst) { return isClassof(Inst, Fstp); }
 
@@ -622,7 +665,7 @@ public:
   static InstX8632Pop *create(Cfg *Func, Variable *Dest) {
     return new (Func->allocate<InstX8632Pop>()) InstX8632Pop(Func, Dest);
   }
-  virtual void emit(const Cfg *Func, uint32_t Option) const;
+  virtual void emit(const Cfg *Func) const;
   virtual void dump(const Cfg *Func) const;
   static bool classof(const Inst *Inst) { return isClassof(Inst, Pop); }
 
@@ -640,7 +683,7 @@ public:
     return new (Func->allocate<InstX8632Push>())
         InstX8632Push(Func, Source, SuppressStackAdjustment);
   }
-  virtual void emit(const Cfg *Func, uint32_t Option) const;
+  virtual void emit(const Cfg *Func) const;
   virtual void dump(const Cfg *Func) const;
   static bool classof(const Inst *Inst) { return isClassof(Inst, Push); }
 
@@ -652,12 +695,16 @@ private:
   virtual ~InstX8632Push() {}
 };
 
+// Ret instruction.  Currently only supports the "ret" version that
+// does not pop arguments.  This instruction takes a Source operand
+// (for non-void returning functions) for liveness analysis, though
+// a FakeUse before the ret would do just as well.
 class InstX8632Ret : public InstX8632 {
 public:
   static InstX8632Ret *create(Cfg *Func, Variable *Source = NULL) {
     return new (Func->allocate<InstX8632Ret>()) InstX8632Ret(Func, Source);
   }
-  virtual void emit(const Cfg *Func, uint32_t Option) const;
+  virtual void emit(const Cfg *Func) const;
   virtual void dump(const Cfg *Func) const;
   static bool classof(const Inst *Inst) { return isClassof(Inst, Ret); }
 

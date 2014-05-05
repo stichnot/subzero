@@ -59,7 +59,7 @@ public:
   void genCode();
   bool liveness(LivenessMode Mode, Liveness *Liveness);
   void livenessPostprocess(LivenessMode Mode, Liveness *Liveness);
-  void emit(Cfg *Func, uint32_t Option) const;
+  void emit(Cfg *Func) const;
   void dump(Cfg *Func) const;
 
 private:

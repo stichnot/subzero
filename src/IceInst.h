@@ -94,11 +94,11 @@ public:
 
   void liveness(LivenessMode Mode, int32_t InstNumber, llvm::BitVector &Live,
                 Liveness *Liveness, const CfgNode *Node);
-  virtual void emit(const Cfg *Func, uint32_t Option) const;
+  virtual void emit(const Cfg *Func) const;
   virtual void dump(const Cfg *Func) const;
   virtual void dumpExtras(const Cfg *Func) const;
   void dumpDecorated(const Cfg *Func) const;
-  void emitSources(const Cfg *Func, uint32_t Option) const;
+  void emitSources(const Cfg *Func) const;
   void dumpSources(const Cfg *Func) const;
   void dumpDest(const Cfg *Func) const;
   virtual bool isRedundantAssign() const { return false; }
@@ -571,7 +571,7 @@ public:
   static InstFakeDef *create(Cfg *Func, Variable *Dest, Variable *Src = NULL) {
     return new (Func->allocateInst<InstFakeDef>()) InstFakeDef(Func, Dest, Src);
   }
-  virtual void emit(const Cfg *Func, uint32_t Option) const;
+  virtual void emit(const Cfg *Func) const;
   virtual void dump(const Cfg *Func) const;
   static bool classof(const Inst *Inst) { return Inst->getKind() == FakeDef; }
 
@@ -592,7 +592,7 @@ public:
   static InstFakeUse *create(Cfg *Func, Variable *Src) {
     return new (Func->allocateInst<InstFakeUse>()) InstFakeUse(Func, Src);
   }
-  virtual void emit(const Cfg *Func, uint32_t Option) const;
+  virtual void emit(const Cfg *Func) const;
   virtual void dump(const Cfg *Func) const;
   static bool classof(const Inst *Inst) { return Inst->getKind() == FakeUse; }
 
@@ -620,7 +620,7 @@ public:
         InstFakeKill(Func, KilledRegs, Linked);
   }
   const Inst *getLinked() const { return Linked; }
-  virtual void emit(const Cfg *Func, uint32_t Option) const;
+  virtual void emit(const Cfg *Func) const;
   virtual void dump(const Cfg *Func) const;
   static bool classof(const Inst *Inst) { return Inst->getKind() == FakeKill; }
 
@@ -638,7 +638,7 @@ private:
 // instructions.
 class InstTarget : public Inst {
 public:
-  virtual void emit(const Cfg *Func, uint32_t Option) const = 0;
+  virtual void emit(const Cfg *Func) const = 0;
   virtual void dump(const Cfg *Func) const;
   virtual void dumpExtras(const Cfg *Func) const;
   static bool classof(const Inst *Inst) { return Inst->getKind() >= Target; }

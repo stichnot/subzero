@@ -23,7 +23,6 @@
 namespace Ice {
 
 Ostream *GlobalStr = NULL;
-bool Cfg::HasEmittedFirstMethod = false;
 
 Cfg::Cfg(GlobalContext *Ctx)
     : Ctx(Ctx), FunctionName(""), ReturnType(IceType_void),
@@ -88,9 +87,7 @@ void Cfg::addArg(Variable *Arg) {
 
 // Returns whether the stack frame layout has been computed yet.  This
 // is used for dumping the stack frame location of Variables.
-bool Cfg::hasComputedFrame() const {
-  return getTarget() && getTarget()->hasComputedFrame();
-}
+bool Cfg::hasComputedFrame() const { return getTarget()->hasComputedFrame(); }
 
 void Cfg::translate() {
   Ostream &Str = Ctx->getStrDump();
@@ -152,10 +149,6 @@ void Cfg::doAddressOpt() {
 }
 
 void Cfg::genCode() {
-  if (getTarget() == NULL) {
-    setError("Cfg::makeTarget() wasn't called.");
-    return;
-  }
   for (NodeList::iterator I = Nodes.begin(), E = Nodes.end(); I != E; ++I) {
     (*I)->genCode();
   }
@@ -315,12 +308,13 @@ bool Cfg::validateLiveness() const {
 
 // ======================== Dump routines ======================== //
 
-void Cfg::emit(uint32_t Option) {
+void Cfg::emit() {
   Ostream &Str = Ctx->getStrEmit();
   Timer T_emit;
-  if (!HasEmittedFirstMethod) {
-    HasEmittedFirstMethod = true;
+  if (!Ctx->testAndSetHasEmittedFirstMethod()) {
     // Print a helpful command for assembling the output.
+    // TODO: have the Target emit the header
+    // TODO: need a per-file emit in addition to per-CFG
     Str << "# $LLVM_BIN_PATH/llvm-mc"
         << " -arch=x86"
         << " -x86-asm-syntax=intel"
@@ -328,21 +322,17 @@ void Cfg::emit(uint32_t Option) {
         << " -o=MyObj.o"
         << "\n\n";
   }
-  // TODO: have the Target emit the header?
-  // TODO: need a per-file emit in addition to per-CFG
-  // TODO: emit to a specified file
   Str << "\t.text\n";
   if (!getInternal()) {
-    Str << "\t.globl\t" << getContext()->mangleName(getFunctionName()) << "\n";
-    Str << "\t.type\t" << getContext()->mangleName(getFunctionName())
-        << ",@function\n";
+    IceString MangledName = getContext()->mangleName(getFunctionName());
+    Str << "\t.globl\t" << MangledName << "\n";
+    Str << "\t.type\t" << MangledName << ",@function\n";
   }
   for (NodeList::const_iterator I = Nodes.begin(), E = Nodes.end(); I != E;
        ++I) {
-    (*I)->emit(this, Option);
+    (*I)->emit(this);
   }
   Str << "\n";
-  // TODO: have the Target emit a footer?
   T_emit.printElapsedUs(Ctx, "emit()");
 }
 

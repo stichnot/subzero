@@ -181,40 +181,8 @@ Variable Variable::asType(Type Ty) {
 
 // ======================== dump routines ======================== //
 
-// TODO: This should be handed by the TargetLowering subclass.
-void Variable::emit(const Cfg *Func, uint32_t /*Option*/) const {
-  Ostream &Str = Func->getContext()->getStrEmit();
-  assert(DefNode == NULL || DefNode == Func->getCurrentNode());
-  if (hasReg()) {
-    Str << Func->getTarget()->getRegName(RegNum, getType());
-    return;
-  }
-  switch (typeWidthInBytes(getType())) {
-  case 1:
-    Str << "byte";
-    break;
-  case 2:
-    Str << "word";
-    break;
-  case 4:
-    Str << "dword";
-    break;
-  case 8:
-    Str << "qword";
-    break;
-  default:
-    assert(0);
-    break;
-  }
-  Str << " ptr [" << Func->getTarget()->getRegName(
-                         Func->getTarget()->getFrameOrStackReg(), IceType_i32);
-  int32_t Offset = getStackOffset() + Func->getTarget()->getStackAdjustment();
-  if (Offset) {
-    if (Offset > 0)
-      Str << "+";
-    Str << Offset;
-  }
-  Str << "]";
+void Variable::emit(const Cfg *Func) const {
+  Func->getTarget()->emitVariable(this, Func);
 }
 
 void Variable::dump(const Cfg *Func) const {
@@ -244,7 +212,7 @@ void Variable::dump(const Cfg *Func) const {
   }
 }
 
-void ConstantRelocatable::emit(const Cfg *Func, uint32_t /*Option*/) const {
+void ConstantRelocatable::emit(const Cfg *Func) const {
   Ostream &Str = Func->getContext()->getStrEmit();
   if (SuppressMangling)
     Str << Name;

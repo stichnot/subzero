@@ -1,4 +1,4 @@
-//===- subzero/src/TargetLowering.cpp - Basic lowering implementation --===//
+//===- subzero/src/IceTargetLowering.cpp - Basic lowering implementation --===//
 //
 //                        The Subzero Code Generator
 //
@@ -52,7 +52,7 @@ void LoweringContext::advance(InstList::iterator &I) {
 
 TargetLowering *TargetLowering::createLowering(TargetArch Target, Cfg *Func) {
   // These statements can be #ifdef'd to specialize the code generator
-  // to a subset of the available targets.
+  // to a subset of the available targets.  TODO: use CRTP.
   if (Target == Target_X8632)
     return TargetX8632::create(Func);
 #if 0
@@ -72,7 +72,7 @@ void TargetLowering::doAddressOpt() {
     doAddressOptLoad();
   else if (llvm::isa<InstStore>(*Context.getCur()))
     doAddressOptStore();
-  Context.Cur = Context.Next;
+  Context.advanceCur();
   Context.advanceNext();
 }
 
@@ -150,7 +150,7 @@ void TargetLowering::lower() {
 
   postLower();
 
-  Context.Cur = Context.Next;
+  Context.advanceCur();
   Context.advanceNext();
 }
 

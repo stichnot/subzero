@@ -688,10 +688,9 @@ int main(int argc, char **argv) {
       if (Func->hasError()) {
         errs() << "ICE translation error: " << Func->getError() << "\n";
       }
-      uint32_t AsmFormat = 0;
 
       Ice::Timer TEmit;
-      Func->emit(AsmFormat);
+      Func->emit();
       if (SubzeroTimingEnabled) {
         std::cerr << "[Subzero timing] Emit function "
                   << Func->getFunctionName() << ": " << TEmit.getElapsedSec()

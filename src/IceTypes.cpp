@@ -65,7 +65,7 @@ template <> Ostream &operator<<(Ostream &Str, const Type &Ty) {
     Str << TypeAttributes[Index].DisplayString;
   } else {
     Str << "???";
-    assert(0 && "Invalid type for printing");
+    llvm_unreachable("Invalid type for printing");
   }
 
   return Str;

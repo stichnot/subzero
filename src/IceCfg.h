@@ -97,7 +97,7 @@ public:
   void setCurrentNode(const CfgNode *Node) { CurrentNode = Node; }
   const CfgNode *getCurrentNode() const { return CurrentNode; }
 
-  void emit(uint32_t Option);
+  void emit();
   void dump();
 
   // Allocate data of type T using the per-Cfg allocator.
@@ -154,12 +154,6 @@ private:
   // register allocation, setCurrentNode(NULL) should be called to
   // avoid spurious validation failures.
   const CfgNode *CurrentNode;
-
-  // TODO: This is a hack, and should be moved into a global context
-  // guarded with a mutex.  The purpose is to add a header comment at
-  // the beginning of emission, doing it once per file rather than
-  // once per function.
-  static bool HasEmittedFirstMethod;
 
   Cfg(const Cfg &) LLVM_DELETED_FUNCTION;
   Cfg &operator=(const Cfg &) LLVM_DELETED_FUNCTION;

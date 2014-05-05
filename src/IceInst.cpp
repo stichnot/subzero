@@ -15,7 +15,6 @@
 #include "IceCfg.h"
 #include "IceCfgNode.h"
 #include "IceInst.h"
-#include "IceInstX8632.h"
 #include "IceLiveness.h"
 #include "IceOperand.h"
 
@@ -24,7 +23,7 @@ namespace Ice {
 namespace {
 
 // Using non-anonymous struct so that array_lengthof works.
-const struct _InstArithmeticAttributes {
+const struct InstArithmeticAttributes_ {
   const char *DisplayString;
   bool IsCommutative;
 } InstArithmeticAttributes[] = {
@@ -38,7 +37,7 @@ const size_t InstArithmeticAttributesSize =
     llvm::array_lengthof(InstArithmeticAttributes);
 
 // Using non-anonymous struct so that array_lengthof works.
-const struct _InstCastAttributes {
+const struct InstCastAttributes_ {
   const char *DisplayString;
 } InstCastAttributes[] = {
 #define X(tag, str)                                                            \
@@ -50,7 +49,7 @@ const struct _InstCastAttributes {
 const size_t InstCastAttributesSize = llvm::array_lengthof(InstCastAttributes);
 
 // Using non-anonymous struct so that array_lengthof works.
-const struct _InstFcmpAttributes {
+const struct InstFcmpAttributes_ {
   const char *DisplayString;
 } InstFcmpAttributes[] = {
 #define X(tag, str)                                                            \
@@ -62,7 +61,7 @@ const struct _InstFcmpAttributes {
 const size_t InstFcmpAttributesSize = llvm::array_lengthof(InstFcmpAttributes);
 
 // Using non-anonymous struct so that array_lengthof works.
-const struct _InstIcmpAttributes {
+const struct InstIcmpAttributes_ {
   const char *DisplayString;
 } InstIcmpAttributes[] = {
 #define X(tag, str)                                                            \
@@ -312,7 +311,7 @@ Operand *InstPhi::getOperandForTarget(CfgNode *Target) const {
     if (Labels[I] == Target)
       return getSrc(I);
   }
-  assert(0);
+  llvm_unreachable("Phi target not found");
   return NULL;
 }
 
@@ -455,15 +454,8 @@ void Inst::dumpDecorated(const Cfg *Func) const {
   Str << "\n";
 }
 
-void Inst::emit(const Cfg *Func, uint32_t /*Option*/) const {
-  Ostream &Str = Func->getContext()->getStrEmit();
-  Str << "??? ";
-  dump(Func);
-  Str << "\n";
-  assert(0 && "emit() called on a non-lowered instruction");
-  // Ideally, Func->setError() would be called, but Func is a const
-  // pointer and setError() changes its contents.
-  // Func->setError("emit() called on a non-lowered instruction");
+void Inst::emit(const Cfg * /*Func*/) const {
+  llvm_unreachable("emit() called on a non-lowered instruction");
 }
 
 void Inst::dump(const Cfg *Func) const {
@@ -509,12 +501,12 @@ void Inst::dumpSources(const Cfg *Func) const {
   }
 }
 
-void Inst::emitSources(const Cfg *Func, uint32_t Option) const {
+void Inst::emitSources(const Cfg *Func) const {
   Ostream &Str = Func->getContext()->getStrEmit();
   for (SizeT I = 0; I < getSrcSize(); ++I) {
     if (I > 0)
       Str << ", ";
-    getSrc(I)->emit(Func, Option);
+    getSrc(I)->emit(Func);
   }
 }
 
@@ -680,12 +672,12 @@ void InstUnreachable::dump(const Cfg *Func) const {
   Str << "unreachable";
 }
 
-void InstFakeDef::emit(const Cfg *Func, uint32_t Option) const {
+void InstFakeDef::emit(const Cfg *Func) const {
   Ostream &Str = Func->getContext()->getStrEmit();
   Str << "\t# ";
-  getDest()->emit(Func, Option);
+  getDest()->emit(Func);
   Str << " = def.pseudo ";
-  emitSources(Func, Option);
+  emitSources(Func);
   Str << "\n";
 }
 
@@ -696,11 +688,11 @@ void InstFakeDef::dump(const Cfg *Func) const {
   dumpSources(Func);
 }
 
-void InstFakeUse::emit(const Cfg *Func, uint32_t Option) const {
+void InstFakeUse::emit(const Cfg *Func) const {
   Ostream &Str = Func->getContext()->getStrEmit();
   Str << "\t# ";
   Str << "use.pseudo ";
-  emitSources(Func, Option);
+  emitSources(Func);
   Str << "\n";
 }
 
@@ -710,13 +702,13 @@ void InstFakeUse::dump(const Cfg *Func) const {
   dumpSources(Func);
 }
 
-void InstFakeKill::emit(const Cfg *Func, uint32_t Option) const {
+void InstFakeKill::emit(const Cfg *Func) const {
   Ostream &Str = Func->getContext()->getStrEmit();
   Str << "\t# ";
   if (Linked->isDeleted())
     Str << "// ";
   Str << "kill.pseudo ";
-  emitSources(Func, Option);
+  emitSources(Func);
   Str << "\n";
 }
 

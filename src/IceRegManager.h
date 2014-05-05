@@ -20,6 +20,8 @@
 
 namespace Ice {
 
+typedef std::vector<Operand *> OperandList;
+
 // Maintain LRU allocation order.
 // Track which variables are available in which registers.
 //   Each register has a bitmap of variables.

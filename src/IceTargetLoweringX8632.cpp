@@ -1,4 +1,4 @@
-//===- subzero/src/TargetLoweringX8632.cpp - x86-32 lowering -----------===//
+//===- subzero/src/IceTargetLoweringX8632.cpp - x86-32 lowering -----------===//
 //
 //                        The Subzero Code Generator
 //
@@ -36,14 +36,13 @@ namespace {
 // conditional branch.  Since it's quite tedious to validate the table by hand,
 // good execution tests are helpful.
 
-const struct _TableFcmp {
-  InstFcmp::FCond Cond;
+const struct TableFcmp_ {
   uint32_t Default;
   bool SwapOperands;
   InstX8632Br::BrCond C1, C2;
 } TableFcmp[] = {
 #define X(val, dflt, swap, C1, C2)                                             \
-  { InstFcmp::val, dflt, swap, InstX8632Br::C1, InstX8632Br::C2 }              \
+  { dflt, swap, InstX8632Br::C1, InstX8632Br::C2 }                             \
   ,
     FCMPX8632_TABLE
 #undef X
@@ -54,12 +53,11 @@ const size_t TableFcmpSize = llvm::array_lengthof(TableFcmp);
 // for i32 and narrower types.  Each icmp condition has a clear mapping to an
 // x86 conditional branch instruction.
 
-const struct _TableIcmp32 {
-  InstIcmp::ICond Cond;
+const struct TableIcmp32_ {
   InstX8632Br::BrCond Mapping;
 } TableIcmp32[] = {
 #define X(val, C_32, C1_64, C2_64, C3_64)                                      \
-  { InstIcmp::val, InstX8632Br::C_32 }                                         \
+  { InstX8632Br::C_32 }                                                        \
   ,
     ICMPX8632_TABLE
 #undef X
@@ -70,12 +68,11 @@ const size_t TableIcmp32Size = llvm::array_lengthof(TableIcmp32);
 // for the i64 type.  For Eq and Ne, two separate 32-bit comparisons and
 // conditional branches are needed.  For the other conditions, three separate
 // conditional branches are needed.
-const struct _TableIcmp64 {
-  InstIcmp::ICond Cond;
+const struct TableIcmp64_ {
   InstX8632Br::BrCond C1, C2, C3;
 } TableIcmp64[] = {
-#define X(val, C_32, C1_64, C2_64, C3_64)                                       \
-  { InstIcmp::val, InstX8632Br::C1_64, InstX8632Br::C2_64, InstX8632Br::C3_64 } \
+#define X(val, C_32, C1_64, C2_64, C3_64)                                      \
+  { InstX8632Br::C1_64, InstX8632Br::C2_64, InstX8632Br::C3_64 }               \
   ,
     ICMPX8632_TABLE
 #undef X
@@ -85,7 +82,6 @@ const size_t TableIcmp64Size = llvm::array_lengthof(TableIcmp64);
 InstX8632Br::BrCond getIcmp32Mapping(InstIcmp::ICond Cond) {
   size_t Index = static_cast<size_t>(Cond);
   assert(Index < TableIcmp32Size);
-  assert(TableIcmp32[Index].Cond == Cond);
   return TableIcmp32[Index].Mapping;
 }
 
@@ -148,6 +144,33 @@ void xMacroIntegrityCheck() {
 // table entries in case the high-level table has extra entries.
 #define X(tag, str) STATIC_ASSERT(_table1_##tag == _table2_##tag);
     ICEINSTICMP_TABLE;
+#undef X
+  }
+
+  // Validate the enum values in ICETYPEX8632_TABLE.
+  {
+    // Define a temporary set of enum values based on low-level
+    // table entries.
+    enum _tmp_enum {
+#define X(tag, cvt, sdss, width) _tmp_##tag,
+      ICETYPEX8632_TABLE
+#undef X
+    };
+// Define a set of constants based on high-level table entries.
+#define X(tag, size, align, str) static const int _table1_##tag = tag;
+    ICETYPE_TABLE;
+#undef X
+// Define a set of constants based on low-level table entries,
+// and ensure the table entry keys are consistent.
+#define X(tag, cvt, sdss, width)                                               \
+  static const int _table2_##tag = _tmp_##tag;                                 \
+  STATIC_ASSERT(_table1_##tag == _table2_##tag);
+    ICETYPEX8632_TABLE;
+#undef X
+// Repeat the static asserts with respect to the high-level
+// table entries in case the high-level table has extra entries.
+#define X(tag, size, align, str) STATIC_ASSERT(_table1_##tag == _table2_##tag);
+    ICETYPE_TABLE;
 #undef X
   }
 }
@@ -356,6 +379,25 @@ IceString TargetX8632::getRegName(SizeT RegNum, Type Ty) const {
   }
 }
 
+void TargetX8632::emitVariable(const Variable *Var, const Cfg *Func) const {
+  Ostream &Str = Ctx->getStrEmit();
+  assert(Var->getLocalUseNode() == NULL ||
+         Var->getLocalUseNode() == Func->getCurrentNode());
+  if (Var->hasReg()) {
+    Str << getRegName(Var->getRegNum(), Var->getType());
+    return;
+  }
+  Str << InstX8632::getWidthString(Var->getType());
+  Str << " [" << getRegName(getFrameOrStackReg(), IceType_i32);
+  int32_t Offset = Var->getStackOffset() + getStackAdjustment();
+  if (Offset) {
+    if (Offset > 0)
+      Str << "+";
+    Str << Offset;
+  }
+  Str << "]";
+}
+
 // Helper function for addProlog().  Sets the frame offset for Arg,
 // updates InArgsSizeBytes according to Arg's width, and generates an
 // instruction to copy Arg into its assigned register if applicable.
@@ -400,7 +442,7 @@ void TargetX8632::addProlog(CfgNode *Node) {
   int32_t PreservedRegsSizeBytes = 0;
   LocalsSizeBytes = 0;
   Context.init(Node);
-  Context.Next = Context.Cur;
+  Context.setInsertPoint(Context.getCur());
 
   // Determine stack frame offsets for each Variable without a
   // register assignment.  This can be done as one variable per stack
@@ -465,7 +507,7 @@ void TargetX8632::addProlog(CfgNode *Node) {
   for (SizeT i = 0; i < CalleeSaves.size(); ++i) {
     if (CalleeSaves[i] && RegsUsed[i]) {
       PreservedRegsSizeBytes += 4;
-      bool SuppressStackAdjustment = true;
+      const bool SuppressStackAdjustment = true;
       _push(getPhysicalRegister(i), SuppressStackAdjustment);
     }
   }
@@ -477,7 +519,7 @@ void TargetX8632::addProlog(CfgNode *Node) {
     PreservedRegsSizeBytes += 4;
     Variable *ebp = getPhysicalRegister(Reg_ebp);
     Variable *esp = getPhysicalRegister(Reg_esp);
-    bool SuppressStackAdjustment = true;
+    const bool SuppressStackAdjustment = true;
     _push(ebp, SuppressStackAdjustment);
     _mov(ebp, esp);
   }
@@ -580,7 +622,7 @@ void TargetX8632::addEpilog(CfgNode *Node) {
   InstList::iterator InsertPoint = RI.base();
   --InsertPoint;
   Context.init(Node);
-  Context.Next = InsertPoint;
+  Context.setInsertPoint(InsertPoint);
 
   Variable *esp = getPhysicalRegister(Reg_esp);
   if (IsEbpBasedFrame) {
@@ -652,7 +694,7 @@ Operand *TargetX8632::loOperand(Operand *Operand) {
                                    Mem->getOffset(), Mem->getIndex(),
                                    Mem->getShift());
   }
-  assert(0 && "Unsupported operand type");
+  llvm_unreachable("Unsupported operand type");
   return NULL;
 }
 
@@ -676,15 +718,13 @@ Operand *TargetX8632::hiOperand(Operand *Operand) {
       Offset = Ctx->getConstantInt(IceType_i32, 4 + IntOffset->getValue());
     } else if (ConstantRelocatable *SymOffset =
                    llvm::dyn_cast<ConstantRelocatable>(Offset)) {
-      // TODO: This creates a new entry in the constant pool, instead
-      // of reusing the existing entry.
       Offset = Ctx->getConstantSym(IceType_i32, 4 + SymOffset->getOffset(),
                                    SymOffset->getName());
     }
     return OperandX8632Mem::create(Func, IceType_i32, Mem->getBase(), Offset,
                                    Mem->getIndex(), Mem->getShift());
   }
-  assert(0 && "Unsupported operand type");
+  llvm_unreachable("Unsupported operand type");
   return NULL;
 }
 
@@ -953,7 +993,7 @@ void TargetX8632::lowerArithmetic(const InstArithmetic *Inst) {
     case InstArithmetic::Fmul:
     case InstArithmetic::Fdiv:
     case InstArithmetic::Frem:
-      assert(0);
+      llvm_unreachable("FP instruction with i64 type");
       break;
     }
   } else { // Dest->getType() != IceType_i64
@@ -1117,7 +1157,7 @@ void TargetX8632::lowerAssign(const InstAssign *Inst) {
     _mov(T_Hi, Src0Hi);
     _mov(DestHi, T_Hi);
   } else {
-    bool AllowOverlap = true;
+    const bool AllowOverlap = true;
     // RI is either a physical register or an immediate.
     Operand *RI = legalize(Src0, Legal_Reg | Legal_Imm, AllowOverlap);
     _mov(Dest, RI);
@@ -1174,7 +1214,7 @@ void TargetX8632::lowerCall(const InstCall *Instr) {
   if (Dest) {
     switch (Dest->getType()) {
     case IceType_NUM:
-      assert(0);
+      llvm_unreachable("Invalid Call dest type");
       break;
     case IceType_void:
       break;
@@ -1438,12 +1478,12 @@ void TargetX8632::lowerCast(const InstCast *Inst) {
     if (Dest->getType() == Src0RM->getType()) {
       InstAssign *Assign = InstAssign::create(Func, Dest, Src0RM);
       lowerAssign(Assign);
-      assert(0 && "Pointer bitcasts aren't lowered correctly.");
+      llvm_unreachable("Pointer bitcasts aren't lowered correctly.");
       return;
     }
     switch (Dest->getType()) {
     default:
-      assert(0 && "Unexpected Bitcast dest type");
+      llvm_unreachable("Unexpected Bitcast dest type");
     case IceType_i32:
     case IceType_f32: {
       Type DestType = Dest->getType();
@@ -1540,7 +1580,6 @@ void TargetX8632::lowerFcmp(const InstFcmp *Inst) {
   assert(Index < TableFcmpSize);
   // The table is indexed by InstFcmp::Condition.  Make sure it didn't fall
   // out of order.
-  assert(TableFcmp[Index].Cond == Condition);
   if (TableFcmp[Index].SwapOperands) {
     Operand *Tmp = Src0;
     Src0 = Src1;
@@ -1617,7 +1656,6 @@ void TargetX8632::lowerIcmp(const InstIcmp *Inst) {
     assert(Index < TableIcmp64Size);
     // The table is indexed by InstIcmp::Condition.  Make sure it didn't fall
     // out of order.
-    assert(TableIcmp64[Index].Cond == Condition);
     Operand *Src1LoRI = legalize(loOperand(Src1), Legal_Reg | Legal_Imm);
     Operand *Src1HiRI = legalize(hiOperand(Src1), Legal_Reg | Legal_Imm);
     if (Condition == InstIcmp::Eq || Condition == InstIcmp::Ne) {
@@ -2055,7 +2093,7 @@ Operand *TargetX8632::legalize(Operand *From, LegalMask Allowed,
     }
     return From;
   }
-  assert(0);
+  llvm_unreachable("Unhandled operand kind in legalize()");
   return From;
 }
 

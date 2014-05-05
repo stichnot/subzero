@@ -1,4 +1,4 @@
-//===- subzero/src/TargetLoweringX8632.h - x86-32 lowering ---*- C++ -*-===//
+//===- subzero/src/IceTargetLoweringX8632.h - x86-32 lowering ---*- C++ -*-===//
 //
 //                        The Subzero Code Generator
 //
@@ -41,8 +41,11 @@ public:
     return IsEbpBasedFrame ? Reg_ebp : Reg_esp;
   }
   virtual size_t typeWidthInBytesOnStack(Type Ty) {
+    // Round up to the next multiple of 4 bytes.  In particular, i1,
+    // i8, and i16 are rounded up to 4 bytes.
     return (typeWidthInBytes(Ty) + 3) & ~3;
   }
+  virtual void emitVariable(const Variable *Var, const Cfg *Func) const;
   virtual void addProlog(CfgNode *Node);
   virtual void addEpilog(CfgNode *Node);
   SizeT makeNextLabelNumber() { return NextLabelNumber++; }
