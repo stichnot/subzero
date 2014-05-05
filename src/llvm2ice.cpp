@@ -165,7 +165,7 @@ private:
     return Ice::IceType_void;
   }
 
-  // Given a LLVM instruction and an operand number, produce the
+  // Given an LLVM instruction and an operand number, produce the
   // Ice::Operand this refers to. If there's no such operand, return
   // NULL.
   Ice::Operand *convertOperand(const Instruction *Inst, unsigned OpNum) {
@@ -190,10 +190,10 @@ private:
           return Ctx->getConstantFloat(CFP->getValueAPF().convertToFloat());
         else if (Type == Ice::IceType_f64)
           return Ctx->getConstantDouble(CFP->getValueAPF().convertToDouble());
-        assert(0 && "Unexpected floating point type");
+        llvm_unreachable("Unexpected floating point type");
         return NULL;
       } else {
-        assert(0 && "Unhandled constant type");
+        llvm_unreachable("Unhandled constant type");
         return NULL;
       }
     } else {
@@ -579,10 +579,16 @@ static cl::list<Ice::VerboseItem> VerboseList(
         clEnumValN(Ice::IceV_None, "none", "No verbosity"), clEnumValEnd));
 static cl::opt<Ice::TargetArch> TargetArch(
     "target", cl::desc("Target architecture:"), cl::init(Ice::Target_X8632),
-    cl::values(clEnumValN(Ice::Target_X8632, "X8632", "x86-32"),
-               clEnumValN(Ice::Target_X8664, "X8664", "x86-64"),
-               clEnumValN(Ice::Target_ARM32, "ARM", "ARM32"),
-               clEnumValN(Ice::Target_ARM64, "ARM64", "ARM64"), clEnumValEnd));
+    cl::values(
+        clEnumValN(Ice::Target_X8632, "x8632", "x86-32"),
+        clEnumValN(Ice::Target_X8632, "x86-32", "x86-32 (same as x8632)"),
+        clEnumValN(Ice::Target_X8632, "x86_32", "x86-32 (same as x8632)"),
+        clEnumValN(Ice::Target_X8664, "x8664", "x86-64"),
+        clEnumValN(Ice::Target_X8664, "x86-64", "x86-64 (same as x8664)"),
+        clEnumValN(Ice::Target_X8664, "x86_64", "x86-64 (same as x8664)"),
+        clEnumValN(Ice::Target_ARM32, "arm", "arm32"),
+        clEnumValN(Ice::Target_ARM32, "arm32", "arm32 (same as arm)"),
+        clEnumValN(Ice::Target_ARM64, "arm64", "arm64"), clEnumValEnd));
 static cl::opt<Ice::OptLevel>
 OptLevel(cl::desc("Optimization level"), cl::init(Ice::Opt_2),
          cl::value_desc("level"),

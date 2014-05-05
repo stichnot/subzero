@@ -121,15 +121,28 @@ IceString GlobalContext::mangleName(const IceString &Name) const {
   }
 
   ItemsParsed = sscanf(Name.c_str(), "_Z%u%s", &BaseLength, NameBase);
-  if (ItemsParsed == 2) {
-    // Transform _Z3barxyz ==> ZN6Prefix3barExyz
-    //                          ^^^^^^^^    ^
+  if (ItemsParsed == 2 && BaseLength <= strlen(NameBase)) {
+    // Transform _Z3barxyz ==> _ZN6Prefix3barExyz
+    //                           ^^^^^^^^    ^
     // (splice in "N6Prefix", and insert "E" after "3bar")
+    // But an "I" after the identifier indicates a template argument
+    // list terminated with "E"; insert the new "E" before/after the
+    // old "E".  E.g.:
+    // Transform _Z3barIabcExyz ==> _ZN6Prefix3barIabcEExyz
+    //                                ^^^^^^^^         ^
+    // (splice in "N6Prefix", and insert "E" after "3barIabcE")
     char OrigName[Name.length()];
     char OrigSuffix[Name.length()];
-    strncpy(OrigName, NameBase, BaseLength);
-    OrigName[BaseLength] = '\0';
-    strcpy(OrigSuffix, NameBase + BaseLength);
+    uint32_t ActualBaseLength = BaseLength;
+    if (NameBase[ActualBaseLength] == 'I') {
+      ++ActualBaseLength;
+      while (NameBase[ActualBaseLength] != 'E' &&
+             NameBase[ActualBaseLength] != '\0')
+        ++ActualBaseLength;
+    }
+    strncpy(OrigName, NameBase, ActualBaseLength);
+    OrigName[ActualBaseLength] = '\0';
+    strcpy(OrigSuffix, NameBase + ActualBaseLength);
     snprintf(NewName, BufLen, "_ZN%u%s%u%sE%s", PrefixLength,
              getTestPrefix().c_str(), BaseLength, OrigName, OrigSuffix);
     return NewName;

@@ -1,0 +1,37 @@
+#ifndef TEST_ARITH_DEF
+#define TEST_ARITH_DEF
+
+#define XSTR(s) STR(s)
+#define STR(s) #s
+
+#define UINTOP_TABLE \
+  /* inst, operator, div */ \
+  X(Add,   +,        0 )    \
+  X(Sub,   -,        0 )    \
+  X(Mul,   *,        0 )    \
+  X(Udiv,  /,        1 )    \
+  X(Urem,  %,        1 )    \
+  X(Shl,   <<,       0)     \
+  X(Lshr,  >>,       0)     \
+  X(And,   &,        0 )    \
+  X(Or,    |,        0 )    \
+  X(Xor,   ^,        0 )    \
+//#define X(inst, op, isdiv)
+
+#define SINTOP_TABLE \
+  /* inst, operator, div */ \
+  X(Sdiv,  /,        1)     \
+  X(Srem,  %,        1)     \
+  X(Ashr,  >>,       0)     \
+//#define X(inst, op, isdiv)
+
+#define FPOP_TABLE \
+  /* inst, operator */ \
+  X(Fadd,  +) \
+  X(Fsub,  -) \
+  X(Fmul,  *) \
+  X(Fdiv,  /) \
+//#define X(inst, op)
+// TODO: Add Frem, which doesn't have a C++ operator equivalent.
+
+#endif // TEST_ARITH_DEF

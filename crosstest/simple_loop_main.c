@@ -1,4 +1,5 @@
-// abtest.py --test=simple_loop.c --driver=simple_loop_main.c --prefix=Subzero_ --output=simple_loop
+/* crosstest.py --test=simple_loop.c --driver=simple_loop_main.c \
+   --prefix=Subzero_ --output=simple_loop */
 
 #include <stdio.h>
 

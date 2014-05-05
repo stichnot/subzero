@@ -1,172 +1,61 @@
+// This aims to test all the conversion bitcode instructions across
+// all PNaCl primitive data types.
+
 #include <stdint.h>
 #include "test_cast.h"
 
 template <typename FromType, typename ToType>
-class Caster {
-public:
-  static ToType __attribute__((noinline)) cast(FromType a) { return (ToType) a; }
+ToType __attribute__((noinline)) cast(FromType a) {
+  return (ToType)a;
+}
+
+template <typename FromType, typename ToType>
+ToType __attribute__((noinline)) castBits(FromType a) {
+  return *(ToType *)&a;
+}
+
+// The purpose of the following sets of templates is to force
+// cast<A,B>() to be instantiated in the resulting bitcode file for
+// all <A,B>, so that they can be called from the driver.
+template <typename ToType> class Caster {
+  static ToType f(bool a) { return cast<bool, ToType>(a); }
+  static ToType f(int8_t a) { return cast<int8_t, ToType>(a); }
+  static ToType f(uint8_t a) { return cast<uint8_t, ToType>(a); }
+  static ToType f(int16_t a) { return cast<int16_t, ToType>(a); }
+  static ToType f(uint16_t a) { return cast<uint16_t, ToType>(a); }
+  static ToType f(int32_t a) { return cast<int32_t, ToType>(a); }
+  static ToType f(uint32_t a) { return cast<uint32_t, ToType>(a); }
+  static ToType f(int64_t a) { return cast<int64_t, ToType>(a); }
+  static ToType f(uint64_t a) { return cast<uint64_t, ToType>(a); }
+  static ToType f(float a) { return cast<float, ToType>(a); }
+  static ToType f(double a) { return cast<double, ToType>(a); }
 };
 
-template <typename ToType>
-class CasterCaster {
-  static ToType f(bool a) { return Caster<bool, ToType>::cast(a); }
-  static ToType f(int8_t a) { return Caster<int8_t, ToType>::cast(a); }
-  static ToType f(uint8_t a) { return Caster<uint8_t, ToType>::cast(a); }
-  static ToType f(int16_t a) { return Caster<int16_t, ToType>::cast(a); }
-  static ToType f(uint16_t a) { return Caster<uint16_t, ToType>::cast(a); }
-  static ToType f(int32_t a) { return Caster<int32_t, ToType>::cast(a); }
-  static ToType f(uint32_t a) { return Caster<uint32_t, ToType>::cast(a); }
-  static ToType f(int64_t a) { return Caster<int64_t, ToType>::cast(a); }
-  static ToType f(uint64_t a) { return Caster<uint64_t, ToType>::cast(a); }
-};
+// Comment out the definition of Caster<bool> because clang compiles
+// casts to bool using icmp instead of the desired cast instruction.
+// The corrected definitions are in test_cast_to_u1.ll.
 
-template class CasterCaster<bool>;
-template class CasterCaster<int8_t>;
-template class CasterCaster<uint8_t>;
-template class CasterCaster<int16_t>;
-template class CasterCaster<uint16_t>;
-template class CasterCaster<int32_t>;
-template class CasterCaster<uint32_t>;
-template class CasterCaster<int64_t>;
-template class CasterCaster<uint64_t>;
+// template class Caster<bool>;
 
-#if 0
-// The bitcode for *ToUi1() needs to be hand-modified to change the
-// icmp back to trunc or fptoui.
-bool castUi64ToUi1(uint64_t a) { return (bool) a; }
-bool castSi64ToUi1(int64_t a) { return (bool) a; }
-bool castUi32ToUi1(uint32_t a) { return (bool) a; }
-bool castSi32ToUi1(int32_t a) { return (bool) a; }
-bool castUi16ToUi1(unsigned short a) { return (bool) a; }
-bool castSi16ToUi1(short a) { return (bool) a; }
-bool castUi8ToUi1(unsigned char a) { return (bool) a; }
-bool castSi8ToUi1(signed char a) { return (bool) a; }
-bool castUi1ToUi1(bool a) { return (bool) a; }
-bool castF64ToUi1(double a) { return (bool) a; }
-bool castF32ToUi1(float a) { return (bool) a; }
-#endif
+template class Caster<int8_t>;
+template class Caster<uint8_t>;
+template class Caster<int16_t>;
+template class Caster<uint16_t>;
+template class Caster<int32_t>;
+template class Caster<uint32_t>;
+template class Caster<int64_t>;
+template class Caster<uint64_t>;
+template class Caster<float>;
+template class Caster<double>;
 
-signed char castUi64ToSi8(uint64_t a) { return (signed char)a; }
-signed char castSi64ToSi8(int64_t a) { return (signed char)a; }
-signed char castUi32ToSi8(uint32_t a) { return (signed char)a; }
-signed char castSi32ToSi8(int32_t a) { return (signed char)a; }
-signed char castUi16ToSi8(unsigned short a) { return (signed char)a; }
-signed char castSi16ToSi8(short a) { return (signed char)a; }
-signed char castUi8ToSi8(unsigned char a) { return (signed char)a; }
-signed char castSi8ToSi8(signed char a) { return (signed char)a; }
-signed char castUi1ToSi8(bool a) { return (signed char)a; }
-signed char castF64ToSi8(double a) { return (signed char)a; }
-signed char castF32ToSi8(float a) { return (signed char)a; }
-
-unsigned char castUi64ToUi8(uint64_t a) { return (unsigned char)a; }
-unsigned char castSi64ToUi8(int64_t a) { return (unsigned char)a; }
-unsigned char castUi32ToUi8(uint32_t a) { return (unsigned char)a; }
-unsigned char castSi32ToUi8(int32_t a) { return (unsigned char)a; }
-unsigned char castUi16ToUi8(unsigned short a) { return (unsigned char)a; }
-unsigned char castSi16ToUi8(short a) { return (unsigned char)a; }
-unsigned char castUi8ToUi8(unsigned char a) { return (unsigned char)a; }
-unsigned char castSi8ToUi8(signed char a) { return (unsigned char)a; }
-unsigned char castUi1ToUi8(bool a) { return (unsigned char)a; }
-unsigned char castF64ToUi8(double a) { return (unsigned char)a; }
-unsigned char castF32ToUi8(float a) { return (unsigned char)a; }
-
-short castUi64ToSi16(uint64_t a) { return (short)a; }
-short castSi64ToSi16(int64_t a) { return (short)a; }
-short castUi32ToSi16(uint32_t a) { return (short)a; }
-short castSi32ToSi16(int32_t a) { return (short)a; }
-short castUi16ToSi16(unsigned short a) { return (short)a; }
-short castSi16ToSi16(short a) { return (short)a; }
-short castUi8ToSi16(unsigned char a) { return (short)a; }
-short castSi8ToSi16(signed char a) { return (short)a; }
-short castUi1ToSi16(bool a) { return (short)a; }
-short castF64ToSi16(double a) { return (short)a; }
-short castF32ToSi16(float a) { return (short)a; }
-
-unsigned short castUi64ToUi16(uint64_t a) { return (unsigned short)a; }
-unsigned short castSi64ToUi16(int64_t a) { return (unsigned short)a; }
-unsigned short castUi32ToUi16(uint32_t a) { return (unsigned short)a; }
-unsigned short castSi32ToUi16(int32_t a) { return (unsigned short)a; }
-unsigned short castUi16ToUi16(unsigned short a) { return (unsigned short)a; }
-unsigned short castSi16ToUi16(short a) { return (unsigned short)a; }
-unsigned short castUi8ToUi16(unsigned char a) { return (unsigned short)a; }
-unsigned short castSi8ToUi16(signed char a) { return (unsigned short)a; }
-unsigned short castUi1ToUi16(bool a) { return (unsigned short)a; }
-unsigned short castF64ToUi16(double a) { return (unsigned short)a; }
-unsigned short castF32ToUi16(float a) { return (unsigned short)a; }
-
-int32_t castUi64ToSi32(uint64_t a) { return (int32_t)a; }
-int32_t castSi64ToSi32(int64_t a) { return (int32_t)a; }
-int32_t castUi32ToSi32(uint32_t a) { return (int32_t)a; }
-int32_t castSi32ToSi32(int32_t a) { return (int32_t)a; }
-int32_t castUi16ToSi32(unsigned short a) { return (int32_t)a; }
-int32_t castSi16ToSi32(short a) { return (int32_t)a; }
-int32_t castUi8ToSi32(unsigned char a) { return (int32_t)a; }
-int32_t castSi8ToSi32(signed char a) { return (int32_t)a; }
-int32_t castUi1ToSi32(bool a) { return (int32_t)a; }
-int32_t castF64ToSi32(double a) { return (int32_t)a; }
-int32_t castF32ToSi32(float a) { return (int32_t)a; }
-
-uint32_t castUi64ToUi32(uint64_t a) { return (uint32_t)a; }
-uint32_t castSi64ToUi32(int64_t a) { return (uint32_t)a; }
-uint32_t castUi32ToUi32(uint32_t a) { return (uint32_t)a; }
-uint32_t castSi32ToUi32(int32_t a) { return (uint32_t)a; }
-uint32_t castUi16ToUi32(unsigned short a) { return (uint32_t)a; }
-uint32_t castSi16ToUi32(short a) { return (uint32_t)a; }
-uint32_t castUi8ToUi32(unsigned char a) { return (uint32_t)a; }
-uint32_t castSi8ToUi32(signed char a) { return (uint32_t)a; }
-uint32_t castUi1ToUi32(bool a) { return (uint32_t)a; }
-uint32_t castF64ToUi32(double a) { return (uint32_t)a; }
-uint32_t castF32ToUi32(float a) { return (uint32_t)a; }
-
-int64_t castUi64ToSi64(uint64_t a) { return (int64_t)a; }
-int64_t castSi64ToSi64(int64_t a) { return (int64_t)a; }
-int64_t castUi32ToSi64(uint32_t a) { return (int64_t)a; }
-int64_t castSi32ToSi64(int32_t a) { return (int64_t)a; }
-int64_t castUi16ToSi64(unsigned short a) { return (int64_t)a; }
-int64_t castSi16ToSi64(short a) { return (int64_t)a; }
-int64_t castUi8ToSi64(unsigned char a) { return (int64_t)a; }
-int64_t castSi8ToSi64(signed char a) { return (int64_t)a; }
-int64_t castUi1ToSi64(bool a) { return (int64_t)a; }
-int64_t castF64ToSi64(double a) { return (int64_t)a; }
-int64_t castF32ToSi64(float a) { return (int64_t)a; }
-
-uint64_t castUi64ToUi64(uint64_t a) { return (uint64_t)a; }
-uint64_t castSi64ToUi64(int64_t a) { return (uint64_t)a; }
-uint64_t castUi32ToUi64(uint32_t a) { return (uint64_t)a; }
-uint64_t castSi32ToUi64(int32_t a) { return (uint64_t)a; }
-uint64_t castUi16ToUi64(unsigned short a) { return (uint64_t)a; }
-uint64_t castSi16ToUi64(short a) { return (uint64_t)a; }
-uint64_t castUi8ToUi64(unsigned char a) { return (uint64_t)a; }
-uint64_t castSi8ToUi64(signed char a) { return (uint64_t)a; }
-uint64_t castUi1ToUi64(bool a) { return (uint64_t)a; }
-uint64_t castF64ToUi64(double a) { return (uint64_t)a; }
-uint64_t castF32ToUi64(float a) { return (uint64_t)a; }
-
-float castUi64ToF32(uint64_t a) { return (float)a; }
-float castSi64ToF32(int64_t a) { return (float)a; }
-float castUi32ToF32(uint32_t a) { return (float)a; }
-float castSi32ToF32(int32_t a) { return (float)a; }
-float castUi16ToF32(unsigned short a) { return (float)a; }
-float castSi16ToF32(short a) { return (float)a; }
-float castUi8ToF32(unsigned char a) { return (float)a; }
-float castSi8ToF32(signed char a) { return (float)a; }
-float castUi1ToF32(bool a) { return (float)a; }
-float castF64ToF32(double a) { return (float)a; }
-float castF32ToF32(float a) { return (float)a; }
-
-double castUi64ToF64(uint64_t a) { return (double)a; }
-double castSi64ToF64(int64_t a) { return (double)a; }
-double castUi32ToF64(uint32_t a) { return (double)a; }
-double castSi32ToF64(int32_t a) { return (double)a; }
-double castUi16ToF64(unsigned short a) { return (double)a; }
-double castSi16ToF64(short a) { return (double)a; }
-double castUi8ToF64(unsigned char a) { return (double)a; }
-double castSi8ToF64(signed char a) { return (double)a; }
-double castUi1ToF64(bool a) { return (double)a; }
-double castF64ToF64(double a) { return (double)a; }
-double castF32ToF64(float a) { return (double)a; }
-
-uint32_t castbits_F32ToUi32(float a) { return *(uint32_t *)&a; }
-float castbits_Ui32ToF32(uint32_t a) { return *(float *)&a; }
-uint64_t castbits_F64ToUi64(double a) { return *(uint64_t *)&a; }
-double castbits_Ui64ToF64(uint64_t a) { return *(double *)&a; }
+// This function definition forces castBits<A,B>() to be instantiated
+// in the resulting bitcode file for the 4 relevant <A,B>
+// combinations, so that they can be called from the driver.
+double makeBitCasters() {
+  double Result = 0;
+  Result += castBits<uint32_t, float>(0);
+  Result += castBits<uint64_t, double>(0);
+  Result += castBits<float, uint32_t>(0);
+  Result += castBits<double, uint64_t>(0);
+  return Result;
+}
