@@ -34,15 +34,25 @@ class TypePool {
   TypePool &operator=(const TypePool &) LLVM_DELETED_FUNCTION;
 
 public:
-  TypePool() {}
+  TypePool() : NextNum(0) {}
   ValueType *getOrAdd(GlobalContext *Ctx, Type Ty, KeyType Key) {
     TupleType TupleKey = std::make_pair(Ty, Key);
     typename ContainerType::const_iterator Iter = Pool.find(TupleKey);
     if (Iter != Pool.end())
       return Iter->second;
-    ValueType *Result = ValueType::create(Ctx, Ty, Key);
+    ValueType *Result = ValueType::create(Ctx, Ty, Key, NextNum++);
     Pool[TupleKey] = Result;
     return Result;
+  }
+  ConstantList getConstantPool() const {
+    ConstantList Constants;
+    Constants.reserve(Pool.size());
+    for (typename ContainerType::const_iterator I = Pool.begin(),
+                                                E = Pool.end();
+         I != E; ++I) {
+      Constants.push_back((*I).second);
+    }
+    return Constants;
   }
 
 private:
@@ -58,6 +68,7 @@ private:
   };
   typedef std::map<const TupleType, ValueType *, TupleCompare> ContainerType;
   ContainerType Pool;
+  uint32_t NextNum;
 };
 
 // The global constant pool bundles individual pools of each type of
@@ -169,6 +180,14 @@ Constant *GlobalContext::getConstantSym(Type Ty, int64_t Offset,
                                         bool SuppressMangling) {
   return ConstPool->Relocatables.getOrAdd(
       this, Ty, RelocatableTuple(Offset, Name, SuppressMangling));
+}
+
+ConstantList GlobalContext::getConstantPool(Type Ty) const {
+  if (Ty == IceType_f32)
+    return ConstPool->Floats.getConstantPool();
+  if (Ty == IceType_f64)
+    return ConstPool->Doubles.getConstantPool();
+  return ConstPool->Integers.getConstantPool();
 }
 
 void Timer::printElapsedUs(GlobalContext *Ctx, const IceString &Tag) const {

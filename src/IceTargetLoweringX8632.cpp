@@ -648,6 +648,43 @@ void TargetX8632::addEpilog(CfgNode *Node) {
   }
 }
 
+void TargetX8632::emitConstants() const {
+  Ostream &Str = Ctx->getStrEmit();
+  SizeT Align;
+  Type Ty;
+  ConstantList Pool;
+
+  Ty = IceType_f32;
+  Pool = Ctx->getConstantPool(Ty);
+  Align = typeAlignInBytes(Ty);
+  Str << "\t.section\t.rodata.cst" << Align << ",\"aM\",@progbits," << Align
+      << "\n";
+  Str << "\t.align\t" << Align << "\n";
+  for (ConstantList::const_iterator I = Pool.begin(), E = Pool.end(); I != E;
+       ++I) {
+    ConstantFloat *Const = llvm::cast<ConstantFloat>(*I);
+    float Value = Const->getValue();
+    uint32_t RawValue = *(uint32_t *)&Value;
+    Str << "L$" << Ty << "$" << Const->getPoolEntryID() << ":\n";
+    Str << "\t.long\t" << RawValue << "\t# float " << Value << "\n";
+  }
+
+  Ty = IceType_f64;
+  Pool = Ctx->getConstantPool(Ty);
+  Align = typeAlignInBytes(Ty);
+  Str << "\t.section\t.rodata.cst" << Align << ",\"aM\",@progbits," << Align
+      << "\n";
+  Str << "\t.align\t" << Align << "\n";
+  for (ConstantList::const_iterator I = Pool.begin(), E = Pool.end(); I != E;
+       ++I) {
+    ConstantDouble *Const = llvm::cast<ConstantDouble>(*I);
+    double Value = Const->getValue();
+    uint64_t RawValue = *(uint64_t *)&Value;
+    Str << "L$" << Ty << "$" << Const->getPoolEntryID() << ":\n";
+    Str << "\t.quad\t" << RawValue << "\t# double " << Value << "\n";
+  }
+}
+
 void TargetX8632::split64(Variable *Var) {
   switch (Var->getType()) {
   default:
@@ -2173,6 +2210,18 @@ void TargetX8632::postLower() {
       }
     }
   }
+}
+
+template <> void ConstantFloat::emit(const Cfg *Func) const {
+  Ostream &Str = Func->getContext()->getStrEmit();
+  // It would be better to prefix with ".L$" instead of "L$", but
+  // llvm-mc doesn't parse "dword ptr [.L$foo]".
+  Str << "dword ptr [L$" << IceType_f32 << "$" << getPoolEntryID() << "]";
+}
+
+template <> void ConstantDouble::emit(const Cfg *Func) const {
+  Ostream &Str = Func->getContext()->getStrEmit();
+  Str << "qword ptr [L$" << IceType_f64 << "$" << getPoolEntryID() << "]";
 }
 
 } // end of namespace Ice

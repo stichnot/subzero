@@ -1,3 +1,5 @@
+; RUN: %llvm2ice -Om1 --verbose none %s | FileCheck %s
+; RUN: %llvm2ice --verbose none %s | FileCheck --check-prefix=ERRORS %s
 ; RUN: %szdiff --llvm2ice=%llvm2ice %s | FileCheck --check-prefix=DUMP %s
 
 ; This is a smoke test for floating-point constant pooling.  It tests
@@ -530,6 +532,17 @@ return:                                           ; preds = %entry, %sw.bb65, %s
   %retval.0 = phi double [ %add68, %sw.bb65 ], [ %add64, %sw.bb61 ], [ %add60, %sw.bb57 ], [ %add56, %sw.bb53 ], [ %add52, %sw.bb49 ], [ %conv48, %sw.bb45 ], [ %conv44, %sw.bb41 ], [ %conv40, %sw.bb37 ], [ %conv36, %sw.bb33 ], [ %add32, %sw.bb29 ], [ %add28, %sw.bb25 ], [ %add24, %sw.bb21 ], [ %add20, %sw.bb17 ], [ %add16, %sw.bb13 ], [ %conv12, %sw.bb9 ], [ %conv8, %sw.bb5 ], [ %conv4, %sw.bb1 ], [ %conv, %sw.bb ], [ 0.000000e+00, %entry ]
   ret double %retval.0
 }
+
+; The FP constant pool entries for each type are dumped in some
+; implementation-dependent order.  So for the purposes of lit, we just
+; pick one value for each type, and make sure it appears exactly once.
+
+; Check for float 0.5
+; CHECK:     .long   1056964608
+; CHECK-NOT: .long   1056964608
+; Check for double 0.5
+; CHECK:     .quad   4602678819172646912
+; CHECK-NOT: .quad   4602678819172646912
 
 ; ERRORS-NOT: ICE translation error
 ; DUMP-NOT: SZ

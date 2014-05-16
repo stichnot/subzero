@@ -19,6 +19,7 @@
 #include "IceGlobalContext.h"
 #include "IceInst.h"
 #include "IceOperand.h"
+#include "IceTargetLowering.h"
 #include "IceTypes.h"
 
 #include "llvm/IR/Constant.h"
@@ -63,6 +64,7 @@ public:
     SubzeroPointerType = Ice::IceType_i32;
   }
 
+  // Caller is expected to delete the returned Ice::Cfg object.
   Ice::Cfg *convertFunction(const Function *F) {
     VarMap.clear();
     NodeMap.clear();
@@ -657,6 +659,7 @@ int main(int argc, char **argv) {
   raw_os_ostream *Ls = new raw_os_ostream(LogFilename == "-" ? std::cout : Lfs);
   Ls->SetUnbuffered();
 
+  Ice::Cfg *Func = NULL;
   Ice::GlobalContext Ctx(Ls, Os, VMask, TargetArch, OptLevel, TestPrefix);
 
   for (Module::const_iterator I = Mod->begin(), E = Mod->end(); I != E; ++I) {
@@ -664,8 +667,11 @@ int main(int argc, char **argv) {
       continue;
     LLVM2ICEConverter FunctionConverter(&Ctx);
 
+    delete Func;
+    Func = NULL;
+
     Ice::Timer TConvert;
-    Ice::Cfg *Func = FunctionConverter.convertFunction(I);
+    Func = FunctionConverter.convertFunction(I);
     if (DisableInternal)
       Func->setInternal(false);
 
@@ -698,6 +704,12 @@ int main(int argc, char **argv) {
       }
     }
   }
+
+  if (!DisableTranslation && Func)
+    Func->getTarget()->emitConstants();
+
+  delete Func;
+  Func = NULL;
 
   return 0;
 }

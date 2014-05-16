@@ -152,6 +152,8 @@ public:
   virtual void addProlog(CfgNode *Node) = 0;
   virtual void addEpilog(CfgNode *Node) = 0;
 
+  virtual void emitConstants() const = 0;
+
   virtual ~TargetLowering() {}
 
 protected:
