@@ -93,9 +93,16 @@ protected:
   virtual void doAddressOptLoad();
   virtual void doAddressOptStore();
 
+  // Operand legalization helpers.  To deal with address mode
+  // constraints, the helpers will create a new Operand and emit
+  // instructions that guarantee that the Operand kind is one of those
+  // indicated by the LegalMask (a bitmask of allowed kinds).  If the
+  // input Operand is known to already meet the constraints, it may be
+  // simply returned as the result, without creating any new
+  // instructions or operands.
   enum OperandLegalization {
     Legal_None = 0,
-    Legal_Reg = 1 << 0,
+    Legal_Reg = 1 << 0, // physical register, not stack location
     Legal_Imm = 1 << 1,
     Legal_Mem = 1 << 2, // includes [eax+4*ecx] as well as [esp+12]
     Legal_All = ~Legal_None
@@ -106,6 +113,7 @@ protected:
                     int32_t RegNum = Variable::NoRegister);
   Variable *legalizeToVar(Operand *From, bool AllowOverlap = false,
                           int32_t RegNum = Variable::NoRegister);
+
   Variable *makeReg(Type Ty, int32_t RegNum = Variable::NoRegister);
   InstCall *makeHelperCall(const IceString &Name, Variable *Dest,
                            SizeT MaxSrcs) {

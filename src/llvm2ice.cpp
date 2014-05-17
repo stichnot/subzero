@@ -597,7 +597,7 @@ OptLevel(cl::desc("Optimization level"), cl::init(Ice::Opt_2),
          cl::values(clEnumValN(Ice::Opt_m1, "Om1", "-1"),
                     clEnumValN(Ice::Opt_m1, "O-1", "-1"),
                     clEnumValN(Ice::Opt_0, "O0", "0"),
-                    clEnumValN(Ice::Opt_0, "O1", "1"),
+                    clEnumValN(Ice::Opt_1, "O1", "1"),
                     clEnumValN(Ice::Opt_2, "O2", "2"), clEnumValEnd));
 static cl::opt<std::string> IRFilename(cl::Positional, cl::desc("<IR file>"),
                                        cl::Required);

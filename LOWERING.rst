@@ -15,7 +15,7 @@ defined by the instruction/operand type.
 The challenge is that ``Variable`` represents an operand that is either a stack
 location in the current frame, or a physical register.  Register allocation
 happens after target-specific lowering, so during lowering we generally don't
-know whether an ``Variable`` operand will meet a target instruction's physical
+know whether a ``Variable`` operand will meet a target instruction's physical
 register requirement.
 
 To this end, ICE allows certain hints/directives:

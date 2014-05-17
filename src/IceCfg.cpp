@@ -94,9 +94,10 @@ void Cfg::translate() {
   if (hasError())
     return;
 
-  if (Ctx->isVerbose())
+  if (Ctx->isVerbose()) {
     Str << "================ Initial CFG ================\n";
-  dump();
+    dump();
+  }
 
   Timer T_translate;
   // The set of translation passes and their order are determined by
@@ -104,9 +105,10 @@ void Cfg::translate() {
   getTarget()->translate();
   T_translate.printElapsedUs(getContext(), "translate()");
 
-  if (Ctx->isVerbose())
+  if (Ctx->isVerbose()) {
     Str << "================ Final output ================\n";
-  dump();
+    dump();
+  }
 }
 
 void Cfg::computePredecessors() {

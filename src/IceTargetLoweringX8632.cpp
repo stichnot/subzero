@@ -181,6 +181,9 @@ TargetX8632::TargetX8632(Cfg *Func)
     : TargetLowering(Func), IsEbpBasedFrame(false), FrameSizeLocals(0),
       LocalsSizeBytes(0), NextLabelNumber(0), ComputedLiveRanges(false),
       PhysicalRegisters(VarList(Reg_NUM)) {
+  // TODO: Don't initialize IntegerRegisters and friends every time.
+  // Instead, initialize in some sort of static initializer for the
+  // class.
   llvm::SmallBitVector IntegerRegisters(Reg_NUM);
   llvm::SmallBitVector IntegerRegistersI8(Reg_NUM);
   llvm::SmallBitVector FloatRegisters(Reg_NUM);
@@ -309,27 +312,30 @@ void TargetX8632::translateOm1() {
   if (Func->hasError())
     return;
   T_deletePhis.printElapsedUs(Context, "deletePhis()");
-  if (Context->isVerbose())
+  if (Context->isVerbose()) {
     Str << "================ After Phi lowering ================\n";
-  Func->dump();
+    Func->dump();
+  }
 
   Timer T_genCode;
   Func->genCode();
   if (Func->hasError())
     return;
   T_genCode.printElapsedUs(Context, "genCode()");
-  if (Context->isVerbose())
+  if (Context->isVerbose()) {
     Str << "================ After initial x8632 codegen ================\n";
-  Func->dump();
+    Func->dump();
+  }
 
   Timer T_genFrame;
   Func->genFrame();
   if (Func->hasError())
     return;
   T_genFrame.printElapsedUs(Context, "genFrame()");
-  if (Context->isVerbose())
+  if (Context->isVerbose()) {
     Str << "================ After stack frame mapping ================\n";
-  Func->dump();
+    Func->dump();
+  }
 }
 
 IceString TargetX8632::RegNames[] = {
@@ -1104,11 +1110,9 @@ void TargetX8632::lowerArithmetic(const InstArithmetic *Inst) {
         Constant *Zero = Ctx->getConstantInt(IceType_i8, 0);
         _mov(T, Src0, Reg_eax);
         _mov(T_ah, Zero, Reg_ah);
-        _div(T_ah, Src1, T);
-        Context.insert(InstFakeUse::create(Func, T_ah));
+        _div(T, Src1, T_ah);
         _mov(Dest, T);
       } else {
-        // TODO: fix for 8-bit, see Urem
         Constant *Zero = Ctx->getConstantInt(IceType_i32, 0);
         _mov(T, Src0, Reg_eax);
         _mov(T_edx, Zero, Reg_edx);
@@ -1937,7 +1941,7 @@ void TargetX8632::doAddressOptLoad() {
 }
 
 void TargetX8632::lowerPhi(const InstPhi * /*Inst*/) {
-  Func->setError("Phi lowering not implemented");
+  Func->setError("Phi found in regular instruction list");
 }
 
 void TargetX8632::lowerRet(const InstRet *Inst) {
@@ -2081,13 +2085,23 @@ void TargetX8632::lowerUnreachable(const InstUnreachable * /*Inst*/) {
 
 Operand *TargetX8632::legalize(Operand *From, LegalMask Allowed,
                                bool AllowOverlap, int32_t RegNum) {
+  // Assert that a physical register is allowed.  To date, all calls
+  // to legalize() allow a physical register.  If a physical register
+  // needs to be explicitly disallowed, then new code will need to be
+  // written to force a spill.
   assert(Allowed & Legal_Reg);
+  // If we're asking for a specific physical register, make sure we're
+  // not allowing any other operand kinds.  (This could be future
+  // work, e.g. allow the shl shift amount to be either an immediate
+  // or in ecx.)
   assert(RegNum == Variable::NoRegister || Allowed == Legal_Reg);
   if (OperandX8632Mem *Mem = llvm::dyn_cast<OperandX8632Mem>(From)) {
+    // Before doing anything with a Mem operand, we need to ensure
+    // that the Base and Index components are in physical registers.
     Variable *Base = Mem->getBase();
     Variable *Index = Mem->getIndex();
-    Variable *RegBase = Base;
-    Variable *RegIndex = Index;
+    Variable *RegBase = NULL;
+    Variable *RegIndex = NULL;
     if (Base) {
       RegBase = legalizeToVar(Base, true);
     }
@@ -2134,6 +2148,7 @@ Operand *TargetX8632::legalize(Operand *From, LegalMask Allowed,
   return From;
 }
 
+// Provide a trivial wrapper to legalize() for this common usage.
 Variable *TargetX8632::legalizeToVar(Operand *From, bool AllowOverlap,
                                      int32_t RegNum) {
   return llvm::cast<Variable>(legalize(From, Legal_Reg, AllowOverlap, RegNum));

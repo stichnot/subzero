@@ -1,7 +1,8 @@
 #!/usr/bin/env python2
 
 import argparse
-import os, sys
+import os
+import sys
 import tempfile
 from utils import shellcmd
 

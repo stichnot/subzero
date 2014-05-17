@@ -78,7 +78,6 @@ class TargetLowering {
 public:
   static TargetLowering *createLowering(TargetArch Target, Cfg *Func);
   void translate() {
-    // TODO: consider CRTP for optlevel.
     switch (Ctx->getOptLevel()) {
     case Opt_m1:
       translateOm1();

@@ -1,9 +1,10 @@
 #!/usr/bin/env python2
 
 import argparse
-import os, sys
+import os
 import re
 import subprocess
+import sys
 import tempfile
 
 sys.path.insert(0, '../pydir')

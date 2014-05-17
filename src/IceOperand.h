@@ -347,7 +347,9 @@ public:
   }
   // Creates a temporary copy of the variable with a different type.
   // Used primarily for syntactic correctness of textual assembly
-  // emission.
+  // emission.  Note that only basic information is copied, in
+  // particular not DefInst, IsArgument, Weight, RegisterPreference,
+  // AllowRegisterOverlap, LoVar, HiVar, VarsReal.
   Variable asType(Type Ty);
 
   virtual void emit(const Cfg *Func) const;
