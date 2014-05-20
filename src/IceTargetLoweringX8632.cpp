@@ -1185,9 +1185,10 @@ void TargetX8632::lowerArithmetic(const InstArithmetic *Inst) {
 
 void TargetX8632::lowerAssign(const InstAssign *Inst) {
   Variable *Dest = Inst->getDest();
-  Operand *Src0 = legalize(Inst->getSrc(0));
+  Operand *Src0 = Inst->getSrc(0);
   assert(Dest->getType() == Src0->getType());
   if (Dest->getType() == IceType_i64) {
+    Src0 = legalize(Src0);
     Operand *Src0Lo = loOperand(Src0);
     Operand *Src0Hi = hiOperand(Src0);
     Variable *DestLo = llvm::cast<Variable>(loOperand(Dest));
@@ -1294,10 +1295,7 @@ void TargetX8632::lowerCall(const InstCall *Instr) {
     if (ScratchRegs[i])
       KilledRegs.push_back(Func->getTarget()->getPhysicalRegister(i));
   }
-  if (!KilledRegs.empty()) {
-    Inst *Kill = InstFakeKill::create(Func, KilledRegs, NewCall);
-    Context.insert(Kill);
-  }
+  Context.insert(InstFakeKill::create(Func, KilledRegs, NewCall));
 
   // Generate a FakeUse to keep the call live if necessary.
   if (Instr->hasSideEffects() && eax) {
@@ -1428,6 +1426,7 @@ void TargetX8632::lowerCast(const InstCast *Inst) {
       Type SrcType = Inst->getSrc(0)->getType();
       InstCall *Call = makeHelperCall(
           SrcType == IceType_f32 ? "cvtftosi64" : "cvtdtosi64", Dest, MaxSrcs);
+      // TODO: Call the correct compiler-rt helper function.
       Call->addArg(Inst->getSrc(0));
       lowerCall(Call);
     } else {
@@ -1451,6 +1450,7 @@ void TargetX8632::lowerCast(const InstCast *Inst) {
       IceString SrcSubstring = (SrcType == IceType_f32 ? "f" : "d");
       // Possibilities are cvtftoui32, cvtdtoui32, cvtftoui64, cvtdtoui64
       IceString TargetString = "cvt" + SrcSubstring + "toui" + DstSubstring;
+      // TODO: Call the correct compiler-rt helper function.
       InstCall *Call = makeHelperCall(TargetString, Dest, MaxSrcs);
       Call->addArg(Inst->getSrc(0));
       lowerCall(Call);
@@ -1472,6 +1472,7 @@ void TargetX8632::lowerCast(const InstCast *Inst) {
       Type DestType = Dest->getType();
       InstCall *Call = makeHelperCall(
           DestType == IceType_f32 ? "cvtsi64tof" : "cvtsi64tod", Dest, MaxSrcs);
+      // TODO: Call the correct compiler-rt helper function.
       Call->addArg(Inst->getSrc(0));
       lowerCall(Call);
       return;
@@ -1498,6 +1499,7 @@ void TargetX8632::lowerCast(const InstCast *Inst) {
       IceString DstSubstring = (DestType == IceType_f32 ? "f" : "d");
       // Possibilities are cvtui32tof, cvtui32tod, cvtui64tof, cvtui64tod
       IceString TargetString = "cvtui" + SrcSubstring + "to" + DstSubstring;
+      // TODO: Call the correct compiler-rt helper function.
       InstCall *Call = makeHelperCall(TargetString, Dest, MaxSrcs);
       Call->addArg(Inst->getSrc(0));
       lowerCall(Call);
@@ -1619,8 +1621,6 @@ void TargetX8632::lowerFcmp(const InstFcmp *Inst) {
   InstFcmp::FCond Condition = Inst->getCondition();
   size_t Index = static_cast<size_t>(Condition);
   assert(Index < TableFcmpSize);
-  // The table is indexed by InstFcmp::Condition.  Make sure it didn't fall
-  // out of order.
   if (TableFcmp[Index].SwapOperands) {
     Operand *Tmp = Src0;
     Src0 = Src1;
@@ -1663,9 +1663,9 @@ void TargetX8632::lowerIcmp(const InstIcmp *Inst) {
   // the physical register, but unfortunately we have to commit to one or
   // the other before register allocation.)
   bool IsSrc1ImmOrReg = false;
-  if (llvm::isa<Constant>(Src1))
+  if (llvm::isa<Constant>(Src1)) {
     IsSrc1ImmOrReg = true;
-  else if (Variable *Var = llvm::dyn_cast<Variable>(Src1)) {
+  } else if (Variable *Var = llvm::dyn_cast<Variable>(Src1)) {
     if (Var->hasReg())
       IsSrc1ImmOrReg = true;
   }
@@ -1725,6 +1725,7 @@ void TargetX8632::lowerIcmp(const InstIcmp *Inst) {
     }
     return;
   }
+
   // cmp b, c
   Operand *Src0New =
       legalize(Src0, IsSrc1ImmOrReg ? Legal_All : Legal_Reg, true);

@@ -620,6 +620,8 @@ static cl::opt<bool> SubzeroTimingEnabled(
     "timing", cl::desc("Enable breakdown timing of Subzero translation"));
 
 int main(int argc, char **argv) {
+  int ExitStatus = 0;
+
   cl::ParseCommandLineOptions(argc, argv);
 
   // Parse the input LLVM IR file into a module.
@@ -693,6 +695,7 @@ int main(int argc, char **argv) {
       }
       if (Func->hasError()) {
         errs() << "ICE translation error: " << Func->getError() << "\n";
+        ExitStatus = 1;
       }
 
       Ice::Timer TEmit;
@@ -711,5 +714,5 @@ int main(int argc, char **argv) {
   delete Func;
   Func = NULL;
 
-  return 0;
+  return ExitStatus;
 }
