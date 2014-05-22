@@ -34,13 +34,13 @@ class TypePool {
   TypePool &operator=(const TypePool &) LLVM_DELETED_FUNCTION;
 
 public:
-  TypePool() : NextNum(0) {}
+  TypePool() : NextPoolID(0) {}
   ValueType *getOrAdd(GlobalContext *Ctx, Type Ty, KeyType Key) {
     TupleType TupleKey = std::make_pair(Ty, Key);
     typename ContainerType::const_iterator Iter = Pool.find(TupleKey);
     if (Iter != Pool.end())
       return Iter->second;
-    ValueType *Result = ValueType::create(Ctx, Ty, Key, NextNum++);
+    ValueType *Result = ValueType::create(Ctx, Ty, Key, NextPoolID++);
     Pool[TupleKey] = Result;
     return Result;
   }
@@ -68,7 +68,7 @@ private:
   };
   typedef std::map<const TupleType, ValueType *, TupleCompare> ContainerType;
   ContainerType Pool;
-  uint32_t NextNum;
+  uint32_t NextPoolID;
 };
 
 // The global constant pool bundles individual pools of each type of
