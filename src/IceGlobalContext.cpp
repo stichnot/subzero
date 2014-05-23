@@ -110,9 +110,11 @@ IceString GlobalContext::mangleName(const IceString &Name) const {
     return Name;
 
   unsigned PrefixLength = getTestPrefix().length();
-  char NameBase[1 + Name.length()];
+  llvm::OwningArrayPtr<char> NameBaseOwner(new char[1 + Name.length()]);
+  char *NameBase = NameBaseOwner.get();
   const size_t BufLen = 30 + Name.length() + PrefixLength;
-  char NewName[BufLen];
+  llvm::OwningArrayPtr<char> NewNameOwner(new char[BufLen]);
+  char *NewName = NewNameOwner.get();
   uint32_t BaseLength = 0; // using uint32_t due to sscanf format string
 
   int ItemsParsed = sscanf(Name.c_str(), "_ZN%s", NameBase);
@@ -139,8 +141,10 @@ IceString GlobalContext::mangleName(const IceString &Name) const {
     // Transform _Z3barIabcExyz ==> _ZN6Prefix3barIabcEExyz
     //                                ^^^^^^^^         ^
     // (splice in "N6Prefix", and insert "E" after "3barIabcE")
-    char OrigName[Name.length()];
-    char OrigSuffix[Name.length()];
+    llvm::OwningArrayPtr<char> OrigNameOwner(new char[Name.length()]);
+    char *OrigName = OrigNameOwner.get();
+    llvm::OwningArrayPtr<char> OrigSuffixOwner(new char[Name.length()]);
+    char *OrigSuffix = OrigSuffixOwner.get();
     uint32_t ActualBaseLength = BaseLength;
     if (NameBase[ActualBaseLength] == 'I') {
       ++ActualBaseLength;
