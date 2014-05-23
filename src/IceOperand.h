@@ -81,8 +81,10 @@ private:
 class Constant : public Operand {
 public:
   uint32_t getPoolEntryID() const { return PoolEntryID; }
-  virtual void emit(const Cfg *Func) const = 0;
-  virtual void dump(const Cfg *Func) const = 0;
+  virtual void emit(const Cfg *Func) const { emit(Func->getContext()); }
+  virtual void dump(const Cfg *Func) const { dump(Func->getContext()); }
+  virtual void emit(GlobalContext *Ctx) const = 0;
+  virtual void dump(GlobalContext *Ctx) const = 0;
 
   static bool classof(const Operand *Operand) {
     OperandKind Kind = Operand->getKind();
@@ -116,12 +118,14 @@ public:
         ConstantPrimitive(Ty, Value, PoolEntryID);
   }
   T getValue() const { return Value; }
-  virtual void emit(const Cfg *Func) const {
-    Ostream &Str = Func->getContext()->getStrEmit();
+  using Constant::emit;
+  virtual void emit(GlobalContext *Ctx) const {
+    Ostream &Str = Ctx->getStrEmit();
     Str << getValue();
   }
-  virtual void dump(const Cfg *Func) const {
-    Ostream &Str = Func->getContext()->getStrDump();
+  using Constant::dump;
+  virtual void dump(GlobalContext *Ctx) const {
+    Ostream &Str = Ctx->getStrDump();
     Str << getValue();
   }
 
@@ -178,8 +182,10 @@ public:
   IceString getName() const { return Name; }
   void setSuppressMangling(bool Value) { SuppressMangling = Value; }
   bool getSuppressMangling() const { return SuppressMangling; }
-  virtual void emit(const Cfg *Func) const;
-  virtual void dump(const Cfg *Func) const;
+  using Constant::emit;
+  using Constant::dump;
+  virtual void emit(GlobalContext *Ctx) const;
+  virtual void dump(GlobalContext *Ctx) const;
 
   static bool classof(const Operand *Operand) {
     OperandKind Kind = Operand->getKind();

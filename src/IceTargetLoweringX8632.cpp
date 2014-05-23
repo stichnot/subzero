@@ -2237,15 +2237,15 @@ void TargetX8632::postLower() {
   }
 }
 
-template <> void ConstantFloat::emit(const Cfg *Func) const {
-  Ostream &Str = Func->getContext()->getStrEmit();
+template <> void ConstantFloat::emit(GlobalContext *Ctx) const {
+  Ostream &Str = Ctx->getStrEmit();
   // It would be better to prefix with ".L$" instead of "L$", but
   // llvm-mc doesn't parse "dword ptr [.L$foo]".
   Str << "dword ptr [L$" << IceType_f32 << "$" << getPoolEntryID() << "]";
 }
 
-template <> void ConstantDouble::emit(const Cfg *Func) const {
-  Ostream &Str = Func->getContext()->getStrEmit();
+template <> void ConstantDouble::emit(GlobalContext *Ctx) const {
+  Ostream &Str = Ctx->getStrEmit();
   Str << "qword ptr [L$" << IceType_f64 << "$" << getPoolEntryID() << "]";
 }
 

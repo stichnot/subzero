@@ -267,8 +267,8 @@ private:
   virtual ~TargetX8632() {}
 };
 
-template <> void ConstantFloat::emit(const Cfg *Func) const;
-template <> void ConstantDouble::emit(const Cfg *Func) const;
+template <> void ConstantFloat::emit(GlobalContext *Ctx) const;
+template <> void ConstantDouble::emit(GlobalContext *Ctx) const;
 
 } // end of namespace Ice
 

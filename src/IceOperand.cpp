@@ -212,12 +212,12 @@ void Variable::dump(const Cfg *Func) const {
   }
 }
 
-void ConstantRelocatable::emit(const Cfg *Func) const {
-  Ostream &Str = Func->getContext()->getStrEmit();
+void ConstantRelocatable::emit(GlobalContext *Ctx) const {
+  Ostream &Str = Ctx->getStrEmit();
   if (SuppressMangling)
     Str << Name;
   else
-    Str << Func->getContext()->mangleName(Name);
+    Str << Ctx->mangleName(Name);
   if (Offset) {
     if (Offset > 0)
       Str << "+";
@@ -225,8 +225,8 @@ void ConstantRelocatable::emit(const Cfg *Func) const {
   }
 }
 
-void ConstantRelocatable::dump(const Cfg *Func) const {
-  Ostream &Str = Func->getContext()->getStrDump();
+void ConstantRelocatable::dump(GlobalContext *Ctx) const {
+  Ostream &Str = Ctx->getStrDump();
   Str << "@" << Name;
   if (Offset)
     Str << "+" << Offset;
