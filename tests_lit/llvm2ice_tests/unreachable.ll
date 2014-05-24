@@ -1,6 +1,8 @@
+; This tests the basic structure of the Unreachable instruction.
+
 ; RUN: %llvm2ice --verbose inst %s | FileCheck %s
 ; RUN: %llvm2ice --verbose none %s | FileCheck --check-prefix=ERRORS %s
-; RUN: %szdiff --llvm2ice=%llvm2ice %s | FileCheck --check-prefix=DUMP %s
+; RUN: %llvm2iceinsts %s | %szdiff %s | FileCheck --check-prefix=DUMP %s
 
 define internal i32 @divide(i32 %num, i32 %den) {
 entry:
@@ -9,6 +11,7 @@ entry:
 
 abort:                                            ; preds = %entry
   unreachable
+; CHECK: unreachable
 
 return:                                           ; preds = %entry
   %div = sdiv i32 %num, %den

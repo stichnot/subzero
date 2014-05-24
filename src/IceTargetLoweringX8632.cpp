@@ -366,14 +366,14 @@ IceString TargetX8632::getRegName(SizeT RegNum, Type Ty) const {
   static IceString RegNames8[] = {
 #define X(val, init, name, name16, name8, scratch, preserved, stackptr,        \
           frameptr, isI8, isInt, isFP)                                         \
-  "" name8,
+  name8,
     REGX8632_TABLE
 #undef X
   };
   static IceString RegNames16[] = {
 #define X(val, init, name, name16, name8, scratch, preserved, stackptr,        \
           frameptr, isI8, isInt, isFP)                                         \
-  "" name16,
+  name16,
     REGX8632_TABLE
 #undef X
   };
@@ -657,41 +657,69 @@ void TargetX8632::addEpilog(CfgNode *Node) {
   }
 }
 
-void TargetX8632::emitConstants() const {
+template <typename T> struct PoolTypeConverter {};
+
+template <> struct PoolTypeConverter<float> {
+  typedef float PrimitiveFpType;
+  typedef uint32_t PrimitiveIntType;
+  typedef ConstantFloat IceType;
+  static const Type Ty = IceType_f32;
+  static const char *TypeName;
+  static const char *AsmTag;
+  static const char *PrintfString;
+};
+const char *PoolTypeConverter<float>::TypeName = "float";
+const char *PoolTypeConverter<float>::AsmTag = ".long";
+const char *PoolTypeConverter<float>::PrintfString = "0x%x";
+
+template <> struct PoolTypeConverter<double> {
+  typedef double PrimitiveFpType;
+  typedef uint64_t PrimitiveIntType;
+  typedef ConstantDouble IceType;
+  static const Type Ty = IceType_f64;
+  static const char *TypeName;
+  static const char *AsmTag;
+  static const char *PrintfString;
+};
+const char *PoolTypeConverter<double>::TypeName = "double";
+const char *PoolTypeConverter<double>::AsmTag = ".quad";
+const char *PoolTypeConverter<double>::PrintfString = "0x%llx";
+
+template <typename T> void TargetX8632::emitConstantPool() const {
   Ostream &Str = Ctx->getStrEmit();
-  SizeT Align;
-  Type Ty;
-  ConstantList Pool;
+  Type Ty = T::Ty;
+  SizeT Align = typeAlignInBytes(Ty);
+  ConstantList Pool = Ctx->getConstantPool(Ty);
 
-  Ty = IceType_f32;
-  Pool = Ctx->getConstantPool(Ty);
-  Align = typeAlignInBytes(Ty);
   Str << "\t.section\t.rodata.cst" << Align << ",\"aM\",@progbits," << Align
       << "\n";
   Str << "\t.align\t" << Align << "\n";
   for (ConstantList::const_iterator I = Pool.begin(), E = Pool.end(); I != E;
        ++I) {
-    ConstantFloat *Const = llvm::cast<ConstantFloat>(*I);
-    float Value = Const->getValue();
-    uint32_t RawValue = *(uint32_t *)&Value;
+    typename T::IceType *Const = llvm::cast<typename T::IceType>(*I);
+    typename T::PrimitiveFpType Value = Const->getValue();
+    // Use memcpy() to copy bits from Value into RawValue in a way
+    // that avoids breaking strict-aliasing rules.
+    typename T::PrimitiveIntType RawValue;
+    memcpy(&RawValue, &Value, sizeof(Value));
+    char buf[30];
+    int CharsPrinted =
+        snprintf(buf, llvm::array_lengthof(buf), T::PrintfString, RawValue);
+    assert(CharsPrinted >= 0 &&
+           (size_t)CharsPrinted < llvm::array_lengthof(buf));
+    (void)CharsPrinted; // avoid warnings if asserts are disabled
     Str << "L$" << Ty << "$" << Const->getPoolEntryID() << ":\n";
-    Str << "\t.long\t" << RawValue << "\t# float " << Value << "\n";
+    Str << "\t" << T::AsmTag << "\t" << buf << "\t# " << T::TypeName << " "
+        << Value << "\n";
   }
+}
 
-  Ty = IceType_f64;
-  Pool = Ctx->getConstantPool(Ty);
-  Align = typeAlignInBytes(Ty);
-  Str << "\t.section\t.rodata.cst" << Align << ",\"aM\",@progbits," << Align
-      << "\n";
-  Str << "\t.align\t" << Align << "\n";
-  for (ConstantList::const_iterator I = Pool.begin(), E = Pool.end(); I != E;
-       ++I) {
-    ConstantDouble *Const = llvm::cast<ConstantDouble>(*I);
-    double Value = Const->getValue();
-    uint64_t RawValue = *(uint64_t *)&Value;
-    Str << "L$" << Ty << "$" << Const->getPoolEntryID() << ":\n";
-    Str << "\t.quad\t" << RawValue << "\t# double " << Value << "\n";
-  }
+void TargetX8632::emitConstants() const {
+  emitConstantPool<PoolTypeConverter<float> >();
+  emitConstantPool<PoolTypeConverter<double> >();
+
+  // No need to emit constants from the int pool since (for x86) they
+  // are embedded as immediates in the instructions.
 }
 
 void TargetX8632::split64(Variable *Var) {
@@ -1530,7 +1558,6 @@ void TargetX8632::lowerCast(const InstCast *Inst) {
     if (Dest->getType() == Src0RM->getType()) {
       InstAssign *Assign = InstAssign::create(Func, Dest, Src0RM);
       lowerAssign(Assign);
-      llvm_unreachable("Pointer bitcasts aren't lowered correctly.");
       return;
     }
     switch (Dest->getType()) {
@@ -1704,8 +1731,6 @@ void TargetX8632::lowerIcmp(const InstIcmp *Inst) {
     InstIcmp::ICond Condition = Inst->getCondition();
     size_t Index = static_cast<size_t>(Condition);
     assert(Index < TableIcmp64Size);
-    // The table is indexed by InstIcmp::Condition.  Make sure it didn't fall
-    // out of order.
     Operand *Src1LoRI = legalize(loOperand(Src1), Legal_Reg | Legal_Imm);
     Operand *Src1HiRI = legalize(hiOperand(Src1), Legal_Reg | Legal_Imm);
     if (Condition == InstIcmp::Eq || Condition == InstIcmp::Ne) {

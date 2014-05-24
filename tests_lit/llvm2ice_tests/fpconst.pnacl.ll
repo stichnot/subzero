@@ -1,7 +1,3 @@
-; RUN: %llvm2ice -Om1 --verbose none %s | FileCheck %s
-; RUN: %llvm2ice --verbose none %s | FileCheck --check-prefix=ERRORS %s
-; RUN: %szdiff --llvm2ice=%llvm2ice %s | FileCheck --check-prefix=DUMP %s
-
 ; This is a smoke test for floating-point constant pooling.  It tests
 ; pooling of various float and double constants (including positive
 ; and negative NaN) within functions and across functions.  Note that
@@ -9,6 +5,11 @@
 ; the constant "cannot be represented as a decimal floating point
 ; number in a reasonable number of digits".  See
 ; http://llvm.org/docs/LangRef.html#simple-constants .
+
+; RUN: %llvm2ice -Om1 --verbose none %s | FileCheck %s
+; RUN: %llvm2ice -O2 --verbose none %s | FileCheck %s
+; RUN: %llvm2ice --verbose none %s | FileCheck --check-prefix=ERRORS %s
+; RUN: %llvm2iceinsts %s | %szdiff %s | FileCheck --check-prefix=DUMP %s
 
 @__init_array_start = internal constant [0 x i8] zeroinitializer, align 4
 @__fini_array_start = internal constant [0 x i8] zeroinitializer, align 4
@@ -538,11 +539,11 @@ return:                                           ; preds = %entry, %sw.bb65, %s
 ; pick one value for each type, and make sure it appears exactly once.
 
 ; Check for float 0.5
-; CHECK:     .long   1056964608
-; CHECK-NOT: .long   1056964608
+; CHECK:     .long   0x3f000000
+; CHECK-NOT: .long   0x3f000000
 ; Check for double 0.5
-; CHECK:     .quad   4602678819172646912
-; CHECK-NOT: .quad   4602678819172646912
+; CHECK:     .quad   0x3fe0000000000000
+; CHECK-NOT: .quad   0x3fe0000000000000
 
 ; ERRORS-NOT: ICE translation error
 ; DUMP-NOT: SZ

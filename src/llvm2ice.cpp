@@ -606,8 +606,9 @@ OptLevel(cl::desc("Optimization level"), cl::init(Ice::Opt_2),
                     clEnumValN(Ice::Opt_1, "O1", "1"),
                     clEnumValN(Ice::Opt_2, "O2", "2"), clEnumValEnd));
 static cl::opt<std::string> IRFilename(cl::Positional, cl::desc("<IR file>"),
-                                       cl::Required);
-static cl::opt<std::string> OutputFilename("o", cl::desc("Set output filename"),
+                                       cl::init("-"));
+static cl::opt<std::string> OutputFilename("o",
+                                           cl::desc("Override output filename"),
                                            cl::init("-"),
                                            cl::value_desc("filename"));
 static cl::opt<std::string> LogFilename("log", cl::desc("Set log filename"),
@@ -667,7 +668,15 @@ int main(int argc, char **argv) {
   raw_os_ostream *Ls = new raw_os_ostream(LogFilename == "-" ? std::cout : Lfs);
   Ls->SetUnbuffered();
 
-  Ice::Cfg *Func = NULL;
+  // Ideally, Func would be declared inside the loop and its object
+  // would be automatically deleted at the end of the loop iteration.
+  // However, emitting the constant pool requires a valid Cfg object,
+  // so we need to defer deleting the last non-empty Cfg object until
+  // outside the loop and after emitting the constant pool.  TODO:
+  // Since all constants are globally pooled in the Ice::GlobalContext
+  // object, change all Ice::Constant related functions to use
+  // GlobalContext instead of Cfg, and then clean up this loop.
+  OwningPtr<Ice::Cfg> Func;
   Ice::GlobalContext Ctx(Ls, Os, VMask, TargetArch, OptLevel, TestPrefix);
 
   for (Module::const_iterator I = Mod->begin(), E = Mod->end(); I != E; ++I) {
@@ -675,11 +684,8 @@ int main(int argc, char **argv) {
       continue;
     LLVM2ICEConverter FunctionConverter(&Ctx);
 
-    delete Func;
-    Func = NULL;
-
     Ice::Timer TConvert;
-    Func = FunctionConverter.convertFunction(I);
+    Func.reset(FunctionConverter.convertFunction(I));
     if (DisableInternal)
       Func->setInternal(false);
 
@@ -716,9 +722,6 @@ int main(int argc, char **argv) {
 
   if (!DisableTranslation && Func)
     Func->getTarget()->emitConstants();
-
-  delete Func;
-  Func = NULL;
 
   return ExitStatus;
 }

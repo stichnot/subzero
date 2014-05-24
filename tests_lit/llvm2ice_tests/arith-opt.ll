@@ -1,6 +1,9 @@
+; This is a very early test that just checks the representation of i32
+; arithmetic instructions.  No assembly tests are done.
+
 ; RUN: %llvm2ice --verbose inst %s | FileCheck %s
 ; RUN: %llvm2ice --verbose none %s | FileCheck --check-prefix=ERRORS %s
-; RUN: %szdiff --llvm2ice=%llvm2ice %s | FileCheck --check-prefix=DUMP %s
+; RUN: %llvm2iceinsts %s | %szdiff %s | FileCheck --check-prefix=DUMP %s
 
 define i32 @Add(i32 %a, i32 %b) {
 ; CHECK: define i32 @Add

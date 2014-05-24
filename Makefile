@@ -30,7 +30,7 @@ LLVM_LDFLAGS := `$(LLVM_BIN_PATH)/llvm-config --ldflags --libs`
 # It's recommended that CXX matches the compiler you used to build LLVM itself.
 OPTLEVEL := -O0
 CXX := g++
-CXXFLAGS := -Wall -Wextra -Werror -pedantic -Wno-long-long -fno-rtti -fno-exceptions \
+CXXFLAGS := -Wall -Wextra -Werror -pedantic -Wno-long-long -Wno-vla -fno-rtti -fno-exceptions \
 	$(OPTLEVEL) -g $(LLVM_CXXFLAGS)
 LDFLAGS :=
 

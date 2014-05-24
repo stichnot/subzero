@@ -23,7 +23,7 @@ namespace Ice {
 
 namespace {
 
-const struct _InstX8632BrAttributes {
+const struct InstX8632BrAttributes_ {
   const char *DisplayString;
   const char *EmitString;
 } InstX8632BrAttributes[] = {

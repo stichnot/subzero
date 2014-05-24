@@ -1,6 +1,12 @@
-; RUN: %llvm2ice %s | FileCheck %s
+; Simple test of the select instruction.  The CHECK lines are only
+; checking for basic instruction patterns that should be present
+; regardless of the optimization level, so there are no special OPTM1
+; match lines.
+
+; RUN: %llvm2ice -O2 --verbose none %s | FileCheck %s
+; RUN: %llvm2ice -Om1 --verbose none %s | FileCheck %s
 ; RUN: %llvm2ice --verbose none %s | FileCheck --check-prefix=ERRORS %s
-; RUN: %szdiff --llvm2ice=%llvm2ice %s | FileCheck --check-prefix=DUMP %s
+; RUN: %llvm2iceinsts %s | %szdiff %s | FileCheck --check-prefix=DUMP %s
 
 define void @testSelect(i32 %a, i32 %b) {
 entry:

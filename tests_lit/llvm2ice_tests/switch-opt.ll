@@ -1,6 +1,10 @@
-; RUN: %llvm2ice %s | FileCheck %s
+; This tests a switch statement, including multiple branches to the
+; same label which also results in phi instructions with multiple
+; entries for the same incoming edge.
+
+; RUN: %llvm2ice --verbose inst %s | FileCheck %s
 ; RUN: %llvm2ice --verbose none %s | FileCheck --check-prefix=ERRORS %s
-; RUN: %szdiff --llvm2ice=%llvm2ice %s | FileCheck --check-prefix=DUMP %s
+; RUN: %llvm2iceinsts %s | %szdiff %s | FileCheck --check-prefix=DUMP %s
 
 define i32 @testSwitch(i32 %a) {
 entry:

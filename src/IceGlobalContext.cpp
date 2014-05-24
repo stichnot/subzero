@@ -47,10 +47,11 @@ public:
   ConstantList getConstantPool() const {
     ConstantList Constants;
     Constants.reserve(Pool.size());
+    // TODO: replace the loop with std::transform + lambdas.
     for (typename ContainerType::const_iterator I = Pool.begin(),
                                                 E = Pool.end();
          I != E; ++I) {
-      Constants.push_back((*I).second);
+      Constants.push_back(I->second);
     }
     return Constants;
   }
@@ -110,11 +111,9 @@ IceString GlobalContext::mangleName(const IceString &Name) const {
     return Name;
 
   unsigned PrefixLength = getTestPrefix().length();
-  llvm::OwningArrayPtr<char> NameBaseOwner(new char[1 + Name.length()]);
-  char *NameBase = NameBaseOwner.get();
+  char NameBase[1 + Name.length()];
   const size_t BufLen = 30 + Name.length() + PrefixLength;
-  llvm::OwningArrayPtr<char> NewNameOwner(new char[BufLen]);
-  char *NewName = NewNameOwner.get();
+  char NewName[BufLen];
   uint32_t BaseLength = 0; // using uint32_t due to sscanf format string
 
   int ItemsParsed = sscanf(Name.c_str(), "_ZN%s", NameBase);
@@ -130,7 +129,9 @@ IceString GlobalContext::mangleName(const IceString &Name) const {
     return NewName;
   }
 
-  ItemsParsed = sscanf(Name.c_str(), "_Z%u%s", &BaseLength, NameBase);
+  // Artificially limit BaseLength to 9 digits (less than 1 billion)
+  // because sscanf behavior is undefined on integer overflow.
+  ItemsParsed = sscanf(Name.c_str(), "_Z%9u%s", &BaseLength, NameBase);
   if (ItemsParsed == 2 && BaseLength <= strlen(NameBase)) {
     // Transform _Z3barxyz ==> _ZN6Prefix3barExyz
     //                           ^^^^^^^^    ^
@@ -141,10 +142,8 @@ IceString GlobalContext::mangleName(const IceString &Name) const {
     // Transform _Z3barIabcExyz ==> _ZN6Prefix3barIabcEExyz
     //                                ^^^^^^^^         ^
     // (splice in "N6Prefix", and insert "E" after "3barIabcE")
-    llvm::OwningArrayPtr<char> OrigNameOwner(new char[Name.length()]);
-    char *OrigName = OrigNameOwner.get();
-    llvm::OwningArrayPtr<char> OrigSuffixOwner(new char[Name.length()]);
-    char *OrigSuffix = OrigSuffixOwner.get();
+    char OrigName[Name.length()];
+    char OrigSuffix[Name.length()];
     uint32_t ActualBaseLength = BaseLength;
     if (NameBase[ActualBaseLength] == 'I') {
       ++ActualBaseLength;
@@ -187,11 +186,22 @@ Constant *GlobalContext::getConstantSym(Type Ty, int64_t Offset,
 }
 
 ConstantList GlobalContext::getConstantPool(Type Ty) const {
-  if (Ty == IceType_f32)
+  switch (Ty) {
+  case IceType_i1:
+  case IceType_i8:
+  case IceType_i16:
+  case IceType_i32:
+  case IceType_i64:
+    return ConstPool->Integers.getConstantPool();
+  case IceType_f32:
     return ConstPool->Floats.getConstantPool();
-  if (Ty == IceType_f64)
+  case IceType_f64:
     return ConstPool->Doubles.getConstantPool();
-  return ConstPool->Integers.getConstantPool();
+  case IceType_void:
+  case IceType_NUM:
+    break;
+  }
+  llvm_unreachable("Unknown type");
 }
 
 void Timer::printElapsedUs(GlobalContext *Ctx, const IceString &Tag) const {

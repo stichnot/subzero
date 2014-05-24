@@ -265,6 +265,7 @@ private:
   TargetX8632(const TargetX8632 &) LLVM_DELETED_FUNCTION;
   TargetX8632 &operator=(const TargetX8632 &) LLVM_DELETED_FUNCTION;
   virtual ~TargetX8632() {}
+  template <typename T> void emitConstantPool() const;
 };
 
 template <> void ConstantFloat::emit(GlobalContext *Ctx) const;
