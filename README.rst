@@ -9,9 +9,8 @@ http://llvm.org/docs/GettingStarted.html#getting-started-quickly-a-summary for
 guidance.
 
 Set variables ``LLVM_SRC_PATH`` and ``LLVM_BIN_PATH`` to point to the
-appropriate directories in the LLVM source and build directories.
-These can be set as environment variables, or you can modify the
-top-level Makefile.
+appropriate directories in the LLVM source and build directories.  These can be
+set as environment variables, or you can modify the top-level Makefile.
 
 Run ``make`` at the top level to build the main target ``llvm2ice``.
 
@@ -35,16 +34,23 @@ At this time, ``llvm2ice`` accepts a few arguments:
     ``-notranslate`` -- Suppress the ICE translation phase, which is useful if
     ICE is missing some support.
 
-    ``-target=<TARGET>`` -- Set the target architecture (default x8632).  Future
-    targets include X8664, ARM, and ARM64.
+    ``-target=<TARGET>`` -- Set the target architecture.  The default is x8632.
+    Future targets include x8664, arm32, and arm64.
 
-    ``-O<optlevel>`` -- Set the optimization level (default 2).  Valid levels
-    are 2, 1, 0, and m1 (-O-1 is a synonym for -Om1).
+    ``-O<LEVEL>`` -- Set the optimization level.  Valid levels are ``2``, ``1``,
+    ``0``, ``-1``, and ``m1``.  Levels ``-1`` and ``m1`` are synonyms, and
+    represent the minimum optimization and worst code quality, but fastest code
+    generation.
 
-    ``-verbose=<list>`` -- Set verbosity flags.  This argument allows
-    a comma-separated list of values.  The default is ``none``, and
-    the value ``inst,pred`` will roughly match the .ll bitcode file.
-    Of particular use are ``all`` and ``none``.
+    ``-verbose=<list>`` -- Set verbosity flags.  This argument allows a
+    comma-separated list of values.  The default is ``none``, and the value
+    ``inst,pred`` will roughly match the .ll bitcode file.  Of particular use
+    are ``all`` and ``none``.
+
+    ``-o <FILE>`` -- Set the assembly output file name.  Default is stdout.
+
+    ``-log <FILE>`` -- Set the file name for diagnostic output (whose level is
+    controlled by ``-verbose``).  Default is stdout.
 
 See ir_samples/README.rst for more details.
 
@@ -68,7 +74,7 @@ the test suite.
 Assembling ``llvm2ice`` output
 ------------------------------
 
-Currently ``llvm2ice`` produces textual assembly code in a structure
-suitable for input to ``llvm-mc`` and currently using "intel" assembly
-syntax.  The first line of output is a convenient comment indicating
-how to pipe the output to ``llvm-mc`` to produce object code.
+Currently ``llvm2ice`` produces textual assembly code in a structure suitable
+for input to ``llvm-mc`` and currently using "intel" assembly syntax.  The first
+line of output is a convenient comment indicating how to pipe the output to
+``llvm-mc`` to produce object code.

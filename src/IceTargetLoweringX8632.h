@@ -57,7 +57,7 @@ public:
   // latter could be done by directly writing to the stack).
   void split64(Variable *Var);
   void setArgOffsetAndCopy(Variable *Arg, Variable *FramePtr,
-                           int32_t BasicFrameOffset, int32_t &InArgsSizeBytes);
+                           size_t BasicFrameOffset, size_t &InArgsSizeBytes);
   Operand *loOperand(Operand *Operand);
   Operand *hiOperand(Operand *Operand);
 
@@ -251,8 +251,8 @@ protected:
   }
 
   bool IsEbpBasedFrame;
-  int32_t FrameSizeLocals;
-  int32_t LocalsSizeBytes;
+  size_t FrameSizeLocals;
+  size_t LocalsSizeBytes;
   llvm::SmallBitVector TypeToRegisterSet[IceType_NUM];
   llvm::SmallBitVector ScratchRegs;
   llvm::SmallBitVector RegsUsed;

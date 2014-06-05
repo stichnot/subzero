@@ -70,22 +70,21 @@ typedef std::vector<Constant *> ConstantList;
 // may be 64-bits wide) when we want to save space.
 typedef uint32_t SizeT;
 
-enum LivenessMode {
-  // Lightweight version of live-range-end calculation.  Marks the
-  // last use of variables whose definition and uses are completely
-  // within a single block.
-  Liveness_LREndLightweight,
+// InstNumberT is for holding an instruction number.  Instruction
+// numbers are used for representing Variable live ranges.
+typedef int32_t InstNumberT;
 
-  // Full version of live-range-end calculation.  Marks the last uses
+enum LivenessMode {
+  // Basic version of live-range-end calculation.  Marks the last uses
   // of variables based on dataflow analysis.  Records the set of
   // live-in and live-out variables for each block.  Identifies and
   // deletes dead instructions (primarily stores).
-  Liveness_LREndFull,
+  Liveness_Basic,
 
-  // In addition to Liveness_LREndFull, also calculate the complete
+  // In addition to Liveness_Basic, also calculate the complete
   // live range for each variable in a form suitable for interference
   // calculation and register allocation.
-  Liveness_RangesFull
+  Liveness_Intervals
 };
 
 enum VerboseItem {
@@ -125,11 +124,6 @@ template <typename T> inline Ostream &operator<<(Ostream &Str, const T &Val) {
     (*Str.Stream) << Val;
   return Str;
 }
-
-// GlobalStr is just for debugging, in situations where the
-// Cfg/Ostream objects aren't otherwise available.  Not
-// thread-safe.
-extern Ostream *GlobalStr;
 
 // TODO: Implement in terms of std::chrono after switching to C++11.
 class Timer {

@@ -7,9 +7,8 @@
 //
 //===----------------------------------------------------------------------===//
 //
-// This file implements the Operand class and its
-// target-independent subclasses, primarily for the methods of the
-// Variable class.
+// This file implements the Operand class and its target-independent
+// subclasses, primarily for the methods of the Variable class.
 //
 //===----------------------------------------------------------------------===//
 
@@ -36,7 +35,7 @@ bool operator==(const RegWeight &A, const RegWeight &B) {
   return !(B < A) && !(A < B);
 }
 
-void LiveRange::addSegment(int32_t Start, int32_t End) {
+void LiveRange::addSegment(InstNumberT Start, InstNumberT End) {
 #ifdef USE_SET
   RangeElementType Element(Start, End);
   RangeType::iterator Next = Range.lower_bound(Element);
@@ -78,7 +77,7 @@ void LiveRange::addSegment(int32_t Start, int32_t End) {
     Range.push_front(RangeElementType(Start, End));
     return;
   }
-  int32_t CurrentEnd = Range.back().second;
+  InstNumberT CurrentEnd = Range.back().second;
   assert(Start >= CurrentEnd);
   // Check for merge opportunity.
   if (Start == CurrentEnd) {
@@ -97,8 +96,8 @@ bool LiveRange::endsBefore(const LiveRange &Other) const {
   // Neither range should be empty, but let's be graceful.
   if (Range.empty() || Other.Range.empty())
     return true;
-  int32_t MyEnd = (*Range.rbegin()).second;
-  int32_t OtherStart = (*Other.Range.begin()).first;
+  InstNumberT MyEnd = (*Range.rbegin()).second;
+  InstNumberT OtherStart = (*Other.Range.begin()).first;
   return MyEnd <= OtherStart;
 }
 
@@ -121,10 +120,16 @@ bool LiveRange::overlaps(const LiveRange &Other) const {
   return false;
 }
 
+bool LiveRange::overlaps(InstNumberT OtherBegin) const {
+  LiveRange Temp;
+  Temp.addSegment(OtherBegin, OtherBegin + 1);
+  return overlaps(Temp);
+}
+
 // Returns true if the live range contains the given instruction
 // number.  This is only used for validating the live range
 // calculation.
-bool LiveRange::containsValue(int32_t Value) const {
+bool LiveRange::containsValue(InstNumberT Value) const {
   for (RangeType::const_iterator I = Range.begin(), E = Range.end(); I != E;
        ++I) {
     if (I->first <= Value && Value <= I->second)

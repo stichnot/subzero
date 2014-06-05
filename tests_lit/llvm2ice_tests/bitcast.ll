@@ -1,6 +1,6 @@
 ; Trivial smoke test of bitcast between integer and FP types.
 
-; RUN: %llvm2ice --verbose inst %s | FileCheck %s
+; RUN: %llvm2ice -O2 --verbose none %s | FileCheck %s
 ; RUN: %llvm2ice --verbose none %s | FileCheck --check-prefix=ERRORS %s
 ; RUN: %llvm2iceinsts %s | %szdiff %s | FileCheck --check-prefix=DUMP %s
 

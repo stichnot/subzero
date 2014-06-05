@@ -33,8 +33,7 @@ namespace Ice {
 // preparation.  Results are assigned to Variable::RegNum for each
 // Variable.
 void LinearScan::scan(const llvm::SmallBitVector &RegMaskFull) {
-  if (!RegMaskFull.any())
-    return;
+  assert(RegMaskFull.any()); // Sanity check
   Unhandled.clear();
   Handled.clear();
   Inactive.clear();
@@ -97,7 +96,8 @@ void LinearScan::scan(const llvm::SmallBitVector &RegMaskFull) {
     // register because the live range has infinite weight.
     if (Cur.Var->hasReg()) {
       int32_t RegNum = Cur.Var->getRegNum();
-      Cur.Var->setRegNumTmp(RegNum);
+      // RegNumTmp should have already been set above.
+      assert(Cur.Var->getRegNumTmp() == RegNum);
       if (Func->getContext()->isVerbose(IceV_LinearScan)) {
         Str << "Precoloring  ";
         Cur.dump(Func);
@@ -126,7 +126,7 @@ void LinearScan::scan(const llvm::SmallBitVector &RegMaskFull) {
         Active.erase(I);
         Handled.push_back(Item);
         Moved = true;
-      } else if (!Item.overlaps(Cur)) {
+      } else if (!Item.overlapsStart(Cur)) {
         // Move Item from Active to Inactive list.
         if (Func->getContext()->isVerbose(IceV_LinearScan)) {
           Str << "Inactivating ";
@@ -161,7 +161,7 @@ void LinearScan::scan(const llvm::SmallBitVector &RegMaskFull) {
         }
         Inactive.erase(I);
         Handled.push_back(Item);
-      } else if (Item.overlaps(Cur)) {
+      } else if (Item.overlapsStart(Cur)) {
         // Move Item from Inactive to Active list.
         if (Func->getContext()->isVerbose(IceV_LinearScan)) {
           Str << "Reactivating ";
@@ -275,7 +275,8 @@ void LinearScan::scan(const llvm::SmallBitVector &RegMaskFull) {
         LiveRangeWrapper Item = *I;
         int32_t RegNum = Item.Var->getRegNumTmp();
         assert(Item.Var->hasRegTmp());
-        Weights[RegNum].addWeight(Item.range().getWeight());
+        if (Item.overlaps(Cur))
+          Weights[RegNum].addWeight(Item.range().getWeight());
       }
       // Check Unhandled ranges that overlap Cur and are precolored.
       // Cur.endsBefore(*I) is an early exit check that turns a
@@ -327,7 +328,7 @@ void LinearScan::scan(const llvm::SmallBitVector &RegMaskFull) {
             }
             --RegUses[MinWeightIndex];
             assert(RegUses[MinWeightIndex] >= 0);
-            Item.Var->setRegNumTmp(-1);
+            Item.Var->setRegNumTmp(Variable::NoRegister);
             Active.erase(I);
             Handled.push_back(Item);
           }
@@ -344,15 +345,15 @@ void LinearScan::scan(const llvm::SmallBitVector &RegMaskFull) {
               Item.dump(Func);
               Str << "\n";
             }
-            Item.Var->setRegNumTmp(-1);
+            Item.Var->setRegNumTmp(Variable::NoRegister);
             Inactive.erase(I);
             Handled.push_back(Item);
           }
         }
         // Assign the register to Cur.
         Cur.Var->setRegNumTmp(MinWeightIndex);
-        ++RegUses[MinWeightIndex];
         assert(RegUses[MinWeightIndex] >= 0);
+        ++RegUses[MinWeightIndex];
         Active.push_back(Cur);
         if (Func->getContext()->isVerbose(IceV_LinearScan)) {
           Str << "Allocating   ";

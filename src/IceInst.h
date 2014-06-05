@@ -56,8 +56,10 @@ public:
   };
   InstKind getKind() const { return Kind; }
 
-  int32_t getNumber() const { return Number; }
+  InstNumberT getNumber() const { return Number; }
   void renumber(Cfg *Func);
+  static const InstNumberT NumberDeleted = -1;
+  static const InstNumberT NumberSentinel = 0;
 
   bool isDeleted() const { return Deleted; }
   void setDeleted() { Deleted = true; }
@@ -92,7 +94,8 @@ public:
   // basic blocks, i.e. used in a different block from their definition.
   void updateVars(CfgNode *Node);
 
-  void liveness(LivenessMode Mode, int32_t InstNumber, llvm::BitVector &Live,
+  void livenessLightweight(llvm::BitVector &Live);
+  void liveness(InstNumberT InstNumber, llvm::BitVector &Live,
                 Liveness *Liveness, const CfgNode *Node);
   virtual void emit(const Cfg *Func) const;
   virtual void dump(const Cfg *Func) const;
@@ -113,8 +116,8 @@ protected:
     Srcs[NumSrcs++] = Src;
   }
   void setLastUse(SizeT VarIndex) {
-    if (VarIndex < 8 * sizeof(LiveRangesEnded))
-      LiveRangesEnded |= (1u << VarIndex);
+    if (VarIndex < CHAR_BIT * sizeof(LiveRangesEnded))
+      LiveRangesEnded |= (((LREndedBits)1u) << VarIndex);
   }
   void resetLastUses() { LiveRangesEnded = 0; }
   // The destroy() method lets the instruction cleanly release any
@@ -123,7 +126,7 @@ protected:
 
   const InstKind Kind;
   // Number is the instruction number for describing live ranges.
-  int32_t Number;
+  InstNumberT Number;
   // Deleted means irrevocably deleted.
   bool Deleted;
   // Dead means pending deletion after liveness analysis converges.
@@ -138,7 +141,17 @@ protected:
   SizeT NumSrcs;
   Operand **Srcs;
 
-  uint32_t LiveRangesEnded; // only first 32 src operands tracked, sorry
+  // LiveRangesEnded marks which Variables' live ranges end in this
+  // instruction.  An instruction can have an arbitrary number of
+  // source operands (e.g. a call instruction), and each source
+  // operand can contain 0 or 1 Variable (and target-specific operands
+  // could contain more than 1 Variable).  All the variables in an
+  // instruction are conceptually flattened and each variable is
+  // mapped to one bit position of the LiveRangesEnded bit vector.
+  // Only the first CHAR_BIT * sizeof(LREndedBits) variables are
+  // tracked this way.
+  typedef uint32_t LREndedBits; // only first 32 src operands tracked, sorry
+  LREndedBits LiveRangesEnded;
 
 private:
   Inst(const Inst &) LLVM_DELETED_FUNCTION;

@@ -248,13 +248,16 @@ public:
     Range.clear();
     Weight.setWeight(0);
   }
-  void addSegment(int32_t Start, int32_t End);
+  void addSegment(InstNumberT Start, InstNumberT End);
 
   bool endsBefore(const LiveRange &Other) const;
   bool overlaps(const LiveRange &Other) const;
-  bool containsValue(int32_t Value) const;
+  bool overlaps(InstNumberT OtherBegin) const;
+  bool containsValue(InstNumberT Value) const;
   bool isEmpty() const { return Range.empty(); }
-  int32_t getStart() const { return Range.empty() ? -1 : Range.begin()->first; }
+  InstNumberT getStart() const {
+    return Range.empty() ? -1 : Range.begin()->first;
+  }
 
   RegWeight getWeight() const { return Weight; }
   void setWeight(const RegWeight &NewWeight) { Weight = NewWeight; }
@@ -268,7 +271,7 @@ public:
   //#define USE_SET
 
 private:
-  typedef std::pair<int32_t, int32_t> RangeElementType;
+  typedef std::pair<InstNumberT, InstNumberT> RangeElementType;
 #ifdef USE_SET
   typedef std::set<RangeElementType> RangeType;
 #else
@@ -333,7 +336,7 @@ public:
   const LiveRange &getLiveRange() const { return Live; }
   void setLiveRange(const LiveRange &Range) { Live = Range; }
   void resetLiveRange() { Live.reset(); }
-  void addLiveRange(int32_t Start, int32_t End, uint32_t WeightDelta) {
+  void addLiveRange(InstNumberT Start, InstNumberT End, uint32_t WeightDelta) {
     assert(WeightDelta != RegWeight::Inf);
     Live.addSegment(Start, End);
     if (Weight.isInf())

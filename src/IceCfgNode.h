@@ -57,7 +57,8 @@ public:
   void deletePhis();
   void doAddressOpt();
   void genCode();
-  bool liveness(LivenessMode Mode, Liveness *Liveness);
+  void livenessLightweight();
+  bool liveness(Liveness *Liveness);
   void livenessPostprocess(LivenessMode Mode, Liveness *Liveness);
   void emit(Cfg *Func) const;
   void dump(Cfg *Func) const;

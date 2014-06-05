@@ -154,16 +154,22 @@ void CfgNode::placePhiStores() {
   // Every block must end in a terminator instruction.
   assert(InsertionPoint != Insts.begin());
   --InsertionPoint;
-  // Confirm via assert() that InsertionPoint is a terminator
-  // instruction.  Calling getTerminatorEdges() on a non-terminator
-  // instruction will cause an llvm_unreachable().
-  assert(((*InsertionPoint)->getTerminatorEdges(), true));
-  if (llvm::isa<InstBr>(*InsertionPoint)) {
-    if (InsertionPoint != Insts.begin()) {
-      --InsertionPoint;
-      if (!llvm::isa<InstIcmp>(*InsertionPoint) &&
-          !llvm::isa<InstFcmp>(*InsertionPoint)) {
-        ++InsertionPoint;
+  // Confirm that InsertionPoint is a terminator instruction.  Calling
+  // getTerminatorEdges() on a non-terminator instruction will cause
+  // an llvm_unreachable().
+  (void)(*InsertionPoint)->getTerminatorEdges();
+  // If the current insertion point is at a conditional branch
+  // instruction, and the previous instruction is a compare
+  // instruction, then we move the insertion point before the compare
+  // instruction so as not to interfere with compare/branch fusing.
+  if (InstBr *Branch = llvm::dyn_cast<InstBr>(*InsertionPoint)) {
+    if (!Branch->isUnconditional()) {
+      if (InsertionPoint != Insts.begin()) {
+        --InsertionPoint;
+        if (!llvm::isa<InstIcmp>(*InsertionPoint) &&
+            !llvm::isa<InstFcmp>(*InsertionPoint)) {
+          ++InsertionPoint;
+        }
       }
     }
   }
@@ -231,52 +237,67 @@ void CfgNode::genCode() {
   }
 }
 
+void CfgNode::livenessLightweight() {
+  SizeT NumVars = Func->getNumVariables();
+  llvm::BitVector Live(NumVars);
+  // Process regular instructions in reverse order.
+  for (InstList::const_reverse_iterator I = Insts.rbegin(), E = Insts.rend();
+       I != E; ++I) {
+    if ((*I)->isDeleted())
+      continue;
+    (*I)->livenessLightweight(Live);
+  }
+  for (PhiList::const_iterator I = Phis.begin(), E = Phis.end(); I != E; ++I) {
+    if ((*I)->isDeleted())
+      continue;
+    (*I)->livenessLightweight(Live);
+  }
+}
+
 // Performs liveness analysis on the block.  Returns true if the
 // incoming liveness changed from before, false if it stayed the same.
 // (If it changes, the node's predecessors need to be processed
 // again.)
-bool CfgNode::liveness(LivenessMode Mode, Liveness *Liveness) {
-  SizeT NumVars;
-  if (Mode == Liveness_LREndLightweight)
-    NumVars = Func->getNumVariables();
-  else
-    NumVars = Liveness->getLocalSize(this);
+bool CfgNode::liveness(Liveness *Liveness) {
+  SizeT NumVars = Liveness->getNumVarsInNode(this);
   llvm::BitVector Live(NumVars);
-  if (Mode != Liveness_LREndLightweight) {
-    // Mark the beginning and ending of each variable's live range
-    // with the sentinel instruction number 0.
-    std::vector<int> &LiveBegin = Liveness->getLiveBegin(this);
-    std::vector<int> &LiveEnd = Liveness->getLiveEnd(this);
-    LiveBegin.assign(NumVars, 0);
-    LiveEnd.assign(NumVars, 0);
-    // Initialize Live to be the union of all successors' LiveIn.
-    for (NodeList::const_iterator I = OutEdges.begin(), E = OutEdges.end();
-         I != E; ++I) {
-      CfgNode *Succ = *I;
-      Live |= Liveness->getLiveIn(Succ);
-      // Mark corresponding argument of phis in successor as live.
-      for (PhiList::const_iterator I1 = Succ->Phis.begin(),
-                                   E1 = Succ->Phis.end();
-           I1 != E1; ++I1) {
-        (*I1)->livenessPhiOperand(Live, this, Liveness);
-      }
+  // Mark the beginning and ending of each variable's live range
+  // with the sentinel instruction number 0.
+  std::vector<InstNumberT> &LiveBegin = Liveness->getLiveBegin(this);
+  std::vector<InstNumberT> &LiveEnd = Liveness->getLiveEnd(this);
+  InstNumberT Sentinel = Inst::NumberSentinel;
+  LiveBegin.assign(NumVars, Sentinel);
+  LiveEnd.assign(NumVars, Sentinel);
+  // Initialize Live to be the union of all successors' LiveIn.
+  for (NodeList::const_iterator I = OutEdges.begin(), E = OutEdges.end();
+       I != E; ++I) {
+    CfgNode *Succ = *I;
+    Live |= Liveness->getLiveIn(Succ);
+    // Mark corresponding argument of phis in successor as live.
+    for (PhiList::const_iterator I1 = Succ->Phis.begin(), E1 = Succ->Phis.end();
+         I1 != E1; ++I1) {
+      (*I1)->livenessPhiOperand(Live, this, Liveness);
     }
-    Liveness->getLiveOut(this) = Live;
   }
+  Liveness->getLiveOut(this) = Live;
 
   // Process regular instructions in reverse order.
   for (InstList::const_reverse_iterator I = Insts.rbegin(), E = Insts.rend();
        I != E; ++I) {
-    (*I)->liveness(Mode, (*I)->getNumber(), Live, Liveness, this);
+    if ((*I)->isDeleted())
+      continue;
+    (*I)->liveness((*I)->getNumber(), Live, Liveness, this);
   }
   // Process phis in forward order so that we can override the
   // instruction number to be that of the earliest phi instruction in
   // the block.
-  int32_t FirstPhiNumber = 0; // sentinel value
+  InstNumberT FirstPhiNumber = Inst::NumberSentinel;
   for (PhiList::const_iterator I = Phis.begin(), E = Phis.end(); I != E; ++I) {
-    if (FirstPhiNumber <= 0)
+    if ((*I)->isDeleted())
+      continue;
+    if (FirstPhiNumber == Inst::NumberSentinel)
       FirstPhiNumber = (*I)->getNumber();
-    (*I)->liveness(Mode, FirstPhiNumber, Live, Liveness, this);
+    (*I)->liveness(FirstPhiNumber, Live, Liveness, this);
   }
 
   // When using the sparse representation, after traversing the
@@ -285,39 +306,35 @@ bool CfgNode::liveness(LivenessMode Mode, Liveness *Liveness) {
   // by shrinking the Live vector and then testing it against the
   // pre-shrunk version.  (The shrinking is required, but the
   // validation is not.)
-  if (Mode != Liveness_LREndLightweight) {
-    llvm::BitVector LiveOrig = Live;
-    Live.resize(Liveness->getGlobalSize());
-    // Non-global arguments in the entry node are allowed to be live on
-    // entry.
-    bool IsEntry = (Func->getEntryNode() == this);
-    assert(IsEntry || Live == LiveOrig);
-    // The following block helps debug why the previous assertion
-    // failed.
-    if (!(IsEntry || Live == LiveOrig)) {
-      Ostream &Str = Func->getContext()->getStrDump();
-      Func->setCurrentNode(NULL);
-      Str << "LiveOrig-Live =";
-      for (SizeT i = Live.size(); i < LiveOrig.size(); ++i) {
-        if (LiveOrig.test(i)) {
-          Str << " ";
-          Liveness->getVariable(i, this)->dump(Func);
-        }
+  llvm::BitVector LiveOrig = Live;
+  Live.resize(Liveness->getNumGlobalVars());
+  // Non-global arguments in the entry node are allowed to be live on
+  // entry.
+  bool IsEntry = (Func->getEntryNode() == this);
+  if (!(IsEntry || Live == LiveOrig)) {
+    // This is a fatal liveness consistency error.  Print some
+    // diagnostics and abort.
+    Ostream &Str = Func->getContext()->getStrDump();
+    Func->setCurrentNode(NULL);
+    Str << "LiveOrig-Live =";
+    for (SizeT i = Live.size(); i < LiveOrig.size(); ++i) {
+      if (LiveOrig.test(i)) {
+        Str << " ";
+        Liveness->getVariable(i, this)->dump(Func);
       }
-      Str << "\n";
     }
+    Str << "\n";
+    llvm_unreachable("Fatal inconsistency in liveness analysis");
   }
 
   bool Changed = false;
-  if (Mode != Liveness_LREndLightweight) {
-    llvm::BitVector &LiveIn = Liveness->getLiveIn(this);
-    // Add in current LiveIn
-    Live |= LiveIn;
-    // Check result, set LiveIn=Live
-    Changed = (Live != LiveIn);
-    if (Changed)
-      LiveIn = Live;
-  }
+  llvm::BitVector &LiveIn = Liveness->getLiveIn(this);
+  // Add in current LiveIn
+  Live |= LiveIn;
+  // Check result, set LiveIn=Live
+  Changed = (Live != LiveIn);
+  if (Changed)
+    LiveIn = Live;
   return Changed;
 }
 
@@ -330,15 +347,15 @@ bool CfgNode::liveness(LivenessMode Mode, Liveness *Liveness) {
 // block, and there is a single read that ends the live in the basic
 // block that contained the actual phi instruction.
 void CfgNode::livenessPostprocess(LivenessMode Mode, Liveness *Liveness) {
-  int32_t FirstInstNum = 0;
-  int32_t LastInstNum = 0;
+  InstNumberT FirstInstNum = Inst::NumberSentinel;
+  InstNumberT LastInstNum = Inst::NumberSentinel;
   // Process phis in any order.  Process only Dest operands.
   for (PhiList::const_iterator I = Phis.begin(), E = Phis.end(); I != E; ++I) {
     InstPhi *Inst = *I;
     Inst->deleteIfDead();
     if (Inst->isDeleted())
       continue;
-    if (FirstInstNum <= 0)
+    if (FirstInstNum == Inst::NumberSentinel)
       FirstInstNum = Inst->getNumber();
     assert(Inst->getNumber() > LastInstNum);
     LastInstNum = Inst->getNumber();
@@ -350,34 +367,34 @@ void CfgNode::livenessPostprocess(LivenessMode Mode, Liveness *Liveness) {
     Inst->deleteIfDead();
     if (Inst->isDeleted())
       continue;
-    if (FirstInstNum <= 0)
+    if (FirstInstNum == Inst::NumberSentinel)
       FirstInstNum = Inst->getNumber();
     assert(Inst->getNumber() > LastInstNum);
     LastInstNum = Inst->getNumber();
     // Create fake live ranges for a Kill instruction, but only if the
     // linked instruction is still alive.
-    if (Mode == Liveness_RangesFull) {
+    if (Mode == Liveness_Intervals) {
       if (InstFakeKill *Kill = llvm::dyn_cast<InstFakeKill>(Inst)) {
         if (!Kill->getLinked()->isDeleted()) {
           SizeT NumSrcs = Inst->getSrcSize();
           for (SizeT i = 0; i < NumSrcs; ++i) {
             Variable *Var = llvm::cast<Variable>(Inst->getSrc(i));
-            int32_t InstNumber = Inst->getNumber();
+            InstNumberT InstNumber = Inst->getNumber();
             Liveness->addLiveRange(Var, InstNumber, InstNumber, 1);
           }
         }
       }
     }
   }
-  if (Mode != Liveness_RangesFull)
+  if (Mode != Liveness_Intervals)
     return;
 
-  SizeT NumVars = Liveness->getLocalSize(this);
-  SizeT NumGlobals = Liveness->getGlobalSize();
+  SizeT NumVars = Liveness->getNumVarsInNode(this);
+  SizeT NumGlobals = Liveness->getNumGlobalVars();
   llvm::BitVector &LiveIn = Liveness->getLiveIn(this);
   llvm::BitVector &LiveOut = Liveness->getLiveOut(this);
-  std::vector<int> &LiveBegin = Liveness->getLiveBegin(this);
-  std::vector<int> &LiveEnd = Liveness->getLiveEnd(this);
+  std::vector<InstNumberT> &LiveBegin = Liveness->getLiveBegin(this);
+  std::vector<InstNumberT> &LiveEnd = Liveness->getLiveEnd(this);
   for (SizeT i = 0; i < NumVars; ++i) {
     // Deal with the case where the variable is both live-in and
     // live-out, but LiveEnd comes before LiveBegin.  In this case, we
@@ -391,13 +408,13 @@ void CfgNode::livenessPostprocess(LivenessMode Mode, Liveness *Liveness) {
       Liveness->addLiveRange(Var, LiveBegin[i], LastInstNum + 1, 1);
       continue;
     }
-    int32_t Begin = (IsGlobal && LiveIn[i]) ? FirstInstNum : LiveBegin[i];
-    int32_t End = (IsGlobal && LiveOut[i]) ? LastInstNum + 1 : LiveEnd[i];
-    if (Begin <= 0 && End <= 0)
+    InstNumberT Begin = (IsGlobal && LiveIn[i]) ? FirstInstNum : LiveBegin[i];
+    InstNumberT End = (IsGlobal && LiveOut[i]) ? LastInstNum + 1 : LiveEnd[i];
+    if (Begin == Inst::NumberSentinel && End == Inst::NumberSentinel)
       continue;
     if (Begin <= FirstInstNum)
       Begin = FirstInstNum;
-    if (End <= 0)
+    if (End == Inst::NumberSentinel)
       End = LastInstNum + 1;
     Variable *Var = Liveness->getVariable(i, this);
     Liveness->addLiveRange(Var, Begin, End, 1);

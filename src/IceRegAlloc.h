@@ -22,11 +22,10 @@
 
 namespace Ice {
 
-// Currently this just wraps an Variable pointer, so in principle
-// we could use containers of Variable* instead of
-// LiveRangeWrapper.  But in the future, we may want to do more
-// complex things such as live range splitting, and keeping a wrapper
-// should make that simpler.
+// Currently this just wraps a Variable pointer, so in principle we
+// could use containers of Variable* instead of LiveRangeWrapper.  But
+// in the future, we may want to do more complex things such as live
+// range splitting, and keeping a wrapper should make that simpler.
 class LiveRangeWrapper {
 public:
   LiveRangeWrapper(Variable *Var) : Var(Var) {}
@@ -36,6 +35,9 @@ public:
   }
   bool overlaps(const LiveRangeWrapper &Other) const {
     return range().overlaps(Other.range());
+  }
+  bool overlapsStart(const LiveRangeWrapper &Other) const {
+    return range().overlaps(Other.range().getStart());
   }
   Variable *const Var;
   void dump(const Cfg *Func) const;
@@ -59,8 +61,8 @@ private:
   struct RangeCompare {
     bool operator()(const LiveRangeWrapper &L,
                     const LiveRangeWrapper &R) const {
-      int32_t Lstart = L.Var->getLiveRange().getStart();
-      int32_t Rstart = R.Var->getLiveRange().getStart();
+      InstNumberT Lstart = L.Var->getLiveRange().getStart();
+      InstNumberT Rstart = R.Var->getLiveRange().getStart();
       if (Lstart == Rstart)
         return L.Var->getIndex() < R.Var->getIndex();
       return Lstart < Rstart;

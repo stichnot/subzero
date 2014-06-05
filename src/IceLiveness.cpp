@@ -1,4 +1,4 @@
-//===- subzero/src/Liveness.cpp - Liveness analysis implementation -----===//
+//===- subzero/src/IceLiveness.cpp - Liveness analysis implementation -----===//
 //
 //                        The Subzero Code Generator
 //
@@ -7,16 +7,15 @@
 //
 //===----------------------------------------------------------------------===//
 //
-// This file provides some of the support for the Liveness class.
-// In particular, it handles the sparsity representation of the
-// mapping between Variables and CfgNodes.  The idea is that
-// since most variables are used only within a single basic block, we
-// can partition the variables into "local" and "global" sets.
-// Instead of sizing and indexing vectors according to
-// Variable::Number, we create a mapping such that global variables
-// are mapped to low indexes that are common across nodes, and local
-// variables are mapped to a higher index space that is shared across
-// nodes.
+// This file provides some of the support for the Liveness class.  In
+// particular, it handles the sparsity representation of the mapping
+// between Variables and CfgNodes.  The idea is that since most
+// variables are used only within a single basic block, we can
+// partition the variables into "local" and "global" sets.  Instead of
+// sizing and indexing vectors according to Variable::Number, we
+// create a mapping such that global variables are mapped to low
+// indexes that are common across nodes, and local variables are
+// mapped to a higher index space that is shared across nodes.
 //
 //===----------------------------------------------------------------------===//
 
@@ -35,7 +34,7 @@ void Liveness::init() {
   SizeT NumNodes = Func->getNumNodes();
   Nodes.resize(NumNodes);
   VarToLiveMap.resize(NumVars);
-  if (Mode == Liveness_RangesFull)
+  if (Mode == Liveness_Intervals)
     LiveRanges.resize(NumVars);
 
   // Count the number of globals, and the number of locals for each
@@ -102,7 +101,7 @@ SizeT Liveness::getLiveIndex(const Variable *Var) const {
   return VarToLiveMap[Var->getIndex()];
 }
 
-void Liveness::addLiveRange(Variable *Var, int32_t Start, int32_t End,
+void Liveness::addLiveRange(Variable *Var, InstNumberT Start, InstNumberT End,
                             uint32_t WeightDelta) {
   LiveRange &LiveRange = LiveRanges[Var->getIndex()];
   assert(WeightDelta != RegWeight::Inf);

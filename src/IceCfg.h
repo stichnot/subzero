@@ -59,7 +59,7 @@ public:
   CfgNode *splitEdge(CfgNode *From, CfgNode *To);
 
   // Manage instruction numbering.
-  int32_t newInstNumber() { return NextInstNumber++; }
+  InstNumberT newInstNumber() { return NextInstNumber++; }
 
   // Manage Variables.
   Variable *makeVariable(Type Ty, const CfgNode *Node,
@@ -89,6 +89,7 @@ public:
   void doAddressOpt();
   void genCode();
   void genFrame();
+  void livenessLightweight();
   void liveness(LivenessMode Mode);
   bool validateLiveness() const;
 
@@ -98,7 +99,7 @@ public:
   const CfgNode *getCurrentNode() const { return CurrentNode; }
 
   void emit();
-  void dump();
+  void dump(const IceString &Message = "");
 
   // Allocate data of type T using the per-Cfg allocator.
   template <typename T> T *allocate() { return Allocator.Allocate<T>(); }
@@ -142,7 +143,7 @@ private:
   IceString ErrorMessage;
   CfgNode *Entry; // entry basic block
   NodeList Nodes; // linearized node list; Entry should be first
-  int32_t NextInstNumber;
+  InstNumberT NextInstNumber;
   VarList Variables;
   VarList Args; // subset of Variables, in argument order
   llvm::OwningPtr<Liveness> Live;

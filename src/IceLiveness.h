@@ -1,4 +1,4 @@
-//===- subzero/src/Liveness.h - Liveness analysis ------------*- C++ -*-===//
+//===- subzero/src/IceLiveness.h - Liveness analysis ------------*- C++ -*-===//
 //
 //                        The Subzero Code Generator
 //
@@ -30,9 +30,9 @@ public:
   LivenessNode() : NumLocals(0) {}
   // NumLocals is the number of Variables local to this block.
   SizeT NumLocals;
-  // LiveToVarMap maps a liveness bitvector index to an Variable.
-  // This is generally just for printing/dumping.  The index should be
-  // less than NumLocals + Liveness::NumGlobals.
+  // LiveToVarMap maps a liveness bitvector index to a Variable.  This
+  // is generally just for printing/dumping.  The index should be less
+  // than NumLocals + Liveness::NumGlobals.
   std::vector<Variable *> LiveToVarMap;
   // LiveIn and LiveOut track the in- and out-liveness of the global
   // variables.  The size of each vector is
@@ -41,7 +41,7 @@ public:
   // LiveBegin and LiveEnd track the instruction numbers of the start
   // and end of each variable's live range within this block.  The
   // size of each vector is NumLocals + Liveness::NumGlobals.
-  std::vector<int> LiveBegin, LiveEnd;
+  std::vector<InstNumberT> LiveBegin, LiveEnd;
 
 private:
   // TODO: Disable these constructors when Liveness::Nodes is no
@@ -57,8 +57,8 @@ public:
   void init();
   Variable *getVariable(SizeT LiveIndex, const CfgNode *Node) const;
   SizeT getLiveIndex(const Variable *Var) const;
-  SizeT getGlobalSize() const { return NumGlobals; }
-  SizeT getLocalSize(const CfgNode *Node) const {
+  SizeT getNumGlobalVars() const { return NumGlobals; }
+  SizeT getNumVarsInNode(const CfgNode *Node) const {
     return NumGlobals + Nodes[Node->getIndex()].NumLocals;
   }
   llvm::BitVector &getLiveIn(const CfgNode *Node) {
@@ -67,14 +67,14 @@ public:
   llvm::BitVector &getLiveOut(const CfgNode *Node) {
     return Nodes[Node->getIndex()].LiveOut;
   }
-  std::vector<int> &getLiveBegin(const CfgNode *Node) {
+  std::vector<InstNumberT> &getLiveBegin(const CfgNode *Node) {
     return Nodes[Node->getIndex()].LiveBegin;
   }
-  std::vector<int> &getLiveEnd(const CfgNode *Node) {
+  std::vector<InstNumberT> &getLiveEnd(const CfgNode *Node) {
     return Nodes[Node->getIndex()].LiveEnd;
   }
   LiveRange &getLiveRange(Variable *Var);
-  void addLiveRange(Variable *Var, int32_t Start, int32_t End,
+  void addLiveRange(Variable *Var, InstNumberT Start, InstNumberT End,
                     uint32_t WeightDelta);
 
 private:
@@ -83,13 +83,13 @@ private:
   SizeT NumGlobals;
   // Size of Nodes is Cfg::Nodes.size().
   std::vector<LivenessNode> Nodes;
-  // VarToLiveMap maps an Variable's Variable::Number to its
-  // live index within its basic block.
+  // VarToLiveMap maps a Variable's Variable::Number to its live index
+  // within its basic block.
   std::vector<SizeT> VarToLiveMap;
-  // LiveToVarMap is analogous to LivenessNode::LiveToVarMap, but
-  // for non-local variables.
+  // LiveToVarMap is analogous to LivenessNode::LiveToVarMap, but for
+  // non-local variables.
   std::vector<Variable *> LiveToVarMap;
-  // LiveRanges maps an Variable::Number to its live range.
+  // LiveRanges maps a Variable::Number to its live range.
   std::vector<LiveRange> LiveRanges;
   Liveness(const Liveness &) LLVM_DELETED_FUNCTION;
   Liveness &operator=(const Liveness &) LLVM_DELETED_FUNCTION;

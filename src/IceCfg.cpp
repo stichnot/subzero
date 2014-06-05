@@ -22,16 +22,12 @@
 
 namespace Ice {
 
-Ostream *GlobalStr = NULL;
-
 Cfg::Cfg(GlobalContext *Ctx)
     : Ctx(Ctx), FunctionName(""), ReturnType(IceType_void),
       IsInternalLinkage(false), HasError(false), ErrorMessage(""), Entry(NULL),
       NextInstNumber(1), Live(NULL),
       Target(TargetLowering::createLowering(Ctx->getTargetArch(), this)),
-      CurrentNode(NULL) {
-  GlobalStr = &Ctx->getStrDump();
-}
+      CurrentNode(NULL) {}
 
 Cfg::~Cfg() {}
 
@@ -90,14 +86,10 @@ void Cfg::addArg(Variable *Arg) {
 bool Cfg::hasComputedFrame() const { return getTarget()->hasComputedFrame(); }
 
 void Cfg::translate() {
-  Ostream &Str = Ctx->getStrDump();
   if (hasError())
     return;
 
-  if (Ctx->isVerbose()) {
-    Str << "================ Initial CFG ================\n";
-    dump();
-  }
+  dump("Initial CFG");
 
   Timer T_translate;
   // The set of translation passes and their order are determined by
@@ -105,10 +97,7 @@ void Cfg::translate() {
   getTarget()->translate();
   T_translate.printElapsedUs(getContext(), "translate()");
 
-  if (Ctx->isVerbose()) {
-    Str << "================ Final output ================\n";
-    dump();
-  }
+  dump("Final output");
 }
 
 void Cfg::computePredecessors() {
@@ -169,23 +158,21 @@ void Cfg::genFrame() {
   }
 }
 
-void Cfg::liveness(LivenessMode Mode) {
-  if (Mode == Liveness_LREndLightweight) {
-    // Lightweight liveness is a quick single pass and doesn't need to
-    // iterate until convergence.
-    for (NodeList::iterator I = Nodes.begin(), E = Nodes.end(); I != E; ++I) {
-      (*I)->liveness(Mode, getLiveness());
-    }
-    return;
+// This is a lightweight version of live-range-end calculation.  Marks
+// the last use of only those variables whose definition and uses are
+// completely with a single block.  It is a quick single pass and
+// doesn't need to iterate until convergence.
+void Cfg::livenessLightweight() {
+  for (NodeList::iterator I = Nodes.begin(), E = Nodes.end(); I != E; ++I) {
+    (*I)->livenessLightweight();
   }
+}
 
+void Cfg::liveness(LivenessMode Mode) {
   Live.reset(new Liveness(this, Mode));
   Live->init();
-  llvm::BitVector NeedToProcess(Nodes.size());
-  // Mark all nodes as needing to be processed.
-  for (NodeList::iterator I = Nodes.begin(), E = Nodes.end(); I != E; ++I) {
-    NeedToProcess[(*I)->getIndex()] = true;
-  }
+  // Initialize with all nodes needing to be processed.
+  llvm::BitVector NeedToProcess(Nodes.size(), true);
   while (NeedToProcess.any()) {
     // Iterate in reverse topological order to speed up convergence.
     for (NodeList::reverse_iterator I = Nodes.rbegin(), E = Nodes.rend();
@@ -193,7 +180,7 @@ void Cfg::liveness(LivenessMode Mode) {
       CfgNode *Node = *I;
       if (NeedToProcess[Node->getIndex()]) {
         NeedToProcess[Node->getIndex()] = false;
-        bool Changed = Node->liveness(Mode, getLiveness());
+        bool Changed = Node->liveness(getLiveness());
         if (Changed) {
           // If the beginning-of-block liveness changed since the last
           // iteration, mark all in-edges as needing to be processed.
@@ -208,7 +195,7 @@ void Cfg::liveness(LivenessMode Mode) {
       }
     }
   }
-  if (Mode == Liveness_RangesFull) {
+  if (Mode == Liveness_Intervals) {
     // Reset each variable's live range.
     for (VarList::const_iterator I = Variables.begin(), E = Variables.end();
          I != E; ++I) {
@@ -216,13 +203,16 @@ void Cfg::liveness(LivenessMode Mode) {
         Var->resetLiveRange();
     }
   }
+  // Collect timing for just the portion that constructs the live
+  // range intervals based on the end-of-live-range computation, for a
+  // finer breakdown of the cost.
   Timer T_liveRange;
   // Make a final pass over instructions to delete dead instructions
   // and build each Variable's live range.
   for (NodeList::iterator I = Nodes.begin(), E = Nodes.end(); I != E; ++I) {
     (*I)->livenessPostprocess(Mode, getLiveness());
   }
-  if (Mode == Liveness_RangesFull) {
+  if (Mode == Liveness_Intervals) {
     // Special treatment for live in-args.  Their liveness needs to
     // extend beyond the beginning of the function, otherwise an arg
     // whose only use is in the first instruction will end up having
@@ -232,9 +222,14 @@ void Cfg::liveness(LivenessMode Mode) {
     for (SizeT I = 0; I < Args.size(); ++I) {
       Variable *Arg = Args[I];
       if (!Live->getLiveRange(Arg).isEmpty()) {
-        // Add live range [-1,0) with weight 0.
+        // Add live range [-1,0) with weight 0.  TODO: Here and below,
+        // use better symbolic constants along the lines of
+        // Inst::NumberDeleted and Inst::NumberSentinel instead of -1
+        // and 0.
         Live->addLiveRange(Arg, -1, 0, 0);
       }
+      // Do the same for i64 args that may have been lowered into i32
+      // Lo and Hi components.
       Variable *Lo = Arg->getLo();
       if (Lo && !Live->getLiveRange(Lo).isEmpty())
         Live->addLiveRange(Lo, -1, 0, 0);
@@ -252,14 +247,9 @@ void Cfg::liveness(LivenessMode Mode) {
       Var->setLiveRange(Live->getLiveRange(Var));
       if (Var->getWeight().isInf())
         Var->setLiveRangeInfiniteWeight();
-      setCurrentNode(NULL);
     }
     T_liveRange.printElapsedUs(getContext(), "live range construction");
     dump();
-    // TODO: validateLiveness() is a heavyweight operation inside an
-    // assert().  In a Release build with asserts enabled, we may want
-    // to disable this call.
-    assert(validateLiveness());
   }
 }
 
@@ -267,6 +257,7 @@ void Cfg::liveness(LivenessMode Mode) {
 // appears within the Variable's computed live range.
 bool Cfg::validateLiveness() const {
   bool Valid = true;
+  Ostream &Str = Ctx->getStrDump();
   for (NodeList::const_iterator I1 = Nodes.begin(), E1 = Nodes.end(); I1 != E1;
        ++I1) {
     CfgNode *Node = *I1;
@@ -278,7 +269,7 @@ bool Cfg::validateLiveness() const {
         continue;
       if (llvm::isa<InstFakeKill>(Inst))
         continue;
-      int32_t InstNumber = Inst->getNumber();
+      InstNumberT InstNumber = Inst->getNumber();
       Variable *Dest = Inst->getDest();
       if (Dest) {
         // TODO: This instruction should actually begin Dest's live
@@ -288,18 +279,21 @@ bool Cfg::validateLiveness() const {
         // lowering.
         if (!Dest->getLiveRange().containsValue(InstNumber)) {
           Valid = false;
-          assert(Valid);
+          Str << "Liveness error: inst " << Inst->getNumber() << " dest ";
+          Dest->dump(this);
+          Str << " live range " << Dest->getLiveRange() << "\n";
         }
       }
-      SizeT VarIndex = 0;
       for (SizeT I = 0; I < Inst->getSrcSize(); ++I) {
         Operand *Src = Inst->getSrc(I);
         SizeT NumVars = Src->getNumVars();
-        for (SizeT J = 0; J < NumVars; ++J, ++VarIndex) {
+        for (SizeT J = 0; J < NumVars; ++J) {
           const Variable *Var = Src->getVar(J);
           if (!Var->getLiveRange().containsValue(InstNumber)) {
             Valid = false;
-            assert(Valid);
+            Str << "Liveness error: inst " << Inst->getNumber() << " var ";
+            Var->dump(this);
+            Str << " live range " << Var->getLiveRange() << "\n";
           }
         }
       }
@@ -338,8 +332,13 @@ void Cfg::emit() {
   T_emit.printElapsedUs(Ctx, "emit()");
 }
 
-void Cfg::dump() {
+// Dumps the IR with an optional introductory message.
+void Cfg::dump(const IceString &Message) {
+  if (!Ctx->isVerbose())
+    return;
   Ostream &Str = Ctx->getStrDump();
+  if (!Message.empty())
+    Str << "================ " << Message << " ================\n";
   setCurrentNode(getEntryNode());
   // Print function name+args
   if (getContext()->isVerbose(IceV_Instructions)) {
