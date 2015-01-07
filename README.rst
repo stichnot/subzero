@@ -1,6 +1,14 @@
 Subzero - Fast code generator for PNaCl bitcode
 ===============================================
 
+OBSOLETE
+--------
+
+This repository is now obsolete.  Please see its new home under the
+Chromium / Native Client source tree.
+
+https://chromium.googlesource.com/native_client/pnacl-subzero/+/master
+
 Building
 --------
 
